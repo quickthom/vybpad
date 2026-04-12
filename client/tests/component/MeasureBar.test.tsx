@@ -19,8 +19,39 @@ import { cleanup, fireEvent, render, screen, within } from '@testing-library/rea
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { App } from '../../src/App';
-import { MeasureBar } from '../../src/components/controls/MeasureBar';
+import { MeasureBar } from '../../src/components/MeasureBar';
 import { buildDefaultSong, useSongStore } from '../../src/store/songStore';
+
+/** Minimal Canvas 2D mock so `<App />` (EditorCanvas) mounts under jsdom. */
+function stubCanvas2d(): void {
+  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation((contextId) => {
+    if (contextId !== '2d') {
+      return null;
+    }
+    return {
+      save: vi.fn(),
+      restore: vi.fn(),
+      scale: vi.fn(),
+      clearRect: vi.fn(),
+      fillRect: vi.fn(),
+      strokeRect: vi.fn(),
+      beginPath: vi.fn(),
+      closePath: vi.fn(),
+      moveTo: vi.fn(),
+      lineTo: vi.fn(),
+      fill: vi.fn(),
+      stroke: vi.fn(),
+      setLineDash: vi.fn(),
+      clip: vi.fn(),
+      translate: vi.fn(),
+      setTransform: vi.fn(),
+      fillText: vi.fn(),
+      measureText: vi.fn(() => ({ width: 0 })),
+      arcTo: vi.fn(),
+      roundRect: vi.fn(),
+    } as unknown as CanvasRenderingContext2D;
+  });
+}
 
 afterEach(() => {
   cleanup();
@@ -169,6 +200,20 @@ describe('MeasureBar — range selection shift+click (criterion 3)', () => {
       fireEvent.click(screen.getByRole('button', { name: measureLabel(2) }), { shiftKey: true });
       expect(onSelectRange).toHaveBeenCalledWith(1, 5);
     });
+
+    it('calls onSelectRange after pointer drag across cells (pointerup)', () => {
+      const onSelectRange = vi.fn();
+      const { container } = render(
+        <MeasureBar {...defaultProps({ measureCount: 4, onSelectRange })} />,
+      );
+      const cells = container.querySelectorAll('[data-measure-index]');
+      const first = cells[0] as HTMLElement;
+      const last = cells[3] as HTMLElement;
+      fireEvent.pointerDown(first, { pointerId: 1 });
+      fireEvent.pointerEnter(last);
+      fireEvent.pointerUp(window, { pointerId: 1 });
+      expect(onSelectRange).toHaveBeenCalledWith(0, 3);
+    });
   });
 });
 
@@ -240,7 +285,12 @@ describe('MeasureBar — UX layout strip (criterion 6)', () => {
 
 describe('App — MeasureBar integration (criterion 5)', () => {
   beforeEach(() => {
+    stubCanvas2d();
     useSongStore.getState().loadSong(buildDefaultSong());
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   describe('happy path', () => {
