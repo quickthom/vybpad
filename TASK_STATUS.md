@@ -46,19 +46,19 @@
 
 - **Assigned role:** DevOps
 - **Branch:** phase-0/docker-compose
-- **Status:** in-progress
+- **Status:** approved
 - **Depends on:** TASK-0.2, TASK-0.3
 - **Blocking notes:** —
-- **Last updated:** 2026-04-12: Unblocked by integration of 0.1–0.4. DevOps agent spawned.
+- **Last updated:** 2026-04-12: Committed. docker-compose.yml, dev Dockerfiles, .env created. Docker/podman not available on system — runtime testing deferred to HITL. Ready to merge.
 
 ### TASK-0.6: Prisma schema + initial migration
 
 - **Assigned role:** Builder
 - **Branch:** phase-0/prisma-schema
-- **Status:** blocked
+- **Status:** in-progress
 - **Depends on:** TASK-0.3, TASK-0.5
-- **Blocking notes:** Waiting for Docker Compose (needs running PostgreSQL for migrations)
-- **Last updated:** 2026-04-12: Blocked on TASK-0.5
+- **Blocking notes:** —
+- **Last updated:** 2026-04-12: Unblocked. Builder spawned. Note: prisma generate works without DB; prisma migrate dev needs running PostgreSQL (Docker).
 
 ### TASK-0.7: UX Guidelines
 
