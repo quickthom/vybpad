@@ -1,13 +1,13 @@
 # PM STATE — vYbpad
 
-> State cache for PM session continuity. Written by the Architect from ground truth (TASK_STATUS.md + git log + worktree state) on 2026-04-12 ~10:30 PM.
+> State cache for PM session continuity. Updated 2026-04-12 (shutdown checkpoint).
 
 ---
 
-## Completed Work
+## Completed Work (merged to develop)
 
 ### Phase 0 — Foundation (COMPLETE)
-All 7 tasks merged to develop. No outstanding issues.
+All 7 tasks merged. No outstanding issues.
 
 ### Phase 1A — Music Theory Engine (partially complete)
 
@@ -27,46 +27,70 @@ All 7 tasks merged to develop. No outstanding issues.
 
 ---
 
-## In-Progress Work
+## In-Progress Work (committed on branches, not merged)
 
-Four tasks were briefed and have worktrees set up. Builders were spawned but interrupted before completion (except 1A.5 which has partial work).
+### Ready for review — work complete on branch
 
-| Task | Branch | Worktree path | State |
-|---|---|---|---|
-| 1A.4: Roman numeral generation | phase-1a/roman-numerals | .../task-1a4-roman-numerals | Clean — no commits or changes beyond develop |
-| 1A.5: Borrowed + secondary chord logic | phase-1a/borrowed-secondary | .../task-1a5-borrowed-secondary | 340 lines of uncommitted work (borrowedChords.ts, secondaryChords.ts, borrowedChords.test.ts) |
-| 1A.6: Guide tone classification | phase-1a/guide-tones | .../task-1a6-guide-tones | Clean — no commits or changes beyond develop |
-| 1B.3: Project CRUD routes | phase-1b/project-crud | .../task-1b3-project-crud | Clean — no commits or changes beyond develop |
+| Task | Branch | Worktree | HEAD | Commits ahead of develop |
+|---|---|---|---|---|
+| 1A.4: Roman numeral generation | phase-1a/roman-numerals | task-1a4-roman-numerals | fd33731 | 2 (QA: 1db858b, impl: fd33731) |
+| 1A.5: Borrowed + secondary chords | phase-1a/borrowed-secondary | task-1a5-borrowed-secondary | dc619f1 | 2 (QA: db7c7bd, impl: dc619f1) |
+| 1A.6: Guide tone classification | phase-1a/guide-tones | task-1a6-guide-tones | 51a29a8 | 2 (impl: 81eb5bc, QA: 51a29a8) |
 
-All worktree paths are under `/home/thom/py/vYbpad-worktrees/`.
+All three worktrees are **clean** (no uncommitted changes). These need Reviewer agents spawned next.
+
+### Not started — worktree exists but no work committed
+
+| Task | Branch | Worktree | HEAD | Notes |
+|---|---|---|---|---|
+| 1B.3: Project CRUD routes | phase-1b/project-crud | task-1b3-project-crud | 9e41fcb | Builder was interrupted before starting. Needs re-brief with fresh Builder + QA. |
 
 ---
 
 ## Blocked Work
 
-| Task | Blocked on |
-|---|---|
-| 1A.7: Comprehensive theory tests | 1A.4, 1A.5, 1A.6 |
-| 1B.4: Default song factory | 1B.3 |
-| 1B.6: API integration tests | 1B.3, 1B.4 |
+| Task | Blocked on | Notes |
+|---|---|---|
+| 1A.7: Comprehensive theory tests | 1A.4, 1A.5, 1A.6 (all in-review) | Unblocked once all three are merged |
+| 1B.4: Default song factory | 1B.3 (not started) | |
+| 1B.6: API integration tests | 1B.3, 1B.4 | |
 
 ---
 
-## Not Yet Decomposed
+## Worktree Inventory
 
-Phases 2–8 per ROADMAP.md. Phase 2 (Grid Editor & Song State) is next after Phase 1A + 1B complete.
+All worktree paths are under `/home/thom/py/vYbpad-worktrees/`.
+
+| Worktree | Branch | State |
+|---|---|---|
+| task-1a4-roman-numerals | phase-1a/roman-numerals | Clean, 2 commits ahead. Ready for review. |
+| task-1a5-borrowed-secondary | phase-1a/borrowed-secondary | Clean, 2 commits ahead. Ready for review. |
+| task-1a6-guide-tones | phase-1a/guide-tones | Clean, 2 commits ahead. Ready for review. |
+| task-1b3-project-crud | phase-1b/project-crud | Clean, at develop HEAD (9e41fcb). No work done. |
+
+---
+
+## Next Actions for Incoming PM Session
+
+1. **Spawn Reviewers** for 1A.4, 1A.5, and 1A.6 — all three are ready for review. These can run in parallel (no shared files).
+2. **Re-brief Builder + QA for 1B.3** — the previous Builder was interrupted before committing any work. The worktree is clean and ready.
+3. After 1A.4/5/6 are approved → **spawn Integrator** to merge all three to develop.
+4. After 1A.4/5/6 are merged → **unblock and brief 1A.7** (comprehensive theory tests).
+5. After 1B.3 is done → **unblock and brief 1B.4** (default song factory), then **1B.6** (integration tests).
+6. Once Phase 1A + 1B are fully merged → **begin Phase 2 decomposition** (Grid Editor & Song State per ROADMAP.md).
 
 ---
 
 ## Process Notes
 
-- **QA is mandatory** with every Builder brief. This was enforced after a process violation was caught in early Phase 1.
-- **Worktrees are mandatory** for parallel tasks (PAT-017). This was enforced after Builders clobbered each other in Phase 0.
+- **QA is mandatory** with every Builder brief. Enforced after a process violation in early Phase 1.
+- **Worktrees are mandatory** for parallel tasks (PAT-017). Enforced after Builders clobbered each other in Phase 0.
 - **HITL checkpoint** is at end of Phase 2. Do not contact HITL before then.
 - Route architectural questions to the Architect (Caden).
+- Spark-generated code must be reviewed before integration (per AGENTS.mdc).
 
 ---
 
 ## Develop Branch HEAD
 
-Commit: `9e41fcb` — `docs: add Fjord Integrator to COMPANY_DIRECTORY`
+Commit: `c4b286c` — `Add PM_STATE.md for clean session handoff`
