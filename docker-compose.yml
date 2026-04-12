@@ -1,0 +1,53 @@
+version: "3.8"
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: vybpad
+      POSTGRES_PASSWORD: vybpad
+      POSTGRES_DB: vybpad_dev
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/dev.api.Dockerfile
+    volumes:
+      - ./:/usr/src/app:delegated
+      - node_modules_api:/usr/src/app/node_modules
+    ports:
+      - "3001:3001"
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgres://vybpad:vybpad@postgres:5432/vybpad_dev
+      PORT: 3001
+      NODE_ENV: development
+    depends_on:
+      - postgres
+    command: sh -c "cd server && npm run dev"
+
+  client:
+    build:
+      context: .
+      dockerfile: docker/dev.client.Dockerfile
+    volumes:
+      - ./:/usr/src/app:delegated
+      - node_modules_client:/usr/src/app/client/node_modules
+    ports:
+      - "5173:5173"
+    env_file:
+      - .env
+    environment:
+      VITE_API_URL: http://localhost:3001
+    command: sh -c "cd client && npm run dev -- --host 0.0.0.0"
+
+volumes:
+  pgdata:
+  node_modules_api:
+  node_modules_client:
+
