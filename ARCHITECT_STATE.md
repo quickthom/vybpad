@@ -2,24 +2,24 @@
 
 > Periodically updated cache of the Architect's current state. Review on session resume.
 
-**Last updated:** 2026-04-12 — GitHub remote `quickthom/vybpad` created; default branch `develop`
+**Last updated:** 2026-04-12 — Phase 1A + 1B merged to `develop` (`a8cf52a`); GitHub PR workflow in use
 
 ---
 
 ## Current Phase
 
-**Build Phase 1A + 1B in progress.** Phase 0 fully complete and merged.
+**Phase 2 next (Grid Editor & Song State).** Phase 0 and ROADMAP Phase 1A + 1B tasks are complete on `develop`.
 
 ## What I (Caden, Architect) Have Done
 
 1. **Research phase complete.** Three research briefs issued and reviewed: Hookpad features/UI, tech stack, internal data model. All findings synthesized into architectural decisions.
 2. **All four canonical documents written and committed:**
-   - `ARCHITECTURE.md` — stack, data model, auth, infrastructure, testing strategy
+   - `ARCHITECTURE.md` — stack, data model, auth, infrastructure (incl. GitHub origin), testing strategy
    - `INTERFACES.md` — API contracts, DB schema, song data model, component props, store shapes, engine interfaces
    - `ROADMAP.md` — 9-phase build plan with dependency graph and parallelism map
-   - `PATTERNS.md` — 19 pre-authorized patterns (PAT-017 worktrees; PAT-019 yay for system packages)
+   - `PATTERNS.md` — 19 pre-authorized patterns (PAT-017 worktrees; PAT-019 `yay` for system packages)
 3. **Process interventions made:**
-   - **GitHub:** canonical remote `https://github.com/quickthom/vybpad`; all local branches pushed; PR workflow unblocked for Reviewers
+   - **GitHub:** canonical remote `https://github.com/quickthom/vybpad`; default branch `develop`; PRs #1–#7 landed (1B.3, 1A.4–1A.7, 1B.4, 1B.6)
    - Added PAT-017 (git worktrees for parallel tasks) after HITL caught Builders clobbering each other in a shared directory
    - Added PAT-019: agents install packages with `yay` (not `sudo pacman` in agent shells)
    - Updated PM role doc to include agent-spawning responsibilities and worktree isolation rules
@@ -53,22 +53,24 @@
 
 ## No Escalations Pending
 
-No outstanding escalations from any agent at time of shutdown.
+No outstanding escalations at last Architect sync.
 
 ## Build Progress Summary
 
 - **Phase 0:** COMPLETE (7/7 merged)
-- **Phase 1A:** 3/7 merged, 3 ready for review (1A.4, 1A.5, 1A.6), 1 blocked (1A.7)
-- **Phase 1B:** 3/6 merged, 1 not started (1B.3), 2 blocked (1B.4, 1B.6)
-- **Phases 2–8:** Not yet decomposed
+- **Phase 1A:** COMPLETE (1A.1–1A.7 merged; PRs on GitHub — see `TASK_STATUS.md`)
+- **Phase 1B:** COMPLETE (1B.1–1B.6 ROADMAP tasks merged; PRs #1, #6, #7 among others — see `TASK_STATUS.md`)
+- **`develop` tip:** `a8cf52a` — API integration tests (1B.6)
+- **Phases 2–8:** Phase 2 not yet decomposed into PM task briefs
 
 ## State Files to Read on Resume
 
 1. `ARCHITECT_STATE.md` (this file)
-2. `PM_STATE.md` (PM's cached state)
-3. `TASK_STATUS.md` (ground truth for task state)
+2. `PM_STATE.md` (PM's cached state — PM owns updates)
+3. `TASK_STATUS.md` (ground truth for task state — PM owns updates)
 4. `ARCHITECTURE.md`, `INTERFACES.md`, `ROADMAP.md`, `PATTERNS.md` (canonical docs)
 
 ## Develop Branch HEAD at Shutdown
 
-Check `git log --oneline -1 develop` for current HEAD.
+`a8cf52a` — `test(1B.6): add API integration tests for auth + project lifecycle (#7)`  
+Verify with: `git fetch origin && git log --oneline -1 origin/develop`
