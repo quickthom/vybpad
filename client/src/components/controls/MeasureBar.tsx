@@ -1,10 +1,10 @@
 /**
- * Bottom measure strip (TASK-2.10). Contract: INTERFACES.md `MeasureBarProps`.
- * Shift+range uses the last plain-clicked index as anchor so tests (and parents) work without a re-render between clicks.
- * Selection chrome: UX §6 — fill rgba(59,130,246,0.2), outline #2563EB.
+ * Bottom measure strip (TASK-2.10). INTERFACES.md `MeasureBarProps`.
+ * Shift+range uses anchorRef (last plain click, synced from props). Drag: pointerdown → pointerenter cells → pointerup → onSelectRange.
+ * Selection chrome: UX §6 — fill rgba(59,130,246,0.2), border #2563EB.
  */
 
-import { useEffect, useRef, type MouseEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type MouseEvent, type PointerEvent } from 'react';
 
 export interface MeasureBarProps {
   measureCount: number;
@@ -45,67 +45,115 @@ export function MeasureBar({
   onAddMeasures,
   onDeleteMeasures,
 }: MeasureBarProps) {
-  const lastClickedIndexRef = useRef<number | null>(null);
+  const anchorRef = useRef(0);
+  const dragStartRef = useRef<number | null>(null);
+  const dragCurrentRef = useRef<number | null>(null);
+  const suppressClickRef = useRef(false);
+  const [dragRange, setDragRange] = useState<[number, number] | null>(null);
 
   useEffect(() => {
     if (selectedMeasures) {
-      lastClickedIndexRef.current = selectedMeasures[0];
+      anchorRef.current = selectedMeasures[0];
     }
   }, [selectedMeasures]);
 
+  const effectiveRange = dragRange ?? selectedMeasures;
+
+  const isCellHighlighted = useCallback(
+    (index: number) => {
+      if (!effectiveRange) return false;
+      const [a, b] = effectiveRange;
+      return index >= a && index <= b;
+    },
+    [effectiveRange],
+  );
+
   const rows = chunkMeasureIndices(measureCount, measuresPerLine);
 
-  const coversAllMeasures =
-    selectedMeasures !== null &&
-    selectedMeasures[0] === 0 &&
-    selectedMeasures[1] === measureCount - 1;
   const deleteDisabled =
-    selectedMeasures === null || measureCount <= 1 || coversAllMeasures;
+    selectedMeasures === null ||
+    measureCount - (selectedMeasures[1] - selectedMeasures[0] + 1) < 1;
 
-  const isInSelection = (index: number) => {
-    if (!selectedMeasures) return false;
-    return index >= selectedMeasures[0] && index <= selectedMeasures[1];
+  const handlePointerDown = (index: number, e: PointerEvent<HTMLButtonElement>) => {
+    dragStartRef.current = index;
+    dragCurrentRef.current = index;
+    const up = (upEvent: PointerEvent) => {
+      if (upEvent.pointerId !== e.pointerId) return;
+      window.removeEventListener('pointerup', up);
+      const start = dragStartRef.current;
+      const end = dragCurrentRef.current;
+      dragStartRef.current = null;
+      dragCurrentRef.current = null;
+      setDragRange(null);
+      if (start === null || end === null) return;
+      if (start !== end) {
+        suppressClickRef.current = true;
+        const lo = Math.min(start, end);
+        const hi = Math.max(start, end);
+        onSelectRange(lo, hi);
+        anchorRef.current = lo;
+      }
+    };
+    window.addEventListener('pointerup', up);
+  };
+
+  const handlePointerEnter = (index: number) => {
+    if (dragStartRef.current === null) return;
+    dragCurrentRef.current = index;
+    const start = dragStartRef.current;
+    if (start !== index) {
+      setDragRange([Math.min(start, index), Math.max(start, index)]);
+    } else {
+      setDragRange(null);
+    }
   };
 
   const handleCellClick = (index: number, e: MouseEvent) => {
-    if (e.shiftKey) {
-      const anchor = lastClickedIndexRef.current ?? selectedMeasures?.[0] ?? index;
-      const start = Math.min(anchor, index);
-      const end = Math.max(anchor, index);
-      onSelectRange(start, end);
+    if (suppressClickRef.current) {
+      suppressClickRef.current = false;
       return;
     }
-    lastClickedIndexRef.current = index;
-    onSelectMeasure(index);
+    e.preventDefault();
+    if (e.shiftKey) {
+      const anchor = anchorRef.current;
+      const lo = Math.min(anchor, index);
+      const hi = Math.max(anchor, index);
+      onSelectRange(lo, hi);
+      anchorRef.current = lo;
+    } else {
+      onSelectMeasure(index);
+      anchorRef.current = index;
+    }
   };
 
   return (
     <footer
-      className="flex h-[56px] shrink-0 items-stretch border-t border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)]"
+      className="flex h-[56px] min-h-[56px] shrink-0 items-stretch border-t border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)]"
       role="region"
       aria-label="Measures"
     >
       <div className="flex min-h-0 min-w-0 flex-1 flex-col justify-center gap-1 overflow-x-auto px-2 py-1">
         {rows.map((row, rowIdx) => (
-          <div key={rowIdx} className="flex min-w-0 flex-nowrap gap-0.5">
+          <div key={rowIdx} className="flex flex-wrap gap-1">
             {row.map((measureIndex) => {
               const display = measureIndex + 1;
-              const selected = isInSelection(measureIndex);
+              const on = isCellHighlighted(measureIndex);
               return (
                 <button
                   key={measureIndex}
                   type="button"
                   data-measure-index={measureIndex}
-                  aria-label={`Measure ${display}`}
-                  aria-pressed={selected ? 'true' : 'false'}
-                  aria-selected={selected ? 'true' : 'false'}
+                  onPointerDown={(e) => handlePointerDown(measureIndex, e)}
+                  onPointerEnter={() => handlePointerEnter(measureIndex)}
                   onClick={(e) => handleCellClick(measureIndex, e)}
                   className={[
-                    'min-h-[44px] min-w-[44px] shrink-0 rounded-md text-xs font-semibold tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2',
-                    selected
-                      ? 'selected border-[#2563EB] bg-[rgba(59,130,246,0.2)] text-[var(--color-text-primary,#111827)] ring-1 ring-[#2563EB]/80'
+                    'min-h-11 min-w-11 shrink-0 rounded-md border px-2 text-center text-xs font-semibold tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2',
+                    on
+                      ? 'border-[#2563EB] bg-[rgba(59,130,246,0.2)] text-[var(--color-text-primary,#111827)]'
                       : 'border-transparent text-[var(--color-text-secondary,#4B5563)] hover:bg-[var(--color-surface-muted,#F9FAFB)]',
                   ].join(' ')}
+                  aria-pressed={on ? 'true' : 'false'}
+                  aria-label={`Measure ${display}`}
                 >
                   {display}
                 </button>

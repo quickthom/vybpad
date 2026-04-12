@@ -1,7 +1,7 @@
 import type { Viewport, Selection } from '@vybpad/shared';
 import { useCallback, useEffect, useState } from 'react';
 
-import { MeasureBar } from './components/controls/MeasureBar';
+import { MeasureBar } from './components/MeasureBar';
 import { EditorCanvas } from './components/editor/EditorCanvas';
 import { useSongStore } from './store/songStore';
 
@@ -75,6 +75,9 @@ export function App() {
           onSelectRange={(start, end) => setSelectedMeasures([start, end])}
           onAddMeasures={(count) => addMeasures(song.measures.length, count)}
           onDeleteMeasures={(start, end) => {
+            const len = song.measures.length;
+            const removing = end - start + 1;
+            if (len - removing < 1) return;
             deleteMeasures(start, end);
           }}
         />

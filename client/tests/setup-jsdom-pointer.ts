@@ -12,17 +12,17 @@ if (typeof HTMLCanvasElement !== 'undefined') {
   const orig = HTMLCanvasElement.prototype.getContext;
   HTMLCanvasElement.prototype.getContext = function (this: HTMLCanvasElement, type: string) {
     if (type === '2d') {
+      const canvas = this;
       const noop = (): void => {};
-      return new Proxy(
-        {},
-        {
-          get: (_target, prop) => {
-            if (prop === 'canvas') return this;
-            if (prop === 'getContext') return () => null;
-            return noop;
-          },
+      return new Proxy({} as CanvasRenderingContext2D, {
+        get(_target, prop) {
+          if (prop === 'canvas') return canvas;
+          if (prop === 'fillStyle' || prop === 'strokeStyle') return '';
+          if (prop === 'lineWidth') return 1;
+          if (prop === 'globalAlpha') return 1;
+          return noop;
         },
-      ) as unknown as CanvasRenderingContext2D;
+      });
     }
     return orig.call(this, type as '2d');
   };
