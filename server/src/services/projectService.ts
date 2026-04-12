@@ -1,8 +1,6 @@
 /**
  * Project persistence and SongData validation (INTERFACES.md §Project Endpoints, PAT-003 UUIDs).
  */
-import { randomUUID } from 'node:crypto';
-
 import type { Prisma } from '@prisma/client';
 import type { PrismaClient } from '@prisma/client';
 import type { NoteName, ScaleType, SongData, TrackRole } from '@vybpad/shared';
@@ -46,36 +44,6 @@ const TRACK_ROLES_ORDER: readonly TrackRole[] = [
 
 function isRecord(x: unknown): x is Record<string, unknown> {
   return typeof x === 'object' && x !== null && !Array.isArray(x);
-}
-
-/** INTERFACES.md — Default Song Factory (8 measures, bandConfig, metadata). */
-export function buildDefaultSong(): SongData {
-  return {
-    version: '1.0',
-    metadata: {
-      title: 'Untitled',
-      key: 'C',
-      scale: 'major',
-      tempo: 120,
-      meter: { numerator: 4, denominator: 4 },
-    },
-    measures: Array.from({ length: 8 }, () => ({
-      id: randomUUID(),
-      chords: [],
-      notes: [[], [], [], []] as SongData['measures'][number]['notes'],
-    })),
-    bandConfig: {
-      tracks: [
-        { role: 'melody1', instrument: 'piano', volume: 0.8, mute: false, octave: 0 },
-        { role: 'melody2', instrument: 'piano', volume: 0.6, mute: true, octave: 0 },
-        { role: 'melody3', instrument: 'piano', volume: 0.6, mute: true, octave: 0 },
-        { role: 'melody4', instrument: 'piano', volume: 0.6, mute: true, octave: 0 },
-        { role: 'harmony', instrument: 'piano', volume: 0.5, mute: false, octave: 0 },
-        { role: 'bass', instrument: 'piano', volume: 0.5, mute: false, octave: -1 },
-        { role: 'drums', instrument: 'piano', volume: 0.0, mute: true, octave: 0 },
-      ],
-    },
-  };
 }
 
 /** CreateProjectRequest.name / UpdateProjectRequest.name — 1–100 chars after trim. */

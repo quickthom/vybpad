@@ -6,8 +6,8 @@ import type { FastifyPluginCallback } from 'fastify';
 import type { Prisma } from '@prisma/client';
 import type { ProjectResponse, ProjectSummary } from '@vybpad/shared';
 
+import { buildDefaultSong } from '../services/defaultSongFactory.js';
 import {
-  buildDefaultSong,
   findProjectForUser,
   listProjectsForUser,
   normalizeProjectName,
