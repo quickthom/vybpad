@@ -2,6 +2,8 @@
 
 > Single source of truth for build state. Owned by the Project Manager. Updated on every state change.
 
+**`develop` tip:** `a8cf52a` — https://github.com/quickthom/vybpad (`TASK-1B.6` API integration tests merged).
+
 ---
 
 ## Phase 0 — Foundation (COMPLETE)
@@ -24,59 +26,42 @@ All Phase 0 tasks merged to develop.
 
 ### TASK-1A.1: Scale definitions
 
-- **Assigned role:** Builder
-- **Branch:** phase-1a/scale-definitions
 - **Status:** merged
-- **Depends on:** TASK-0.4 (merged)
-- **Last updated:** 2026-04-12: Merged to develop (8e3dd3f). scales.ts with all 9 mode intervals + getScaleIntervals. QA tests merged (6b9db7a).
+- **Last updated:** 2026-04-12: on develop (8e3dd3f ancestry).
 
 ### TASK-1A.2: scaleDegreeToMidi
 
-- **Assigned role:** Builder
-- **Branch:** phase-1a/scale-degree-to-midi
 - **Status:** merged
-- **Depends on:** TASK-0.4 (merged)
-- **Last updated:** 2026-04-12: Merged to develop (f2c3ee0). scaleDegreeToMidi.ts + noteNames.ts. QA tests merged (6b9db7a).
 
 ### TASK-1A.3: Chord construction
 
-- **Assigned role:** Builder
-- **Branch:** phase-1a/chord-construction
 - **Status:** merged
-- **Depends on:** TASK-1A.1 (merged)
-- **Last updated:** 2026-04-12: Merged to develop (25cb390). chordToMidiNotes, getDiatonicQuality, getDiatonicSeventh + 29 QA tests.
 
 ### TASK-1A.4: Roman numeral generation
 
-- **Assigned role:** Reviewer
-- **Branch:** phase-1a/roman-numerals
-- **Status:** in-review (review: blocked)
-- **Depends on:** TASK-1A.3 (merged)
-- **Blocking notes:** Reviewer verdict BLOCKED: PR self-review checklist / ASSUMPTIONS not verifiable from branch alone (process). Code + tests reviewed positively; Vitest 138 passed. Re-request review once PR body on forge includes full checklist per `raise-pr` skill. Warning: `resolveRootNoteName` C-key special case for harmonic minor III+.
-- **Last updated:** 2026-04-12: Review complete — blocked on PR process artifact; branch `phase-1a/roman-numerals` HEAD fd33731.
+- **Assigned role:** Integrator (done)
+- **Branch:** phase-1a/roman-numerals (merged; remote branch deleted)
+- **Status:** merged
+- **PR:** https://github.com/quickthom/vybpad/pull/2
+- **Last updated:** 2026-04-12: Squash-merged to develop as `45f3224`. Reviewer re-approved after GitHub raise-pr body.
 
 ### TASK-1A.5: Borrowed chord + secondary chord logic
 
-- **Assigned role:** Reviewer
-- **Branch:** phase-1a/borrowed-secondary
-- **Status:** in-review (review: blocked)
-- **Depends on:** TASK-1A.3 (merged)
-- **Blocking notes:** Reviewer verdict BLOCKED: missing PR self-review checklist / full raise-pr template in review artifacts. Substantive: 127 tests pass; INTERFACES alignment OK. Warnings: extend tests for `viio`/`IV` secondary targets; document `alignedOct` invariant.
-- **Last updated:** 2026-04-12: Review complete — blocked on PR checklist; branch `phase-1a/borrowed-secondary` HEAD dc619f1.
+- **Status:** merged
+- **PR:** https://github.com/quickthom/vybpad/pull/3
+- **Last updated:** 2026-04-12: Merged to develop as `01e95df`. Reviewer re-approved.
 
 ### TASK-1A.6: Guide tone classification
 
-- **Assigned role:** Builder (fix) / Reviewer
-- **Branch:** phase-1a/guide-tones
-- **Status:** in-review (review: blocked)
-- **Depends on:** TASK-1A.3 (merged)
-- **Blocking notes:** Reviewer BLOCKED: (1) PR checklist missing; (2) **substantive:** `guideTones.test.ts` fails — borrowed **iv** expects chord tones `[1,4,6]`, implementation returns `[1,4,5]` due to `pitchClassToHomeScaleDegree` tie-break in `guideTones.ts`. Fix implementation (and/or tests per Architect) then re-run tests. Also: stale QA commit message text.
-- **Last updated:** 2026-04-12: Review complete — code fix required before merge; branch `phase-1a/guide-tones` HEAD 51a29a8.
+- **Status:** merged
+- **PR:** https://github.com/quickthom/vybpad/pull/4
+- **Last updated:** 2026-04-12: Fix for borrowed **iv** tie-break merged as `ad18882`.
 
 ### TASK-1A.7: Theory unit tests (comprehensive)
 
-- **Status:** blocked on TASK-1A.4, 1A.5, 1A.6 (all now in-review — blocked until merged)
-- **Notes:** Individual QA tests are being written per-task concurrently. 1A.7 is the final comprehensive pass.
+- **Status:** merged
+- **PR:** https://github.com/quickthom/vybpad/pull/5
+- **Last updated:** 2026-04-12: Squash-merged to develop as `8e2a3c0` (`theoryEngine` facade + contract tests). Reviewer approved; minor follow-up: QA file may import facade per review warning (non-blocking).
 
 ---
 
@@ -84,52 +69,36 @@ All Phase 0 tasks merged to develop.
 
 ### TASK-1B.1: Auth routes
 
-- **Assigned role:** Builder
-- **Branch:** phase-1b/auth-routes
 - **Status:** merged
-- **Depends on:** TASK-0.3, TASK-0.6 (merged)
-- **Last updated:** 2026-04-12: Merged to develop (4043c7a). QA tests merged (c35c174) — found and fixed 2 bugs in Fastify 5 auth lifecycle.
 
 ### TASK-1B.2: Auth middleware
 
-- **Assigned role:** Builder
-- **Branch:** phase-1b/auth-middleware
 - **Status:** merged
-- **Depends on:** TASK-1B.1 (merged)
-- **Last updated:** 2026-04-12: Merged to develop (6e33605). Global JWT preHandler + middleware tests.
 
 ### TASK-1B.3: Project CRUD routes
 
-- **Assigned role:** Integrator (next)
-- **Branch:** phase-1b/project-crud
-- **Status:** approved (merge pending push + PR checklist on forge)
-- **Depends on:** TASK-1B.2 (merged)
-- **Blocking notes:** Reviewer **APPROVED** `b6ef7a2` — INTERFACES Project CRUD, PAT-001, tests pass (125). **Before merge:** open PR to `develop` with full self-review checklist in PR body (Reviewer warning: checklist was not in repo). Optional follow-ups: test PUT with `songData`; unauthenticated PUT/DELETE cases. After merge, unblocks 1B.4 / 1B.6 sequencing per ROADMAP.
-- **Last updated:** 2026-04-12: Builder+QA `b6ef7a2`; Reviewer approved; awaiting push/PR + Integrator merge to `develop`.
+- **Status:** merged
+- **PR:** https://github.com/quickthom/vybpad/pull/1
+- **Last updated:** 2026-04-12: Squash-merged to develop as `16c96d1` (after prior `6f6ad9f` docs). Reviewer-approved; Integrator merged.
 
 ### TASK-1B.4: Default song factory
 
-- **Assigned role:** Builder
-- **Status:** blocked
-- **Depends on:** TASK-1B.3 (in-progress)
-- **Blocking notes:** Waiting for 1B.3 to complete.
+- **Status:** merged
+- **PR:** https://github.com/quickthom/vybpad/pull/6
+- **Last updated:** 2026-04-12: Squash-merged to develop as `ffc89af` (`defaultSongFactory.ts` + tests).
 
 ### TASK-1B.5: API client module
 
-- **Assigned role:** Builder
-- **Branch:** phase-1b/api-client
 - **Status:** merged
-- **Depends on:** TASK-1B.1 (merged)
-- **Last updated:** 2026-04-12: Merged to develop (6e4515e). API client module + tests.
 
 ### TASK-1B.6: API integration tests
 
-- **Status:** blocked
-- **Depends on:** TASK-1B.1 (merged), 1B.2 (merged), 1B.3 (in-progress, no commits), 1B.4 (blocked)
-- **Blocking notes:** Waiting for 1B.3 and 1B.4 to complete.
+- **Status:** merged
+- **PR:** https://github.com/quickthom/vybpad/pull/7
+- **Last updated:** 2026-04-12: Squash-merged to develop as `a8cf52a`. Reviewer approved (warnings: optional deeper bandConfig assertions / cross-user 404).
 
 ---
 
 ## Phases 2–8
 
-Not yet decomposed. Phase 2 (Grid Editor & Song State) is next after Phase 1A + 1B complete.
+**Phase 1A + Phase 1B (ROADMAP tasks) are merged to `develop`.** Next: decompose **Phase 2** (Grid Editor & Song State) per `ROADMAP.md` / `PM_STATE.md`.

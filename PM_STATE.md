@@ -1,96 +1,62 @@
 # PM STATE — vYbpad
 
-> State cache for PM session continuity. Updated 2026-04-12 (session resume — reviewers + 1B.3).
+> PM continuity handoff — **not** a duplicate of `TASK_STATUS.md`. Updated **2026-04-12** (Architect sync: Caden — refresh from `TASK_STATUS` + `git` + `gh`).
 
 ---
 
-## Completed Work (merged to develop)
+## Remote & tip
 
-### Phase 0 — Foundation (COMPLETE)
-All 7 tasks merged. No outstanding issues.
-
-### Phase 1A — Music Theory Engine (partially complete)
-
-| Task | Status | Commit on develop | Tests |
-|---|---|---|---|
-| 1A.1: Scale definitions | merged | 8e3dd3f | QA tests merged (6b9db7a) |
-| 1A.2: scaleDegreeToMidi | merged | f2c3ee0 | QA tests merged (6b9db7a) |
-| 1A.3: Chord construction | merged | 25cb390 | 29 QA tests included |
-
-### Phase 1B — Auth & API Layer (partially complete)
-
-| Task | Status | Commit on develop | Tests |
-|---|---|---|---|
-| 1B.1: Auth routes | merged | 4043c7a | QA tests merged (c35c174), found 2 bugs |
-| 1B.2: Auth middleware | merged | 6e33605 | Tests included |
-| 1B.5: API client module | merged | 6e4515e | Tests included |
+- **GitHub:** https://github.com/quickthom/vybpad — `origin`, default **`develop`**.
+- **`develop` HEAD:** `a8cf52a` — `test(1B.6): add API integration tests for auth + project lifecycle (#7)`  
+  *(Verified: `git log -3 develop` matches; aligns with `TASK_STATUS` tip.)*
 
 ---
 
-## In-Progress Work (committed on branches, not merged)
+## Phase 1A / 1B — landed (PR index)
 
-### Ready for review — work complete on branch
+Squash-merged PRs on record (newest first per `gh pr list --state merged --limit 10`):
 
-| Task | Branch | Worktree | HEAD | Commits ahead of develop |
-|---|---|---|---|---|
-| 1A.4: Roman numeral generation | phase-1a/roman-numerals | task-1a4-roman-numerals | fd33731 | 2 (QA: 1db858b, impl: fd33731) |
-| 1A.5: Borrowed + secondary chords | phase-1a/borrowed-secondary | task-1a5-borrowed-secondary | dc619f1 | 2 (QA: db7c7bd, impl: dc619f1) |
-| 1A.6: Guide tone classification | phase-1a/guide-tones | task-1a6-guide-tones | 51a29a8 | 2 (impl: 81eb5bc, QA: 51a29a8) |
+| PR | Scope |
+|----|--------|
+| [#7](https://github.com/quickthom/vybpad/pull/7) | 1B.6 API integration tests |
+| [#6](https://github.com/quickthom/vybpad/pull/6) | 1B.4 Default song factory module |
+| [#5](https://github.com/quickthom/vybpad/pull/5) | 1A.7 TheoryEngine facade + comprehensive tests |
+| [#4](https://github.com/quickthom/vybpad/pull/4) | 1A.6 guide-tone tie-break fix |
+| [#3](https://github.com/quickthom/vybpad/pull/3) | 1A.5 borrowed / secondary theory |
+| [#2](https://github.com/quickthom/vybpad/pull/2) | 1A.4 Roman numerals / chord names |
+| [#1](https://github.com/quickthom/vybpad/pull/1) | 1B.3 Project CRUD API |
 
-All three worktrees are **clean** (no uncommitted changes). **Reviews 2026-04-12:** 1A.4 & 1A.5 **blocked** (PR checklist not in repo; add PR body on forge + re-review). 1A.6 **blocked** (same + **substantive:** `getChordTones` borrowed iv degree mapping — fix in `guideTones.ts` / tests). **1B.3** implemented on `task-1b3-project-crud` at `b6ef7a2` (tests green); Reviewer spawned for final gate.
+**Phase 1A (1A.1–1A.7)** and **Phase 1B (1B.1–1B.6)** per ROADMAP are **complete on `develop`**. Older 1B.1 / 1B.2 / 1B.5 commits predate this PR series; see `TASK_STATUS` for ancestry notes.
 
-### Not started — worktree exists but no work committed
-
-| Task | Branch | Worktree | HEAD | Notes |
-|---|---|---|---|---|
-| 1B.3: Project CRUD routes | phase-1b/project-crud | task-1b3-project-crud | b6ef7a2 | **Done 2026-04-12:** CRUD + tests; `npm test` 125 passed; open PR when remote exists. |
-
----
-
-## Blocked Work
-
-| Task | Blocked on | Notes |
-|---|---|---|
-| 1A.7: Comprehensive theory tests | 1A.4, 1A.5, 1A.6 (all in-review) | Unblocked once all three are merged |
-| 1B.4: Default song factory | 1B.3 (not started) | |
-| 1B.6: API integration tests | 1B.3, 1B.4 | |
+**Raise-PR process:** Bodies live on GitHub per `.cursor/skills/raise-pr/SKILL.md` — prior “no forge” blocker closed.
 
 ---
 
-## Worktree Inventory
+## Worktree hygiene (PAT-017)
 
-All worktree paths are under `/home/thom/py/vYbpad-worktrees/`.
+Feature branches were deleted on **`origin`** after merges; **local** branches may remain checked out under `/home/thom/py/vYbpad-worktrees/` (`task-1a4-*`, `task-1a5-*`, `task-1a6-*`, `task-1a7-*`, `task-1b3-*`, `task-1b4-*`, `task-1b6-*`, etc.). **`gh pr merge --delete-branch`** can fail to delete the local branch when a worktree holds it — safe to ignore or run `git worktree remove <path>` when retiring a slot.
 
-| Worktree | Branch | State |
-|---|---|---|
-| task-1a4-roman-numerals | phase-1a/roman-numerals | Clean, 2 commits ahead. Ready for review. |
-| task-1a5-borrowed-secondary | phase-1a/borrowed-secondary | Clean, 2 commits ahead. Ready for review. |
-| task-1a6-guide-tones | phase-1a/guide-tones | Clean, 2 commits ahead. Ready for review. |
-| task-1b3-project-crud | phase-1b/project-crud | Clean, at develop HEAD (9e41fcb). No work done. |
+Main PM/Integrator worktree: **`/home/thom/py/vYbpad`** — keep on **`develop`**, `git pull origin develop` after integrations.
 
 ---
 
-## Next Actions for Incoming PM Session
+## Next actions
 
-1. ~~**Spawn Reviewers** for 1A.4, 1A.5, and 1A.6~~ — **done 2026-04-12.**
-2. ~~**Re-brief Builder + QA for 1B.3**~~ — **done 2026-04-12** (agents spawned).
-3. **Collect Reviewer outcomes** for 1A.4/5/6 → if all APPROVED, **spawn Integrator** to merge all three to `develop` (order: roman-numerals → borrowed-secondary → guide-tones if conflicts arise; else any).
-4. After 1A.4/5/6 are merged → **unblock and brief 1A.7** (comprehensive theory tests).
-5. After 1B.3 is done → **unblock and brief 1B.4** (default song factory), then **1B.6** (integration tests).
-6. Once Phase 1A + 1B are fully merged → **begin Phase 2 decomposition** (Grid Editor & Song State per ROADMAP.md).
+1. **Phase 2 decomposition** (`ROADMAP.md` — Grid Editor & Song State): break **2.1–2.15** into briefs; sequence by dependency graph; **PAT-017** worktree per parallel Builder; **QA concurrent** with each Builder.
+2. **Designer:** Reuse persistent Designer for Phase 2 UI tasks against `UX_GUIDELINES.md`.
 
 ---
 
-## Process Notes
+## Optional follow-ups (non-blocking)
 
-- **QA is mandatory** with every Builder brief. Enforced after a process violation in early Phase 1.
-- **Worktrees are mandatory** for parallel tasks (PAT-017). Enforced after Builders clobbered each other in Phase 0.
-- **HITL checkpoint** is at end of Phase 2. Do not contact HITL before then.
-- Route architectural questions to the Architect (Caden).
-- Spark-generated code must be reviewed before integration (per AGENTS.mdc).
+- **#5:** Reviewer note — `theoryEngineComprehensive.test.ts` could import `theoryEngine` instead of duplicating the interface object.
+- **#7:** Reviewer note — optional cross-user project `404` test; fuller `bandConfig` vs `INTERFACES` default parity in assertions.
 
 ---
 
-## Develop Branch HEAD
+## Process notes
 
-Commit: `142ba43` — `Role tweaks` (verified 2026-04-12 session resume)
+- **QA** with every Builder brief (mandatory).
+- **PAT-017** worktrees for parallel work; **PAT-019** (`yay` for system packages in agent envs).
+- **HITL checkpoint** end of Phase 2 per roadmap — do not engage HITL before then.
+- **Spark:** review before integration (`AGENTS.mdc`).
