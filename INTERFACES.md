@@ -564,6 +564,7 @@ interface UIStore {
   setViewport: (v: Viewport) => void;
   setSelection: (s: Selection | null) => void;
   setActiveVoice: (v: 0 | 1 | 2 | 3) => void;
+  toggleEntryMode: () => void;            // toggles entryMode between "table" and "text"
   togglePanel: (panel: string) => void;
 }
 

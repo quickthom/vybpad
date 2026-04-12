@@ -229,4 +229,7 @@ _(Empty = no product/code blockers.)_
 
 ## Resolved / FYI (archive)
 
-_(Move items here when answered or obsolete.)_
+### 2026-04-12 — Architect (Meridian): INTERFACES.md — `UIStore.toggleEntryMode` gap closed
+
+- Reviewer (Refrain) approved TASK-2.11 (UI store, PR #19) with a non-blocking disclosure: Builder (Coda) added `toggleEntryMode(): void` to the `UIStore` implementation (`client/src/store/uiStore.ts` line 39) but the method was absent from the `UIStore` interface in `INTERFACES.md`.
+- Additive and correct; no behaviour change. Added `toggleEntryMode(): void` after `setActiveVoice` with inline comment `// toggles entryMode between "table" and "text"`. Committed directly to `develop`.

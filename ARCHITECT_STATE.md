@@ -2,7 +2,7 @@
 
 > Periodically updated cache of the Architect's current state. Review on session resume.
 
-**Last updated:** 2026-04-12 — TASK-2.9 escalation resolved: `INTERFACES.md` updated with two optional `EditorCanvasProps` additions (`getSongAfterMutation`, `onToggleEntryMode`). PR #18 unblocked.
+**Last updated:** 2026-04-12 — Minor interface gap closed: `UIStore.toggleEntryMode(): void` added to `INTERFACES.md` (after `setActiveVoice`). Disclosed by Reviewer (Refrain) on TASK-2.11 PR #19 as non-blocking additive. Committed directly to `develop`.
 
 ---
 
