@@ -2,7 +2,7 @@
 
 > Single source of truth for build state. Owned by the Project Manager. Updated on every state change.
 
-**`develop` tip:** `fedc92e` — https://github.com/quickthom/vybpad (Phase 2 wave 1; pull for latest).
+**`develop` tip:** `f521310` — https://github.com/quickthom/vybpad (Phase 2 wave 2 briefed; pull for latest).
 
 ---
 
@@ -101,7 +101,7 @@ All Phase 0 tasks merged to develop.
 
 ## Phase 2 — Grid Editor & Song State
 
-**Authorized:** ROADMAP 2.1–2.15. **Wave 1 merged:** TASK-2.1 (#8), TASK-2.2 (#9). **Next unblocked:** TASK-2.3 (needs 2.2 ✓); TASK-2.4 / TASK-2.5 / TASK-2.6 (deps met — see ROADMAP parallel-with).
+**Authorized:** ROADMAP 2.1–2.15. **Wave 1 merged:** TASK-2.1 (#8), TASK-2.2 (#9). **Wave 2 briefed (2026-04-12):** TASK-2.3, TASK-2.4, TASK-2.5 — parallel worktrees + concurrent QA; **TASK-2.6** queued (see below). **Do not start TASK-2.11** until ROADMAP deps for 2.1–2.10 are satisfied.
 
 ### TASK-2.1: Zustand song store (mutations, undo/redo)
 
@@ -125,8 +125,48 @@ All Phase 0 tasks merged to develop.
 - **Depends on:** TASK-0.4 (merged)
 - **Last updated:** 2026-04-12: Squash-merged to `develop` (merged before #8 in history).
 
+### TASK-2.3: Grid background renderer (beat lines, measure bars, bar numbers)
+
+- **Assigned role:** Builder + QA (concurrent)
+- **Branch:** `phase-2/grid-background`
+- **Worktree:** `/home/thom/py/vYbpad-worktrees/task-2-3-grid-background`
+- **Status:** in-progress
+- **Depends on:** TASK-2.2 (merged)
+- **Blocking notes:** none
+- **Last updated:** 2026-04-12: PM brief issued; branch from `develop` @ `f521310`; `npm install` run in worktree.
+
+### TASK-2.4: Chord block renderer (Roman labels, fills, figured bass)
+
+- **Assigned role:** Builder + QA (concurrent)
+- **Branch:** `phase-2/chord-block-renderer`
+- **Worktree:** `/home/thom/py/vYbpad-worktrees/task-2-4-chord-blocks`
+- **Status:** in-progress
+- **Depends on:** TASK-2.2 (merged), TASK-1A.4 (merged)
+- **Blocking notes:** none
+- **Last updated:** 2026-04-12: PM brief issued; parallel with TASK-2.3 / TASK-2.5 (expect `client/src/engine/renderer/index.ts` merge coordination).
+
+### TASK-2.5: Note block renderer (colored blocks, octave indicators)
+
+- **Assigned role:** Builder + QA (concurrent)
+- **Branch:** `phase-2/note-block-renderer`
+- **Worktree:** `/home/thom/py/vYbpad-worktrees/task-2-5-note-blocks`
+- **Status:** in-progress
+- **Depends on:** TASK-2.2 (merged), TASK-1A.2 (merged)
+- **Blocking notes:** none
+- **Last updated:** 2026-04-12: PM brief issued; parallel with TASK-2.3 / TASK-2.4.
+
+### TASK-2.6: Hit testing system (spatial index from rendered rects)
+
+- **Assigned role:** Builder + QA (pending spawn)
+- **Branch:** `phase-2/hit-testing` (create when unblocked)
+- **Worktree:** _not created yet — avoids 4th concurrent barrel edit on `renderer/index.ts`_
+- **Status:** blocked
+- **Depends on:** TASK-2.2 (merged)
+- **Blocking notes:** ROADMAP allows parallel with 2.4/2.5, but Wave 2 caps at **three** parallel worktrees (PAT-017) because **TASK-2.3–2.5** all extend `client/src/engine/renderer/index.ts`. Spawn Builder + QA for 2.6 after Wave 2a PRs merge to `develop` (or after Integrator defines merge order and first PR lands). Full brief in `PM_STATE.md` (Issued briefs — Wave 2 — TASK-2.6 queued).
+- **Last updated:** 2026-04-12: Brief text ready; worktree/branch deferred.
+
 ---
 
 ## Phases 3–8
 
-**Phase 2** in progress — TASK-2.1 and TASK-2.2 merged; brief TASK-2.3+ per `PM_STATE.md` / ROADMAP.
+**Phase 2** in progress — Wave 2a: TASK-2.3–2.5 in flight; TASK-2.6 queued. TASK-2.11 remains **not started** until 2.1–2.10 deps met.
