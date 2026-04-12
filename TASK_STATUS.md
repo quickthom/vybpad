@@ -2,7 +2,7 @@
 
 > Single source of truth for build state. Owned by the Project Manager. Updated on every state change.
 
-**`develop` tip:** `476b40e` — https://github.com/quickthom/vybpad (Wave 2 HITL + tip sync).
+**`develop` tip:** `9123fb4` — https://github.com/quickthom/vybpad (Wave 2 briefs; pull for latest doc commits).
 
 ---
 
@@ -127,33 +127,36 @@ All Phase 0 tasks merged to develop.
 
 ### TASK-2.3: Grid background renderer (beat lines, measure bars, bar numbers)
 
-- **Assigned role:** Builder + QA (concurrent)
+- **Assigned role:** Builder + QA (concurrent) → Reviewer
 - **Branch:** `phase-2/grid-background`
 - **Worktree:** `/home/thom/py/vYbpad-worktrees/task-2-3-grid-background`
-- **Status:** in-progress
+- **Status:** in-review
+- **PR:** https://github.com/quickthom/vybpad/pull/10
 - **Depends on:** TASK-2.2 (merged)
 - **Blocking notes:** none
-- **Last updated:** 2026-04-12: PM brief issued; branch from `develop` @ `f521310`; `npm install` run in worktree.
+- **Last updated:** 2026-04-12: PR #10 opened (grid background + tests).
 
 ### TASK-2.4: Chord block renderer (Roman labels, fills, figured bass)
 
-- **Assigned role:** Builder + QA (concurrent)
+- **Assigned role:** Builder + QA (concurrent) → Reviewer
 - **Branch:** `phase-2/chord-block-renderer`
 - **Worktree:** `/home/thom/py/vYbpad-worktrees/task-2-4-chord-blocks`
-- **Status:** in-progress
+- **Status:** in-review
+- **PR:** https://github.com/quickthom/vybpad/pull/12
 - **Depends on:** TASK-2.2 (merged), TASK-1A.4 (merged)
 - **Blocking notes:** none
-- **Last updated:** 2026-04-12: PM brief issued; parallel with TASK-2.3 / TASK-2.5 (expect `client/src/engine/renderer/index.ts` merge coordination).
+- **Last updated:** 2026-04-12: PR #12 opened.
 
 ### TASK-2.5: Note block renderer (colored blocks, octave indicators)
 
-- **Assigned role:** Builder + QA (concurrent)
+- **Assigned role:** Builder + QA (concurrent) → Reviewer
 - **Branch:** `phase-2/note-block-renderer`
 - **Worktree:** `/home/thom/py/vYbpad-worktrees/task-2-5-note-blocks`
-- **Status:** in-progress
+- **Status:** in-review
+- **PR:** https://github.com/quickthom/vybpad/pull/11
 - **Depends on:** TASK-2.2 (merged), TASK-1A.2 (merged)
 - **Blocking notes:** none
-- **Last updated:** 2026-04-12: PM brief issued; parallel with TASK-2.3 / TASK-2.4.
+- **Last updated:** 2026-04-12: PR #11 opened.
 
 ### TASK-2.6: Hit testing system (spatial index from rendered rects)
 
