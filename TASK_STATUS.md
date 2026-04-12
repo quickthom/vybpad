@@ -2,7 +2,7 @@
 
 > Single source of truth for build state. Owned by the Project Manager. Updated on every state change.
 
-**`develop` tip:** `a70f2da` — https://github.com/quickthom/vybpad (TASK-2.8 + TASK-2.10 squash-merged 2026-04-12). Sync: `git fetch origin && npm install`.
+**`develop` tip:** `cb181de` — https://github.com/quickthom/vybpad (TASK-2.8 hotfix merged 2026-04-12; 368 tests green). Sync: `git fetch origin && npm install`.
 **Worktree hygiene:** 14 stale Phase 1/2 worktrees removed 2026-04-12. Active worktrees: main (`develop`) + `task-2-8-keyboard` + `task-2-10-measure-bar` (retire after confirmation).
 
 ---
@@ -179,16 +179,16 @@ All Phase 0 tasks merged to develop.
 
 ### TASK-2.8: Keyboard input (1–7 degree entry, duration, delete, arrows)
 
-- **Assigned role:** Builder + QA → Reviewer → Integrator (done)
-- **Branch:** `phase-2/keyboard-input` (merged; remote deleted)
+- **Assigned role:** Builder (Forge) + QA (Rebus) → Reviewer (Meridian) → Builder fix (Clef) → Integrator (PM direct)
+- **Branch:** `phase-2/keyboard-input` (merged; remote deleted); hotfix branch `fix/task-2-8-digit-key-update` (merged; deleted)
 - **Worktree (PAT-017):** `/home/thom/py/vYbpad-worktrees/task-2-8-keyboard` — retire when convenient
-- **Status:** merged
-- **PR:** https://github.com/quickthom/vybpad/pull/16
-- **Squash on develop:** `a70f2da`
+- **Status:** merged ✅ (including hotfix)
+- **PR:** https://github.com/quickthom/vybpad/pull/16 (initial); https://github.com/quickthom/vybpad/pull/17 (digit-key hotfix)
+- **Squash on develop:** `a70f2da` (initial) + `cb181de` (hotfix: digit keys dispatch `update` not `add`)
 - **Depends on:** TASK-2.1 (merged), TASK-2.7 (merged — EditorCanvas extended)
-- **Tests:** 27 files, 368 passed on merged develop (2026-04-12)
-- **Blocking notes:** none — Reviewer: clean (all 7 ACs met).
-- **Last updated:** 2026-04-12: Reviewer APPROVED; squash-merged second in batch with #15 (no conflicts).
+- **Tests:** 27 files, 368 passed on merged develop after hotfix (2026-04-12)
+- **Blocking notes:** none — hotfix `cb181de` resolves Reviewer Meridian BLOCKED (AC1: digit keys must update scale degree in-place, not append)
+- **Last updated:** 2026-04-12: Hotfix PR #17 squash-merged (`cb181de`); all 368 tests green. TASK-2.8 fully resolved.
 
 ### TASK-2.9: Entry modes (table vs text)
 
