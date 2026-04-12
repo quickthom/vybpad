@@ -2,13 +2,13 @@
 
 > Periodically updated cache of the Architect's current state. Review on session resume.
 
-**Last updated:** 2026-04-12 — Phase 1A + 1B merged to `develop` (`a8cf52a`); GitHub PR workflow in use
+**Last updated:** 2026-04-12 — Phase 2 active; PM respawned with execution brief (Thom offline; `HITL_NOTIFICATIONS.md` async log); test spot check 236/236 green
 
 ---
 
 ## Current Phase
 
-**Phase 2 next (Grid Editor & Song State).** Phase 0 and ROADMAP Phase 1A + 1B tasks are complete on `develop`.
+**Phase 2 in progress (Grid Editor & Song State).** Phase 0 and Phase 1A + 1B are complete on `develop`. PM owns task decomposition, briefs, and `TASK_STATUS.md` updates; async handoff in `HITL_NOTIFICATIONS.md`.
 
 ## What I (Caden, Architect) Have Done
 
@@ -53,7 +53,7 @@
 
 ## No Escalations Pending
 
-No outstanding escalations at last Architect sync.
+No outstanding escalations at last Architect sync. PM is instructed to route architectural questions to Architect via `HITL_NOTIFICATIONS.md` (Questions for Architect) if Thom is offline.
 
 ## Build Progress Summary
 
@@ -61,7 +61,7 @@ No outstanding escalations at last Architect sync.
 - **Phase 1A:** COMPLETE (1A.1–1A.7 merged; PRs on GitHub — see `TASK_STATUS.md`)
 - **Phase 1B:** COMPLETE (1B.1–1B.6 ROADMAP tasks merged; PRs #1, #6, #7 among others — see `TASK_STATUS.md`)
 - **`develop` tip:** `a8cf52a` — API integration tests (1B.6)
-- **Phases 2–8:** Phase 2 not yet decomposed into PM task briefs
+- **Phases 2–8:** Phase 2 — PM decomposing 2.1–2.15 into briefs and spawning Builders/QA (see `PM_STATE.md`, `TASK_STATUS.md`)
 
 ## State Files to Read on Resume
 

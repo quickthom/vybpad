@@ -2,7 +2,7 @@
 
 > Single source of truth for build state. Owned by the Project Manager. Updated on every state change.
 
-**`develop` tip:** `a8cf52a` — https://github.com/quickthom/vybpad (`TASK-1B.6` API integration tests merged).
+**`develop` tip:** `648106d` — https://github.com/quickthom/vybpad (`docs(pm): align PM_STATE and TASK_STATUS after Phase 1`; code milestone remains Phase 1 merge `a8cf52a` ancestry).
 
 ---
 
@@ -99,6 +99,32 @@ All Phase 0 tasks merged to develop.
 
 ---
 
-## Phases 2–8
+## Phase 2 — Grid Editor & Song State
 
-**Phase 1A + Phase 1B (ROADMAP tasks) are merged to `develop`.** Next: decompose **Phase 2** (Grid Editor & Song State) per `ROADMAP.md` / `PM_STATE.md`.
+**Authorized:** ROADMAP 2.1–2.15. **Parallel wave 1 (active):** TASK-2.1 + TASK-2.2 (isolated worktrees, PAT-017).
+
+### TASK-2.1: Zustand song store (mutations, undo/redo)
+
+- **Assigned role:** Builder + QA (concurrent)
+- **Branch:** `phase-2/song-store` (PAT-015)
+- **Worktree:** `/home/thom/py/vYbpad-worktrees/phase-2-song-store`
+- **Status:** in-progress
+- **Depends on:** TASK-0.4 (merged)
+- **Blocking notes:** none
+- **Last updated:** 2026-04-12: PM brief issued; worktree on `develop` @ `648106d`; `npm install` run in worktree.
+
+### TASK-2.2: Canvas layout engine (tick→pixel, pitch→pixel, viewport)
+
+- **Assigned role:** Builder + QA (concurrent)
+- **Branch:** `phase-2/layout-engine` (PAT-015)
+- **Worktree:** `/home/thom/py/vYbpad-worktrees/phase-2-layout-engine`
+- **Status:** in-progress
+- **Depends on:** TASK-0.4 (merged)
+- **Blocking notes:** none
+- **Last updated:** 2026-04-12: PM brief issued; worktree on `develop` @ `648106d`; `npm install` run in worktree.
+
+---
+
+## Phases 3–8
+
+**Phase 1A + Phase 1B** merged to `develop`. **Phase 2** in progress — see task rows above; next unblocked after merges: TASK-2.3 (needs 2.2), parallel TASK-2.1 with 2.2/2.3 per ROADMAP.
