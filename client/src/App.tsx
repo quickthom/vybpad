@@ -1,17 +1,10 @@
-import type { Viewport, Selection } from '@vybpad/shared';
 import { useCallback, useEffect, useState } from 'react';
 
 import { MeasureBar } from './components/MeasureBar';
 import { EditorCanvas } from './components/editor/EditorCanvas';
 import { EntryModeToggle } from './components/editor/EntryModeToggle';
 import { useSongStore } from './store/songStore';
-
-const DEFAULT_VIEWPORT: Viewport = {
-  startMeasure: 0,
-  measureCount: 8,
-  scrollY: 0,
-  zoom: 1,
-};
+import { useUIStore } from './store/uiStore';
 
 export function App() {
   const song = useSongStore((s) => s.song);
@@ -20,20 +13,19 @@ export function App() {
   const addMeasures = useSongStore((s) => s.addMeasures);
   const deleteMeasures = useSongStore((s) => s.deleteMeasures);
 
-  const [viewport, setViewport] = useState<Viewport>(DEFAULT_VIEWPORT);
-  const [selection, setSelection] = useState<Selection | null>(null);
-  const [selectedMeasures, setSelectedMeasures] = useState<[number, number] | null>(null);
-  const [entryMode, setEntryMode] = useState<'table' | 'text'>('table');
+  const viewport = useUIStore((s) => s.viewport);
+  const selection = useUIStore((s) => s.selection);
+  const setSelection = useUIStore((s) => s.setSelection);
+  const setViewport = useUIStore((s) => s.setViewport);
+  const entryMode = useUIStore((s) => s.entryMode);
+  const toggleEntryMode = useUIStore((s) => s.toggleEntryMode);
+  const activeVoice = useUIStore((s) => s.activeVoice);
+  const showGuides = useUIStore((s) => s.showGuides);
+  const colorScheme = useUIStore((s) => s.colorScheme);
 
-  const toggleEntryMode = useCallback(() => {
-    setEntryMode((m) => (m === 'table' ? 'text' : 'table'));
-  }, []);
+  const [selectedMeasures, setSelectedMeasures] = useState<[number, number] | null>(null);
 
   const getSongAfterMutation = useCallback(() => useSongStore.getState().song, []);
-
-  const onViewportChange = useCallback((v: Viewport) => {
-    setViewport(v);
-  }, []);
 
   useEffect(() => {
     setSelectedMeasures((prev) => {
@@ -68,14 +60,14 @@ export function App() {
             viewport={viewport}
             selection={selection}
             playbackTick={null}
-            activeVoice={0}
+            activeVoice={activeVoice}
             entryMode={entryMode}
-            showGuides={false}
-            colorScheme="diatonic"
+            showGuides={showGuides}
+            colorScheme={colorScheme}
             onChordEdit={editChord}
             onNoteEdit={editNote}
             onSelectionChange={setSelection}
-            onViewportChange={onViewportChange}
+            onViewportChange={setViewport}
             getSongAfterMutation={getSongAfterMutation}
             onToggleEntryMode={toggleEntryMode}
           />
