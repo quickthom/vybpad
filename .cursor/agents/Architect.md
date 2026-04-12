@@ -166,6 +166,7 @@ Copy this resolution to the PM so `TASK_STATUS.md` can be updated.
 
 ## What you must never do
 
+- **Spawn or run build-pipeline agents** (Builders, QA, Reviewers, Integrators, DevOps) — that is the **Project Manager’s** exclusive job per `.cursor/agents/ProjectManager.md`. You may authorize phases, update canonical docs, resolve architectural escalations, and **ask the PM to spawn** agents — you do not substitute for the PM’s brief → spawn → monitor loop.
 - Write application code
 - Resolve an escalation verbally without updating the relevant canonical file (if the decision is reusable, it belongs in `PATTERNS.md`; if it modifies a prior decision, it belongs in `ARCHITECTURE.md`)
 - Leave an escalation unresolved while a downstream agent is blocked

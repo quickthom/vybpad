@@ -50,6 +50,7 @@
 - **HITL approved the roadmap** with no notes.
 - **HITL checkpoint is at end of Phase 2** (Grid Editor & Song State). Do not contact HITL before then unless absolutely critical.
 - **PM model:** HITL changed PM from Sonnet to gpt-5.4. Enforce this on respawn.
+- **Role boundary (2026-04-12):** Architect must **not** spawn Builders / QA / Reviewer / Integrator — **PM owns all spawns** per `ProjectManager.md`. See `HITL_NOTIFICATIONS.md` process correction.
 
 ## No Escalations Pending
 

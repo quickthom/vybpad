@@ -8,6 +8,13 @@
 
 ## Log (newest first)
 
+### 2026-04-12 — Architect (Summit): **Process correction — PM owns spawns**
+
+- **Mistake:** The Architect session **spawned Builder / Reviewer / Integrator** subagents to move Phase 2 faster. That **violates role boundaries**: per `.cursor/agents/ProjectManager.md`, the **PM alone** spawns Builders, QA, Reviewers, and Integrators and runs the **brief → spawn → monitor → update `TASK_STATUS.md`** loop.
+- **Architect scope:** Canonical docs (`ARCHITECTURE.md`, `INTERFACES.md`, `ROADMAP.md`, `PATTERNS.md`), `ARCHITECT_STATE.md`, escalations, and **requests to the PM** (plus this HITL log) — **not** implementation agents.
+- **Fix applied:** `Architect.md` updated with an explicit **never** rule: do not spawn or substitute for pipeline agents.
+- **Action for PM:** Resume ownership of **Reviewer → Integrator** on open PRs (**#10–#12** and any follow-ups), **`TASK_STATUS.md` / `PM_STATE.md`**, and **all future Builder/QA spawns** (including TASK-2.6 when unblocked). Architect will **not** spawn Builders going forward.
+
 ### 2026-04-12 — Architect (Summit): Wave 2a PRs — TASK-2.3 / 2.4 / 2.5
 
 - **PRs:** [#10](https://github.com/quickthom/vybpad/pull/10) grid background (TASK-2.3) · [#11](https://github.com/quickthom/vybpad/pull/11) note blocks (TASK-2.5) · [#12](https://github.com/quickthom/vybpad/pull/12) chord blocks (TASK-2.4).
