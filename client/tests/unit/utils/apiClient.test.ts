@@ -127,7 +127,10 @@ describe('apiClient — authApi.register', () => {
   describe('error handling', () => {
     it('throws ValidationError shape when server returns 400 with VALIDATION_ERROR body', async () => {
       vi.mocked(fetch).mockResolvedValueOnce(
-        jsonResponse({ code: 'VALIDATION_ERROR', fields: { email: 'Invalid email' } }, { status: 400 }),
+        jsonResponse(
+          { code: 'VALIDATION_ERROR', fields: { email: 'Invalid email' } },
+          { status: 400 },
+        ),
       );
 
       await expect(
@@ -181,7 +184,9 @@ describe('apiClient — authApi.login', () => {
 describe('apiClient — authApi.refresh', () => {
   describe('happy path', () => {
     it('sends POST to /api/auth/refresh and returns RefreshResponse', async () => {
-      vi.mocked(fetch).mockResolvedValueOnce(jsonResponse({ accessToken: 'refreshed-jwt' }, { status: 200 }));
+      vi.mocked(fetch).mockResolvedValueOnce(
+        jsonResponse({ accessToken: 'refreshed-jwt' }, { status: 200 }),
+      );
 
       const data = await authApi.refresh();
 
@@ -212,7 +217,9 @@ describe('apiClient — authApi.logout', () => {
       expect(vi.mocked(fetch).mock.calls[0]![0]).toBe('http://api.test/api/auth/logout');
       expect((vi.mocked(fetch).mock.calls[0]![1] as RequestInit).method).toBe('POST');
       expect((vi.mocked(fetch).mock.calls[0]![1] as RequestInit).body).toBe('{}');
-      expect(authHeader(vi.mocked(fetch).mock.calls[0]![1] as RequestInit)).toBe('Bearer test-access-token');
+      expect(authHeader(vi.mocked(fetch).mock.calls[0]![1] as RequestInit)).toBe(
+        'Bearer test-access-token',
+      );
     });
   });
 });
@@ -220,7 +227,9 @@ describe('apiClient — authApi.logout', () => {
 describe('apiClient — projectsApi.list', () => {
   describe('happy path', () => {
     it('sends GET /api/projects and returns ProjectListResponse', async () => {
-      const body: { projects: { id: string; name: string; createdAt: string; updatedAt: string }[] } = {
+      const body: {
+        projects: { id: string; name: string; createdAt: string; updatedAt: string }[];
+      } = {
         projects: [
           {
             id: 'p1',
@@ -281,7 +290,9 @@ describe('apiClient — projectsApi.get', () => {
       const data = await projectsApi.get(id);
 
       expect(data).toEqual(res);
-      expect(vi.mocked(fetch).mock.calls[0]![0]).toBe(`http://api.test/api/projects/${encodeURIComponent(id)}`);
+      expect(vi.mocked(fetch).mock.calls[0]![0]).toBe(
+        `http://api.test/api/projects/${encodeURIComponent(id)}`,
+      );
     });
   });
 
@@ -316,7 +327,9 @@ describe('apiClient — projectsApi.update', () => {
       expect(data).toEqual(res);
       expect(vi.mocked(fetch).mock.calls[0]![0]).toBe('http://api.test/api/projects/p1');
       expect((vi.mocked(fetch).mock.calls[0]![1] as RequestInit).method).toBe('PUT');
-      expect((vi.mocked(fetch).mock.calls[0]![1] as RequestInit).body).toBe(JSON.stringify({ name: 'Renamed' }));
+      expect((vi.mocked(fetch).mock.calls[0]![1] as RequestInit).body).toBe(
+        JSON.stringify({ name: 'Renamed' }),
+      );
     });
   });
 });
@@ -341,7 +354,9 @@ describe('apiClient — Authorization header (PAT-007)', () => {
 
       await projectsApi.list();
 
-      expect(authHeader(vi.mocked(fetch).mock.calls[0]![1] as RequestInit)).toBe('Bearer alpha-beta-token');
+      expect(authHeader(vi.mocked(fetch).mock.calls[0]![1] as RequestInit)).toBe(
+        'Bearer alpha-beta-token',
+      );
     });
 
     it('does not attach Authorization when getAccessToken returns null', async () => {
@@ -360,7 +375,9 @@ describe('apiClient — refresh on 401 and retry', () => {
     it('refreshes once on 401 then retries the original request with new access token', async () => {
       const listBody = { projects: [] };
       vi.mocked(fetch)
-        .mockResolvedValueOnce(new Response(JSON.stringify({ code: 'TOKEN_EXPIRED' }), { status: 401 }))
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify({ code: 'TOKEN_EXPIRED' }), { status: 401 }),
+        )
         .mockResolvedValueOnce(jsonResponse({ accessToken: 'new-jwt' }))
         .mockResolvedValueOnce(jsonResponse(listBody));
 
@@ -380,7 +397,9 @@ describe('apiClient — refresh on 401 and retry', () => {
   describe('error handling', () => {
     it('calls onAuthFailure and throws when refresh fails after 401', async () => {
       vi.mocked(fetch)
-        .mockResolvedValueOnce(new Response(JSON.stringify({ code: 'UNAUTHORIZED' }), { status: 401 }))
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify({ code: 'UNAUTHORIZED' }), { status: 401 }),
+        )
         .mockResolvedValueOnce(new Response(null, { status: 401 }));
 
       await expect(projectsApi.list()).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
@@ -389,9 +408,13 @@ describe('apiClient — refresh on 401 and retry', () => {
 
     it('calls onAuthFailure when retry after refresh still returns 401', async () => {
       vi.mocked(fetch)
-        .mockResolvedValueOnce(new Response(JSON.stringify({ code: 'UNAUTHORIZED' }), { status: 401 }))
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify({ code: 'UNAUTHORIZED' }), { status: 401 }),
+        )
         .mockResolvedValueOnce(jsonResponse({ accessToken: 'new-jwt' }))
-        .mockResolvedValueOnce(new Response(JSON.stringify({ code: 'UNAUTHORIZED' }), { status: 401 }));
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify({ code: 'UNAUTHORIZED' }), { status: 401 }),
+        );
 
       await expect(projectsApi.list()).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
       expect(onAuthFailure).toHaveBeenCalledTimes(1);
@@ -415,12 +438,16 @@ describe('apiClient — no retry on non-401 errors', () => {
       jsonResponse({ code: 'VALIDATION_ERROR', fields: { name: 'required' } }, { status: 400 }),
     );
 
-    await expect(projectsApi.create({ name: '' })).rejects.toMatchObject({ code: 'VALIDATION_ERROR' });
+    await expect(projectsApi.create({ name: '' })).rejects.toMatchObject({
+      code: 'VALIDATION_ERROR',
+    });
     expect(vi.mocked(fetch).mock.calls).toHaveLength(1);
   });
 
   it('does not call refresh when server returns 500', async () => {
-    vi.mocked(fetch).mockResolvedValueOnce(jsonResponse({ code: 'INTERNAL_ERROR' }, { status: 500 }));
+    vi.mocked(fetch).mockResolvedValueOnce(
+      jsonResponse({ code: 'INTERNAL_ERROR' }, { status: 500 }),
+    );
 
     await expect(projectsApi.list()).rejects.toMatchObject({ code: 'INTERNAL_ERROR' });
     expect(vi.mocked(fetch).mock.calls).toHaveLength(1);

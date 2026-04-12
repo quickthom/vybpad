@@ -125,7 +125,8 @@ export class InMemoryPrisma {
     }): Promise<{ count: number }> => {
       let count = 0;
       for (const row of this.refreshById.values()) {
-        const matchFamily = args.where.family_id === undefined || row.family_id === args.where.family_id;
+        const matchFamily =
+          args.where.family_id === undefined || row.family_id === args.where.family_id;
         const matchUser = args.where.user_id === undefined || row.user_id === args.where.user_id;
         if (matchFamily && matchUser && row.revoked_at === null) {
           row.revoked_at = args.data.revoked_at;

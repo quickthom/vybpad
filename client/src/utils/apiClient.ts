@@ -82,7 +82,10 @@ function throwApiError(
   throw err;
 }
 
-function toTypedApiError(status: number, body: unknown): ValidationError | ConflictError | AuthError | NotFoundError | ServerError {
+function toTypedApiError(
+  status: number,
+  body: unknown,
+): ValidationError | ConflictError | AuthError | NotFoundError | ServerError {
   if (isErrorBody(body)) {
     switch (body.code) {
       case 'VALIDATION_ERROR':
@@ -237,7 +240,11 @@ export const authApi = {
 
 export const projectsApi = {
   async list(): Promise<ProjectListResponse> {
-    return requestJson<ProjectListResponse>('/api/projects', { method: 'GET' }, { attachBearer: true, retryOn401: true });
+    return requestJson<ProjectListResponse>(
+      '/api/projects',
+      { method: 'GET' },
+      { attachBearer: true, retryOn401: true },
+    );
   },
 
   async create(data: CreateProjectRequest): Promise<ProjectResponse> {
@@ -249,7 +256,11 @@ export const projectsApi = {
   },
 
   async get(id: string): Promise<ProjectResponse> {
-    return requestJson<ProjectResponse>(`/api/projects/${encodeURIComponent(id)}`, { method: 'GET' }, { attachBearer: true, retryOn401: true });
+    return requestJson<ProjectResponse>(
+      `/api/projects/${encodeURIComponent(id)}`,
+      { method: 'GET' },
+      { attachBearer: true, retryOn401: true },
+    );
   },
 
   async update(id: string, data: UpdateProjectRequest): Promise<ProjectResponse> {
@@ -261,6 +272,10 @@ export const projectsApi = {
   },
 
   async delete(id: string): Promise<void> {
-    return requestJson<void>(`/api/projects/${encodeURIComponent(id)}`, { method: 'DELETE' }, { attachBearer: true, retryOn401: true });
+    return requestJson<void>(
+      `/api/projects/${encodeURIComponent(id)}`,
+      { method: 'DELETE' },
+      { attachBearer: true, retryOn401: true },
+    );
   },
 };

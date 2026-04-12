@@ -58,22 +58,12 @@ function chord(overrides: Partial<ChordEvent>): ChordEvent {
 describe('chord construction — TASK-1A.3 — diatonic triads and keys', () => {
   describe('happy path', () => {
     it('returns MIDI 60, 64, 67 for C major triad (degree 1, major) in C major at octave 4', () => {
-      const notes = chordToMidiNotes(
-        chord({ scaleDegree: 1, quality: 'major' }),
-        'C',
-        'major',
-        4,
-      );
+      const notes = chordToMidiNotes(chord({ scaleDegree: 1, quality: 'major' }), 'C', 'major', 4);
       expect(notes).toEqual([60, 64, 67]);
     });
 
     it('returns D, F, A as D minor triad (degree 2, minor) in C major', () => {
-      const notes = chordToMidiNotes(
-        chord({ scaleDegree: 2, quality: 'minor' }),
-        'C',
-        'major',
-        4,
-      );
+      const notes = chordToMidiNotes(chord({ scaleDegree: 2, quality: 'minor' }), 'C', 'major', 4);
       expect(notes).toEqual([62, 65, 69]);
     });
 
@@ -98,12 +88,7 @@ describe('chord construction — TASK-1A.3 — diatonic triads and keys', () => 
     });
 
     it('returns G, B, D for degree 1 major triad in G major', () => {
-      const notes = chordToMidiNotes(
-        chord({ scaleDegree: 1, quality: 'major' }),
-        'G',
-        'major',
-        4,
-      );
+      const notes = chordToMidiNotes(chord({ scaleDegree: 1, quality: 'major' }), 'G', 'major', 4);
       expect(notes).toEqual([67, 71, 74]);
     });
   });

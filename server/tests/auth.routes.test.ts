@@ -85,7 +85,9 @@ describe('TASK-1B.1 auth routes — POST /api/auth/register', () => {
         user: Record<string, unknown>;
         accessToken: string;
       };
-      expect(Object.keys(body.user).sort()).toEqual(['createdAt', 'displayName', 'email', 'id'].sort());
+      expect(Object.keys(body.user).sort()).toEqual(
+        ['createdAt', 'displayName', 'email', 'id'].sort(),
+      );
       expect(body.user.id).toEqual(expect.any(String));
       expect(body.user.email).toBe('shape@example.com');
       expect(body.user.displayName).toBe('Shape');
