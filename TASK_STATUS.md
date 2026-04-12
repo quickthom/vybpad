@@ -40,7 +40,7 @@
 - **Status:** approved
 - **Depends on:** TASK-0.1
 - **Blocking notes:** —
-- **Last updated:** 2026-04-12: Committed (196b7a0). Files: music.ts, song.ts, api.ts, errors.ts, editor.ts, updated barrel index.ts. Ready to merge after TASK-0.1.
+- **Last updated:** 2026-04-12: Committed (196b7a0). Files: music.ts, song.ts, api.ts, errors.ts, editor.ts, updated barrel index.ts. Merged to develop.
 
 ### TASK-0.5: Docker Compose (PostgreSQL + dev servers)
 
@@ -57,7 +57,7 @@
 - **Branch:** phase-0/prisma-schema
 - **Status:** blocked
 - **Depends on:** TASK-0.3, TASK-0.5
-- **Blocking notes:** Waiting for server scaffold + Docker Compose
+- **Blocking notes:** Waiting for server scaffold + Docker Compose (needs running PostgreSQL)
 - **Last updated:** 2026-04-12: Queued, blocked on TASK-0.3 + TASK-0.5
 
 ### TASK-0.7: UX Guidelines
@@ -67,7 +67,7 @@
 - **Status:** approved
 - **Depends on:** none
 - **Blocking notes:** —
-- **Last updated:** 2026-04-12: Committed (87a2b5e). UX_GUIDELINES.md with 10 sections. Ready to merge.
+- **Last updated:** 2026-04-12: Committed (87a2b5e). UX_GUIDELINES.md with 10 sections. Merged to develop.
 
 ---
 
