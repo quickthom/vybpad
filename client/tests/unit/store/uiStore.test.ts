@@ -38,6 +38,7 @@ import type { Selection, Viewport } from '@vybpad/shared';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { useUIStore } from '../../../src/store/uiStore';
+import { useUIStore as useUIStoreFromBarrel } from '../../../src/store';
 
 const DEFAULT_VIEWPORT: Viewport = {
   startMeasure: 0,
@@ -61,6 +62,12 @@ function baselineUIState(): void {
 }
 
 describe('UIStore — TASK-2.11 / INTERFACES.md', () => {
+  describe('public entrypoints', () => {
+    it('exports the same useUIStore hook from client/src/store/index.ts as from uiStore.ts', () => {
+      expect(useUIStoreFromBarrel).toBe(useUIStore);
+    });
+  });
+
   describe('initial state (Zustand create() defaults)', () => {
     it('exposes viewport { startMeasure: 0, measureCount: 8, scrollY: 0, zoom: 1 } on first getState()', () => {
       expect(useUIStore.getState().viewport).toEqual({
