@@ -163,8 +163,9 @@ function classifySeventhChord(triad: ChordQuality, seventh: number): SeventhType
 /**
  * Pitch classes (semitones above root, 0–11) for close voicing, sorted ascending.
  * Honors explicit quality, seventh, suspension, and addition from the chord event.
+ * Exported for guide-tone scale-degree mapping (TASK-1A.6).
  */
-function chordToneOffsetsFromRoot(chord: ChordEvent): number[] {
+export function chordToneOffsetsFromRoot(chord: ChordEvent): number[] {
   const { quality, seventh, suspension, addition } = chord;
   const pcs = new Set<number>();
 
