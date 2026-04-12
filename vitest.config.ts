@@ -16,6 +16,7 @@ export default defineConfig({
     environment: 'node',
     environmentMatchGlobs: [['**/client/tests/**/*.test.tsx', 'jsdom']],
     globals: false,
+    setupFiles: ['./client/tests/setup-jsdom-pointer.ts'],
   },
   resolve: {
     alias: {

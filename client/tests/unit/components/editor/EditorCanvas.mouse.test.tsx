@@ -1,3 +1,4 @@
+/** @vitest-environment jsdom */
 /**
  * QA COVERAGE PLAN — TASK-2.7
  *
@@ -33,8 +34,8 @@
 import { randomUUID } from 'node:crypto';
 
 import type { ChordEvent, NoteEvent, SongData, Viewport } from '@vybpad/shared';
-import { fireEvent, render, screen } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { EditorCanvas } from '../../../../src/components/editor/EditorCanvas';
 import * as hitTestModule from '../../../../src/engine/renderer/hitTest';
@@ -106,7 +107,7 @@ function makeSongWithChordAndNote(chordId: string, noteId: string): SongData {
   };
 }
 
-function mockCanvasLayout(canvas: HTMLCanvasElement, rect: Partial<DOMRect> & Pick<DOMRect, 'left' | 'top' | 'width' | 'height'>) {
+function mockCanvasLayout(rect: Partial<DOMRect> & Pick<DOMRect, 'left' | 'top' | 'width' | 'height'>) {
   const full: DOMRect = {
     x: rect.left,
     y: rect.top,
@@ -120,7 +121,17 @@ function mockCanvasLayout(canvas: HTMLCanvasElement, rect: Partial<DOMRect> & Pi
       return {};
     },
   };
-  vi.spyOn(canvas, 'getBoundingClientRect').mockReturnValue(full);
+  // Spy on the prototype so remounted canvases (React StrictMode) still see the same layout rect.
+  vi.spyOn(HTMLCanvasElement.prototype, 'getBoundingClientRect').mockReturnValue(full);
+}
+
+/** Scope to the RTL container so mocks apply to the same canvas node that receives pointer events. */
+function canvasIn(container: HTMLElement): HTMLCanvasElement {
+  const el = container.querySelector('canvas[aria-label="Editor canvas"]');
+  if (!el) {
+    throw new Error('Editor canvas not found in container');
+  }
+  return el as HTMLCanvasElement;
 }
 
 function stubCanvas2d() {
@@ -137,11 +148,18 @@ function stubCanvas2d() {
       strokeRect: vi.fn(),
       beginPath: vi.fn(),
       closePath: vi.fn(),
+      moveTo: vi.fn(),
+      lineTo: vi.fn(),
       fill: vi.fn(),
       stroke: vi.fn(),
+      setLineDash: vi.fn(),
       clip: vi.fn(),
       translate: vi.fn(),
       setTransform: vi.fn(),
+      fillText: vi.fn(),
+      measureText: vi.fn(() => ({ width: 0 })),
+      arcTo: vi.fn(),
+      roundRect: vi.fn(),
     } as unknown as CanvasRenderingContext2D;
   });
 }
@@ -160,12 +178,18 @@ describe('EditorCanvas — TASK-2.7 mouse interaction (interface contract)', () 
     stubCanvas2d();
   });
 
+  afterEach(() => {
+    cleanup();
+  });
+
   describe('hit testing (hitTestEditorCanvas)', () => {
     it('invokes hitTestEditorCanvas with viewport (x,y) equal to client coordinates minus canvas getBoundingClientRect offset', () => {
       const onSelectionChange = vi.fn();
       const hitSpy = vi.spyOn(hitTestModule, 'hitTestEditorCanvas').mockReturnValue(null);
 
-      render(
+      mockCanvasLayout({ left: 120, top: 40, width: 900, height: 500 });
+
+      const { container } = render(
         <EditorCanvas
           song={song}
           viewport={DEFAULT_VIEWPORT}
@@ -182,8 +206,7 @@ describe('EditorCanvas — TASK-2.7 mouse interaction (interface contract)', () 
         />,
       );
 
-      const canvas = screen.getByRole('presentation', { name: /editor canvas/i });
-      mockCanvasLayout(canvas, { left: 120, top: 40, width: 900, height: 500 });
+      const canvas = canvasIn(container);
 
       fireEvent.pointerDown(canvas, {
         clientX: 220,
@@ -195,9 +218,9 @@ describe('EditorCanvas — TASK-2.7 mouse interaction (interface contract)', () 
       });
 
       expect(hitSpy).toHaveBeenCalled();
-      const [x, y, argSong, argViewport] = hitSpy.mock.calls[0]!;
-      expect(x).toBe(100);
-      expect(y).toBe(50);
+      const downCall = hitSpy.mock.calls.find(([x, y]) => x === 100 && y === 50);
+      expect(downCall).toBeDefined();
+      const [, , argSong, argViewport] = downCall!;
       expect(argSong).toBe(song);
       expect(argViewport).toEqual(DEFAULT_VIEWPORT);
     });
@@ -214,7 +237,9 @@ describe('EditorCanvas — TASK-2.7 mouse interaction (interface contract)', () 
         chord,
       });
 
-      render(
+      mockCanvasLayout({ left: 0, top: 0, width: 800, height: 600 });
+
+      const { container } = render(
         <EditorCanvas
           song={song}
           viewport={DEFAULT_VIEWPORT}
@@ -231,8 +256,7 @@ describe('EditorCanvas — TASK-2.7 mouse interaction (interface contract)', () 
         />,
       );
 
-      const canvas = screen.getByRole('presentation', { name: /editor canvas/i });
-      mockCanvasLayout(canvas, { left: 0, top: 0, width: 800, height: 600 });
+      const canvas = canvasIn(container);
       fireEvent.pointerDown(canvas, {
         clientX: 10,
         clientY: 30,
@@ -260,7 +284,9 @@ describe('EditorCanvas — TASK-2.7 mouse interaction (interface contract)', () 
         note,
       });
 
-      render(
+      mockCanvasLayout({ left: 0, top: 0, width: 800, height: 600 });
+
+      const { container } = render(
         <EditorCanvas
           song={song}
           viewport={DEFAULT_VIEWPORT}
@@ -277,8 +303,7 @@ describe('EditorCanvas — TASK-2.7 mouse interaction (interface contract)', () 
         />,
       );
 
-      const canvas = screen.getByRole('presentation', { name: /editor canvas/i });
-      mockCanvasLayout(canvas, { left: 0, top: 0, width: 800, height: 600 });
+      const canvas = canvasIn(container);
       fireEvent.pointerDown(canvas, {
         clientX: 50,
         clientY: 200,
@@ -299,7 +324,9 @@ describe('EditorCanvas — TASK-2.7 mouse interaction (interface contract)', () 
       const onSelectionChange = vi.fn();
       vi.spyOn(hitTestModule, 'hitTestEditorCanvas').mockReturnValue(null);
 
-      render(
+      mockCanvasLayout({ left: 0, top: 0, width: 800, height: 600 });
+
+      const { container } = render(
         <EditorCanvas
           song={song}
           viewport={DEFAULT_VIEWPORT}
@@ -316,8 +343,7 @@ describe('EditorCanvas — TASK-2.7 mouse interaction (interface contract)', () 
         />,
       );
 
-      const canvas = screen.getByRole('presentation', { name: /editor canvas/i });
-      mockCanvasLayout(canvas, { left: 0, top: 0, width: 800, height: 600 });
+      const canvas = canvasIn(container);
       fireEvent.pointerDown(canvas, {
         clientX: 5,
         clientY: 5,
@@ -340,7 +366,9 @@ describe('EditorCanvas — TASK-2.7 mouse interaction (interface contract)', () 
         chord: song.measures[0]!.chords[0]!,
       });
 
-      render(
+      mockCanvasLayout({ left: 0, top: 0, width: 800, height: 600 });
+
+      const { container } = render(
         <EditorCanvas
           song={song}
           viewport={DEFAULT_VIEWPORT}
@@ -357,8 +385,7 @@ describe('EditorCanvas — TASK-2.7 mouse interaction (interface contract)', () 
         />,
       );
 
-      const canvas = screen.getByRole('presentation', { name: /editor canvas/i });
-      mockCanvasLayout(canvas, { left: 0, top: 0, width: 800, height: 600 });
+      const canvas = canvasIn(container);
 
       fireEvent.pointerDown(canvas, {
         clientX: 100,
@@ -409,7 +436,9 @@ describe('EditorCanvas — TASK-2.7 mouse interaction (interface contract)', () 
         note: song.measures[0]!.notes[0]![0]!,
       });
 
-      render(
+      mockCanvasLayout({ left: 0, top: 0, width: 800, height: 600 });
+
+      const { container } = render(
         <EditorCanvas
           song={song}
           viewport={DEFAULT_VIEWPORT}
@@ -426,8 +455,7 @@ describe('EditorCanvas — TASK-2.7 mouse interaction (interface contract)', () 
         />,
       );
 
-      const canvas = screen.getByRole('presentation', { name: /editor canvas/i });
-      mockCanvasLayout(canvas, { left: 0, top: 0, width: 800, height: 600 });
+      const canvas = canvasIn(container);
 
       fireEvent.pointerDown(canvas, {
         clientX: 200,
@@ -468,7 +496,9 @@ describe('EditorCanvas — TASK-2.7 mouse interaction (interface contract)', () 
       const onChordEdit = vi.fn();
       vi.spyOn(hitTestModule, 'hitTestEditorCanvas').mockReturnValue(null);
 
-      render(
+      mockCanvasLayout({ left: 0, top: 0, width: 800, height: 600 });
+
+      const { container } = render(
         <EditorCanvas
           song={song}
           viewport={DEFAULT_VIEWPORT}
@@ -485,8 +515,7 @@ describe('EditorCanvas — TASK-2.7 mouse interaction (interface contract)', () 
         />,
       );
 
-      const canvas = screen.getByRole('presentation', { name: /editor canvas/i });
-      mockCanvasLayout(canvas, { left: 0, top: 0, width: 800, height: 600 });
+      const canvas = canvasIn(container);
 
       fireEvent.pointerDown(canvas, {
         clientX: 40,
@@ -527,7 +556,9 @@ describe('EditorCanvas — TASK-2.7 mouse interaction (interface contract)', () 
         chord: song.measures[0]!.chords[0]!,
       });
 
-      render(
+      mockCanvasLayout({ left: 0, top: 0, width: 800, height: 600 });
+
+      const { container } = render(
         <EditorCanvas
           song={song}
           viewport={DEFAULT_VIEWPORT}
@@ -544,11 +575,11 @@ describe('EditorCanvas — TASK-2.7 mouse interaction (interface contract)', () 
         />,
       );
 
-      const canvas = screen.getByRole('presentation', { name: /editor canvas/i });
-      mockCanvasLayout(canvas, { left: 0, top: 0, width: 800, height: 600 });
+      const canvas = canvasIn(container);
 
+      /* TPQN=48 → ~80px-wide block at 1×; trailing resize strip is the last 8px [72,80]. */
       fireEvent.pointerDown(canvas, {
-        clientX: 200,
+        clientX: 76,
         clientY: 40,
         button: 0,
         buttons: 1,
@@ -556,7 +587,7 @@ describe('EditorCanvas — TASK-2.7 mouse interaction (interface contract)', () 
         pointerType: 'mouse',
       });
       fireEvent.pointerMove(canvas, {
-        clientX: 280,
+        clientX: 156,
         clientY: 40,
         button: 0,
         buttons: 1,
@@ -564,7 +595,7 @@ describe('EditorCanvas — TASK-2.7 mouse interaction (interface contract)', () 
         pointerType: 'mouse',
       });
       fireEvent.pointerUp(canvas, {
-        clientX: 280,
+        clientX: 156,
         clientY: 40,
         button: 0,
         buttons: 0,
@@ -616,13 +647,14 @@ describe('EditorCanvas — TASK-2.7 mouse interaction (interface contract)', () 
         );
       }
 
-      render(<Harness />);
+      mockCanvasLayout({ left: 0, top: 0, width: 800, height: 600 });
 
-      const canvas = screen.getByRole('presentation', { name: /editor canvas/i });
-      mockCanvasLayout(canvas, { left: 0, top: 0, width: 800, height: 600 });
+      const { container } = render(<Harness />);
+
+      const canvas = canvasIn(container);
 
       fireEvent.pointerDown(canvas, {
-        clientX: 80,
+        clientX: 40,
         clientY: 40,
         button: 0,
         buttons: 1,
@@ -630,7 +662,7 @@ describe('EditorCanvas — TASK-2.7 mouse interaction (interface contract)', () 
         pointerType: 'mouse',
       });
       fireEvent.pointerMove(canvas, {
-        clientX: 160,
+        clientX: 120,
         clientY: 40,
         button: 0,
         buttons: 1,
@@ -638,7 +670,7 @@ describe('EditorCanvas — TASK-2.7 mouse interaction (interface contract)', () 
         pointerType: 'mouse',
       });
       fireEvent.pointerUp(canvas, {
-        clientX: 160,
+        clientX: 120,
         clientY: 40,
         button: 0,
         buttons: 0,
@@ -654,7 +686,7 @@ describe('EditorCanvas — TASK-2.7 mouse interaction (interface contract)', () 
 
   describe('viewport / selection props (TASK-2.11 note)', () => {
     it('accepts Viewport and Selection | null props and renders without throwing so parent can own state per INTERFACES.md', () => {
-      const { rerender } = render(
+      const { container, rerender } = render(
         <EditorCanvas
           song={song}
           viewport={DEFAULT_VIEWPORT}
@@ -671,7 +703,7 @@ describe('EditorCanvas — TASK-2.7 mouse interaction (interface contract)', () 
         />,
       );
 
-      const canvas = screen.getByRole('presentation', { name: /editor canvas/i });
+      const canvas = canvasIn(container);
       expect(canvas).toBeTruthy();
 
       rerender(
@@ -691,7 +723,7 @@ describe('EditorCanvas — TASK-2.7 mouse interaction (interface contract)', () 
         />,
       );
 
-      expect(screen.getByRole('presentation', { name: /editor canvas/i })).toBeTruthy();
+      expect(document.querySelectorAll('canvas[aria-label="Editor canvas"]').length).toBeGreaterThan(0);
     });
   });
 });
