@@ -11,7 +11,7 @@ export type {
   SeventhType,
   SuspensionType,
   TimeSignature,
-} from "./music.js";
+} from './music.js';
 
 export type {
   BandConfig,
@@ -21,7 +21,7 @@ export type {
   SongMetadata,
   Track,
   TrackRole,
-} from "./song.js";
+} from './song.js';
 
 export type {
   AuthResponse,
@@ -34,7 +34,7 @@ export type {
   RegisterRequest,
   UpdateProjectRequest,
   UserResponse,
-} from "./api.js";
+} from './api.js';
 
 export type {
   AuthError,
@@ -42,13 +42,8 @@ export type {
   NotFoundError,
   ServerError,
   ValidationError,
-} from "./errors.js";
+} from './errors.js';
 
-export type {
-  ChordEditAction,
-  NoteEditAction,
-  Selection,
-  Viewport,
-} from "./editor.js";
+export type { ChordEditAction, NoteEditAction, Selection, Viewport } from './editor.js';
 
 export const TICKS_PER_QUARTER = 48;

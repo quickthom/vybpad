@@ -1,27 +1,15 @@
-export type NoteName =
-  | "C"
-  | "C#"
-  | "D"
-  | "D#"
-  | "E"
-  | "F"
-  | "F#"
-  | "G"
-  | "G#"
-  | "A"
-  | "A#"
-  | "B";
+export type NoteName = 'C' | 'C#' | 'D' | 'D#' | 'E' | 'F' | 'F#' | 'G' | 'G#' | 'A' | 'A#' | 'B';
 
 export type ScaleType =
-  | "major"
-  | "minor"
-  | "dorian"
-  | "phrygian"
-  | "lydian"
-  | "mixolydian"
-  | "locrian"
-  | "harmonicMinor"
-  | "phrygianDominant";
+  | 'major'
+  | 'minor'
+  | 'dorian'
+  | 'phrygian'
+  | 'lydian'
+  | 'mixolydian'
+  | 'locrian'
+  | 'harmonicMinor'
+  | 'phrygianDominant';
 
 export type ScaleDegree = 1 | 2 | 3 | 4 | 5 | 6 | 7;
 
@@ -30,15 +18,15 @@ export interface TimeSignature {
   denominator: number; // e.g., 4, 8
 }
 
-export type ChordQuality = "major" | "minor" | "diminished" | "augmented";
+export type ChordQuality = 'major' | 'minor' | 'diminished' | 'augmented';
 
-export type SeventhType = "none" | "maj7" | "min7" | "dom7" | "dim7" | "min7b5";
+export type SeventhType = 'none' | 'maj7' | 'min7' | 'dom7' | 'dim7' | 'min7b5';
 
-export type SuspensionType = "none" | "sus2" | "sus4";
+export type SuspensionType = 'none' | 'sus2' | 'sus4';
 
-export type AdditionType = "none" | "add9" | "add11" | "add13";
+export type AdditionType = 'none' | 'add9' | 'add11' | 'add13';
 
-export type SecondaryFunction = "V" | "viio" | "IV";
+export type SecondaryFunction = 'V' | 'viio' | 'IV';
 
 export interface SecondaryChord {
   function: SecondaryFunction; // V/x, viio/x, IV/x

@@ -1,4 +1,4 @@
-import type { ChordEvent, NoteEvent, NoteName, ScaleType, TimeSignature } from "./music.js";
+import type { ChordEvent, NoteEvent, NoteName, ScaleType, TimeSignature } from './music.js';
 
 export interface MeasureChanges {
   key?: NoteName; // key change at start of this measure
@@ -23,20 +23,20 @@ export interface SongMetadata {
 }
 
 export interface SongData {
-  version: "1.0"; // schema version for future migration
+  version: '1.0'; // schema version for future migration
   metadata: SongMetadata;
   measures: Measure[]; // ordered; index = measure number
   bandConfig: BandConfig;
 }
 
 export type TrackRole =
-  | "melody1"
-  | "melody2"
-  | "melody3"
-  | "melody4"
-  | "harmony"
-  | "bass"
-  | "drums";
+  | 'melody1'
+  | 'melody2'
+  | 'melody3'
+  | 'melody4'
+  | 'harmony'
+  | 'bass'
+  | 'drums';
 
 export interface Track {
   role: TrackRole;

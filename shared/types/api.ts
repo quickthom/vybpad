@@ -1,4 +1,4 @@
-import type { SongData } from "./song.js";
+import type { SongData } from './song.js';
 
 export interface RegisterRequest {
   email: string; // valid email format, max 255 chars
