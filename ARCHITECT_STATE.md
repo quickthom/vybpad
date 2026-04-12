@@ -2,7 +2,7 @@
 
 > Periodically updated cache of the Architect's current state. Review on session resume.
 
-**Last updated:** 2026-04-12 — Phase 2 execution: **Wave 2a merged**; **TASK-2.6** merged — PR [#13](https://github.com/quickthom/vybpad/pull/13) squash **`1fe2334`**; **`develop` tip `c88d3c2`** (includes handoff docs); **next:** **TASK-2.7** — briefs in **`PM_STATE.md` → Issued briefs — TASK-2.7**; spawn Builder + QA from PAT-017 worktree
+**Last updated:** 2026-04-12 — Phase 2 execution: **Wave 2a merged**; **TASK-2.6** merged — PR [#13](https://github.com/quickthom/vybpad/pull/13) squash **`1fe2334`** on code; **handoff docs** on `develop` after that (pull `origin/develop`); **next:** **TASK-2.7** — briefs in **`PM_STATE.md` → Issued briefs — TASK-2.7**; spawn Builder + QA from PAT-017 worktree
 
 ---
 
