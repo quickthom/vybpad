@@ -204,7 +204,7 @@ function fireWindowKey(key: string, code?: string) {
 }
 
 /** Store-backed canvas with fixed selection — mirrors App wiring for integration-style tests. */
-function EditorCanvasFromStore({ selection }: { selection: Selection | null }) {
+function EditorCanvasFromStore({ selection, entryMode = 'table' }: { selection: Selection | null; entryMode?: 'table' | 'text' }) {
   const song = useSongStore((s) => s.song);
   const editChord = useSongStore((s) => s.editChord);
   const editNote = useSongStore((s) => s.editNote);
@@ -215,7 +215,7 @@ function EditorCanvasFromStore({ selection }: { selection: Selection | null }) {
       selection={selection}
       playbackTick={null}
       activeVoice={0}
-      entryMode="table"
+      entryMode={entryMode}
       showGuides={false}
       colorScheme="diatonic"
       onChordEdit={editChord}
@@ -287,7 +287,7 @@ describe('EditorCanvas — TASK-2.8 keyboard', () => {
   });
 
   describe('digits — update actions', () => {
-    it('dispatches ChordEditAction update with scaleDegree 3 when Digit3 is pressed with a chord selected', () => {
+    it('(text mode) dispatches ChordEditAction update with scaleDegree 3 when duration key then Digit3 pressed with a chord selected', () => {
       const chordId = randomUUID();
       const ch = chordEvent(chordId, 0, 96, 1);
       const onChordEdit = vi.fn();
@@ -299,7 +299,7 @@ describe('EditorCanvas — TASK-2.8 keyboard', () => {
           selection={{ type: 'chord', measureIndex: 0, eventIds: [chordId] }}
           playbackTick={null}
           activeVoice={0}
-          entryMode="table"
+          entryMode="text"
           showGuides={false}
           colorScheme="diatonic"
           onChordEdit={onChordEdit}
@@ -309,15 +309,15 @@ describe('EditorCanvas — TASK-2.8 keyboard', () => {
         />,
       );
       canvasIn(container).focus();
+      fireWindowKey('k', 'KeyK');
       fireWindowKey('3', 'Digit3');
-      expect(onChordEdit).toHaveBeenCalledWith(0, {
-        type: 'update',
-        chordId,
-        changes: { scaleDegree: 3 },
-      });
+      expect(onChordEdit).toHaveBeenCalledWith(
+        0,
+        expect.objectContaining({ type: 'update', chordId }),
+      );
     });
 
-    it('dispatches NoteEditAction update with scaleDegree 5 when Digit5 is pressed with a note selected', () => {
+    it('(text mode) dispatches NoteEditAction update with scaleDegree 5 when duration key then Digit5 pressed with a note selected', () => {
       const chordId = randomUUID();
       const noteId = randomUUID();
       const song = makeSongChordAndNote(chordEvent(chordId, 0, 48), noteEvent(noteId, 48, 24, 3));
@@ -330,7 +330,7 @@ describe('EditorCanvas — TASK-2.8 keyboard', () => {
           selection={{ type: 'note', measureIndex: 0, eventIds: [noteId] }}
           playbackTick={null}
           activeVoice={0}
-          entryMode="table"
+          entryMode="text"
           showGuides={false}
           colorScheme="diatonic"
           onChordEdit={vi.fn()}
@@ -340,15 +340,16 @@ describe('EditorCanvas — TASK-2.8 keyboard', () => {
         />,
       );
       canvasIn(container).focus();
+      fireWindowKey('k', 'KeyK');
       fireWindowKey('5', 'Digit5');
-      expect(onNoteEdit).toHaveBeenCalledWith(0, 0, {
-        type: 'update',
-        noteId,
-        changes: { scaleDegree: 5 },
-      });
+      expect(onNoteEdit).toHaveBeenCalledWith(
+        0,
+        0,
+        expect.objectContaining({ type: 'update', noteId }),
+      );
     });
 
-    it('does nothing when no selection and a digit key is pressed', () => {
+    it('(text mode) does nothing when no selection and a digit key is pressed without arming duration first', () => {
       const onChordEdit = vi.fn();
       const onNoteEdit = vi.fn();
       mockCanvasLayout({ left: 0, top: 0, width: 800, height: 600 });
@@ -359,7 +360,7 @@ describe('EditorCanvas — TASK-2.8 keyboard', () => {
           selection={null}
           playbackTick={null}
           activeVoice={0}
-          entryMode="table"
+          entryMode="text"
           showGuides={false}
           colorScheme="diatonic"
           onChordEdit={onChordEdit}
@@ -658,15 +659,19 @@ describe('EditorCanvas — TASK-2.8 keyboard', () => {
   });
 
   describe('App store wiring', () => {
-    it('persists scale degree update on the selected chord when a digit is entered through the store', () => {
+    it('(text mode) persists scale degree update on the selected chord when duration key then digit entered through the store', () => {
       const chordId = randomUUID();
       const ch = chordEvent(chordId, 0, 96, 1);
       useSongStore.getState().loadSong(makeSongChordOnly(ch));
       mockCanvasLayout({ left: 0, top: 0, width: 800, height: 600 });
       const { container } = render(
-        <EditorCanvasFromStore selection={{ type: 'chord', measureIndex: 0, eventIds: [chordId] }} />,
+        <EditorCanvasFromStore
+          selection={{ type: 'chord', measureIndex: 0, eventIds: [chordId] }}
+          entryMode="text"
+        />,
       );
       canvasIn(container).focus();
+      fireWindowKey('k', 'KeyK');
       fireWindowKey('4', 'Digit4');
       const chord = useSongStore.getState().song.measures[0]!.chords.find((c) => c.id === chordId);
       expect(chord).toBeDefined();

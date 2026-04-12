@@ -41,6 +41,72 @@ export function resolveTargetMeasureIndex(selection: Selection | null, viewport:
   return Math.max(0, Math.min(raw, n - 1));
 }
 
+/** TASK-2.9 table mode: caret advances as a collapsed range at the next beat (PAT-004 tick math). */
+export function tableModeAdvanceRange(
+  song: SongData,
+  measureIndex: number,
+  beatStart: number,
+  duration: number,
+): Selection {
+  const len = measureLengthInTicks(getMeterAtMeasure(song, measureIndex));
+  const spanEnd = beatStart + duration;
+  if (spanEnd >= len && measureIndex + 1 < song.measures.length) {
+    return { type: 'range', measureIndex: measureIndex + 1, rangeStart: 0, rangeEnd: 0 };
+  }
+  return { type: 'range', measureIndex, rangeStart: spanEnd, rangeEnd: spanEnd };
+}
+
+export function entryEndsAtOrPastMeasureEnd(song: SongData, measureIndex: number, beat: number, duration: number): boolean {
+  const len = measureLengthInTicks(getMeterAtMeasure(song, measureIndex));
+  return beat + duration >= len;
+}
+
+export function findChordIdByPlacement(
+  measure: Measure,
+  beat: number,
+  scaleDegree: ScaleDegree,
+  duration: number,
+): string | null {
+  for (let i = measure.chords.length - 1; i >= 0; i--) {
+    const c = measure.chords[i];
+    if (c && c.beat === beat && c.scaleDegree === scaleDegree && c.duration === duration) return c.id;
+  }
+  return null;
+}
+
+export function findNoteIdByPlacement(
+  lane: NoteEvent[],
+  beat: number,
+  scaleDegree: ScaleDegree,
+  duration: number,
+): string | null {
+  for (let i = lane.length - 1; i >= 0; i--) {
+    const n = lane[i];
+    if (n && n.beat === beat && n.scaleDegree === scaleDegree && n.duration === duration) return n.id;
+  }
+  return null;
+}
+
+/**
+ * After crossing a barline, the next digit targets the following measure — only digit entry consumes
+ * this ref (not arrow navigation).
+ */
+export function resolveMeasureIndexForKeyboardDigit(
+  selection: Selection | null,
+  viewport: Viewport,
+  song: SongData,
+  keyboardTargetMeasureRef: { current: number | null },
+): number {
+  if (keyboardTargetMeasureRef.current != null) {
+    const n = song.measures.length;
+    if (n === 0) return 0;
+    const raw = keyboardTargetMeasureRef.current;
+    keyboardTargetMeasureRef.current = null;
+    return Math.max(0, Math.min(raw, n - 1));
+  }
+  return resolveTargetMeasureIndex(selection, viewport, song);
+}
+
 export function nextAppendBeat(
   song: SongData,
   measureIndex: number,
@@ -64,9 +130,11 @@ export function shouldUseNoteEntry(selection: Selection | null): boolean {
   return selection?.type === 'note';
 }
 
-export function shouldAllowChordDigitEntry(entryMode: 'table' | 'text'): boolean {
-  return entryMode === 'table';
+/** Both modes accept chord digits; text mode requires a prior duration key (handled in useKeyboard). */
+export function shouldAllowChordDigitEntry(_entryMode: 'table' | 'text'): boolean {
+  return true;
 }
+
 
 export function buildDiatonicChordPayload(
   song: SongData,
