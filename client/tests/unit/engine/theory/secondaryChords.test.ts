@@ -97,7 +97,7 @@ describe('secondary MIDI — TASK-1A.5 — getSecondaryChordMidi', () => {
     it('returns D major triad MIDI 62, 66, 69 for V/V in C major with an explicit major secondary dominant chord event', () => {
       const secondary: SecondaryChord = { function: 'V', target: 5 };
       const c = chord({
-        scaleDegree: 2,
+        scaleDegree: 5,
         quality: 'major',
         secondary,
       });
@@ -109,11 +109,11 @@ describe('secondary MIDI — TASK-1A.5 — getSecondaryChordMidi', () => {
 
 describe('secondary palette — TASK-1A.5 — getAvailableSecondaryChords', () => {
   describe('happy path', () => {
-    it('for major scale lists V/ii, V/iii, V/IV, V/V, and V/vi with function V and excludes V/I and V/viio', () => {
+    it('for major scale lists V/ii, V/iii, V/V, and V/vi with function V and excludes V/I, V/IV (same as I), and V/viio', () => {
       const available = getAvailableSecondaryChords('major');
       const onlyV = available.filter((x) => x.function === 'V');
       const targets = onlyV.map((x) => x.target).sort((a, b) => a - b);
-      expect(targets).toEqual([2, 3, 4, 5, 6]);
+      expect(targets).toEqual([2, 3, 5, 6]);
       expect(onlyV.some((x) => x.target === 1)).toBe(false);
       expect(onlyV.some((x) => x.target === 7)).toBe(false);
     });
@@ -148,7 +148,7 @@ describe('secondary helpers — TASK-1A.5 — purity', () => {
 
     it('returns identical MIDI arrays when getSecondaryChordMidi is called twice with the same arguments', () => {
       const secondary: SecondaryChord = { function: 'V', target: 5 };
-      const c = chord({ scaleDegree: 2, quality: 'major', secondary });
+      const c = chord({ scaleDegree: 5, quality: 'major', secondary });
       const x = getSecondaryChordMidi(secondary, c, 'C', 'major');
       const y = getSecondaryChordMidi(secondary, c, 'C', 'major');
       expect(x).toEqual(y);
