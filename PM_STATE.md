@@ -1,6 +1,6 @@
 # PM STATE — vYbpad
 
-> PM continuity handoff — **not** a duplicate of `TASK_STATUS.md`. Updated **2026-04-12** — TASK-2.7 (#14), 2.8 (#16), 2.10 (#15) ALL MERGED. `develop` = `a70f2da`, 368 tests. TASK-2.9 Builder + QA spawned (`task-2-9-entry-modes`). All merged worktrees removed. Next: TASK-2.11 after 2.9 merges.
+> PM continuity handoff — **not** a duplicate of `TASK_STATUS.md`. Updated **2026-04-12** — TASKS-2.7 through 2.10 ALL MERGED. TASK-2.9 (#18) merged after Architect (Meridian) INTERFACES.md resolution + rebase conflict fix. `develop` = `5f94560`, 378 tests. **Wave B active:** TASK-2.11 + 2.13 Builder+QA ∥ TASK-2.14 + 2.15 QA — all spawned. TASK-2.12 queued behind 2.11.
 
 ---
 
@@ -35,35 +35,27 @@
 
 ---
 
-## Next actions (pipeline)
+## Next actions (pipeline) — updated 2026-04-12 (Tempo/PM)
 
-1. **Done (2026-04-12):** Wave 2a squash-merged: **#10** TASK-2.3, **#12** TASK-2.4, **#11** TASK-2.5 → `develop`.
-2. **Done (2026-04-12):** TASK-2.6 squash-merged: **#13** → `develop` (`1fe2334`).
-3. **Done (2026-04-12):** TASK-2.7 merged: **#14** → `develop` (`a0ad185`); worktree `task-2-7-mouse` removed.
-4. **Done (2026-04-12):** 14 stale worktrees removed. TASK-2.7 worktree also removed.
-5. **Active (2026-04-12):** TASK-2.8 + TASK-2.10 **Builder + QA in parallel** — worktrees `task-2-8-keyboard` + `task-2-10-measure-bar`; agents spawned by Tempo/PM.
-6. **Pending (after 2.8 merges):** TASK-2.9 (entry modes, deps: 2.8).
-7. **TASK-2.11 (ui-store):** still **do not start** until ROADMAP deps for 2.1–2.10 satisfied.
+**All completed this PM session:**
+1. ✅ TASK-2.7 merged (PR #14, `a0ad185`, 335 tests)
+2. ✅ TASK-2.8 merged (PR #16, `a70f2da`, 368 tests)
+3. ✅ TASK-2.10 merged (PR #15, `131f421`, 368 tests)
+4. ⛔ TASK-2.9 BLOCKED (PR #18 open, `phase-2/entry-modes`) — Builder added `getSongAfterMutation?` + `onToggleEntryMode?` to EditorCanvasProps without ⛔ flag. Escalated to Architect in `HITL_NOTIFICATIONS.md`. All 378 tests pass; logic is sound.
+5. ✅ All stale worktrees removed. Active: `task-2-9-entry-modes` only.
+6. `develop` = `a70f2da`, 368 tests passing.
 
-## Post-merge review notes (TASK-2.7, Reviewer Axiom)
-Four items found after merge — tracked in TASK_STATUS.md. Builder for TASK-2.8 is fixing hover cursor and primary-button guard as part of EditorCanvas changes. Other two items (miss-rule docs omission, chromatic double-undo) are documentation/undo-UX issues; low risk for this phase.
+**When Architect resolves TASK-2.9:**
+- Likely answer: use `useSongStore()` in keyboard hook directly (no prop needed); toggle via existing `entryMode` state setter passed as prop or read from App context.
+- Re-brief Builder to remove the two non-standard props → revise PR #18 → Reviewer → Integrator → TASK-2.11.
 
-## Sequencing plan: TASK-2.8, 2.9, 2.10
+**Parallelizable NOW (no TASK-2.9/2.11 dep):**
+- TASK-2.12 (guide tone overlay): deps 1A.6 ✓, 2.5 ✓ → safe
+- TASK-2.13 (color scheme): deps 2.4 ✓, 2.5 ✓ → safe (parallel with 2.12)
+- TASK-2.14 (canvas renderer tests QA): deps 2.3–2.5 ✓ → safe
+- TASK-2.15 (song store tests QA): dep 2.1 ✓ → safe
 
-**File scope analysis (assessed 2026-04-12):**
-
-| Task | Key files touched | Conflict with 2.7? | Conflict with each other? |
-|------|-------------------|---------------------|---------------------------|
-| 2.8 (keyboard) | `EditorCanvas.tsx`, `App.tsx`, new `useKeyboard` hook | YES — same files as 2.7 | No (different from 2.10) |
-| 2.9 (entry modes) | depends on 2.8 output | N/A — blocked | N/A |
-| 2.10 (measure bar) | new `MeasureBar.tsx`, `App.tsx` | Partial — `App.tsx` | No (different from 2.8) |
-
-**Decision:**
-- TASK-2.8 and TASK-2.10 are **NOT safe to run in parallel with TASK-2.7** (both touch `App.tsx`; 2.8 also touches `EditorCanvas.tsx`).
-- TASK-2.8 and TASK-2.10 **ARE safe to run in parallel with each other** after 2.7 merges (their file scopes are disjoint — `EditorCanvas.tsx`/keyboard hooks vs new `MeasureBar.tsx`; `App.tsx` conflict is a minor merge, resolvable by Integrator).
-- **Sequence:** 2.7 → [2.8 ∥ 2.10] → 2.9 → 2.11
-
-**Next PM action after TASK-2.7 PR is raised:** Issue Reviewer brief → after approval issue Integrator brief → after 2.7 merges spawn Builder+QA for TASK-2.8 AND TASK-2.10 in parallel with separate worktrees.
+**TASK-2.11 (ui-store):** blocked until 2.9 merges. Branch `phase-2/ui-store` TBD.
 
 ---
 
