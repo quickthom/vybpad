@@ -111,7 +111,13 @@ Update `TASK_STATUS.md` immediately when:
 - A task is blocked (status: `blocked`, with blocking notes)
 
 ---
+## Another important file you own
 
+### `PM_STATE.md`
+
+Place where you periodically cache your current state in summarized form, in case you are interrupted. Plan to review and update it after major events/milestones, and when asked to by the Architect. It should not be a duplicate of TASK_STATUS.md and need not be kept as strictly up to date... it's just a place to record all that stuff you're keeping track of that doesn't show up in TASK_STATUS.
+
+---
 ## How to decompose work
 
 ### Decompose by vertical slice, not horizontal layer
