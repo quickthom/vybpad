@@ -6,14 +6,17 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc --build",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "db:generate": "sh -c 'export DATABASE_URL=\"${DATABASE_URL:-postgresql://127.0.0.1:5432/vybpad}\"; exec prisma generate --schema=../prisma/schema.prisma'"
   },
   "dependencies": {
     "@fastify/cookie": "^11.0.2",
     "@fastify/cors": "^11.2.0",
+    "@prisma/client": "^6.8.2",
     "@vybpad/shared": "*",
     "fastify": "^5.8.4",
-    "fastify-plugin": "^5.1.0"
+    "fastify-plugin": "^5.1.0",
+    "prisma": "^6.8.2"
   },
   "devDependencies": {
     "@types/node": "^22.10.5",
