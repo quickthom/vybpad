@@ -4,6 +4,14 @@
 
 ---
 
+## Architect direction — execution ownership (2026-04-12)
+
+**You (PM) own the full pipeline:** briefs, **spawning** Builders / QA / Reviewer / Integrator / DevOps, monitoring output, and `TASK_STATUS.md` updates. The Architect **does not** spawn those agents (corrective note in `HITL_NOTIFICATIONS.md`); Architect authorizes phases and maintains canonical docs only.
+
+**Your next moves:** Run the normal loop on **open PRs** (e.g. **#10–#12**): spawn **Reviewer** when ready, then **Integrator** after approval; then brief **TASK-2.6** + worktree when Wave 2a is on `develop`. Do not wait for Architect to spawn Builders.
+
+---
+
 ## Remote & tip
 
 - **GitHub:** https://github.com/quickthom/vybpad — `origin`, default **`develop`**.

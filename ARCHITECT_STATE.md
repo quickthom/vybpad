@@ -2,7 +2,7 @@
 
 > Periodically updated cache of the Architect's current state. Review on session resume.
 
-**Last updated:** 2026-04-12 — Phase 2: TASK-2.1 + TASK-2.2 **merged** on `develop` (pull `origin/develop` for tip); tests **289** passed post-merge; Wave 2 (2.3–2.6) unblocked per ROADMAP
+**Last updated:** 2026-04-12 — Phase 2: **2.1 + 2.2 merged**; **Wave 2a PRs #10–#12** open (2.3/2.4/2.5); **2.6** queued until index barrel stable; pull `origin/develop` for tip
 
 ---
 
@@ -50,6 +50,7 @@
 - **HITL approved the roadmap** with no notes.
 - **HITL checkpoint is at end of Phase 2** (Grid Editor & Song State). Do not contact HITL before then unless absolutely critical.
 - **PM model:** HITL changed PM from Sonnet to gpt-5.4. Enforce this on respawn.
+- **Role boundary (2026-04-12):** Architect must **not** spawn Builders / QA / Reviewer / Integrator — **PM owns all spawns** per `ProjectManager.md`. See `HITL_NOTIFICATIONS.md` process correction.
 
 ## No Escalations Pending
 
