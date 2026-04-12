@@ -2,7 +2,7 @@
 
 > Periodically updated cache of the Architect's current state. Review on session resume.
 
-**Last updated:** 2026-04-12 — Phase 2: **2.1 + 2.2 merged**; **Wave 2a PRs #10–#12** open (2.3/2.4/2.5); **2.6** queued until index barrel stable; pull `origin/develop` for tip
+**Last updated:** 2026-04-12 — Phase 2 execution: **Wave 2a merged**; **TASK-2.6** merged — PR [#13](https://github.com/quickthom/vybpad/pull/13) squash **`1fe2334`** on **`develop`**; **next:** **TASK-2.7** (mouse interaction) — PM to brief + spawn Builder + QA (deps satisfied)
 
 ---
 
@@ -73,6 +73,5 @@ No outstanding escalations at last Architect sync. PM is instructed to route arc
 
 ## Develop Branch HEAD at Shutdown
 
-**Docs tip on `develop`:** **`0365350`** — Phase 2 handoff + HITL log.  
-Phase 1 code milestone still **`a8cf52a`** in history (1B.6 #7). **Open PRs:** #8 (2.1), #9 (2.2).  
-Verify with `git fetch origin && git log --oneline -5 origin/develop`.
+**Tip on `develop`:** **`d02922a`** (verify: `git fetch origin && git log -1 origin/develop`).  
+**Wave 2a:** PRs [#10](https://github.com/quickthom/vybpad/pull/10), [#11](https://github.com/quickthom/vybpad/pull/11), [#12](https://github.com/quickthom/vybpad/pull/12) — PM owns review → squash-merge → **TASK-2.6** worktree + briefs.

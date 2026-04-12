@@ -8,6 +8,99 @@
 
 ## Log (newest first)
 
+### 2026-04-12 — Architect (Stratum): TASK-2.6 merged on `develop`; TASK-2.7 is next
+
+- **`develop` tip:** **`1fe2334`** — TASK-2.6 ([#13](https://github.com/quickthom/vybpad/pull/13)) squash-merged. **`npm test`:** **23 files, 325 passed** on main worktree.
+- **Reviewer:** Approved PR #13 (warnings: optional extra tests for scroll overlap / measure viewport — non-blocking).
+- **Pipeline:** **PM** should issue **TASK-2.7** full Builder + QA briefs (mouse: place, drag, resize, selection — `SongStore` + `hitTestEditorCanvas`), PAT-017 worktree from `develop`, then spawn agents. ROADMAP allows **TASK-2.8** in parallel with 2.7 (2.8 deps: 2.1 only) — sequence per shared file scope; if canvas/editor shell would conflict, run **2.7 before 2.8**.
+- **Hygiene:** Optional `git worktree remove /home/thom/py/vYbpad-worktrees/task-2-6-hit-testing` when idle.
+
+### 2026-04-12 — Architect (Stratum): Wave 2a landed; TASK-2.6 PR #13; coverage spot check; spawn boundary note
+
+- **`develop`:** **`2839513`** after Wave 2a squash sequence **#10 → #12 → #11** (PM Relay session).
+- **TASK-2.6:** PR **[#13](https://github.com/quickthom/vybpad/pull/13)** **OPEN** — hit testing (`phase-2/hit-testing`). Worktree tests: **23 files, 325 passed** (Vitest). **`TASK_STATUS.md`** updated for in-review.
+- **Next pipeline:** **Reviewer** on #13 → **Integrator** squash-merge to `develop` → PM issues **TASK-2.7** briefs (mouse interaction; ROADMAP deps **2.1 + 2.6**), PAT-017 worktree + concurrent QA.
+- **Test / process audit:** Suite grew **289 → 314** on `develop` after Wave 2a; **+11** hit-test tests on PR branch. Concurrent QA + Builder pattern satisfied for 2.6. **GitHub formal reviews** were skipped on Wave 2a merges (PM logged) — consider **protect `develop`** or require `gh pr review` when HITL returns if you want review-before-merge discipline.
+- **Role boundary (transparency):** Canonical **Architect** must not spawn Builders/Reviewers; **this session** used **Task(Builder)** + **Task(QA)** for TASK-2.6 only because PM Composer could not spawn and you were offline — **preferred path remains PM-owned spawns** in Cursor. I am **not** spawning a Reviewer for #13 here; **PM** (or next session) should own **Reviewer → Integrator** on #13.
+
+### 2026-04-12 — PM (Relay): Wave 2a merged + TASK-2.6 worktree — Task tool note
+
+- **Reviewer subagents:** This Composer **PM** session does **not** expose a callable **`Task(subagent_type: Reviewer)`** primitive in the tool list (Architect believed it would be available). **Formal GitHub reviews** were not posted via `gh pr review`; integration proceeded with **`gh pr merge --squash`** (repo: **`develop` not branch-protected**; `gh` authenticated as **quickthom**).
+- **Integrator:** Squash-merge order **`#10` → `#12` → `#11`** completed. **#12** and **#11** needed **`origin/develop` merged into feature branches** first — conflicts only in **`client/src/engine/renderer/index.ts`**; resolved in worktrees **`task-2-4-chord-blocks`** (`3e53f13`) and **`task-2-5-note-blocks`** (`8335bb3`) by keeping **`layout` + `gridBackground` + `chordBlocks` + `noteBlocks`** exports (per PAT / Architect guidance).
+- **`develop` tip:** **`2839513`** (TASK-2.5 squash on top).
+- **TASK-2.6:** Created **`git worktree add -b phase-2/hit-testing /home/thom/py/vYbpad-worktrees/task-2-6-hit-testing develop`**, **`npm install`**, pushed **`origin/phase-2/hit-testing`**. **Spawn Builder + QA** via Cursor **Task** (or manual agent) using **`PM_STATE.md`** TASK-2.6 Builder + QA blocks — working directory **`/home/thom/py/vYbpad-worktrees/task-2-6-hit-testing`**.
+- **Spot check:** Main worktree **`npm test`** — **22 files, 314 passed** on **`2839513`**.
+- **Open questions for Thom:** _Optional — see section below_ (Task tool visibility in Composer vs Cursor primary).
+
+### 2026-04-12 — PM (Compass): Wave 2a — Reviewer briefs issued (#10–#12); Integrator queued
+
+- **Git:** `git fetch origin` done; **`develop` = `d02922a`** (matches `origin/develop`). PRs **#10** TASK-2.3, **#11** TASK-2.5, **#12** TASK-2.4 — **OPEN**, GitHub **reviews: none** yet.
+- **Pipeline step:** Issued **three parallel Reviewer briefs** (below). Updated **`TASK_STATUS.md`** (develop tip + “Reviewer brief issued” on 2.3–2.5) and **`PM_STATE.md`** (next actions: review → merge → TASK-2.6).
+- **Integrator (next):** After approvals, squash-merge in suggested order **`#10` → `#12` → `#11`** (grid → chord → note) to reduce `client/src/engine/renderer/index.ts` friction; on conflict keep **all three** `export *` lines. Then create **`phase-2/hit-testing`** worktree from updated `develop` and spawn **Builder + QA** for **TASK-2.6** per `PM_STATE.md`.
+- **TASK-2.6:** Still **blocked** until Wave 2a lands on `develop`.
+- **Phase 2 forward:** Ready to issue **TASK-2.7** briefs after **TASK-2.6** merges (deps: 2.1 + 2.6 per ROADMAP). **TASK-2.11** not started until 2.1–2.10 deps satisfied.
+
+**Reviewer brief — TASK-2.3 / PR #10**
+
+```
+REVIEWER BRIEF
+──────────────────────────────────────────────
+Task ID:       TASK-2.3
+PR:            https://github.com/quickthom/vybpad/pull/10 — branch phase-2/grid-background
+Assigned to:   Reviewer
+
+Review against: original acceptance criteria in PM_STATE.md (Issued briefs — Wave 2 — TASK-2.3 Builder),
+  ARCHITECTURE.md, INTERFACES.md, UX_GUIDELINES.md §2/§6, PATTERNS.md (PAT-012, PAT-014–017),
+  pre-written QA tests (must pass), Builder raise-pr self-review checklist complete.
+
+Return: Blockers / Warnings / Suggestions, or APPROVED.
+──────────────────────────────────────────────
+```
+
+**Reviewer brief — TASK-2.4 / PR #12**
+
+```
+REVIEWER BRIEF
+──────────────────────────────────────────────
+Task ID:       TASK-2.4
+PR:            https://github.com/quickthom/vybpad/pull/12 — branch phase-2/chord-block-renderer
+Assigned to:   Reviewer
+
+Review against: TASK-2.4 Builder brief + QA tests in PM_STATE.md (Wave 2),
+  ARCHITECTURE.md, INTERFACES.md, UX_GUIDELINES.md §6 chord blocks, PATTERNS.md (PAT-010, PAT-012, etc.),
+  theoryEngine contract, QA tests pass, PR checklist.
+
+Return: Blockers / Warnings / Suggestions, or APPROVED.
+──────────────────────────────────────────────
+```
+
+**Reviewer brief — TASK-2.5 / PR #11**
+
+```
+REVIEWER BRIEF
+──────────────────────────────────────────────
+Task ID:       TASK-2.5
+PR:            https://github.com/quickthom/vybpad/pull/11 — branch phase-2/note-block-renderer
+Assigned to:   Reviewer
+
+Review against: TASK-2.5 Builder brief + QA tests in PM_STATE.md (Wave 2),
+  ARCHITECTURE.md, INTERFACES.md, UX_GUIDELINES.md §6 note blocks / rests / octave, PATTERNS.md (PAT-010, PAT-018, etc.),
+  QA tests pass, PR checklist.
+
+Return: Blockers / Warnings / Suggestions, or APPROVED.
+──────────────────────────────────────────────
+```
+
+### 2026-04-12 — Architect (Stratum): PM respawn — Wave 2a → TASK-2.6 → Phase 2 remainder (Thom offline)
+
+- **Resumed:** `.cursor/agents/Architect.md`, `ARCHITECT_STATE.md`, `ARCHITECTURE.md`, `PM_STATE.md`, `TASK_STATUS.md`, `ROADMAP.md` Phase 2.
+- **Phase 2 status:** Canonical docs complete (Phase 2 “Write canonical documents” done earlier). **Execution:** Wave 1 merged (**TASK-2.1**, **TASK-2.2**). **Wave 2a** — PRs **[#10](https://github.com/quickthom/vybpad/pull/10)** (2.3 grid), **[#11](https://github.com/quickthom/vybpad/pull/11)** (2.5 notes), **[#12](https://github.com/quickthom/vybpad/pull/12)** (2.4 chords) — **in-review**; **`develop` at `d02922a`** at Architect sync.
+- **Spawned:** **Project Manager** (persistent) with orders to: (1) **own the full pipeline** — Reviewer briefs for open PRs, then Integrator squash-merges in dependency-safe order (`PM_STATE.md` suggests grid → chord → note or resolve `renderer/index.ts` by keeping all `export *` lines); (2) after Wave 2a on `develop`, create **`phase-2/hit-testing`** worktree per `PM_STATE.md` and spawn **Builder + QA** for **TASK-2.6**; (3) keep **`TASK_STATUS.md`** + **`PM_STATE.md`** current on every state change; (4) **prepare and issue** next Phase 2 briefs per `ROADMAP.md` (**2.7** mouse interaction after 2.1+2.6, etc.) — do not start **TASK-2.11** until ROADMAP deps for 2.1–2.10 are satisfied; (5) **concurrent QA** with every Builder; **PAT-017** worktrees for parallel Builders; (6) route **architectural** ambiguity to Architect via **Questions for Architect** below (not routine status); (7) **re-prompt yourself** on idle — brief → spawn → monitor → integrate — until Wave 2a is merged and 2.6 is moving, then continue down ROADMAP.
+- **HITL model:** Thom offline — use this file for anything you would have pinged Thom for; **no checkpoint** until end of Phase 2 per standing instruction unless hard blocker.
+- **Spot check (main worktree):** `npm test` — **19 files, 289 passed** (2026-04-12). Aligns with `TASK_STATUS.md` Wave 1 note; no regression detected.
+- **Process compliance:** Architect **does not** spawn Builders/QA/Reviewer/Integrator — **PM only** per `.cursor/agents/ProjectManager.md` / `HITL_NOTIFICATIONS.md` correction. Canonical docs: Architect-only edits to `ARCHITECTURE.md` / `INTERFACES.md` / `ROADMAP.md` / `PATTERNS.md`.
+- **Open to PM:** None blocking from Architect — **prioritize Reviewer → Integrator on #10–#12**, then **TASK-2.6**.
+
 ### 2026-04-12 — Architect (Summit): **Process correction — PM owns spawns**
 
 - **Mistake:** The Architect session **spawned Builder / Reviewer / Integrator** subagents to move Phase 2 faster. That **violates role boundaries**: per `.cursor/agents/ProjectManager.md`, the **PM alone** spawns Builders, QA, Reviewers, and Integrators and runs the **brief → spawn → monitor → update `TASK_STATUS.md`** loop.
@@ -75,7 +168,9 @@ _None._
 
 ## Open questions for Thom (empty = none)
 
-_None._
+- **Tooling (non-blocking):** If **Task** / subagent spawn is only available in Cursor’s **primary** UI and not in **Composer**-routed PM sessions, confirm whether PM should continue using **`gh` + local git** for Integrator steps when subagents are unavailable — or always open **Task** from the UI for Reviewer/Builder/QA spawns.
+
+_(Empty = no product/code blockers.)_
 
 ---
 

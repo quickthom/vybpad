@@ -1,6 +1,6 @@
 # PM STATE — vYbpad
 
-> PM continuity handoff — **not** a duplicate of `TASK_STATUS.md`. Updated **2026-04-12** — Phase 2 **Wave 2 briefs issued** (TASK-2.3–2.5); TASK-2.6 queued.
+> PM continuity handoff — **not** a duplicate of `TASK_STATUS.md`. Updated **2026-04-12** — TASK-2.7 **Builder + QA briefs issued** (see **Issued briefs — TASK-2.7 (2026-04-12)**); spawn agents from `develop` (`1fe2334`) + PAT-017 worktree.
 
 ---
 
@@ -8,14 +8,14 @@
 
 **You (PM) own the full pipeline:** briefs, **spawning** Builders / QA / Reviewer / Integrator / DevOps, monitoring output, and `TASK_STATUS.md` updates. The Architect **does not** spawn those agents (corrective note in `HITL_NOTIFICATIONS.md`); Architect authorizes phases and maintains canonical docs only.
 
-**Your next moves:** Run the normal loop on **open PRs** (e.g. **#10–#12**): spawn **Reviewer** when ready, then **Integrator** after approval; then brief **TASK-2.6** + worktree when Wave 2a is on `develop`. Do not wait for Architect to spawn Builders.
+**Your next moves:** **2026-04-12:** Integrator squash-merged **#13** TASK-2.6 → `develop` (`1fe2334` tip). **Now:** Spawn **Builder + QA** for **TASK-2.7** using **Issued briefs — TASK-2.7 (2026-04-12)**; branch `phase-2/mouse-interaction`, worktree `/home/thom/py/vYbpad-worktrees/task-2-7-mouse`.
 
 ---
 
 ## Remote & tip
 
 - **GitHub:** https://github.com/quickthom/vybpad — `origin`, default **`develop`**.
-- **`develop` HEAD:** `f521310` — Wave 2 branches cut from this tip; pull and run **`npm install`** at repo root (and per worktree) before tests.
+- **`develop` HEAD:** `1fe2334` — TASK-2.6 landed; pull **`git fetch origin`** before acting; run **`npm install`** at repo root (and per worktree) before tests.
 - **Merged PRs:** [#9](https://github.com/quickthom/vybpad/pull/9) TASK-2.2 · [#8](https://github.com/quickthom/vybpad/pull/8) TASK-2.1
 
 ---
@@ -35,11 +35,12 @@
 
 ## Next actions (pipeline)
 
-1. **Spawn Builders + QA** for TASK-2.3, TASK-2.4, TASK-2.5 (three parallel worktrees — see Issued briefs — Wave 2). **TASK-2.6:** spawn after Wave 2a merges to `develop` or first PR lands (barrel `index.ts` coordination).
-2. **Integrator merge order (suggested):** `phase-2/grid-background` → `phase-2/chord-block-renderer` → `phase-2/note-block-renderer` → then cut `phase-2/hit-testing` from updated `develop` for TASK-2.6. Rebase remaining feature branches when `index.ts` conflicts appear.
-3. **QA** concurrent with each Builder; **Reviewer** → **Integrator** per PR.
-4. **Designer:** Chord/note rendering (2.4/2.5) — already aligned in `UX_GUIDELINES.md` §6 / PAT-012; flag gaps only if brief vs UX conflict.
-5. **TASK-2.11 (ui-store):** still **do not start** until ROADMAP deps for 2.1–2.10 satisfied.
+1. **Done (2026-04-12):** Wave 2a squash-merged: **#10** TASK-2.3, **#12** TASK-2.4, **#11** TASK-2.5 → `develop`.
+2. **Done (2026-04-12):** TASK-2.6 squash-merged: **#13** → `develop` (`1fe2334`); `origin/phase-2/hit-testing` deleted. Local branch may remain until **`git worktree remove`** on task-2-6 worktree.
+3. **Now:** **TASK-2.7** — spawn **Builder + QA** (concurrent) per **Issued briefs — TASK-2.7 (2026-04-12)**. ROADMAP deps: **2.1 ✓, 2.6 ✓**. Branch `phase-2/mouse-interaction`, worktree `/home/thom/py/vYbpad-worktrees/task-2-7-mouse`.
+4. **QA** concurrent with Builder; **Reviewer** → **Integrator** after TASK-2.7 PR.
+5. **Designer:** Chord/note rendering (2.4/2.5) — already aligned in `UX_GUIDELINES.md` §6 / PAT-012; flag gaps only if brief vs UX conflict.
+6. **TASK-2.11 (ui-store):** still **do not start** until ROADMAP deps for 2.1–2.10 satisfied.
 
 ---
 
@@ -416,7 +417,7 @@ TASK BRIEF
 Task ID:       TASK-2.6
 Branch:        phase-2/hit-testing
 Assigned to:   Builder
-Status:        blocked (branch/worktree not created — PM will signal unblocked)
+Status:        in-progress (worktree ready — PM unblocked 2026-04-12)
 
 Objective:
   Implement a **hit-testing / spatial index** for the editor canvas: given `(x, y)` in viewport coordinates, return which chord or note (if any) is under the cursor — using the **same geometric model** as the renderers (layout + PAT-012 dimensions). May duplicate rect math in pure functions or share helpers if extracted without circular imports.
@@ -449,9 +450,7 @@ Spark flag:
   Spark not appropriate.
 
 Unblock criteria:
-  After TASK-2.3–2.5 PRs merge or Integrator clears `index.ts` — create worktree:
-  `git worktree add -b phase-2/hit-testing /home/thom/py/vYbpad-worktrees/task-2-6-hit-testing develop`
-  then `npm install` at repo root of worktree.
+  **Met (2026-04-12).** Worktree: `/home/thom/py/vYbpad-worktrees/task-2-6-hit-testing` — `npm install` already run at repo root of worktree.
 
 Read ARCHITECTURE.md, INTERFACES.md, PATTERNS.md, and .cursor/agents/Builder.md before coding.
 ──────────────────────────────────────────────
@@ -475,6 +474,114 @@ Interfaces to test against (from INTERFACES.md):
 When done, send a STATUS_UPDATE to the PM.
 ──────────────────────────────────────────────
 ```
+
+---
+
+## Issued briefs — TASK-2.7 (2026-04-12)
+
+**PAT-017:** `git worktree add /home/thom/py/vYbpad-worktrees/task-2-7-mouse phase-2/mouse-interaction` from `develop` after `git fetch origin`. Builder runs `npm install` at worktree repo root before tests.
+
+### TASK-2.7 — Builder
+
+```
+TASK BRIEF
+──────────────────────────────────────────────
+Task ID:       TASK-2.7
+Branch:        phase-2/mouse-interaction
+Assigned to:   Builder
+Status:        in-progress
+
+Objective:
+  Implement **mouse interaction** on the grid editor: pointer hit-testing via `hitTestEditorCanvas`, click to select chord or note, drag to move and resize (pixel deltas mapped to tick / duration / scale-degree row using the layout engine), with `Selection` and `Viewport` state wired through props; dispatch edits to `SongStore` through `onChordEdit` / `onNoteEdit`.
+
+Files expected to be created or modified:
+  - `client/src/components/EditorCanvas.tsx` (or equivalent path under `client/src/components/`): React canvas host implementing `EditorCanvasProps` from INTERFACES.md — `ref` canvas, coordinate transform from client/DOM space to viewport `(x,y)` consistent with `hitTestEditorCanvas` and layout (`absoluteTickToViewportX`, `noteBlocks` / chord rects).
+  - `client/src/App.tsx` (and/or a thin editor shell): `useSongStore` — wire `onChordEdit` → `editChord`, `onNoteEdit` → `editNote`; pass `song`, stub or minimal `playbackTick`, `activeVoice`, `entryMode`, `showGuides`, `colorScheme` per props until later tasks.
+  - Optional: `client/src/editor/` or `client/src/components/editor/` helper module for pointer state machine (down / move / up, drag threshold) if it keeps the component readable — **must** still satisfy `EditorCanvasProps` at the boundary.
+  - `client/tests/unit/...` and/or `client/tests/...` per QA brief (PAT-014 locations as applicable).
+
+Acceptance criteria:
+  1. **Hit test:** Uses exported `hitTestEditorCanvas` from `client/src/engine/renderer/hitTest.ts` (re-exported via renderer barrel) with `(x,y)` in the same coordinate space as layout + renderers (document the transform from `PointerEvent` + canvas bounds in the PR).
+  2. **Click → selection:** On primary click over a chord or note hit, `onSelectionChange` receives a `Selection` value matching INTERFACES.md (`type: "chord" | "note"`, `measureIndex`, `eventIds` containing the hit event’s `id`). Click on empty canvas (miss) clears selection via `onSelectionChange(null)` or documented alternative — PR must state the rule.
+  3. **Drag move:** With a chord or note selected, dragging maps horizontal pixel delta to tick/`beat` changes using `layout` helpers (e.g. `horizontalPxToTicks`, `viewportXToAbsoluteTick`, measure-local clamping per PAT-004) and dispatches `ChordEditAction` `{ type: "move", … }` or `NoteEditAction` `{ type: "move", … }` with valid `newBeat` (and vertical move for notes: `newScaleDegree` / `newOctave` / `chromatic` per row math inverse consistent with `noteRowY` / PAT-018 — document rounding).
+  4. **Drag resize:** Horizontal resize (e.g. trailing edge) maps pixel delta to duration ticks and dispatches `resize` actions with `newDuration`; clamp so events stay within measure length and remain valid (positive duration).
+  5. **Store:** `onChordEdit` / `onNoteEdit` are wired to Zustand `SongStore.editChord` / `editNote` so mutations participate in undo/redo; after edits, canvas reflects updated `song` from store.
+  6. **Viewport / selection storage (until TASK-2.11):** `viewport` and `selection` may live in React component state or a small local module — **must** match INTERFACES.md `Viewport` and `Selection | null`; PR documents which approach and how `onViewportChange` / `onSelectionChange` are used.
+  7. `npm test` passes including QA-committed tests.
+
+Dependencies:
+  TASK-2.1 (merged), TASK-2.6 (merged)
+
+Interfaces this task consumes (from INTERFACES.md):
+  - `EditorCanvasProps`, `Viewport`, `Selection`
+  - `ChordEditAction`, `NoteEditAction`
+  - `SongStore` — `editChord`, `editNote` (and fields needed to read `song`)
+
+UX guidelines this task must follow (from UX_GUIDELINES.md):
+  - §6 **Selection** — fill `SELECTION_COLOR`, outline 1px `#2563EB` (or 80% opacity); §6 **Hover** — hovered event outline or luminance (minimal implementation acceptable if documented).
+  - §8 **Drag affordances** — draggable blocks: cursor `grab`; while dragging `grabbing`.
+
+Patterns to apply (from PATTERNS.md):
+  - PAT-004: tick arithmetic and measure bounds.
+  - PAT-012: canvas metrics alignment with layout/renderer.
+  - PAT-014: tests under `client/tests/...` per project conventions.
+  - PAT-015: branch `phase-2/mouse-interaction`.
+  - PAT-016: shared types from `@vybpad/shared`.
+  - PAT-017: isolated worktree — `working_directory` below.
+
+Spark flag:
+  Spark not appropriate — pointer coordination and layout inverse math need careful review.
+
+Working directory: /home/thom/py/vYbpad-worktrees/task-2-7-mouse
+Branch `phase-2/mouse-interaction` must be checked out there (create worktree from `develop` if not present). Run `npm install` at the **repo root** of this worktree before dev/test.
+Read ARCHITECTURE.md, INTERFACES.md, PATTERNS.md, UX_GUIDELINES.md (§6–§8), and `.cursor/agents/Builder.md` before coding.
+──────────────────────────────────────────────
+```
+
+### TASK-2.7 — QA (concurrent)
+
+```
+QA BRIEF
+──────────────────────────────────────────────
+Task ID:       TASK-2.7
+Branch:        phase-2/mouse-interaction
+Assigned to:   QA / Test Writer
+
+This brief is concurrent with the Builder brief for TASK-2.7.
+The Builder is implementing the feature described below.
+Your job is to write a failing test suite against the acceptance criteria
+and interface contracts before the Builder's PR lands.
+
+Branch strategy:
+  Commit your tests to the Builder's feature branch, not a separate QA branch. Check out `phase-2/mouse-interaction`, write your tests, confirm they fail, and commit. The Builder will implement against your failing tests on the same branch. Tests and implementation will land together in the Builder's PR.
+
+Working directory: /home/thom/py/vYbpad-worktrees/task-2-7-mouse (after PM creates worktree from `develop`)
+
+Acceptance criteria to test against:
+  (Same seven items as Builder brief TASK-2.7.)
+
+Interfaces to test against (from INTERFACES.md):
+  - `EditorCanvasProps`, `Viewport`, `Selection`, `ChordEditAction`, `NoteEditAction`
+  - `SongStore` — `editChord`, `editNote`
+  - Renderer: `hitTestEditorCanvas` and `EditorCanvasHit` from `hitTest` (exported via renderer barrel)
+
+Your tests must be committed and failing before the Builder raises their PR.
+When done, send a STATUS_UPDATE to the PM.
+──────────────────────────────────────────────
+```
+
+---
+
+## Queued — TASK-2.7+ (remaining; do not start TASK-2.11)
+
+| Task | ROADMAP deps | Objective (one line) |
+|------|----------------|----------------------|
+| **TASK-2.7** | 2.1, **2.6** | *(briefs issued 2026-04-12 — see **Issued briefs — TASK-2.7** above)* |
+| **TASK-2.8** | 2.1 | Keyboard: scale degrees, duration, delete, arrows — per UX/Hookpad parity. |
+| **TASK-2.9** | 2.8 | Entry modes (table vs text). |
+| **TASK-2.10** | 2.1 | Measure bar: add/delete measures, selection. |
+
+**TASK-2.11 (ui-store):** blocked until **2.1–2.10** ROADMAP deps satisfied — no branch until then.
 
 ---
 
