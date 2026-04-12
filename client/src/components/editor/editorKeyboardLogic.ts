@@ -132,6 +132,7 @@ export function shouldUseNoteEntry(selection: Selection | null): boolean {
 
 /** Both modes accept chord digits; text mode requires a prior duration key (handled in useKeyboard). */
 export function shouldAllowChordDigitEntry(_entryMode: 'table' | 'text'): boolean {
+  void _entryMode; // reserved for future mode-specific rules
   return true;
 }
 

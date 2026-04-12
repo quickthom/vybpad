@@ -4,7 +4,14 @@
  * Selection chrome: UX §6 — fill rgba(59,130,246,0.2), border #2563EB.
  */
 
-import { useCallback, useEffect, useRef, useState, type MouseEvent, type PointerEvent } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type MouseEvent,
+  type PointerEvent as ReactPointerEvent,
+} from 'react';
 
 export interface MeasureBarProps {
   measureCount: number;
@@ -74,10 +81,10 @@ export function MeasureBar({
     selectedMeasures === null ||
     measureCount - (selectedMeasures[1] - selectedMeasures[0] + 1) < 1;
 
-  const handlePointerDown = (index: number, e: PointerEvent<HTMLButtonElement>) => {
+  const handlePointerDown = (index: number, e: ReactPointerEvent<HTMLButtonElement>) => {
     dragStartRef.current = index;
     dragCurrentRef.current = index;
-    const up = (upEvent: PointerEvent) => {
+    const up = (upEvent: globalThis.PointerEvent) => {
       if (upEvent.pointerId !== e.pointerId) return;
       window.removeEventListener('pointerup', up);
       const start = dragStartRef.current;
