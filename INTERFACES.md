@@ -428,6 +428,8 @@ interface EditorCanvasProps {
   onNoteEdit: (measureIndex: number, voice: number, event: NoteEditAction) => void;
   onSelectionChange: (selection: Selection | null) => void;
   onViewportChange: (viewport: Viewport) => void;
+  getSongAfterMutation?: () => SongData;  // post-mutation store snapshot for keyboard auto-advance; optional escape hatch for React render-cycle staleness
+  onToggleEntryMode?: () => void;          // callback for Tab key to signal mode switch to parent; paired with entryMode prop
 }
 
 interface Viewport {

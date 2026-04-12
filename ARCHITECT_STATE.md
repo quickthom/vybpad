@@ -2,7 +2,7 @@
 
 > Periodically updated cache of the Architect's current state. Review on session resume.
 
-**Last updated:** 2026-04-12 — Phase 2 execution: **Wave 2a merged**; **TASK-2.6** merged — PR [#13](https://github.com/quickthom/vybpad/pull/13) squash **`1fe2334`** on code; **handoff docs** on `develop` after that (pull `origin/develop`); **next:** **TASK-2.7** — briefs in **`PM_STATE.md` → Issued briefs — TASK-2.7**; spawn Builder + QA from PAT-017 worktree
+**Last updated:** 2026-04-12 — TASK-2.9 escalation resolved: `INTERFACES.md` updated with two optional `EditorCanvasProps` additions (`getSongAfterMutation`, `onToggleEntryMode`). PR #18 unblocked.
 
 ---
 
@@ -54,7 +54,9 @@
 
 ## No Escalations Pending
 
-No outstanding escalations at last Architect sync. PM is instructed to route architectural questions to Architect via `HITL_NOTIFICATIONS.md` (Questions for Architect) if Thom is offline.
+No outstanding escalations. Most recent resolution:
+
+**2026-04-12 — TASK-2.9 (entry modes):** Added two optional props to `EditorCanvasProps` in `INTERFACES.md`: `getSongAfterMutation?: () => SongData` and `onToggleEntryMode?: () => void`. PR #18 (`phase-2/entry-modes`) unblocked — no Builder refactor required. See `HITL_NOTIFICATIONS.md` for full rationale.
 
 ## Build Progress Summary
 

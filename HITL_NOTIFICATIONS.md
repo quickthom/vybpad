@@ -162,7 +162,60 @@ Return: Blockers / Warnings / Suggestions, or APPROVED.
 
 _Use this for architectural ambiguity that cannot be resolved from `ARCHITECTURE.md` / `PATTERNS.md`. Architect resolves here; Thom reads on return._
 
-_None._
+### 2026-04-12 — PM (Tempo): ⛔ TASK-2.9 BLOCKED — EditorCanvasProps interface extension needed
+
+**Blocking task:** TASK-2.9 (entry modes) — PR #18 (`phase-2/entry-modes`)
+
+**Problem:** The Builder added two optional props to `EditorCanvasProps` in `client/src/components/editor/EditorCanvas.tsx`:
+- `getSongAfterMutation?: () => SongData` — provides post-mutation song snapshot to keyboard hook for auto-advance logic
+- `onToggleEntryMode?: () => void` — allows keyboard hook to signal mode toggle to parent
+
+These props are **absent from INTERFACES.md** `EditorCanvasProps` definition. The Reviewer correctly flagged this as a blocker. No merge may proceed without Architect sign-off.
+
+**PM question for Architect:**
+1. Should these two props be added to `EditorCanvasProps` in `INTERFACES.md`? They appear to solve a real coordination need (auto-advance after mutation requires reading the updated song; mode toggle needs a callback to parent state).
+2. Alternatively: should the Builder solve this without extending the public interface — e.g., by reading song state from the Zustand store directly (since `SongStore` is already in scope), and by moving `entryMode` into a local module or prop already on the props contract?
+
+**PM recommendation:** Option 2 (no interface extension) is preferable if the keyboard hook can import `useSongStore` directly (which it can — the hook is a client-side module). The `onToggleEntryMode` prop may also be unnecessary if the toggle is handled via a shared state setter. This would avoid an INTERFACES.md change entirely. But the Architect must decide.
+
+**PR #18 is on hold.** TASK-2.9 status = `blocked`. Will re-brief Builder once Architect responds.
+
+**TASK-2.11** remains blocked on TASK-2.9 completing; no impact on other tasks.
+
+---
+
+### 2026-04-12 — Architect (Meridian): ESCALATION RESOLUTION — TASK-2.9 EditorCanvasProps
+
+```
+ESCALATION RESOLUTION
+Task ID: TASK-2.9
+Escalated by: PM (Tempo)
+Decision: Option A — add both optional props to EditorCanvasProps in INTERFACES.md. Done.
+  getSongAfterMutation?: () => SongData
+  onToggleEntryMode?: () => void
+Rationale:
+  1. onToggleEntryMode is the natural paired callback for the existing entryMode prop, consistent
+     with onSelectionChange, onViewportChange, etc. The component already receives entryMode as a
+     controlled prop from the parent; adding its toggle callback is the correct symmetry. Moving
+     entryMode into Zustand would overengineer a UI concern that is correctly local to App.tsx.
+  2. getSongAfterMutation solves a specific React/Zustand render-cycle timing issue: after
+     onChordEdit/onNoteEdit dispatches a Zustand mutation, props.song is stale until the next
+     render, but useSongStore.getState() returns the synchronously-updated value immediately. The
+     prop is a clean capability injection — the hook reads fresh state via the callback without
+     creating a hidden store dependency inside the hook. It also preserves testability: tests mock
+     it as a simple () => SongData function rather than mocking the store module.
+  3. Both props are optional (?:) — zero breaking change to existing EditorCanvas consumers.
+  4. PM's Option 2 (hook reads useSongStore directly + entryMode moved to store) was rejected:
+     - Importing useSongStore inside useKeyboard creates hidden coupling; breaks testability.
+     - Moving entryMode to Zustand is an architectural change that has no benefit beyond avoiding
+       these two props; it would require updating store interfaces and PM_STATE briefs.
+Documents updated: INTERFACES.md — EditorCanvasProps has two new optional props appended.
+Action for PM: Unblock TASK-2.9. PR #18 (phase-2/entry-modes) may proceed to Integrator review.
+  No Builder refactor is required. The implementation already matches the updated INTERFACES.md.
+  Reviewer should confirm EditorCanvas.tsx prop names match: getSongAfterMutation, onToggleEntryMode.
+  Note: useKeyboard.ts EditorKeyboardContext has a legacy onEntryModeToggle alias (line 39) — this
+  is internal to the hook context, not an EditorCanvasProps concern; non-blocking for merge.
+```
 
 ---
 
