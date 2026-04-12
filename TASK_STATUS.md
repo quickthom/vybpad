@@ -2,7 +2,7 @@
 
 > Single source of truth for build state. Owned by the Project Manager. Updated on every state change.
 
-**`develop` tip:** `648106d` — https://github.com/quickthom/vybpad (`docs(pm): align PM_STATE and TASK_STATUS after Phase 1`; code milestone remains Phase 1 merge `a8cf52a` ancestry).
+**`develop` tip:** `0365350` — https://github.com/quickthom/vybpad (Phase 2 handoff docs; Phase 1 code milestone `a8cf52a` still in ancestry).
 
 ---
 
@@ -101,27 +101,33 @@ All Phase 0 tasks merged to develop.
 
 ## Phase 2 — Grid Editor & Song State
 
-**Authorized:** ROADMAP 2.1–2.15. **Parallel wave 1 (active):** TASK-2.1 + TASK-2.2 (isolated worktrees, PAT-017).
+**Authorized:** ROADMAP 2.1–2.15. **Parallel wave 1:** TASK-2.1 + TASK-2.2 — **PRs open** (awaiting review + merge).
 
 ### TASK-2.1: Zustand song store (mutations, undo/redo)
 
-- **Assigned role:** Builder + QA (concurrent)
+- **Assigned role:** Builder + QA (concurrent) → Reviewer
 - **Branch:** `phase-2/song-store` (PAT-015)
 - **Worktree:** `/home/thom/py/vYbpad-worktrees/phase-2-song-store`
-- **Status:** in-progress
+- **Status:** in-review
+- **PR:** https://github.com/quickthom/vybpad/pull/8
+- **Tip commit:** `abfc16b` (on branch; feat `5bb59d9` + QA tests)
+- **Tests:** `npm test` — 17 files, 261 passed (worktree)
 - **Depends on:** TASK-0.4 (merged)
 - **Blocking notes:** none
-- **Last updated:** 2026-04-12: PM brief issued; worktree on `develop` @ `648106d`; `npm install` run in worktree.
+- **Last updated:** 2026-04-12: Implementation + QA complete; pushed; PR #8 opened.
 
 ### TASK-2.2: Canvas layout engine (tick→pixel, pitch→pixel, viewport)
 
-- **Assigned role:** Builder + QA (concurrent)
+- **Assigned role:** Builder + QA (concurrent) → Reviewer
 - **Branch:** `phase-2/layout-engine` (PAT-015)
 - **Worktree:** `/home/thom/py/vYbpad-worktrees/phase-2-layout-engine`
-- **Status:** in-progress
+- **Status:** in-review
+- **PR:** https://github.com/quickthom/vybpad/pull/9
+- **Tip commit:** `d5d7bc5` (branch head; QA tests `dc2d03e` in history)
+- **Tests:** `npm test` — 18 files, 264 passed (worktree)
 - **Depends on:** TASK-0.4 (merged)
 - **Blocking notes:** none
-- **Last updated:** 2026-04-12: PM brief issued; worktree on `develop` @ `648106d`; `npm install` run in worktree.
+- **Last updated:** 2026-04-12: Implementation + QA complete; pushed; PR #9 opened.
 
 ---
 

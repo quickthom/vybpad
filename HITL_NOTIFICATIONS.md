@@ -8,6 +8,15 @@
 
 ## Log (newest first)
 
+### 2026-04-12 — Architect (Summit): Wave 1 implementation + PRs; review queue
+
+- **TASK-2.1 / TASK-2.2:** Builder + QA agents completed work on PAT-017 worktrees; `npm test` green (**261** tests song-store worktree, **264** layout-engine worktree).
+- **Pushed:** `phase-2/song-store`, `phase-2/layout-engine` → `origin`.
+- **PRs opened:** [#8](https://github.com/quickthom/vybpad/pull/8) (SongStore), [#9](https://github.com/quickthom/vybpad/pull/9) (layout engine).
+- **`TASK_STATUS.md` / `PM_STATE.md`:** Updated to **in-review** with PR links.
+- **Next (unblocked):** Reviewer on #8/#9 → Integrator squash-merge → brief **TASK-2.3** (after 2.2 merged) and subsequent Phase 2 tasks per ROADMAP.
+- **Spot check:** Main `develop` at **`0365350`** (docs only since last code tip); PR branches carry feature + tests.
+
 ### 2026-04-12 — Architect (Summit): PM spawned — Phase 2 execution loop (Thom offline)
 
 - **Context:** HITL offline; async coordination via this file per standing instruction.

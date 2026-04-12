@@ -1,36 +1,36 @@
 # PM STATE — vYbpad
 
-> PM continuity handoff — **not** a duplicate of `TASK_STATUS.md`. Updated **2026-04-12** — Phase 2 wave 1 briefed (TASK-2.1 + TASK-2.2).
+> PM continuity handoff — **not** a duplicate of `TASK_STATUS.md`. Updated **2026-04-12** — Phase 2 wave 1 PRs **#8** and **#9** in review.
 
 ---
 
 ## Remote & tip
 
 - **GitHub:** https://github.com/quickthom/vybpad — `origin`, default **`develop`**.
-- **`develop` HEAD:** `648106d` — `docs(pm): align PM_STATE and TASK_STATUS after Phase 1`  
-  *(Aligned with `TASK_STATUS.md` tip line after PM sync; `git fetch origin develop` matches.)*
+- **`develop` HEAD:** `0365350` — Phase 2 coordination docs on `develop` (pull before Integrator merge).
+- **Open PRs:** [#8](https://github.com/quickthom/vybpad/pull/8) TASK-2.1 song store · [#9](https://github.com/quickthom/vybpad/pull/9) TASK-2.2 layout engine
 
 ---
 
-## Phase 2 — active parallel wave (2026-04-12)
+## Phase 2 — wave 1 (2026-04-12)
 
-| Task | Branch | Worktree | `npm install` |
-|------|--------|----------|---------------|
-| TASK-2.1 | `phase-2/song-store` | `/home/thom/py/vYbpad-worktrees/phase-2-song-store` | done |
-| TASK-2.2 | `phase-2/layout-engine` | `/home/thom/py/vYbpad-worktrees/phase-2-layout-engine` | done |
+| Task | Branch | PR | Status |
+|------|--------|-----|--------|
+| TASK-2.1 | `phase-2/song-store` | [#8](https://github.com/quickthom/vybpad/pull/8) | in-review |
+| TASK-2.2 | `phase-2/layout-engine` | [#9](https://github.com/quickthom/vybpad/pull/9) | in-review |
 
-**Spawn status:** Briefs below are ready for **Builder + concurrent QA** sessions. This PM session prepared branches, worktrees, and docs; **open two Builder agents and two QA agents** (or equivalent) with the matching prompts — Cursor Task spawning is not available from this chat context.
+Worktrees still exist at `/home/thom/py/vYbpad-worktrees/phase-2-song-store` and `phase-2-layout-engine` until Integrator merges and removes them.
 
-**Note:** A third worktree `phase-2-ui-store` on branch `phase-2/ui-store` exists (TASK-2.11 scope per ROADMAP). **Do not start 2.11** until dependencies land; retire or ignore until briefed.
+**Note:** `phase-2-ui-store` worktree (TASK-2.11) — **do not start** until ROADMAP deps met.
 
 ---
 
 ## Next actions (pipeline)
 
-1. **Builders** implement TASK-2.1 and TASK-2.2 on the branches above; **QA** commits failing tests on the same branches first (per process).
-2. When both PRs are green, **Reviewer** on each PR; then **Integrator** squash-merge to `develop` (order: either merge order OK if no conflicts — prefer **2.2 first** if 2.3 will touch renderer + layout; 2.1 is independent).
-3. After merges: `git worktree remove` the two Phase 2 worktrees; re-brief **TASK-2.3** (needs 2.2) and continue **TASK-2.1** parallel work if 2.1 still open (ROADMAP: 2.3 parallel with 2.1 once 2.2 landed).
-4. **Designer:** Persistent Designer available for UI-heavy Phase 2 tasks (2.4+); not required for 2.1 / 2.2 (non-UI core modules).
+1. **Reviewer** approve (or request changes on) **#8** and **#9**; CI must be green.
+2. **Integrator** squash-merge to `develop` (either order if independent — **#9** first is slightly nicer for TASK-2.3 follow-on).
+3. After merges: `git worktree remove` the two Phase 2 worktrees; brief **TASK-2.3** (depends on 2.2) + continue Phase 2 per `ROADMAP.md`.
+4. **Designer:** UI-heavy tasks from **2.4** onward as briefs issue.
 
 ---
 

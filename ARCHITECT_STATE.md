@@ -2,7 +2,7 @@
 
 > Periodically updated cache of the Architect's current state. Review on session resume.
 
-**Last updated:** 2026-04-12 — Phase 2 active; PM respawned with execution brief (Thom offline; `HITL_NOTIFICATIONS.md` async log); test spot check 236/236 green
+**Last updated:** 2026-04-12 — Phase 2 wave 1: TASK-2.1 + TASK-2.2 **PRs #8/#9** in review; `TASK_STATUS` / `PM_STATE` synced; worktree tests 261 + 264 passed
 
 ---
 
@@ -72,5 +72,6 @@ No outstanding escalations at last Architect sync. PM is instructed to route arc
 
 ## Develop Branch HEAD at Shutdown
 
-Phase 1 code milestone: **`a8cf52a`** — 1B.6 API integration tests (#7).  
-Doc-only follow-ups may land after; verify tip with `git fetch origin && git log --oneline -3 origin/develop`.
+**Docs tip on `develop`:** **`0365350`** — Phase 2 handoff + HITL log.  
+Phase 1 code milestone still **`a8cf52a`** in history (1B.6 #7). **Open PRs:** #8 (2.1), #9 (2.2).  
+Verify with `git fetch origin && git log --oneline -5 origin/develop`.
