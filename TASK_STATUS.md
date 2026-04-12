@@ -22,7 +22,7 @@
 - **Status:** approved
 - **Depends on:** TASK-0.1
 - **Blocking notes:** —
-- **Last updated:** 2026-04-12: Committed (fa0156f). Files: index.html, App.tsx, main.tsx, vite.config.ts, Tailwind v4, eslint config update. Ready to merge after TASK-0.1.
+- **Last updated:** 2026-04-12: Committed (fa0156f). Files: index.html, App.tsx, main.tsx, vite.config.ts, Tailwind v4, eslint config update. Merged to develop.
 
 ### TASK-0.3: Server scaffold (Fastify + TypeScript)
 

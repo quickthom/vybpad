@@ -15,6 +15,14 @@ export default tseslint.config(
     },
   },
   {
-    ignores: ['**/node_modules/**', '**/dist/**', 'package-lock.json', 'eslint.config.js'],
+    ignores: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/build/**',
+      'package-lock.json',
+      'eslint.config.js',
+      // Typed by client/tsconfig.node.json; projectService does not attach it to client/tsconfig.json
+      'client/vite.config.ts',
+    ],
   },
 );
