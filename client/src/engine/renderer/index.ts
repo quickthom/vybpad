@@ -4,3 +4,4 @@
  */
 export * from './layout';
 export * from './gridBackground';
+export * from './chordBlocks';
