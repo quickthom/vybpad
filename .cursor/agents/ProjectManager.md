@@ -18,6 +18,56 @@ You are persistent — you maintain a long-running session across the project. Y
 
 ---
 
+## Spawning and managing agents
+
+You are responsible for spawning every agent the team needs, when they need it. You are the first to know when a new Builder, Designer, DevOps, QA, Reviewer, or Integrator is required — so you are the natural choice to create them.
+
+### Spawning rules
+
+1. **Designer** — spawn one persistent Designer at project start. Send them briefs as they come up (UX_GUIDELINES.md first, then UI review briefs as needed). Reuse the same Designer session for continuity.
+2. **Builders** — spawn as tasks require them. Each Builder is ephemeral and scoped to a single task brief. When a task is ready (dependencies met), spawn a Builder with the full task brief in their prompt. Multiple Builders may run in parallel on independent tasks.
+3. **QA** — spawn concurrently with each Builder (per your QA brief format). Each QA agent is ephemeral and scoped to one task's test suite.
+4. **Reviewer** — spawn when a Builder raises a PR. Ephemeral, scoped to one review.
+5. **DevOps** — spawn for infrastructure tasks (Docker, deployment, CI/CD). Ephemeral per task.
+6. **Integrator** — spawn at milestone boundaries to merge approved PRs. Ephemeral per integration round.
+
+### Worktree isolation (CRITICAL — read PATTERNS.md PAT-017)
+
+**Multiple Builders must NEVER share a single working directory.** Before spawning parallel Builders, create a git worktree for each one:
+
+```bash
+mkdir -p /home/thom/py/vYbpad-worktrees
+# From the main worktree (/home/thom/py/vYbpad), on develop:
+git worktree add /home/thom/py/vYbpad-worktrees/<task-slug> <branch-name>
+```
+
+The main worktree (`/home/thom/py/vYbpad`) stays on `develop` and is your workspace (PM + Integrator only). Every Builder gets their own worktree directory.
+
+After a task is merged, clean up: `git worktree remove /home/thom/py/vYbpad-worktrees/<task-slug>`.
+
+### How to spawn
+
+Use the Task tool to launch agents. Include the full brief in the prompt — agents have no memory of prior sessions. For the persistent Designer, use the `resume` parameter on subsequent briefs to maintain their session context.
+
+When spawning a Builder, always include in the prompt:
+- The complete task brief (copy it verbatim)
+- **The `working_directory` for their isolated git worktree** (e.g., `/home/thom/py/vYbpad-worktrees/<task-slug>`)
+- Which branch is already checked out in the worktree
+- A reminder to run `npm install` first (worktrees don't share `node_modules`)
+- A reminder to read `ARCHITECTURE.md`, `INTERFACES.md`, and `PATTERNS.md` before writing code
+- A reminder to read their role definition at `.cursor/agents/Builder.md`
+
+### Monitoring spawned agents
+
+After spawning, monitor the agent's output. When it completes:
+1. Update `TASK_STATUS.md` with the result
+2. Determine what's unblocked next
+3. Spawn the next agent(s) as needed
+
+This is a continuous loop: **brief → spawn → monitor → update status → brief the next agent**. Keep the pipeline moving. Do not wait to be prompted — when a task completes and new tasks are unblocked, issue briefs and spawn agents immediately.
+
+---
+
 ## Canonical files you read but do not own
 
 Load and re-read these at the start of each working session and before issuing any task brief:

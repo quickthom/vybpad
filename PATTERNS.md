@@ -268,7 +268,33 @@ Never duplicate these types in client or server packages. If a type is needed in
 
 ---
 
-## PAT-017: Chromatic Note Display
+## PAT-017: Git Worktrees for Parallel Tasks
+
+**Multiple Builders must NEVER share a single working directory.** When two or more tasks run in parallel, each Builder must operate in an isolated git worktree.
+
+**Worktree setup (PM responsibility before spawning parallel Builders):**
+
+```bash
+# Create a worktree directory
+mkdir -p /home/thom/py/vYbpad-worktrees
+# Create a worktree for a feature branch
+git worktree add /home/thom/py/vYbpad-worktrees/<branch-slug> <branch-name>
+```
+
+**Conventions:**
+- Worktree root: `/home/thom/py/vYbpad-worktrees/`
+- Worktree per branch: `/home/thom/py/vYbpad-worktrees/<task-slug>/`
+- The main worktree (`/home/thom/py/vYbpad`) stays on `develop` and is used by the PM and Integrator only
+- Each Builder's task brief must specify the `working_directory` for their worktree
+- After a task's PR is merged, clean up: `git worktree remove /home/thom/py/vYbpad-worktrees/<task-slug>`
+
+**When tasks are sequential** (no overlap), a single worktree is acceptable — just check out the new branch. But if two tasks might overlap in time, always use separate worktrees.
+
+**After `npm install`:** Each worktree needs its own `npm install` since `node_modules` is not shared across worktrees. Builders must run `npm install` as their first step.
+
+---
+
+## PAT-018: Chromatic Note Display
 
 When a note has a non-zero `chromatic` offset:
 - Flat (chromatic = -1): display `♭` before the scale degree number
