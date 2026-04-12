@@ -11,6 +11,7 @@ import type { FastifyError } from 'fastify';
 import { cookiePlugin } from './plugins/cookie.js';
 import { corsPlugin } from './plugins/cors.js';
 import { prismaPlugin } from './plugins/prisma.js';
+import { requireAccessToken, shouldSkipApiAuth } from './middleware/auth.js';
 import { authRoutes } from './routes/auth.js';
 import { healthRoutes } from './routes/health.js';
 
@@ -52,6 +53,20 @@ async function main(): Promise<void> {
   await app.register(corsPlugin);
   await app.register(cookiePlugin);
   await app.register(prismaPlugin);
+
+  // TASK-1B.2: JWT for all /api/* except register, login, refresh, health (ARCHITECTURE.md).
+  app.addHook('preHandler', (request, reply, done) => {
+    const pathname = new URL(request.url, 'http://localhost').pathname;
+    if (!pathname.startsWith('/api') || shouldSkipApiAuth(request.method, pathname)) {
+      done();
+      return;
+    }
+    requireAccessToken(request, reply);
+    if (reply.sent) {
+      return;
+    }
+    done();
+  });
 
   // PAT-001: API errors always expose a `code` discriminant (INTERFACES.md).
   // Registered before routes so schema validation failures are transformed (Fastify 5).

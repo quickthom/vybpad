@@ -14,5 +14,6 @@ Mira, Builder @ 7:50 PM on 4/12/26
 Harbor, Integrator @ 8:00 PM on 4/12/26
 Brook, Builder @ 8:30 PM on 4/12/26
 Trove, QA @ 9:05 PM on 4/12/26
+Ripple, Builder @ 9:20 PM on 4/12/26
 Cadence, QA @ 10:15 PM on 4/12/26
 Canon, QA @ 11:05 PM on 4/12/26

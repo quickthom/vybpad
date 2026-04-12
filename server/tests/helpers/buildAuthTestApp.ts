@@ -7,6 +7,7 @@ import { randomUUID } from 'node:crypto';
 
 import type { PrismaClient } from '@prisma/client';
 
+import { requireAccessToken, shouldSkipApiAuth } from '../../src/middleware/auth.js';
 import { cookiePlugin } from '../../src/plugins/cookie.js';
 import { authRoutes } from '../../src/routes/auth.js';
 
@@ -39,6 +40,20 @@ export async function buildAuthTestApp(prisma: PrismaClient) {
 
   await app.register(cookiePlugin);
   app.decorate('prisma', prisma);
+
+  // Mirror production (server/src/index.ts): JWT for /api/* except public auth + health.
+  app.addHook('preHandler', (request, reply, done) => {
+    const pathname = new URL(request.url, 'http://localhost').pathname;
+    if (!pathname.startsWith('/api') || shouldSkipApiAuth(request.method, pathname)) {
+      done();
+      return;
+    }
+    requireAccessToken(request, reply);
+    if (reply.sent) {
+      return;
+    }
+    done();
+  });
 
   app.setErrorHandler((error: FastifyError, request, reply) => {
     const isSchemaValidation =

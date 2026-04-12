@@ -4,7 +4,6 @@
 import { Prisma } from '@prisma/client';
 import type { FastifyPluginCallback, FastifyReply } from 'fastify';
 
-import { requireAccessToken } from '../middleware/auth.js';
 import {
   parseRefreshOpaque,
   registerUser,
@@ -139,8 +138,8 @@ export const authRoutes: FastifyPluginCallback = (app, _opts, done) => {
     return reply.status(200).send({ accessToken: outcome.accessToken });
   });
 
-  app.post('/auth/logout', { preHandler: requireAccessToken }, async (request, reply) => {
-    const auth = request.auth!;
+  app.post('/auth/logout', async (request, reply) => {
+    const user = request.user!;
     const raw = request.cookies[REFRESH_COOKIE];
     let revokedFamily = false;
 
@@ -152,7 +151,7 @@ export const authRoutes: FastifyPluginCallback = (app, _opts, done) => {
           const row = await app.prisma.refreshToken.findUnique({
             where: { id: parsed.id },
           });
-          if (row && row.user_id === auth.userId) {
+          if (row && row.user_id === user.userId) {
             await revokeFamilyTokens(app.prisma, row.family_id);
             revokedFamily = true;
           }
@@ -161,11 +160,11 @@ export const authRoutes: FastifyPluginCallback = (app, _opts, done) => {
     }
 
     if (!revokedFamily) {
-      await revokeAllRefreshTokensForUser(app.prisma, auth.userId);
+      await revokeAllRefreshTokensForUser(app.prisma, user.userId);
     }
 
     clearRefreshCookie(reply);
-    app.log.info({ reqId: request.id, userId: auth.userId }, 'User logged out');
+    app.log.info({ reqId: request.id, userId: user.userId }, 'User logged out');
     return reply.status(204).send();
   });
 
