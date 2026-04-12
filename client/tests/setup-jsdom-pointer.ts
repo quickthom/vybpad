@@ -1,3 +1,5 @@
+import '@testing-library/jest-dom/vitest';
+
 /**
  * Vitest jsdom has no native PointerEvent. @testing-library/dom synthesizes pointer events
  * via `new EventConstructor(...)`; when PointerEvent is missing, clientX/clientY stay 0 and
