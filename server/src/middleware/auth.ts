@@ -15,28 +15,28 @@ declare module 'fastify' {
 
 /**
  * Requires `Authorization: Bearer <accessToken>`. Sets `request.auth` on success.
+ * Implemented as async so the hook resolves correctly with Fastify's lifecycle (including `inject()`).
  */
-export function requireAccessToken(request: FastifyRequest, reply: FastifyReply): void {
+export async function requireAccessToken(
+  request: FastifyRequest,
+  reply: FastifyReply,
+): Promise<void> {
   const authHeader = request.headers.authorization;
   if (!authHeader?.startsWith('Bearer ')) {
-    reply.status(401).send({ code: 'UNAUTHORIZED' as const });
-    return;
+    return reply.status(401).send({ code: 'UNAUTHORIZED' as const });
   }
   const token = authHeader.slice(7).trim();
   if (!token) {
-    reply.status(401).send({ code: 'UNAUTHORIZED' as const });
-    return;
+    return reply.status(401).send({ code: 'UNAUTHORIZED' as const });
   }
   try {
     request.auth = verifyAccessToken(token);
   } catch (err: unknown) {
     if (isTokenExpiredError(err)) {
-      reply.status(401).send({ code: 'TOKEN_EXPIRED' as const });
-      return;
+      return reply.status(401).send({ code: 'TOKEN_EXPIRED' as const });
     }
     if (err instanceof jwt.JsonWebTokenError) {
-      reply.status(401).send({ code: 'UNAUTHORIZED' as const });
-      return;
+      return reply.status(401).send({ code: 'UNAUTHORIZED' as const });
     }
     throw err;
   }

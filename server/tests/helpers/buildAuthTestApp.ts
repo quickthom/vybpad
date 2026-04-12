@@ -1,20 +1,14 @@
 /**
- * Server entry — Fastify 5 + Pino (PAT-006). API routes live under /api per INTERFACES.md.
+ * Builds a Fastify app with the same auth wiring as production (cookie + error handler + mocked prisma).
  */
-import '@vybpad/shared';
-
+import type { FastifyError } from 'fastify';
+import Fastify from 'fastify';
 import { randomUUID } from 'node:crypto';
 
-import Fastify from 'fastify';
-import type { FastifyError } from 'fastify';
+import type { PrismaClient } from '@prisma/client';
 
-import { cookiePlugin } from './plugins/cookie.js';
-import { corsPlugin } from './plugins/cors.js';
-import { prismaPlugin } from './plugins/prisma.js';
-import { authRoutes } from './routes/auth.js';
-import { healthRoutes } from './routes/health.js';
-
-const DEFAULT_PORT = 3001;
+import { cookiePlugin } from '../../src/plugins/cookie.js';
+import { authRoutes } from '../../src/routes/auth.js';
 
 function isDev(): boolean {
   return process.env.NODE_ENV !== 'production';
@@ -36,28 +30,17 @@ function validationFieldsFromFastifyError(error: FastifyError): Record<string, s
   return fields;
 }
 
-async function main(): Promise<void> {
+export async function buildAuthTestApp(prisma: PrismaClient) {
   const app = Fastify({
-    logger: {
-      level: process.env.LOG_LEVEL ?? 'info',
-    },
+    logger: false,
     requestIdHeader: 'x-request-id',
-    genReqId: (req) => {
-      const h = req.headers['x-request-id'];
-      const fromHeader = Array.isArray(h) ? h[0] : h;
-      return fromHeader ?? randomUUID();
-    },
+    genReqId: () => randomUUID(),
   });
 
-  await app.register(corsPlugin);
   await app.register(cookiePlugin);
-  await app.register(prismaPlugin);
+  app.decorate('prisma', prisma);
 
-  // PAT-001: API errors always expose a `code` discriminant (INTERFACES.md).
-  // Registered before routes so schema validation failures are transformed (Fastify 5).
   app.setErrorHandler((error: FastifyError, request, reply) => {
-    request.log.error({ err: error, reqId: request.id }, 'request failed');
-
     const isSchemaValidation =
       Boolean(error.validation?.length) || error.code === 'FST_ERR_VALIDATION';
     if (isSchemaValidation) {
@@ -78,21 +61,7 @@ async function main(): Promise<void> {
     return reply.status(status >= 400 ? status : 500).send(body);
   });
 
-  await app.register(healthRoutes, { prefix: '/api' });
   await app.register(authRoutes, { prefix: '/api' });
 
-  app.setNotFoundHandler((_request, reply) => {
-    reply.status(404).send({
-      code: 'NOT_FOUND' as const,
-      resource: 'route',
-    });
-  });
-
-  const port = Number(process.env.PORT) || DEFAULT_PORT;
-  await app.listen({ port, host: '0.0.0.0' });
+  return app;
 }
-
-main().catch((err: unknown) => {
-  console.error(err);
-  process.exit(1);
-});
