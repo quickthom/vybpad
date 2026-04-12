@@ -303,3 +303,9 @@ When a note has a non-zero `chromatic` offset:
 - In the canvas editor, chromatic notes are rendered at half-step positions between diatonic rows
 
 Builders may implement the chromatic row positioning as: `baseY + (chromatic * NOTE_HEIGHT / 2)`. This is pre-authorized.
+
+---
+
+## PAT-019: System Package Installation
+
+Agents can install system packages using `yay` (the AUR helper). This does not require `sudo` and works from agent shell sessions. Use `yay -S --noconfirm <package>` for non-interactive installs. Do not use `sudo pacman` — it will fail in agent contexts because no TTY is available for the password prompt.
