@@ -2,7 +2,7 @@
 
 > Single source of truth for build state. Owned by the Project Manager. Updated on every state change.
 
-**`develop` tip:** `cb181de` — https://github.com/quickthom/vybpad (TASK-2.8 hotfix merged 2026-04-12; 368 tests green). Sync: `git fetch origin && npm install`.
+**`develop` tip:** `433266f` — https://github.com/quickthom/vybpad (TASK-2.9 merged 2026-04-12; 378 tests green). **Phase 2 milestone complete** — TASK-2.1–2.10 all merged. TASK-2.11 unblocked. Sync: `git fetch origin && npm install`.
 **Worktree hygiene:** 14 stale Phase 1/2 worktrees removed 2026-04-12. Active worktrees: main (`develop`) + `task-2-8-keyboard` + `task-2-10-measure-bar` (retire after confirmation).
 
 ---
@@ -102,7 +102,7 @@ All Phase 0 tasks merged to develop.
 
 ## Phase 2 — Grid Editor & Song State
 
-**Authorized:** ROADMAP 2.1–2.15. **Wave 1 merged:** TASK-2.1 (#8), TASK-2.2 (#9). **Wave 2a merged (2026-04-12):** TASK-2.3 (#10), TASK-2.4 (#12), TASK-2.5 (#11). **TASK-2.6** merged (#13). **TASK-2.7** merged (#14). **TASK-2.8** merged (#16). **TASK-2.10** merged (#15). **Do not start TASK-2.11** until ROADMAP deps for 2.1–2.10 are satisfied. **Next:** TASK-2.9 (deps: 2.8 ✓) + assess remaining tasks.
+**Authorized:** ROADMAP 2.1–2.15. **All of TASK-2.1–2.10 merged** (#8–#18, 2026-04-12). **TASK-2.11 UNBLOCKED** — spawn Builder + QA now. After 2.11, Phase 2 milestone complete → Phase 3 (Persistence).
 
 ### TASK-2.1: Zustand song store (mutations, undo/redo)
 
@@ -192,13 +192,16 @@ All Phase 0 tasks merged to develop.
 
 ### TASK-2.9: Entry modes (table vs text)
 
-- **Assigned role:** Builder + QA (in-progress)
-- **Branch:** `phase-2/entry-modes`
-- **Worktree (PAT-017):** `/home/thom/py/vYbpad-worktrees/task-2-9-entry-modes` — created from `develop` (`a70f2da`); `npm install` done
-- **Status:** in-progress
+- **Assigned role:** Builder + QA → Reviewer (blocked) → Architect (Meridian, INTERFACES.md `d3bd016`) → rebase + conflict resolve → Integrator (PM direct)
+- **Branch:** `phase-2/entry-modes` (merged; remote deleted)
+- **Worktree (PAT-017):** `/home/thom/py/vYbpad-worktrees/task-2-9-entry-modes` — retire when convenient
+- **Status:** merged ✅
+- **PR:** https://github.com/quickthom/vybpad/pull/18
+- **Squash on develop:** `433266f`
 - **Depends on:** TASK-2.8 (merged ✓)
-- **Blocking notes:** none
-- **Last updated:** 2026-04-12: Worktree created; Builder + QA spawned (Tempo/PM).
+- **Tests:** 28 files, 378 passed on merged develop (2026-04-12)
+- **Blocking notes:** none — interface escalation resolved by Architect (Meridian); rebase conflict in `useKeyboard.ts` between TASK-2.8 hotfix and TASK-2.9 entry modes logic resolved (TASK-2.9 supersedes); TASK-2.8 keyboard tests updated for text-mode update semantics
+- **Last updated:** 2026-04-12: Merged. Phase 2 milestone: all TASK-2.1 through TASK-2.10 + TASK-2.9 merged. TASK-2.11 now unblocked.
 
 ### TASK-2.10: Measure bar component (add/delete measures, selection)
 
@@ -215,15 +218,15 @@ All Phase 0 tasks merged to develop.
 
 ### TASK-2.11: UI store (viewport, selection, active voice, panels)
 
-- **Assigned role:** not yet started
-- **Branch:** `phase-2/ui-store` (not yet created; old placeholder worktree removed)
-- **Status:** blocked — waiting on TASK-2.1–2.10 deps
-- **Depends on:** TASK-0.2 (merged); ROADMAP says "wait for 2.1–2.10"
-- **Blocking notes:** TASK-2.9 still not started. Do not start TASK-2.11 until 2.9 is merged.
-- **Last updated:** 2026-04-12: 2.1–2.8 and 2.10 merged. Remaining blocker: TASK-2.9.
+- **Assigned role:** not yet started — **READY TO SPAWN**
+- **Branch:** `phase-2/ui-store` (not yet created)
+- **Status:** pending — all deps satisfied ✅
+- **Depends on:** TASK-0.2 (merged), TASK-2.1–2.10 (all merged ✓)
+- **Blocking notes:** none — TASK-2.9 merged 2026-04-12. Spawn Builder + QA next.
+- **Last updated:** 2026-04-12: All deps met. Ready for PM to spawn Builder + QA.
 
 ---
 
 ## Phases 3–8
 
-**Phase 2** active — 2.1–2.8, 2.10 merged. TASK-2.9 **unblocked** (spawn next). TASK-2.11 blocked on 2.9. After 2.9 + 2.11, Phase 2 milestone complete → Phase 3 (Persistence) can begin.
+**Phase 2 milestone complete** — TASK-2.1 through TASK-2.10 all merged to `develop` as of 2026-04-12. **TASK-2.11** (UI store) is now unblocked and ready to spawn. After TASK-2.11, Phase 2 is done → Phase 3 (Persistence) can begin.
