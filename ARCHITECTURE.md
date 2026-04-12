@@ -187,6 +187,7 @@ Auth is infrastructure, not a feature surface. Login/register are minimal UI. No
 
 | Environment | Setup |
 |---|---|
+| **Source control** | GitHub: `https://github.com/quickthom/vybpad` — default branch `develop`; open PRs against `develop` |
 | **Development** | Docker Compose: PostgreSQL + API server (hot reload) + Vite dev server |
 | **Production** | Docker containers: Nginx (static SPA + reverse proxy to API) + Node.js API + PostgreSQL |
 | **HTTPS** | Required. Web Audio API and Web MIDI API require secure context. TLS terminated at reverse proxy. |
