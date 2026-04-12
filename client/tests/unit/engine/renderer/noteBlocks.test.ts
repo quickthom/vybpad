@@ -1,5 +1,5 @@
 import type { Measure, NoteEvent, SongData, Viewport } from '@vybpad/shared';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import {
   BEAT_WIDTH,
@@ -11,10 +11,12 @@ import {
   pixelsPerTick,
 } from '../../../../src/engine/renderer/layout';
 import {
+  NOTE_BLOCK_CORNER_RADIUS,
   NOTE_BLOCK_VERTICAL_INSET,
   REST_VERTICAL_ANCHOR,
   blendDegreeFillWithWhite,
   computeNoteBlockRect,
+  drawNoteBlocks,
   effectiveDegreeForColor,
   formatDegreeLabelParts,
   getKeyScaleAtMeasure,
@@ -204,5 +206,123 @@ describe('noteBlocks (TASK-2.5)', () => {
     const n = note({ beat: 0, duration: 48 });
     const r = computeNoteBlockRect({ song, viewport, measureIndex: 0, note: n, isRest: false });
     expect(r.width).toBe(BEAT_WIDTH);
+  });
+});
+
+function createNoteBlocksDrawContext(): {
+  ctx: CanvasRenderingContext2D;
+  roundRect: ReturnType<typeof vi.fn>;
+  fillRect: ReturnType<typeof vi.fn>;
+  setLineDash: ReturnType<typeof vi.fn>;
+  fillText: ReturnType<typeof vi.fn>;
+  measureText: ReturnType<typeof vi.fn>;
+} {
+  const roundRect = vi.fn();
+  const fillRect = vi.fn();
+  const setLineDash = vi.fn();
+  const fillText = vi.fn();
+  const measureText = vi.fn(() => ({ width: 6 }));
+  const ctx = {
+    save: vi.fn(),
+    restore: vi.fn(),
+    beginPath: vi.fn(),
+    roundRect,
+    moveTo: vi.fn(),
+    lineTo: vi.fn(),
+    arcTo: vi.fn(),
+    closePath: vi.fn(),
+    clip: vi.fn(),
+    fill: vi.fn(),
+    fillRect,
+    stroke: vi.fn(),
+    fillText,
+    measureText,
+    setLineDash,
+    lineWidth: 1,
+    strokeStyle: '',
+    fillStyle: '',
+    font: '',
+    textAlign: 'center' as CanvasTextAlign,
+    textBaseline: 'middle' as CanvasTextBaseline,
+    shadowColor: '',
+    shadowBlur: 0,
+    shadowOffsetX: 0,
+    shadowOffsetY: 0,
+  } as unknown as CanvasRenderingContext2D;
+  return { ctx, roundRect, fillRect, setLineDash, fillText, measureText };
+}
+
+describe('noteBlocks — canvas draw calls (TASK-2.14)', () => {
+  it('calls roundRect with x, y, width, height matching computeNoteBlockRect for a pitched note row', () => {
+    const song = minimalSong();
+    const n = note({ scaleDegree: 3, octave: 1, chromatic: 0, beat: 0, duration: 48 });
+    song.measures[0].notes[0] = [n];
+    const viewport: Viewport = { startMeasure: 0, measureCount: 1, scrollY: 0, zoom: 1 };
+    const rect = computeNoteBlockRect({
+      song,
+      viewport,
+      measureIndex: 0,
+      note: n,
+      isRest: false,
+    });
+    const { ctx, roundRect } = createNoteBlocksDrawContext();
+
+    drawNoteBlocks(ctx, song, viewport);
+
+    expect(roundRect).toHaveBeenCalledWith(
+      rect.x,
+      rect.y,
+      rect.width,
+      rect.height,
+      NOTE_BLOCK_CORNER_RADIUS,
+    );
+    expect(rect.y).toBe(noteRowYFromNoteEvent(n, viewport.scrollY) + NOTE_BLOCK_VERTICAL_INSET);
+  });
+
+  it('shifts roundRect y by chromaticYOffset when chromatic is non-zero (PAT-018)', () => {
+    const viewport: Viewport = { startMeasure: 0, measureCount: 1, scrollY: 0, zoom: 1 };
+    const diatonic = note({ scaleDegree: 5, octave: 0, chromatic: 0, beat: 0, duration: 48 });
+    const sharp = note({ scaleDegree: 5, octave: 0, chromatic: 1, beat: 0, duration: 48 });
+
+    const songA = minimalSong();
+    songA.measures[0].notes[0] = [diatonic];
+    const { ctx: ctxA, roundRect: rrA } = createNoteBlocksDrawContext();
+    drawNoteBlocks(ctxA, songA, viewport);
+
+    const songB = minimalSong();
+    songB.measures[0].notes[0] = [sharp];
+    const { ctx: ctxB, roundRect: rrB } = createNoteBlocksDrawContext();
+    drawNoteBlocks(ctxB, songB, viewport);
+
+    const y0 = rrA.mock.calls[0]?.[1] as number;
+    const y1 = rrB.mock.calls[0]?.[1] as number;
+    expect(y1 - y0).toBe(chromaticYOffset(1));
+  });
+
+  it('renders a rest with fillRect for hatch fill and applies dashed outline via setLineDash', () => {
+    const song = minimalSong();
+    const n = note({
+      scaleDegree: 1,
+      octave: 0,
+      chromatic: 0,
+      beat: 0,
+      duration: 96,
+      isRest: true,
+    });
+    song.measures[0].notes[0] = [n];
+    const viewport: Viewport = { startMeasure: 0, measureCount: 1, scrollY: 40, zoom: 1 };
+    const restRect = computeNoteBlockRect({
+      song,
+      viewport,
+      measureIndex: 0,
+      note: n,
+      isRest: true,
+    });
+    const { ctx, fillRect, setLineDash } = createNoteBlocksDrawContext();
+
+    drawNoteBlocks(ctx, song, viewport);
+
+    expect(fillRect).toHaveBeenCalledWith(restRect.x, restRect.y, restRect.width, restRect.height);
+    expect(setLineDash).toHaveBeenCalledWith([4, 3]);
   });
 });

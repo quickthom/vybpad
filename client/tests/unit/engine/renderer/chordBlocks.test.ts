@@ -1,13 +1,15 @@
 import type { ChordEvent, SongData, Viewport } from '@vybpad/shared';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { theoryEngine } from '../../../../src/engine/theory/theoryEngine';
 import {
   BEAT_WIDTH,
   CHORD_AREA_HEIGHT,
+  CHORD_BLOCK_CORNER_RADIUS,
   chordBlockLabelLines,
   chordBlockTextStyle,
   CHORD_FILL_BLEND_ALPHA,
+  drawChordBlocks,
   effectiveDegreeForChordColor,
   layoutChordBlock,
   PAT010_DEGREE_HEX,
@@ -113,5 +115,114 @@ describe('chordBlocks (TASK-2.4)', () => {
     const ch = chord({ scaleDegree: 5, quality: 'major', seventh: 'dom7' });
     const { romanLine } = chordBlockLabelLines(ch, 'C', 'major', theoryEngine);
     expect(romanLine).toBe('V7');
+  });
+});
+
+function createChordBlocksDrawContext(): {
+  ctx: CanvasRenderingContext2D;
+  roundRect: ReturnType<typeof vi.fn>;
+  fillText: ReturnType<typeof vi.fn>;
+  fill: ReturnType<typeof vi.fn>;
+  stroke: ReturnType<typeof vi.fn>;
+} {
+  const roundRect = vi.fn();
+  const fillText = vi.fn();
+  const fill = vi.fn();
+  const stroke = vi.fn();
+  const beginPath = vi.fn();
+  const ctx = {
+    save: vi.fn(),
+    restore: vi.fn(),
+    beginPath,
+    roundRect,
+    fill,
+    stroke,
+    fillText,
+    measureText: vi.fn(() => ({ width: 0 })),
+    lineWidth: 1,
+    strokeStyle: '',
+    fillStyle: '',
+    font: '',
+    textAlign: 'center' as CanvasTextAlign,
+    textBaseline: 'middle' as CanvasTextBaseline,
+    shadowColor: '',
+    shadowOffsetX: 0,
+    shadowOffsetY: 0,
+    shadowBlur: 0,
+  } as unknown as CanvasRenderingContext2D;
+  return { ctx, roundRect, fillText, fill, stroke };
+}
+
+describe('chordBlocks — canvas draw calls (TASK-2.14)', () => {
+  it('calls roundRect with x, y, width, height from layoutChordBlock for a 96-tick chord at zoom 1', () => {
+    const song = minimalSong([{ chords: [chord({ scaleDegree: 1, quality: 'major', beat: 0, duration: 96 })] }]);
+    const viewport: Viewport = { startMeasure: 0, measureCount: 1, scrollY: 0, zoom: 1 };
+    const ch = song.measures[0].chords[0];
+    const rect = layoutChordBlock(ch, 0, song, viewport);
+    const { ctx, roundRect } = createChordBlocksDrawContext();
+
+    drawChordBlocks(ctx, song, viewport, theoryEngine);
+
+    expect(roundRect).toHaveBeenCalledWith(
+      rect.x,
+      rect.y,
+      rect.width,
+      rect.height,
+      CHORD_BLOCK_CORNER_RADIUS,
+    );
+    expect(rect.width).toBe(96 * pixelsPerTick(1));
+    expect(rect.height).toBe(CHORD_AREA_HEIGHT);
+  });
+
+  it('calls fillText with the Roman numeral line from theoryEngine for the chord label', () => {
+    const song = minimalSong([{ chords: [chord({ scaleDegree: 1, quality: 'major', beat: 0, duration: 96 })] }]);
+    const viewport: Viewport = { startMeasure: 0, measureCount: 1, scrollY: 0, zoom: 1 };
+    const ch = song.measures[0].chords[0];
+    const expectedRoman = theoryEngine.toRomanNumeral(ch, 'major');
+    const { ctx, fillText } = createChordBlocksDrawContext();
+
+    drawChordBlocks(ctx, song, viewport, theoryEngine);
+
+    expect(expectedRoman).toBe('I');
+    expect(fillText).toHaveBeenCalledWith(
+      expectedRoman,
+      expect.any(Number),
+      expect.any(Number),
+    );
+  });
+
+  it('issues one roundRect per chord when a measure contains multiple chords', () => {
+    const song = minimalSong([
+      {
+        chords: [
+          chord({ id: 'a', scaleDegree: 1, quality: 'major', beat: 0, duration: 48 }),
+          chord({ id: 'b', scaleDegree: 4, quality: 'major', beat: 48, duration: 48 }),
+        ],
+      },
+    ]);
+    const viewport: Viewport = { startMeasure: 0, measureCount: 1, scrollY: 0, zoom: 1 };
+    const { ctx, roundRect } = createChordBlocksDrawContext();
+
+    drawChordBlocks(ctx, song, viewport, theoryEngine);
+
+    expect(roundRect).toHaveBeenCalledTimes(2);
+    const r0 = layoutChordBlock(song.measures[0].chords[0], 0, song, viewport);
+    const r1 = layoutChordBlock(song.measures[0].chords[1], 0, song, viewport);
+    expect(roundRect).toHaveBeenNthCalledWith(
+      1,
+      r0.x,
+      r0.y,
+      r0.width,
+      r0.height,
+      CHORD_BLOCK_CORNER_RADIUS,
+    );
+    expect(roundRect).toHaveBeenNthCalledWith(
+      2,
+      r1.x,
+      r1.y,
+      r1.width,
+      r1.height,
+      CHORD_BLOCK_CORNER_RADIUS,
+    );
   });
 });
