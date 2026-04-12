@@ -35,6 +35,8 @@ export interface EditorCanvasProps {
   onNoteEdit: (measureIndex: number, voice: number, event: NoteEditAction) => void;
   onSelectionChange: (selection: Selection | null) => void;
   onViewportChange: (viewport: Viewport) => void;
+  getSongAfterMutation?: () => SongData;
+  onToggleEntryMode?: () => void;
 }
 
 const SELECTION_STROKE = 'rgba(37, 99, 235, 0.8)';
@@ -123,10 +125,14 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
     onChordEdit,
     onNoteEdit,
     onSelectionChange,
+    getSongAfterMutation,
+    onToggleEntryMode,
   } = props;
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const sessionRef = useRef<DragSession | null>(null);
+  const keyboardTargetMeasureRef = useRef<number | null>(null);
+  const textDurationArmedRef = useRef(false);
 
   const [currentDurationTicks, setCurrentDurationTicks] = useState(48);
 
@@ -143,6 +149,10 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
     });
   }, []);
 
+  useEffect(() => {
+    textDurationArmedRef.current = false;
+  }, [entryMode]);
+
   useKeyboard({
     song,
     viewport,
@@ -151,6 +161,10 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
     entryMode,
     currentDurationTicks,
     setCurrentDurationTicks,
+    keyboardTargetMeasureRef,
+    textDurationArmedRef,
+    getSongAfterMutation,
+    onToggleEntryMode,
     onChordEdit,
     onNoteEdit,
     onSelectionChange,
@@ -372,6 +386,7 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
     }
 
     if (!hit) {
+      keyboardTargetMeasureRef.current = null;
       onSelectionChange(null);
       sessionRef.current = {
         phase: 'pending',
@@ -386,6 +401,7 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
       return;
     }
 
+    keyboardTargetMeasureRef.current = null;
     onSelectionChange(selectionFromHit(hit));
 
     const onResizeEdge = hitIsResizeEdge(hit, vx);

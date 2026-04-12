@@ -182,6 +182,7 @@ function baseCtx(overrides: Partial<EditorKeyboardContext> = {}): EditorKeyboard
     entryMode: 'table',
     currentDurationTicks: 48,
     setCurrentDurationTicks: vi.fn(),
+    keyboardTargetMeasureRef: { current: null },
     textDurationArmedRef: { current: false },
     onChordEdit: vi.fn(),
     onNoteEdit: vi.fn(),
