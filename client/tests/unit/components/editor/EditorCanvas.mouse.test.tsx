@@ -249,7 +249,7 @@ describe('EditorCanvas — TASK-2.7 mouse interaction (interface contract)', () 
       });
     });
 
-    it('calls onSelectionChange with type "note", measureIndex, voice, and eventIds containing the hit note id on primary pointer down over a note hit', () => {
+    it('calls onSelectionChange with type "note", measureIndex, and eventIds containing the hit note id on primary pointer down over a note hit', () => {
       const onSelectionChange = vi.fn();
       const note = song.measures[0]!.notes[0]![0]!;
 
