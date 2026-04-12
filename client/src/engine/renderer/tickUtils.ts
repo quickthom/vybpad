@@ -1,4 +1,4 @@
-import type { SongData, TimeSignature } from '@vybpad/shared';
+import type { NoteName, ScaleType, SongData, TimeSignature } from '@vybpad/shared';
 import { TICKS_PER_QUARTER } from '@vybpad/shared';
 
 /** 48 ticks per quarter note — same as {@link TICKS_PER_QUARTER} in `@vybpad/shared`. */
@@ -25,6 +25,38 @@ export function getMeterAtMeasure(song: SongData, measureIndex: number): TimeSig
     }
   }
   return meter;
+}
+
+/**
+ * Key in effect at the start of measure `measureIndex`, applying each measure's `changes.key`
+ * up to and including that measure (INTERFACES: inherit from metadata or prior).
+ */
+export function getKeyAtMeasure(song: SongData, measureIndex: number): NoteName {
+  let key = song.metadata.key;
+  const n = Math.min(measureIndex, song.measures.length - 1);
+  for (let j = 0; j <= n; j++) {
+    const next = song.measures[j]?.changes?.key;
+    if (next) {
+      key = next;
+    }
+  }
+  return key;
+}
+
+/**
+ * Scale/mode in effect at the start of measure `measureIndex`, applying `changes.scale`
+ * the same way as {@link getKeyAtMeasure}.
+ */
+export function getScaleAtMeasure(song: SongData, measureIndex: number): ScaleType {
+  let scale = song.metadata.scale;
+  const n = Math.min(measureIndex, song.measures.length - 1);
+  for (let j = 0; j <= n; j++) {
+    const next = song.measures[j]?.changes?.scale;
+    if (next) {
+      scale = next;
+    }
+  }
+  return scale;
 }
 
 /**

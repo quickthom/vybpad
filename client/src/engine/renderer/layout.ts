@@ -17,8 +17,10 @@ export {
 } from './constants';
 export {
   absoluteTickFromMeasurePosition,
+  getKeyAtMeasure,
   getMeasureStartTicks,
   getMeterAtMeasure,
+  getScaleAtMeasure,
   measureLengthInTicks,
   TPQN,
 } from './tickUtils';

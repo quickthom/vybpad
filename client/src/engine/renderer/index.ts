@@ -3,4 +3,6 @@
  * No React/DOM — safe for unit tests and worker use.
  */
 export * from './layout';
+export * from './gridBackground';
+export * from './chordBlocks';
 export * from './noteBlocks';
