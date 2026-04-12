@@ -31,7 +31,7 @@
 - **Status:** approved
 - **Depends on:** TASK-0.1
 - **Blocking notes:** —
-- **Last updated:** 2026-04-12: Committed (04462ab). Files: Fastify entry, health route, CORS/cookie plugins, .env.example. Worktree at /home/thom/py/vYbpad-worktrees/server-scaffold. Ready to merge after TASK-0.1.
+- **Last updated:** 2026-04-12: Committed (04462ab). Files: Fastify entry, health route, CORS/cookie plugins, .env.example. Merged to develop.
 
 ### TASK-0.4: Shared types package (@vybpad/shared)
 
@@ -48,8 +48,8 @@
 - **Branch:** phase-0/docker-compose
 - **Status:** blocked
 - **Depends on:** TASK-0.2, TASK-0.3
-- **Blocking notes:** Waiting for Phase 0 integration (0.1, 0.2, 0.3 merged to develop)
-- **Last updated:** 2026-04-12: Queued, blocked on integration
+- **Blocking notes:** Waiting for Phase 0 integration (0.1–0.4, 0.7 merged; Docker Compose task unblocked pending verification)
+- **Last updated:** 2026-04-12: Queued after integration completes
 
 ### TASK-0.6: Prisma schema + initial migration
 
@@ -79,12 +79,7 @@ Phase 0 tasks are infrastructure scaffolding with no testable application behavi
 
 ## Phase 0 — Integration
 
-Integration round in progress. Merge order:
-1. phase-0/project-scaffolding (TASK-0.1) — base for all others
-2. phase-0/ux-guidelines (TASK-0.7) — independent
-3. phase-0/shared-types (TASK-0.4) — depends on 0.1
-4. phase-0/client-scaffold (TASK-0.2) — depends on 0.1
-5. phase-0/server-scaffold (TASK-0.3) — depends on 0.1
+Phase 0 foundation integration (scaffolding + UX + shared + client + server) completed 2026-04-12.
 
 ---
 

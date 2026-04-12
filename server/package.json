@@ -3,10 +3,20 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc --build",
+    "start": "node dist/index.js"
+  },
   "dependencies": {
-    "@vybpad/shared": "*"
+    "@fastify/cookie": "^11.0.2",
+    "@fastify/cors": "^11.2.0",
+    "@vybpad/shared": "*",
+    "fastify": "^5.8.4",
+    "fastify-plugin": "^5.1.0"
   },
   "devDependencies": {
-    "@types/node": "^22.10.5"
+    "@types/node": "^22.10.5",
+    "tsx": "^4.21.0"
   }
 }
