@@ -2,7 +2,7 @@
 
 > Single source of truth for build state. Owned by the Project Manager. Updated on every state change.
 
-**`develop` tip:** `f521310` — https://github.com/quickthom/vybpad (Phase 2 wave 2 briefed; pull for latest).
+**`develop` tip:** `ab8f224` — https://github.com/quickthom/vybpad (Wave 2 PM briefs; pull for latest).
 
 ---
 

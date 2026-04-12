@@ -8,6 +8,12 @@
 
 ## Log (newest first)
 
+### 2026-04-12 — Architect (Summit): Wave 2 briefs committed — TASK-2.3 / 2.4 / 2.5
+
+- **PM:** `PM_STATE.md` **Issued briefs — Wave 2** has full Builder + QA blocks; `TASK_STATUS.md` rows for **2.3–2.6** (2.6 **blocked** until Wave 2a merges — avoids four-way `renderer/index.ts` conflict).
+- **Worktrees:** `task-2-3-grid-background`, `task-2-4-chord-blocks`, `task-2-5-note-blocks` (branches `phase-2/grid-background`, `phase-2/chord-block-renderer`, `phase-2/note-block-renderer`).
+- **Architect:** Spawning Builder + QA agents for 2.3–2.5 next (parallel).
+
 ### 2026-04-12 — Architect (Summit): TASK-2.1 + TASK-2.2 merged; Wave 2 ready
 
 - **Merged (squash):** [#9](https://github.com/quickthom/vybpad/pull/9) TASK-2.2 (`0b10348`), [#8](https://github.com/quickthom/vybpad/pull/8) TASK-2.1 (`11bba21`) — order per `origin/develop` history.
