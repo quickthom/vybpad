@@ -2,7 +2,7 @@
 
 > Single source of truth for build state. Owned by the Project Manager. Updated on every state change.
 
-**`develop` tip:** `0365350` — https://github.com/quickthom/vybpad (Phase 2 handoff docs; Phase 1 code milestone `a8cf52a` still in ancestry).
+**`develop` tip:** `1072d6d` — https://github.com/quickthom/vybpad (merge: Phase 2 handoff docs + `#8`/`#9` squash commits `11bba21` / `0b10348` on `origin`).
 
 ---
 
@@ -101,36 +101,32 @@ All Phase 0 tasks merged to develop.
 
 ## Phase 2 — Grid Editor & Song State
 
-**Authorized:** ROADMAP 2.1–2.15. **Parallel wave 1:** TASK-2.1 + TASK-2.2 — **PRs open** (awaiting review + merge).
+**Authorized:** ROADMAP 2.1–2.15. **Wave 1 merged:** TASK-2.1 (#8), TASK-2.2 (#9). **Next unblocked:** TASK-2.3 (needs 2.2 ✓); TASK-2.4 / TASK-2.5 / TASK-2.6 (deps met — see ROADMAP parallel-with).
 
 ### TASK-2.1: Zustand song store (mutations, undo/redo)
 
-- **Assigned role:** Builder + QA (concurrent) → Reviewer
-- **Branch:** `phase-2/song-store` (PAT-015)
-- **Worktree:** `/home/thom/py/vYbpad-worktrees/phase-2-song-store`
-- **Status:** in-review
+- **Assigned role:** Builder + QA → Integrator (done)
+- **Branch:** `phase-2/song-store` (merged; remote branch delete may fail until worktree removed)
+- **Status:** merged
 - **PR:** https://github.com/quickthom/vybpad/pull/8
-- **Tip commit:** `abfc16b` (on branch; feat `5bb59d9` + QA tests)
-- **Tests:** `npm test` — 17 files, 261 passed (worktree)
+- **Squash on develop:** `11bba21929e86e5a72c883d15d2bbd8455926975`
+- **Tests:** `npm test` — 19 files, 289 passed on merged `develop` (after `npm install` at repo root)
 - **Depends on:** TASK-0.4 (merged)
-- **Blocking notes:** none
-- **Last updated:** 2026-04-12: Implementation + QA complete; pushed; PR #8 opened.
+- **Last updated:** 2026-04-12: Squash-merged to `develop`.
 
 ### TASK-2.2: Canvas layout engine (tick→pixel, pitch→pixel, viewport)
 
-- **Assigned role:** Builder + QA (concurrent) → Reviewer
-- **Branch:** `phase-2/layout-engine` (PAT-015)
-- **Worktree:** `/home/thom/py/vYbpad-worktrees/phase-2-layout-engine`
-- **Status:** in-review
+- **Assigned role:** Builder + QA → Integrator (done)
+- **Branch:** `phase-2/layout-engine` (merged)
+- **Status:** merged
 - **PR:** https://github.com/quickthom/vybpad/pull/9
-- **Tip commit:** `d5d7bc5` (branch head; QA tests `dc2d03e` in history)
-- **Tests:** `npm test` — 18 files, 264 passed (worktree)
+- **Squash on develop:** `0b103482934f28023cd013c7e956a88a6b3ee36d`
+- **Tests:** (see TASK-2.1 row — shared suite)
 - **Depends on:** TASK-0.4 (merged)
-- **Blocking notes:** none
-- **Last updated:** 2026-04-12: Implementation + QA complete; pushed; PR #9 opened.
+- **Last updated:** 2026-04-12: Squash-merged to `develop` (merged before #8 in history).
 
 ---
 
 ## Phases 3–8
 
-**Phase 1A + Phase 1B** merged to `develop`. **Phase 2** in progress — see task rows above; next unblocked after merges: TASK-2.3 (needs 2.2), parallel TASK-2.1 with 2.2/2.3 per ROADMAP.
+**Phase 2** in progress — TASK-2.1 and TASK-2.2 merged; brief TASK-2.3+ per `PM_STATE.md` / ROADMAP.
