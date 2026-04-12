@@ -1,14 +1,16 @@
 # PM STATE — vYbpad
 
-> PM continuity handoff — **not** a duplicate of `TASK_STATUS.md`. Updated **2026-04-12** — TASK-2.7 **Builder + QA briefs issued** (see **Issued briefs — TASK-2.7 (2026-04-12)**); spawn agents from `develop` (`1fe2334`) + PAT-017 worktree.
+> PM continuity handoff — **not** a duplicate of `TASK_STATUS.md`. Updated **2026-04-12** — TASK-2.7 (#14), 2.8 (#16), 2.10 (#15) ALL MERGED. `develop` = `a70f2da`, 368 tests. TASK-2.9 Builder + QA spawned (`task-2-9-entry-modes`). All merged worktrees removed. Next: TASK-2.11 after 2.9 merges.
 
 ---
 
 ## Architect direction — execution ownership (2026-04-12)
 
-**You (PM) own the full pipeline:** briefs, **spawning** Builders / QA / Reviewer / Integrator / DevOps, monitoring output, and `TASK_STATUS.md` updates. The Architect **does not** spawn those agents (corrective note in `HITL_NOTIFICATIONS.md`); Architect authorizes phases and maintains canonical docs only.
+**You (PM) own the full pipeline.** Current PM instance: **Tempo** (2026-04-12).
 
-**Your next moves:** **2026-04-12:** Integrator squash-merged **#13** TASK-2.6 → `develop` (`1fe2334` tip). **Now:** Spawn **Builder + QA** for **TASK-2.7** using **Issued briefs — TASK-2.7 (2026-04-12)**; branch `phase-2/mouse-interaction`, worktree `/home/thom/py/vYbpad-worktrees/task-2-7-mouse`.
+**develop tip:** `a0ad185` — TASK-2.7 merged (PR #14). Next milestone: TASK-2.8 + TASK-2.10 merge → TASK-2.9 → TASK-2.11.
+
+**Remaining Phase 2 sequence:** 2.8 ∥ 2.10 → 2.9 → 2.11 → 2.12 ∥ 2.13 → 2.14 ∥ 2.15.
 
 ---
 
@@ -36,11 +38,32 @@
 ## Next actions (pipeline)
 
 1. **Done (2026-04-12):** Wave 2a squash-merged: **#10** TASK-2.3, **#12** TASK-2.4, **#11** TASK-2.5 → `develop`.
-2. **Done (2026-04-12):** TASK-2.6 squash-merged: **#13** → `develop` (`1fe2334`); `origin/phase-2/hit-testing` deleted. Local branch may remain until **`git worktree remove`** on task-2-6 worktree.
-3. **Now:** **TASK-2.7** — spawn **Builder + QA** (concurrent) per **Issued briefs — TASK-2.7 (2026-04-12)**. ROADMAP deps: **2.1 ✓, 2.6 ✓**. Branch `phase-2/mouse-interaction`, worktree `/home/thom/py/vYbpad-worktrees/task-2-7-mouse`.
-4. **QA** concurrent with Builder; **Reviewer** → **Integrator** after TASK-2.7 PR.
-5. **Designer:** Chord/note rendering (2.4/2.5) — already aligned in `UX_GUIDELINES.md` §6 / PAT-012; flag gaps only if brief vs UX conflict.
-6. **TASK-2.11 (ui-store):** still **do not start** until ROADMAP deps for 2.1–2.10 satisfied.
+2. **Done (2026-04-12):** TASK-2.6 squash-merged: **#13** → `develop` (`1fe2334`).
+3. **Done (2026-04-12):** TASK-2.7 merged: **#14** → `develop` (`a0ad185`); worktree `task-2-7-mouse` removed.
+4. **Done (2026-04-12):** 14 stale worktrees removed. TASK-2.7 worktree also removed.
+5. **Active (2026-04-12):** TASK-2.8 + TASK-2.10 **Builder + QA in parallel** — worktrees `task-2-8-keyboard` + `task-2-10-measure-bar`; agents spawned by Tempo/PM.
+6. **Pending (after 2.8 merges):** TASK-2.9 (entry modes, deps: 2.8).
+7. **TASK-2.11 (ui-store):** still **do not start** until ROADMAP deps for 2.1–2.10 satisfied.
+
+## Post-merge review notes (TASK-2.7, Reviewer Axiom)
+Four items found after merge — tracked in TASK_STATUS.md. Builder for TASK-2.8 is fixing hover cursor and primary-button guard as part of EditorCanvas changes. Other two items (miss-rule docs omission, chromatic double-undo) are documentation/undo-UX issues; low risk for this phase.
+
+## Sequencing plan: TASK-2.8, 2.9, 2.10
+
+**File scope analysis (assessed 2026-04-12):**
+
+| Task | Key files touched | Conflict with 2.7? | Conflict with each other? |
+|------|-------------------|---------------------|---------------------------|
+| 2.8 (keyboard) | `EditorCanvas.tsx`, `App.tsx`, new `useKeyboard` hook | YES — same files as 2.7 | No (different from 2.10) |
+| 2.9 (entry modes) | depends on 2.8 output | N/A — blocked | N/A |
+| 2.10 (measure bar) | new `MeasureBar.tsx`, `App.tsx` | Partial — `App.tsx` | No (different from 2.8) |
+
+**Decision:**
+- TASK-2.8 and TASK-2.10 are **NOT safe to run in parallel with TASK-2.7** (both touch `App.tsx`; 2.8 also touches `EditorCanvas.tsx`).
+- TASK-2.8 and TASK-2.10 **ARE safe to run in parallel with each other** after 2.7 merges (their file scopes are disjoint — `EditorCanvas.tsx`/keyboard hooks vs new `MeasureBar.tsx`; `App.tsx` conflict is a minor merge, resolvable by Integrator).
+- **Sequence:** 2.7 → [2.8 ∥ 2.10] → 2.9 → 2.11
+
+**Next PM action after TASK-2.7 PR is raised:** Issue Reviewer brief → after approval issue Integrator brief → after 2.7 merges spawn Builder+QA for TASK-2.8 AND TASK-2.10 in parallel with separate worktrees.
 
 ---
 

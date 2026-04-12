@@ -2,7 +2,8 @@
 
 > Single source of truth for build state. Owned by the Project Manager. Updated on every state change.
 
-**`develop` tip:** `1fe2334` — https://github.com/quickthom/vybpad (TASK-2.6 #13 squash-merged 2026-04-12). Sync: `git fetch origin`.
+**`develop` tip:** `a70f2da` — https://github.com/quickthom/vybpad (TASK-2.8 + TASK-2.10 squash-merged 2026-04-12). Sync: `git fetch origin && npm install`.
+**Worktree hygiene:** 14 stale Phase 1/2 worktrees removed 2026-04-12. Active worktrees: main (`develop`) + `task-2-8-keyboard` + `task-2-10-measure-bar` (retire after confirmation).
 
 ---
 
@@ -101,16 +102,15 @@ All Phase 0 tasks merged to develop.
 
 ## Phase 2 — Grid Editor & Song State
 
-**Authorized:** ROADMAP 2.1–2.15. **Wave 1 merged:** TASK-2.1 (#8), TASK-2.2 (#9). **Wave 2a merged (2026-04-12):** TASK-2.3 (#10), TASK-2.4 (#12), TASK-2.5 (#11). **TASK-2.6** merged — PR [#13](https://github.com/quickthom/vybpad/pull/13) squash on `develop` `1fe2334`. **TASK-2.7:** brief issued (PM **2026-04-12** — `PM_STATE.md` **Issued briefs — TASK-2.7**). **Do not start TASK-2.11** until ROADMAP deps for 2.1–2.10 are satisfied.
+**Authorized:** ROADMAP 2.1–2.15. **Wave 1 merged:** TASK-2.1 (#8), TASK-2.2 (#9). **Wave 2a merged (2026-04-12):** TASK-2.3 (#10), TASK-2.4 (#12), TASK-2.5 (#11). **TASK-2.6** merged (#13). **TASK-2.7** merged (#14). **TASK-2.8** merged (#16). **TASK-2.10** merged (#15). **Do not start TASK-2.11** until ROADMAP deps for 2.1–2.10 are satisfied. **Next:** TASK-2.9 (deps: 2.8 ✓) + assess remaining tasks.
 
 ### TASK-2.1: Zustand song store (mutations, undo/redo)
 
 - **Assigned role:** Builder + QA → Integrator (done)
-- **Branch:** `phase-2/song-store` (merged; remote branch delete may fail until worktree removed)
+- **Branch:** `phase-2/song-store` (merged)
 - **Status:** merged
 - **PR:** https://github.com/quickthom/vybpad/pull/8
-- **Squash on develop:** `11bba21929e86e5a72c883d15d2bbd8455926975`
-- **Tests:** `npm test` — 23 files, 325 passed on merged `develop` after TASK-2.6 (2026-04-12; after `npm install` at repo root)
+- **Squash on develop:** `11bba21`
 - **Depends on:** TASK-0.4 (merged)
 - **Last updated:** 2026-04-12: Squash-merged to `develop`.
 
@@ -120,72 +120,110 @@ All Phase 0 tasks merged to develop.
 - **Branch:** `phase-2/layout-engine` (merged)
 - **Status:** merged
 - **PR:** https://github.com/quickthom/vybpad/pull/9
-- **Squash on develop:** `0b103482934f28023cd013c7e956a88a6b3ee36d`
-- **Tests:** (see TASK-2.1 row — shared suite)
+- **Squash on develop:** `0b10348`
 - **Depends on:** TASK-0.4 (merged)
-- **Last updated:** 2026-04-12: Squash-merged to `develop` (merged before #8 in history).
+- **Last updated:** 2026-04-12: Squash-merged to `develop`.
 
 ### TASK-2.3: Grid background renderer (beat lines, measure bars, bar numbers)
 
 - **Assigned role:** Builder + QA → Integrator (done)
-- **Branch:** `phase-2/grid-background` (merged; local worktree may still exist)
-- **Worktree:** `/home/thom/py/vYbpad-worktrees/task-2-3-grid-background`
+- **Branch:** `phase-2/grid-background` (merged)
 - **Status:** merged
 - **PR:** https://github.com/quickthom/vybpad/pull/10
-- **Squash on develop:** `e2dd50e732dca18f682c0601c122b9b12c51b4b2`
+- **Squash on develop:** `e2dd50e`
 - **Depends on:** TASK-2.2 (merged)
-- **Blocking notes:** none
 - **Last updated:** 2026-04-12: Squash-merged to `develop` (first in Wave 2a sequence).
 
 ### TASK-2.4: Chord block renderer (Roman labels, fills, figured bass)
 
 - **Assigned role:** Builder + QA → Integrator (done)
 - **Branch:** `phase-2/chord-block-renderer` (merged)
-- **Worktree:** `/home/thom/py/vYbpad-worktrees/task-2-4-chord-blocks` (merge commit `3e53f13` pushed to resolve `index.ts` vs `develop`)
 - **Status:** merged
 - **PR:** https://github.com/quickthom/vybpad/pull/12
-- **Squash on develop:** `5529cac` (feat(renderer): chord blocks)
+- **Squash on develop:** `5529cac`
 - **Depends on:** TASK-2.2 (merged), TASK-1A.4 (merged)
-- **Blocking notes:** none
-- **Last updated:** 2026-04-12: Merged after Integrator resolved barrel conflict with TASK-2.3 (`gridBackground` + `chordBlocks` exports).
+- **Last updated:** 2026-04-12: Merged after Integrator resolved barrel conflict with TASK-2.3.
 
 ### TASK-2.5: Note block renderer (colored blocks, octave indicators)
 
 - **Assigned role:** Builder + QA → Integrator (done)
 - **Branch:** `phase-2/note-block-renderer` (merged)
-- **Worktree:** `/home/thom/py/vYbpad-worktrees/task-2-5-note-blocks` (merge commit `8335bb3` pushed — full barrel: layout, grid, chord, note)
 - **Status:** merged
 - **PR:** https://github.com/quickthom/vybpad/pull/11
-- **Squash on develop:** `2839513` (feat(renderer): note blocks)
+- **Squash on develop:** `2839513`
 - **Depends on:** TASK-2.2 (merged), TASK-1A.2 (merged)
-- **Blocking notes:** none
-- **Last updated:** 2026-04-12: Merged last in sequence #10→#12→#11; `index.ts` conflict resolved keeping all renderer exports.
+- **Last updated:** 2026-04-12: Merged last in Wave 2a; `index.ts` conflict resolved keeping all renderer exports.
 
 ### TASK-2.6: Hit testing system (spatial index from rendered rects)
 
 - **Assigned role:** Builder + QA → Integrator (done)
-- **Branch:** `phase-2/hit-testing` (merged; remote deleted; local branch may persist until worktree removed)
-- **Worktree:** `/home/thom/py/vYbpad-worktrees/task-2-6-hit-testing`
+- **Branch:** `phase-2/hit-testing` (merged; remote deleted)
 - **Status:** merged
 - **PR:** https://github.com/quickthom/vybpad/pull/13
-- **Squash on develop:** `1fe233414fb0be549b8cf31b9f20a0bc52d0c6cd`
+- **Squash on develop:** `1fe2334`
 - **Depends on:** TASK-2.2 (merged); Wave 2a on `develop` (done)
-- **Blocking notes:** none
-- **Tests:** `npm test` — 23 files, 325 passed on merged `develop` after TASK-2.6 (2026-04-12)
-- **Last updated:** 2026-04-12: Squash-merged to `develop` (`gh pr merge` remote branch deleted; local `phase-2/hit-testing` not deleted — in use by worktree).
+- **Last updated:** 2026-04-12: Squash-merged to `develop`.
 
 ### TASK-2.7: Mouse interaction (click select, drag move/resize, selection)
 
-- **Assigned role:** Builder + QA (brief issued; not yet spawned)
-- **Branch:** `phase-2/mouse-interaction`
-- **Worktree (PAT-017):** `/home/thom/py/vYbpad-worktrees/task-2-7-mouse` — create from `develop` per brief
-- **Status:** brief-issued
+- **Assigned role:** Builder + QA → Reviewer → Integrator (done)
+- **Branch:** `phase-2/mouse-interaction` (merged; remote deleted)
+- **Worktree (PAT-017):** `/home/thom/py/vYbpad-worktrees/task-2-7-mouse` — retire when convenient
+- **Status:** merged
+- **PR:** https://github.com/quickthom/vybpad/pull/14
+- **Squash on develop:** `a0ad185`
 - **Depends on:** TASK-2.1 (merged), TASK-2.6 (merged)
+- **Tests:** 335 passed on merged develop (24 files)
+- **Post-merge notes:** (1) ⚠ hover cursor `grab` (dead code in jsdom — fix tracked); (2) `role="presentation"` fixed to `role="application"` by TASK-2.8 Builder.
+- **Last updated:** 2026-04-12: Reviewer APPROVED; Integrator squash-merged.
+
+### TASK-2.8: Keyboard input (1–7 degree entry, duration, delete, arrows)
+
+- **Assigned role:** Builder + QA → Reviewer → Integrator (done)
+- **Branch:** `phase-2/keyboard-input` (merged; remote deleted)
+- **Worktree (PAT-017):** `/home/thom/py/vYbpad-worktrees/task-2-8-keyboard` — retire when convenient
+- **Status:** merged
+- **PR:** https://github.com/quickthom/vybpad/pull/16
+- **Squash on develop:** `a70f2da`
+- **Depends on:** TASK-2.1 (merged), TASK-2.7 (merged — EditorCanvas extended)
+- **Tests:** 27 files, 368 passed on merged develop (2026-04-12)
+- **Blocking notes:** none — Reviewer: clean (all 7 ACs met).
+- **Last updated:** 2026-04-12: Reviewer APPROVED; squash-merged second in batch with #15 (no conflicts).
+
+### TASK-2.9: Entry modes (table vs text)
+
+- **Assigned role:** Builder + QA (in-progress)
+- **Branch:** `phase-2/entry-modes`
+- **Worktree (PAT-017):** `/home/thom/py/vYbpad-worktrees/task-2-9-entry-modes` — created from `develop` (`a70f2da`); `npm install` done
+- **Status:** in-progress
+- **Depends on:** TASK-2.8 (merged ✓)
 - **Blocking notes:** none
-- **Last updated:** 2026-04-12: Full Builder + QA briefs recorded in `PM_STATE.md` section **Issued briefs — TASK-2.7 (2026-04-12)**; spawn when ready.
+- **Last updated:** 2026-04-12: Worktree created; Builder + QA spawned (Tempo/PM).
+
+### TASK-2.10: Measure bar component (add/delete measures, selection)
+
+- **Assigned role:** Builder + QA → Reviewer → Integrator (done)
+- **Branch:** `phase-2/measure-bar` (merged; remote deleted)
+- **Worktree (PAT-017):** `/home/thom/py/vYbpad-worktrees/task-2-10-measure-bar` — retire when convenient
+- **Status:** merged
+- **PR:** https://github.com/quickthom/vybpad/pull/15
+- **Squash on develop:** `131f421`
+- **Depends on:** TASK-2.1 (merged)
+- **Tests:** 27 files, 368 passed on merged develop (2026-04-12, shared count with #16)
+- **Blocking notes:** none — 2 non-blocking warnings: (1) `measuresPerLine=0` infinite loop guard; (2) `window.addEventListener('pointerup')` cleanup on unmount. Follow-up in TASK-2.9 or polish pass.
+- **Last updated:** 2026-04-12: Reviewer APPROVED; squash-merged first in batch with #16 (no conflicts).
+
+### TASK-2.11: UI store (viewport, selection, active voice, panels)
+
+- **Assigned role:** not yet started
+- **Branch:** `phase-2/ui-store` (not yet created; old placeholder worktree removed)
+- **Status:** blocked — waiting on TASK-2.1–2.10 deps
+- **Depends on:** TASK-0.2 (merged); ROADMAP says "wait for 2.1–2.10"
+- **Blocking notes:** TASK-2.9 still not started. Do not start TASK-2.11 until 2.9 is merged.
+- **Last updated:** 2026-04-12: 2.1–2.8 and 2.10 merged. Remaining blocker: TASK-2.9.
 
 ---
 
 ## Phases 3–8
 
-**Phase 2** in progress — Wave 2a **merged** (TASK-2.3–2.5); **TASK-2.6** **merged** ([PR #13](https://github.com/quickthom/vybpad/pull/13), squash `1fe2334`). **TASK-2.7** **brief-issued** — see `PM_STATE.md`. TASK-2.11 remains **not started** until 2.1–2.10 deps met.
+**Phase 2** active — 2.1–2.8, 2.10 merged. TASK-2.9 **unblocked** (spawn next). TASK-2.11 blocked on 2.9. After 2.9 + 2.11, Phase 2 milestone complete → Phase 3 (Persistence) can begin.
