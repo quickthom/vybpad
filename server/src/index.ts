@@ -11,6 +11,7 @@ import type { FastifyError } from 'fastify';
 import { cookiePlugin } from './plugins/cookie.js';
 import { corsPlugin } from './plugins/cors.js';
 import { prismaPlugin } from './plugins/prisma.js';
+import { authRoutes } from './routes/auth.js';
 import { healthRoutes } from './routes/health.js';
 
 const DEFAULT_PORT = 3001;
@@ -52,6 +53,7 @@ async function main(): Promise<void> {
   await app.register(cookiePlugin);
   await app.register(prismaPlugin);
   await app.register(healthRoutes, { prefix: '/api' });
+  await app.register(authRoutes, { prefix: '/api' });
 
   // PAT-001: API errors always expose a `code` discriminant (INTERFACES.md).
   app.setErrorHandler((error: FastifyError, request, reply) => {
