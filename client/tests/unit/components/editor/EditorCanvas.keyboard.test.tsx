@@ -6,7 +6,7 @@
  * Criterion 2: h/j/k/l/; → PAT-004; resize when selected; setCurrentDurationTicks for subsequent adds
  * Criterion 3: Delete/Backspace → delete + clear selection; no selection → no delete
  * Criterion 4: Arrow keys → merged beat-order navigation; onSelectionChange only
- * Criterion 5: Suppress when target is input / textarea / contenteditable
+ * Criterion 5: Suppress when target is input or textarea (same guard as [contenteditable] in isEditableKeyboardTarget)
  * Criterion 6: App wires onChordEdit/onNoteEdit to store
  */
 
