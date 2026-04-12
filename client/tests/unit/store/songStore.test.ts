@@ -18,6 +18,15 @@
  *
  * Criterion: loadSong behavior
  *   happy: `song` equals loaded SongData; isDirty false; undo/redo stacks cleared (via flags + behavior)
+ *
+ * QA COVERAGE PLAN — TASK-2.15
+ *
+ * Chord mutations (all action types + ordering / isolation)
+ * Note mutations (add/delete/move/resize/update × voices 0–3)
+ * Measure mutations (insert count empty; delete range; last measure; invalid range)
+ * Undo/redo (chord flow; flags; redo cleared on new edit; multi-undo chain)
+ * Metadata / band partial merge
+ * Edge: delete last chord; delete last measure; noop deleteMeasures
  */
 import { randomUUID } from 'node:crypto';
 
@@ -341,6 +350,267 @@ describe('SongStore — INTERFACES.md contract', () => {
       useSongStore.getState().loadSong(makeDefaultSong());
       useSongStore.getState().undo();
       expect(useSongStore.getState().song.metadata.title).toBe('Untitled');
+    });
+  });
+});
+
+describe('TASK-2.15 — comprehensive SongStore mutations and undo/redo', () => {
+  beforeEach(() => {
+    useSongStore.getState().loadSong(makeDefaultSong());
+  });
+
+  describe('chord mutations — ordering, isolation, and id stability', () => {
+    it('sorts multiple added chords by beat ascending in song.measures[n].chords', () => {
+      useSongStore.getState().editChord(0, {
+        type: 'add',
+        chord: { ...baseChordPayload(), beat: 96, duration: 24 },
+      });
+      useSongStore.getState().editChord(0, {
+        type: 'add',
+        chord: { ...baseChordPayload(), beat: 0, duration: 48 },
+      });
+      const beats = useSongStore.getState().song.measures[0].chords.map((c) => c.beat);
+      expect(beats).toEqual([0, 96]);
+    });
+
+    it('leaves other measures unchanged when editing chords in one measure', () => {
+      const m1Before = structuredClone(useSongStore.getState().song.measures[1]);
+      useSongStore.getState().editChord(0, { type: 'add', chord: baseChordPayload() });
+      expect(useSongStore.getState().song.measures[1]).toEqual(m1Before);
+    });
+
+    it('preserves chord id on update while merging fields onto song.measures[n].chords', () => {
+      useSongStore.getState().editChord(0, { type: 'add', chord: baseChordPayload() });
+      const id = useSongStore.getState().song.measures[0].chords[0].id;
+      useSongStore.getState().editChord(0, {
+        type: 'update',
+        chordId: id,
+        changes: { scaleDegree: 4, quality: 'diminished' },
+      });
+      const c = useSongStore.getState().song.measures[0].chords[0];
+      expect(c.id).toBe(id);
+      expect(c.scaleDegree).toBe(4);
+      expect(c.quality).toBe('diminished');
+    });
+  });
+
+  describe('note mutations — all actions for each voice 0–3', () => {
+    it.each([0, 1, 2, 3] as const)(
+      'add: inserts into song.measures[0].notes[%i] only',
+      (voice) => {
+        useSongStore.getState().editNote(0, voice, { type: 'add', note: baseNotePayload() });
+        for (let v = 0; v < 4; v++) {
+          const len = v === voice ? 1 : 0;
+          expect(useSongStore.getState().song.measures[0].notes[v]).toHaveLength(len);
+        }
+      },
+    );
+
+    it.each([0, 1, 2, 3] as const)(
+      'delete: removes from song.measures[0].notes[%i] by noteId',
+      (voice) => {
+        useSongStore.getState().editNote(0, voice, { type: 'add', note: baseNotePayload() });
+        const id = useSongStore.getState().song.measures[0].notes[voice][0].id;
+        useSongStore.getState().editNote(0, voice, { type: 'delete', noteId: id });
+        expect(useSongStore.getState().song.measures[0].notes[voice]).toEqual([]);
+      },
+    );
+
+    it.each([0, 1, 2, 3] as const)(
+      'move: updates beat (and optional degree/octave) in song.measures[0].notes[%i]',
+      (voice) => {
+        useSongStore.getState().editNote(0, voice, { type: 'add', note: baseNotePayload() });
+        const id = useSongStore.getState().song.measures[0].notes[voice][0].id;
+        useSongStore.getState().editNote(0, voice, {
+          type: 'move',
+          noteId: id,
+          newBeat: 36,
+          newScaleDegree: 5,
+          newOctave: -1,
+        });
+        const n = useSongStore.getState().song.measures[0].notes[voice][0];
+        expect(n.beat).toBe(36);
+        expect(n.scaleDegree).toBe(5);
+        expect(n.octave).toBe(-1);
+      },
+    );
+
+    it.each([0, 1, 2, 3] as const)(
+      'resize: updates duration in song.measures[0].notes[%i]',
+      (voice) => {
+        useSongStore.getState().editNote(0, voice, { type: 'add', note: baseNotePayload() });
+        const id = useSongStore.getState().song.measures[0].notes[voice][0].id;
+        useSongStore.getState().editNote(0, voice, {
+          type: 'resize',
+          noteId: id,
+          newDuration: 72,
+        });
+        expect(useSongStore.getState().song.measures[0].notes[voice][0].duration).toBe(72);
+      },
+    );
+
+    it.each([0, 1, 2, 3] as const)(
+      'update: merges Partial<NoteEvent> onto song.measures[0].notes[%i] while preserving id',
+      (voice) => {
+        useSongStore.getState().editNote(0, voice, { type: 'add', note: baseNotePayload() });
+        const id = useSongStore.getState().song.measures[0].notes[voice][0].id;
+        useSongStore.getState().editNote(0, voice, {
+          type: 'update',
+          noteId: id,
+          changes: { chromatic: -1, velocity: 80 },
+        });
+        const n = useSongStore.getState().song.measures[0].notes[voice][0];
+        expect(n.id).toBe(id);
+        expect(n.chromatic).toBe(-1);
+        expect(n.velocity).toBe(80);
+      },
+    );
+  });
+
+  describe('measure mutations — addMeasures and deleteMeasures', () => {
+    it('addMeasures(index, count) inserts count empty measures with chords [] and four empty note lanes', () => {
+      const beforeLen = useSongStore.getState().song.measures.length;
+      useSongStore.getState().addMeasures(3, 4);
+      expect(useSongStore.getState().song.measures).toHaveLength(beforeLen + 4);
+      for (let i = 3; i < 3 + 4; i++) {
+        const m = useSongStore.getState().song.measures[i];
+        expect(m.chords).toEqual([]);
+        expect(m.notes).toEqual([[], [], [], []]);
+        expect(m.id).toMatch(UUID_V4);
+      }
+    });
+
+    it('addMeasures clamps atIndex past the end so new measures append', () => {
+      const len = useSongStore.getState().song.measures.length;
+      useSongStore.getState().addMeasures(len + 10, 1);
+      expect(useSongStore.getState().song.measures).toHaveLength(len + 1);
+      expect(useSongStore.getState().song.measures[len].chords).toEqual([]);
+    });
+
+    it('deleteMeasures(start, end) removes the inclusive range and shortens measures', () => {
+      const len = useSongStore.getState().song.measures.length;
+      useSongStore.getState().deleteMeasures(2, 5);
+      expect(useSongStore.getState().song.measures).toHaveLength(len - 4);
+    });
+
+    it('deleteMeasures at the last measure only removes that measure', () => {
+      const len = useSongStore.getState().song.measures.length;
+      useSongStore.getState().deleteMeasures(len - 1, len - 1);
+      expect(useSongStore.getState().song.measures).toHaveLength(len - 1);
+    });
+
+    it('deleteMeasures when start is past the last index is a no-op (no dirty flag / no undo)', () => {
+      const len = useSongStore.getState().song.measures.length;
+      const snap = structuredClone(useSongStore.getState().song);
+      useSongStore.getState().deleteMeasures(len, len);
+      expect(useSongStore.getState().song).toEqual(snap);
+      expect(useSongStore.getState().isDirty).toBe(false);
+      expect(useSongStore.getState().canUndo).toBe(false);
+    });
+  });
+
+  describe('undo/redo — chord edits and history flags', () => {
+    it('after chord add then undo: chord is gone and canUndo is false', () => {
+      useSongStore.getState().editChord(0, { type: 'add', chord: baseChordPayload() });
+      expect(useSongStore.getState().song.measures[0].chords).toHaveLength(1);
+      useSongStore.getState().undo();
+      expect(useSongStore.getState().song.measures[0].chords).toEqual([]);
+      expect(useSongStore.getState().canUndo).toBe(false);
+    });
+
+    it('redo restores the chord after an undone chord add', () => {
+      useSongStore.getState().editChord(0, { type: 'add', chord: baseChordPayload() });
+      const beforeUndo = structuredClone(useSongStore.getState().song.measures[0].chords[0]);
+      useSongStore.getState().undo();
+      expect(useSongStore.getState().song.measures[0].chords).toHaveLength(0);
+      useSongStore.getState().redo();
+      const chords = useSongStore.getState().song.measures[0].chords;
+      expect(chords).toHaveLength(1);
+      expect(chords[0].id).toBe(beforeUndo.id);
+      expect(chords[0].beat).toBe(beforeUndo.beat);
+    });
+
+    it('a new mutation after undo clears the redo stack (canRedo false)', () => {
+      useSongStore.getState().editChord(0, { type: 'add', chord: baseChordPayload() });
+      useSongStore.getState().undo();
+      expect(useSongStore.getState().canRedo).toBe(true);
+      useSongStore.getState().editChord(0, {
+        type: 'add',
+        chord: { ...baseChordPayload(), beat: 24, duration: 24 },
+      });
+      expect(useSongStore.getState().canRedo).toBe(false);
+    });
+
+    it('canUndo and canRedo reflect actual past/future stacks after two edits and one undo', () => {
+      useSongStore.getState().updateMetadata({ title: 'One' });
+      useSongStore.getState().updateMetadata({ title: 'Two' });
+      expect(useSongStore.getState().canUndo).toBe(true);
+      expect(useSongStore.getState().canRedo).toBe(false);
+      useSongStore.getState().undo();
+      expect(useSongStore.getState().song.metadata.title).toBe('One');
+      expect(useSongStore.getState().canUndo).toBe(true);
+      expect(useSongStore.getState().canRedo).toBe(true);
+      useSongStore.getState().undo();
+      expect(useSongStore.getState().song.metadata.title).toBe('Untitled');
+      expect(useSongStore.getState().canUndo).toBe(false);
+      expect(useSongStore.getState().canRedo).toBe(true);
+    });
+  });
+
+  describe('metadata and bandConfig — partial merge', () => {
+    it('updateMetadata merges partial SongMetadata without clearing unspecified fields', () => {
+      useSongStore.getState().updateMetadata({ title: 'New title' });
+      const m = useSongStore.getState().song.metadata;
+      expect(m.title).toBe('New title');
+      expect(m.tempo).toBe(120);
+      expect(m.key).toBe('C');
+      useSongStore.getState().updateMetadata({ tempo: 99 });
+      expect(useSongStore.getState().song.metadata.title).toBe('New title');
+      expect(useSongStore.getState().song.metadata.tempo).toBe(99);
+    });
+
+    it('updateBandConfig merges by track role without resetting unrelated tracks', () => {
+      const bassBefore = useSongStore.getState().song.bandConfig.tracks.find((t) => t.role === 'bass');
+      useSongStore.getState().updateBandConfig({
+        tracks: [{ role: 'melody1', volume: 0.11, mute: true }],
+      });
+      const m1 = useSongStore.getState().song.bandConfig.tracks.find((t) => t.role === 'melody1');
+      const bass = useSongStore.getState().song.bandConfig.tracks.find((t) => t.role === 'bass');
+      expect(m1?.volume).toBe(0.11);
+      expect(m1?.mute).toBe(true);
+      expect(bass).toEqual(bassBefore);
+    });
+  });
+
+  describe('loadSong — undo baseline', () => {
+    it('after loadSong, canUndo is false even if the loaded song was edited in a prior session clone', () => {
+      const incoming = makeDefaultSong();
+      incoming.metadata.title = 'File';
+      useSongStore.getState().loadSong(incoming);
+      expect(useSongStore.getState().canUndo).toBe(false);
+      expect(useSongStore.getState().song.metadata.title).toBe('File');
+    });
+  });
+
+  describe('edge cases', () => {
+    it('delete last chord in a measure leaves song.measures[n].chords as an empty array', () => {
+      useSongStore.getState().editChord(0, { type: 'add', chord: baseChordPayload() });
+      const id = useSongStore.getState().song.measures[0].chords[0].id;
+      useSongStore.getState().editChord(0, { type: 'delete', chordId: id });
+      expect(useSongStore.getState().song.measures[0].chords).toEqual([]);
+    });
+
+    it('chained multiple undos restore each prior song state in order (metadata chain)', () => {
+      useSongStore.getState().updateMetadata({ title: 'A' });
+      useSongStore.getState().updateMetadata({ title: 'B' });
+      useSongStore.getState().updateMetadata({ title: 'C' });
+      useSongStore.getState().undo();
+      expect(useSongStore.getState().song.metadata.title).toBe('B');
+      useSongStore.getState().undo();
+      expect(useSongStore.getState().song.metadata.title).toBe('A');
+      useSongStore.getState().undo();
+      expect(useSongStore.getState().song.metadata.title).toBe('Untitled');
+      expect(useSongStore.getState().canUndo).toBe(false);
     });
   });
 });
