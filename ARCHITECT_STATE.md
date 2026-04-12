@@ -2,7 +2,7 @@
 
 > Periodically updated cache of the Architect's current state. Review on session resume.
 
-**Last updated:** 2026-04-12 — Phase 2: TASK-2.1 + TASK-2.2 **merged** on `develop` (pull `origin/develop` for tip); tests **289** passed post-merge; Wave 2 (2.3–2.6) unblocked per ROADMAP
+**Last updated:** 2026-04-12 — Phase 2: **2.1 + 2.2 merged**; **Wave 2a PRs #10–#12** open (2.3/2.4/2.5); **2.6** queued until index barrel stable; pull `origin/develop` for tip
 
 ---
 
