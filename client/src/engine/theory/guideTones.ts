@@ -16,7 +16,9 @@ function circularSemitoneDistance(a: number, b: number): number {
 
 /**
  * Maps a pitch class to the home scale degree whose diatonic pitch class is nearest
- * (exact match preferred; ties break toward the lower scale degree).
+ * (exact match preferred). On equal circular distance, prefer the **higher** degree so
+ * chromatic chord tones spelled as a lowered sixth (e.g. ♭6 in borrowed iv) align with
+ * degree 6 for guide highlighting, not the perfect fifth below.
  */
 function pitchClassToHomeScaleDegree(pc: number, homeScale: ScaleType): ScaleDegree {
   const intervals = getScaleIntervals(homeScale);
@@ -33,7 +35,7 @@ function pitchClassToHomeScaleDegree(pc: number, homeScale: ScaleType): ScaleDeg
   for (let d = 1; d <= 7; d++) {
     const ipc = mod12(intervals[d - 1]);
     const dist = circularSemitoneDistance(target, ipc);
-    if (dist < bestDist || (dist === bestDist && d < best)) {
+    if (dist < bestDist || (dist === bestDist && d > best)) {
       bestDist = dist;
       best = d as ScaleDegree;
     }
