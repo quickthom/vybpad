@@ -2,7 +2,7 @@
 
 > Single source of truth for build state. Owned by the Project Manager. Updated on every state change.
 
-**`develop` tip:** `1072d6d` — https://github.com/quickthom/vybpad (merge: Phase 2 handoff docs + `#8`/`#9` squash commits `11bba21` / `0b10348` on `origin`).
+**`develop` tip:** `1d3f351` — https://github.com/quickthom/vybpad (TASK-2.1 + TASK-2.2 merged; TASK_STATUS sync).
 
 ---
 
