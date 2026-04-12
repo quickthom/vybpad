@@ -48,27 +48,30 @@ All Phase 0 tasks merged to develop.
 
 ### TASK-1A.4: Roman numeral generation
 
-- **Assigned role:** Builder
+- **Assigned role:** Reviewer
 - **Branch:** phase-1a/roman-numerals
-- **Status:** in-review
+- **Status:** in-review (review: blocked)
 - **Depends on:** TASK-1A.3 (merged)
-- **Last updated:** 2026-04-12: Builder + QA work committed (1db858b QA tests, fd33731 implementation). Clean worktree. Ready for review.
+- **Blocking notes:** Reviewer verdict BLOCKED: PR self-review checklist / ASSUMPTIONS not verifiable from branch alone (process). Code + tests reviewed positively; Vitest 138 passed. Re-request review once PR body on forge includes full checklist per `raise-pr` skill. Warning: `resolveRootNoteName` C-key special case for harmonic minor III+.
+- **Last updated:** 2026-04-12: Review complete — blocked on PR process artifact; branch `phase-1a/roman-numerals` HEAD fd33731.
 
 ### TASK-1A.5: Borrowed chord + secondary chord logic
 
-- **Assigned role:** Builder
+- **Assigned role:** Reviewer
 - **Branch:** phase-1a/borrowed-secondary
-- **Status:** in-review
+- **Status:** in-review (review: blocked)
 - **Depends on:** TASK-1A.3 (merged)
-- **Last updated:** 2026-04-12: Builder + QA work committed (db7c7bd QA tests, dc619f1 implementation). Clean worktree. Ready for review.
+- **Blocking notes:** Reviewer verdict BLOCKED: missing PR self-review checklist / full raise-pr template in review artifacts. Substantive: 127 tests pass; INTERFACES alignment OK. Warnings: extend tests for `viio`/`IV` secondary targets; document `alignedOct` invariant.
+- **Last updated:** 2026-04-12: Review complete — blocked on PR checklist; branch `phase-1a/borrowed-secondary` HEAD dc619f1.
 
 ### TASK-1A.6: Guide tone classification
 
-- **Assigned role:** Builder
+- **Assigned role:** Builder (fix) / Reviewer
 - **Branch:** phase-1a/guide-tones
-- **Status:** in-review
+- **Status:** in-review (review: blocked)
 - **Depends on:** TASK-1A.3 (merged)
-- **Last updated:** 2026-04-12: Builder + QA work committed (81eb5bc implementation, 51a29a8 QA tests). Clean worktree. Ready for review.
+- **Blocking notes:** Reviewer BLOCKED: (1) PR checklist missing; (2) **substantive:** `guideTones.test.ts` fails — borrowed **iv** expects chord tones `[1,4,6]`, implementation returns `[1,4,5]` due to `pitchClassToHomeScaleDegree` tie-break in `guideTones.ts`. Fix implementation (and/or tests per Architect) then re-run tests. Also: stale QA commit message text.
+- **Last updated:** 2026-04-12: Review complete — code fix required before merge; branch `phase-1a/guide-tones` HEAD 51a29a8.
 
 ### TASK-1A.7: Theory unit tests (comprehensive)
 
@@ -97,11 +100,12 @@ All Phase 0 tasks merged to develop.
 
 ### TASK-1B.3: Project CRUD routes
 
-- **Assigned role:** Builder
+- **Assigned role:** Integrator (next)
 - **Branch:** phase-1b/project-crud
-- **Status:** in-progress (no commits yet)
+- **Status:** approved (merge pending push + PR checklist on forge)
 - **Depends on:** TASK-1B.2 (merged)
-- **Last updated:** 2026-04-12: Brief issued, Builder + QA spawned. Worktree exists but no work committed — Builder was interrupted before starting.
+- **Blocking notes:** Reviewer **APPROVED** `b6ef7a2` — INTERFACES Project CRUD, PAT-001, tests pass (125). **Before merge:** open PR to `develop` with full self-review checklist in PR body (Reviewer warning: checklist was not in repo). Optional follow-ups: test PUT with `songData`; unauthenticated PUT/DELETE cases. After merge, unblocks 1B.4 / 1B.6 sequencing per ROADMAP.
+- **Last updated:** 2026-04-12: Builder+QA `b6ef7a2`; Reviewer approved; awaiting push/PR + Integrator merge to `develop`.
 
 ### TASK-1B.4: Default song factory
 

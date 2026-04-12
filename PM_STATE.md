@@ -1,6 +1,6 @@
 # PM STATE — vYbpad
 
-> State cache for PM session continuity. Updated 2026-04-12 (shutdown checkpoint).
+> State cache for PM session continuity. Updated 2026-04-12 (session resume — reviewers + 1B.3).
 
 ---
 
@@ -37,13 +37,13 @@ All 7 tasks merged. No outstanding issues.
 | 1A.5: Borrowed + secondary chords | phase-1a/borrowed-secondary | task-1a5-borrowed-secondary | dc619f1 | 2 (QA: db7c7bd, impl: dc619f1) |
 | 1A.6: Guide tone classification | phase-1a/guide-tones | task-1a6-guide-tones | 51a29a8 | 2 (impl: 81eb5bc, QA: 51a29a8) |
 
-All three worktrees are **clean** (no uncommitted changes). These need Reviewer agents spawned next.
+All three worktrees are **clean** (no uncommitted changes). **Reviews 2026-04-12:** 1A.4 & 1A.5 **blocked** (PR checklist not in repo; add PR body on forge + re-review). 1A.6 **blocked** (same + **substantive:** `getChordTones` borrowed iv degree mapping — fix in `guideTones.ts` / tests). **1B.3** implemented on `task-1b3-project-crud` at `b6ef7a2` (tests green); Reviewer spawned for final gate.
 
 ### Not started — worktree exists but no work committed
 
 | Task | Branch | Worktree | HEAD | Notes |
 |---|---|---|---|---|
-| 1B.3: Project CRUD routes | phase-1b/project-crud | task-1b3-project-crud | 9e41fcb | Builder was interrupted before starting. Needs re-brief with fresh Builder + QA. |
+| 1B.3: Project CRUD routes | phase-1b/project-crud | task-1b3-project-crud | b6ef7a2 | **Done 2026-04-12:** CRUD + tests; `npm test` 125 passed; open PR when remote exists. |
 
 ---
 
@@ -72,9 +72,9 @@ All worktree paths are under `/home/thom/py/vYbpad-worktrees/`.
 
 ## Next Actions for Incoming PM Session
 
-1. **Spawn Reviewers** for 1A.4, 1A.5, and 1A.6 — all three are ready for review. These can run in parallel (no shared files).
-2. **Re-brief Builder + QA for 1B.3** — the previous Builder was interrupted before committing any work. The worktree is clean and ready.
-3. After 1A.4/5/6 are approved → **spawn Integrator** to merge all three to develop.
+1. ~~**Spawn Reviewers** for 1A.4, 1A.5, and 1A.6~~ — **done 2026-04-12.**
+2. ~~**Re-brief Builder + QA for 1B.3**~~ — **done 2026-04-12** (agents spawned).
+3. **Collect Reviewer outcomes** for 1A.4/5/6 → if all APPROVED, **spawn Integrator** to merge all three to `develop` (order: roman-numerals → borrowed-secondary → guide-tones if conflicts arise; else any).
 4. After 1A.4/5/6 are merged → **unblock and brief 1A.7** (comprehensive theory tests).
 5. After 1B.3 is done → **unblock and brief 1B.4** (default song factory), then **1B.6** (integration tests).
 6. Once Phase 1A + 1B are fully merged → **begin Phase 2 decomposition** (Grid Editor & Song State per ROADMAP.md).
@@ -93,4 +93,4 @@ All worktree paths are under `/home/thom/py/vYbpad-worktrees/`.
 
 ## Develop Branch HEAD
 
-Commit: `c4b286c` — `Add PM_STATE.md for clean session handoff`
+Commit: `142ba43` — `Role tweaks` (verified 2026-04-12 session resume)

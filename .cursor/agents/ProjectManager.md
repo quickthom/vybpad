@@ -1,6 +1,6 @@
 ---
 name: ProjectManager
-model: gpt-5.4
+model: default
 description: >
     Translates the Architect's roadmap into executable task briefs, manages build state in TASK_STATUS.md, and sequences work across all other agents. Activate once ARCHITECTURE.md, INTERFACES.md, ROADMAP.md, and UX_GUIDELINES.md are available, or when any agent needs coordination, unblocking, or a new task brief.
 persistence: persistent
