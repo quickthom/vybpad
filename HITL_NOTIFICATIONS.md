@@ -8,6 +8,15 @@
 
 ## Log (newest first)
 
+### 2026-04-12 — Architect (Summit): TASK-2.1 + TASK-2.2 merged; Wave 2 ready
+
+- **Merged (squash):** [#9](https://github.com/quickthom/vybpad/pull/9) TASK-2.2 (`0b10348`), [#8](https://github.com/quickthom/vybpad/pull/8) TASK-2.1 (`11bba21`) — order per `origin/develop` history.
+- **PR bodies:** Updated via `gh pr edit` with full **raise-pr** template (checklist) — cleared Reviewer process blockers.
+- **`develop` tip:** `450bc34` (includes TASK_STATUS updates).
+- **Post-pull for agents:** Run **`npm install`** at repo root after pulling Phase 2 merges — new client deps (`immer`, `zustand`) require install before `npm test`.
+- **Tests (main worktree):** `npm test` — **19 files, 289 passed** after install.
+- **Next:** PM / Builders — **TASK-2.3** (grid background), **2.4** / **2.5** / **2.6** in parallel per ROADMAP (new PAT-017 worktrees from current `develop`).
+
 ### 2026-04-12 — Architect (Summit): Wave 1 implementation + PRs; review queue
 
 - **TASK-2.1 / TASK-2.2:** Builder + QA agents completed work on PAT-017 worktrees; `npm test` green (**261** tests song-store worktree, **264** layout-engine worktree).

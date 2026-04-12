@@ -1,36 +1,35 @@
 # PM STATE — vYbpad
 
-> PM continuity handoff — **not** a duplicate of `TASK_STATUS.md`. Updated **2026-04-12** — Phase 2 wave 1 PRs **#8** and **#9** in review.
+> PM continuity handoff — **not** a duplicate of `TASK_STATUS.md`. Updated **2026-04-12** — Phase 2 wave 1 **merged**; wave 2 ready.
 
 ---
 
 ## Remote & tip
 
 - **GitHub:** https://github.com/quickthom/vybpad — `origin`, default **`develop`**.
-- **`develop` HEAD:** `0365350` — Phase 2 coordination docs on `develop` (pull before Integrator merge).
-- **Open PRs:** [#8](https://github.com/quickthom/vybpad/pull/8) TASK-2.1 song store · [#9](https://github.com/quickthom/vybpad/pull/9) TASK-2.2 layout engine
+- **`develop` HEAD:** `450bc34` — TASK-2.1 + TASK-2.2 on `develop`; pull and run **`npm install`** before tests.
+- **Merged PRs:** [#9](https://github.com/quickthom/vybpad/pull/9) TASK-2.2 · [#8](https://github.com/quickthom/vybpad/pull/8) TASK-2.1
 
 ---
 
-## Phase 2 — wave 1 (2026-04-12)
+## Phase 2 — wave 1 (done)
 
-| Task | Branch | PR | Status |
-|------|--------|-----|--------|
-| TASK-2.1 | `phase-2/song-store` | [#8](https://github.com/quickthom/vybpad/pull/8) | in-review |
-| TASK-2.2 | `phase-2/layout-engine` | [#9](https://github.com/quickthom/vybpad/pull/9) | in-review |
+| Task | PR | Status |
+|------|-----|--------|
+| TASK-2.1 | [#8](https://github.com/quickthom/vybpad/pull/8) | merged |
+| TASK-2.2 | [#9](https://github.com/quickthom/vybpad/pull/9) | merged |
 
-Worktrees still exist at `/home/thom/py/vYbpad-worktrees/phase-2-song-store` and `phase-2-layout-engine` until Integrator merges and removes them.
+**Worktrees:** Retire `/home/thom/py/vYbpad-worktrees/phase-2-song-store` and `phase-2-layout-engine` when convenient (`git worktree remove` after switching away). Remote feature branches deleted on merge; local may persist.
 
-**Note:** `phase-2-ui-store` worktree (TASK-2.11) — **do not start** until ROADMAP deps met.
+**Note:** `phase-2-ui-store` — still **do not start** TASK-2.11 until deps met.
 
 ---
 
 ## Next actions (pipeline)
 
-1. **Reviewer** approve (or request changes on) **#8** and **#9**; CI must be green.
-2. **Integrator** squash-merge to `develop` (either order if independent — **#9** first is slightly nicer for TASK-2.3 follow-on).
-3. After merges: `git worktree remove` the two Phase 2 worktrees; brief **TASK-2.3** (depends on 2.2) + continue Phase 2 per `ROADMAP.md`.
-4. **Designer:** UI-heavy tasks from **2.4** onward as briefs issue.
+1. **Wave 2:** Brief + PAT-017 worktrees from current `develop` for **TASK-2.3** (grid background renderer), and in parallel **TASK-2.4**, **TASK-2.5**, **TASK-2.6** (all depend on 2.2 only — verify no file conflicts in briefs; stagger if same `client/src/engine/renderer/` hotspots collide).
+2. **QA** concurrent with each Builder; **Reviewer** → **Integrator** per PR.
+3. **Designer:** Chord/note rendering (2.4/2.5) — align with `UX_GUIDELINES.md` / PAT-012.
 
 ---
 
