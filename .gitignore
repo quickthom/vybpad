@@ -41,3 +41,7 @@ prisma/*.db
 *.swp
 *.swo
 *~
+.eslintcache
+
+# Leave this here -HTIL
+COMPANY_DIRECTORY.md

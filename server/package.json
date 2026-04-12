@@ -1,0 +1,12 @@
+{
+  "name": "@vybpad/server",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@vybpad/shared": "*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5"
+  }
+}

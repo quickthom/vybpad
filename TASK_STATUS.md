@@ -13,7 +13,7 @@
 - **Status:** approved
 - **Depends on:** none
 - **Blocking notes:** —
-- **Last updated:** 2026-04-12: All acceptance criteria verified (npm install, tsc, eslint, prettier, npm test). Ready to merge.
+- **Last updated:** 2026-04-12: Builder committed scaffold; PM fixed workspace:* protocol and prettier config; all acceptance criteria pass (npm install, tsc --build, eslint, prettier --check, shared imports, strict mode, npm test). Merged to develop.
 
 ### TASK-0.2: Client scaffold (Vite + React + TypeScript + Tailwind)
 

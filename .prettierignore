@@ -1,0 +1,21 @@
+node_modules
+dist
+coverage
+package-lock.json
+playwright-report
+test-results
+docker/data
+
+# Canonical docs (authored by Architect/Designer, not auto-formatted)
+ARCHITECTURE.md
+INTERFACES.md
+PATTERNS.md
+ROADMAP.md
+REQUIREMENTS.md
+ARCHITECT_STATE.md
+TASK_STATUS.md
+COMPANY_DIRECTORY.md
+UX_GUIDELINES.md
+
+# Cursor agent/skill config
+.cursor/
