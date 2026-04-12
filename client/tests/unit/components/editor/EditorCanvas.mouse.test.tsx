@@ -127,7 +127,7 @@ function mockCanvasLayout(rect: Partial<DOMRect> & Pick<DOMRect, 'left' | 'top' 
 
 /** Scope to the RTL container so mocks apply to the same canvas node that receives pointer events. */
 function canvasIn(container: HTMLElement): HTMLCanvasElement {
-  const el = container.querySelector('canvas[aria-label="Editor canvas"]');
+  const el = container.querySelector('canvas');
   if (!el) {
     throw new Error('Editor canvas not found in container');
   }
@@ -723,7 +723,7 @@ describe('EditorCanvas — TASK-2.7 mouse interaction (interface contract)', () 
         />,
       );
 
-      expect(document.querySelectorAll('canvas[aria-label="Editor canvas"]').length).toBeGreaterThan(0);
+      expect(container.querySelectorAll('canvas[role="application"]').length).toBeGreaterThan(0);
     });
   });
 });

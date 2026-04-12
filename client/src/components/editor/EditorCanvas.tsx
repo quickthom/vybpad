@@ -2,6 +2,7 @@ import type { ChordEditAction, NoteEditAction, ScaleDegree, Selection, SongData,
 import { useCallback, useEffect, useRef, useState, type ReactElement } from 'react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
 
+import { useKeyboard } from '../../hooks/useKeyboard';
 import { theoryEngine } from '../../engine/theory';
 import { CHORD_AREA_HEIGHT, MEASURE_HEADER_HEIGHT, NOTE_HEIGHT, SELECTION_COLOR } from '../../engine/renderer/constants';
 import { drawChordBlocks, layoutChordBlock } from '../../engine/renderer/chordBlocks';
@@ -111,10 +112,23 @@ function selectionFromHit(hit: EditorCanvasHit): Selection {
 }
 
 export function EditorCanvas(props: EditorCanvasProps): ReactElement {
-  const { song, viewport, selection, playbackTick, colorScheme, onChordEdit, onNoteEdit, onSelectionChange } = props;
+  const {
+    song,
+    viewport,
+    selection,
+    playbackTick,
+    colorScheme,
+    activeVoice,
+    entryMode,
+    onChordEdit,
+    onNoteEdit,
+    onSelectionChange,
+  } = props;
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const sessionRef = useRef<DragSession | null>(null);
+
+  const [currentDurationTicks, setCurrentDurationTicks] = useState(48);
 
   const [hoverHit, setHoverHit] = useState<EditorCanvasHit | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -128,6 +142,19 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
       forceRedraw((n) => n + 1);
     });
   }, []);
+
+  useKeyboard({
+    song,
+    viewport,
+    selection,
+    activeVoice,
+    entryMode,
+    currentDurationTicks,
+    setCurrentDurationTicks,
+    onChordEdit,
+    onNoteEdit,
+    onSelectionChange,
+  });
 
   const hitIsResizeEdge = useCallback(
     (hit: EditorCanvasHit, vx: number): boolean => {
@@ -404,14 +431,16 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
   };
 
   const handlePointerMove = (e: ReactPointerEvent<HTMLCanvasElement>) => {
+    const canvas = e.currentTarget;
     const mcx = e.clientX ?? 0;
     const mcy = e.clientY ?? 0;
     const sess = sessionRef.current;
 
     if (!sess) {
-      // Hover hit-testing is omitted here: jsdom can emit synthetic pointer moves before layout
-      // matches the canvas rect, which would call hitTestEditorCanvas with bogus (x,y). Real browsers
-      // still get hover via future pointer-driven hover pass (TASK follow-up) or delegated events.
+      const { x: vx, y: vy } = pointerEventToViewportXY(canvas, mcx, mcy);
+      const hit = hitTestEditorCanvas(vx, vy, song, viewport);
+      setHoverHit(hit);
+      scheduleRedraw();
       return;
     }
 
@@ -472,9 +501,10 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
   return (
     <canvas
       ref={canvasRef}
-      role="presentation"
-      className={cursorClass}
-      aria-label="Editor canvas"
+      role="application"
+      tabIndex={0}
+      className={`${cursorClass} outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2`}
+      aria-label="Song editor — digits 1–7, duration h j k l ; , Delete, arrow keys to navigate"
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
