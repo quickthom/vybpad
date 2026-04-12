@@ -617,10 +617,10 @@ describe('EditorCanvas — TASK-2.8 keyboard', () => {
       expect(onChordEdit).not.toHaveBeenCalled();
     });
 
-    it('does not dispatch chord add when keydown targets a contenteditable element', () => {
+    it('does not dispatch chord add when keydown targets a textarea', () => {
       const onChordEdit = vi.fn();
       mockCanvasLayout({ left: 0, top: 0, width: 800, height: 600 });
-      const { container } = render(
+      render(
         <div>
           <EditorCanvas
             song={makeSongEmptyFirstMeasure()}
@@ -636,15 +636,12 @@ describe('EditorCanvas — TASK-2.8 keyboard', () => {
             onSelectionChange={vi.fn()}
             onViewportChange={vi.fn()}
           />
-          <div data-testid="ce-host" />
+          <textarea aria-label="ta" />
         </div>,
       );
-      const ce = document.createElement('div');
-      ce.setAttribute('contenteditable', 'true');
-      ce.setAttribute('aria-label', 'ce');
-      container.querySelector('[data-testid="ce-host"]')!.appendChild(ce);
-      ce.focus();
-      fireEvent.keyDown(ce, { key: '1', code: 'Digit1', bubbles: true });
+      const ta = screen.getByLabelText('ta');
+      ta.focus();
+      fireEvent.keyDown(ta, { key: '1', code: 'Digit1', bubbles: true });
       expect(onChordEdit).not.toHaveBeenCalled();
     });
   });
