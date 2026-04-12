@@ -2,7 +2,7 @@
 
 > Periodically updated cache of the Architect's current state. Review on session resume.
 
-**Last updated:** 2026-04-12 ~11:00 PM (shutdown checkpoint for full reset)
+**Last updated:** 2026-04-12 — GitHub remote `quickthom/vybpad` created; default branch `develop`
 
 ---
 
@@ -17,9 +17,11 @@
    - `ARCHITECTURE.md` — stack, data model, auth, infrastructure, testing strategy
    - `INTERFACES.md` — API contracts, DB schema, song data model, component props, store shapes, engine interfaces
    - `ROADMAP.md` — 9-phase build plan with dependency graph and parallelism map
-   - `PATTERNS.md` — 18 pre-authorized patterns (originally 17; PAT-017 added mid-build for worktree isolation)
+   - `PATTERNS.md` — 19 pre-authorized patterns (PAT-017 worktrees; PAT-019 yay for system packages)
 3. **Process interventions made:**
+   - **GitHub:** canonical remote `https://github.com/quickthom/vybpad`; all local branches pushed; PR workflow unblocked for Reviewers
    - Added PAT-017 (git worktrees for parallel tasks) after HITL caught Builders clobbering each other in a shared directory
+   - Added PAT-019: agents install packages with `yay` (not `sudo pacman` in agent shells)
    - Updated PM role doc to include agent-spawning responsibilities and worktree isolation rules
    - Flagged QA process violation (PM was skipping concurrent QA briefs) — corrected, QA now running with all Builders
 
