@@ -2,16 +2,10 @@ import type { ChordEditAction, NoteEditAction, ScaleDegree, Selection, SongData,
 import { useEffect, useRef } from 'react';
 
 import {
-  buildDefaultNotePayload,
-  buildDiatonicChordPayload,
   clampDurationToMeasure,
   DURATION_KEYS,
   isEditableKeyboardTarget,
   navigateSelection,
-  nextAppendBeat,
-  resolveTargetMeasureIndex,
-  shouldAllowChordDigitEntry,
-  shouldUseNoteEntry,
 } from '../components/editor/editorKeyboardLogic';
 
 /** PAT-004 — re-export for unit tests (alias of DURATION_KEYS). */
@@ -53,8 +47,6 @@ export function handleEditorKeydown(e: KeyboardEvent, ctx: EditorKeyboardContext
   if (isEditableKeyboardTarget(document.activeElement)) return;
   if (isEditableKeyboardTarget(e.target)) return;
   if (e.ctrlKey || e.metaKey || e.altKey) return;
-
-  const measureIndex = resolveTargetMeasureIndex(ctx.selection, ctx.viewport, ctx.song);
 
   const applyDurationKey = (ticks: number): void => {
     const rounded = Math.round(ticks);
@@ -115,33 +107,24 @@ export function handleEditorKeydown(e: KeyboardEvent, ctx: EditorKeyboardContext
 
   const degree = parseScaleDegreeKey(key);
   if (degree != null) {
-    if (ctx.selection?.type === 'range') return;
+    const sel = ctx.selection;
+    if (!sel || sel.type === 'range') return;
 
-    const noteEntry = shouldUseNoteEntry(ctx.selection);
-    const chordDigitsOk = shouldAllowChordDigitEntry(ctx.entryMode);
-
-    if (!noteEntry && !chordDigitsOk) return;
-
-    if (noteEntry) {
-      const selNoteId = ctx.selection?.type === 'note' ? ctx.selection.eventIds?.[0] : undefined;
-      const voice =
-        selNoteId != null ? (findVoiceForNote(ctx.song, measureIndex, selNoteId) ?? ctx.activeVoice) : ctx.activeVoice;
-      const nb = nextAppendBeat(ctx.song, measureIndex, 'note', voice);
-      if (nb == null) return;
+    if (sel.type === 'chord') {
+      const chordId = sel.eventIds?.[0];
+      if (!chordId) return;
       e.preventDefault();
-      const durClamped = clampDurationToMeasure(ctx.song, measureIndex, nb, ctx.currentDurationTicks);
-      const payload = buildDefaultNotePayload(ctx.song, measureIndex, degree, nb, durClamped);
-      ctx.onNoteEdit(measureIndex, voice, { type: 'add', note: payload });
+      ctx.onChordEdit(sel.measureIndex, { type: 'update', chordId, changes: { scaleDegree: degree } });
       return;
     }
 
-    if (chordDigitsOk) {
-      const nb = nextAppendBeat(ctx.song, measureIndex, 'chord', ctx.activeVoice);
-      if (nb == null) return;
+    if (sel.type === 'note') {
+      const noteId = sel.eventIds?.[0];
+      if (!noteId) return;
+      const voice = findVoiceForNote(ctx.song, sel.measureIndex, noteId);
+      if (voice == null) return;
       e.preventDefault();
-      const durClamped = clampDurationToMeasure(ctx.song, measureIndex, nb, ctx.currentDurationTicks);
-      const payload = buildDiatonicChordPayload(ctx.song, measureIndex, degree, nb, durClamped);
-      ctx.onChordEdit(measureIndex, { type: 'add', chord: payload });
+      ctx.onNoteEdit(sel.measureIndex, voice, { type: 'update', noteId, changes: { scaleDegree: degree } });
     }
   }
 }
