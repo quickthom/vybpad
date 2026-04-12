@@ -55,10 +55,10 @@
 
 - **Assigned role:** Builder
 - **Branch:** phase-0/prisma-schema
-- **Status:** in-progress
+- **Status:** approved
 - **Depends on:** TASK-0.3, TASK-0.5
 - **Blocking notes:** —
-- **Last updated:** 2026-04-12: Unblocked. Builder spawned. Note: prisma generate works without DB; prisma migrate dev needs running PostgreSQL (Docker).
+- **Last updated:** 2026-04-12: Committed (7cf37f6). Prisma schema + Fastify plugin + prisma generate passes. Migrations deferred (no Docker). Ready to merge.
 
 ### TASK-0.7: UX Guidelines
 
