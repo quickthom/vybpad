@@ -1,6 +1,7 @@
 import type { NoteEvent, NoteName, ScaleDegree, ScaleType, SongData, Viewport } from '@vybpad/shared';
 
 import { NOTE_HEIGHT } from './constants';
+import { pat010DiatonicHex, pat010MajorCentricHex } from './colorMaps';
 import {
   absoluteTickFromMeasurePosition,
   absoluteTickToViewportX,
@@ -23,15 +24,15 @@ export const NOTE_BLOCK_BORDER_STYLE = 'rgba(31, 41, 55, 0.35)';
 /** UX §6 — octave digit beside degree numeral. */
 export const NOTE_OCTAVE_LABEL_COLOR = '#4B5563';
 
-/** PAT-010 diatonic degree fills (1–7). */
+/** PAT-010 diatonic degree fills (1–7); same hues as {@link pat010DiatonicHex}. */
 export const DEGREE_FILL_HEX: Record<ScaleDegree, string> = {
-  1: '#E74C3C',
-  2: '#E67E22',
-  3: '#F1C40F',
-  4: '#2ECC71',
-  5: '#1ABC9C',
-  6: '#3498DB',
-  7: '#9B59B6',
+  1: pat010DiatonicHex(1),
+  2: pat010DiatonicHex(2),
+  3: pat010DiatonicHex(3),
+  4: pat010DiatonicHex(4),
+  5: pat010DiatonicHex(5),
+  6: pat010DiatonicHex(6),
+  7: pat010DiatonicHex(7),
 };
 
 const MAJOR_SCALE_REL_TO_TONIC: readonly number[] = [0, 2, 4, 5, 7, 9, 11];
@@ -161,7 +162,11 @@ export function noteBlockFillColor(
   colorScheme: 'diatonic' | 'major',
 ): string {
   const deg = effectiveDegreeForColor(note, key, scale, colorScheme);
-  const baseHex = DEGREE_FILL_HEX[deg];
+  const midi = scaleDegreeToMidi(note.scaleDegree, note.octave, note.chromatic, key, scale, 4);
+  const pc = ((midi % 12) + 12) % 12;
+  const ref = referenceMajorTonicPitchClass(key, scale);
+  const baseHex =
+    colorScheme === 'diatonic' ? pat010DiatonicHex(deg) : pat010MajorCentricHex(pc - ref);
   const blended = blendDegreeFillWithWhite(baseHex);
   if (note.chromatic !== 0) {
     // Re-extract rough hex from rgb for muting helper — keep midpoint saturation drop

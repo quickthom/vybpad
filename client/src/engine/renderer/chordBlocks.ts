@@ -5,6 +5,7 @@ import { noteNameToMidiBase } from '../theory/noteNames';
 import { resolveSecondaryTarget } from '../theory/secondaryChords';
 import { scaleDegreeToMidi } from '../theory/scaleDegreeToMidi';
 import { CHORD_AREA_HEIGHT } from './constants';
+import { pat010DiatonicHex, pat010MajorCentricHex, PAT010_DIATONIC_DEGREE_HEX } from './colorMaps';
 import {
   absoluteTickFromMeasurePosition,
   absoluteTickToViewportX,
@@ -20,16 +21,8 @@ export const CHORD_BLOCK_CORNER_RADIUS = 6;
 /** UX §6 — 1px stroke at ~12% black. */
 export const CHORD_BLOCK_BORDER = 'rgba(0, 0, 0, 0.12)';
 
-/** PAT-010 diatonic-centric hues (degrees 1–7). */
-export const PAT010_DEGREE_HEX: readonly string[] = [
-  '#E74C3C',
-  '#E67E22',
-  '#F1C40F',
-  '#2ECC71',
-  '#1ABC9C',
-  '#3498DB',
-  '#9B59B6',
-];
+/** Same as {@link PAT010_DIATONIC_DEGREE_HEX} — exported under this name for existing tests. */
+export const PAT010_DEGREE_HEX = PAT010_DIATONIC_DEGREE_HEX;
 
 /** UX §6 — fill is PAT-010 at 85% over white. */
 export const CHORD_FILL_BLEND_ALPHA = 0.85;
@@ -53,7 +46,7 @@ function clampDegree(d: number): ScaleDegree {
  */
 export function ionianTonicPcForMajorCentric(key: NoteName, scale: ScaleType): number {
   const kp = noteNameToMidiBase(key) % 12;
-  if (scale === 'minor') {
+  if (scale === 'minor' || scale === 'harmonicMinor') {
     return (kp + 3) % 12;
   }
   return kp;
@@ -101,7 +94,7 @@ export function effectiveDegreeForChordColor(
 }
 
 export function pat010HexForDegree(degree: ScaleDegree): string {
-  return PAT010_DEGREE_HEX[degree - 1] ?? PAT010_DEGREE_HEX[0];
+  return pat010DiatonicHex(degree);
 }
 
 export function blendPat010Fill(hex: string, alpha: number = CHORD_FILL_BLEND_ALPHA): string {
@@ -241,8 +234,13 @@ export function drawChordBlocks(
         continue;
       }
 
+      const rootPc = chordRootPitchClass(chord, key, scale);
+      const ionianTonic = ionianTonicPcForMajorCentric(key, scale);
       const degree = effectiveDegreeForChordColor(chord, key, scale, colorScheme);
-      const baseHex = pat010HexForDegree(clampDegree(degree));
+      const baseHex =
+        colorScheme === 'diatonic'
+          ? pat010DiatonicHex(clampDegree(degree))
+          : pat010MajorCentricHex(rootPc - ionianTonic);
       const fill = blendPat010Fill(baseHex, CHORD_FILL_BLEND_ALPHA);
 
       const { x, y, width: w, height: h } = rect;
