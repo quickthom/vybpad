@@ -1,4 +1,4 @@
-version: "3.8"
+version: '3.8'
 services:
   postgres:
     image: postgres:16
@@ -10,7 +10,7 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - '5432:5432'
 
   api:
     build:
@@ -20,7 +20,7 @@ services:
       - ./:/usr/src/app:delegated
       - node_modules_api:/usr/src/app/node_modules
     ports:
-      - "3001:3001"
+      - '3001:3001'
     env_file:
       - .env
     environment:
@@ -39,7 +39,7 @@ services:
       - ./:/usr/src/app:delegated
       - node_modules_client:/usr/src/app/client/node_modules
     ports:
-      - "5173:5173"
+      - '5173:5173'
     env_file:
       - .env
     environment:
@@ -50,4 +50,3 @@ volumes:
   pgdata:
   node_modules_api:
   node_modules_client:
-
