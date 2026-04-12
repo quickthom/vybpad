@@ -72,5 +72,5 @@ No outstanding escalations at last Architect sync.
 
 ## Develop Branch HEAD at Shutdown
 
-`a8cf52a` — `test(1B.6): add API integration tests for auth + project lifecycle (#7)`  
-Verify with: `git fetch origin && git log --oneline -1 origin/develop`
+Phase 1 code milestone: **`a8cf52a`** — 1B.6 API integration tests (#7).  
+Doc-only follow-ups may land after; verify tip with `git fetch origin && git log --oneline -3 origin/develop`.
