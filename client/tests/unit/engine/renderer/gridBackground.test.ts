@@ -1,11 +1,21 @@
+/*
+ * QA COVERAGE PLAN — TASK-2.14
+ *
+ * Grid draw-call assertions (PAT-012 / layout helpers):
+ *   happy: fillText for measure numbers at labelPad + viewport X and header midline Y; vertical
+ *          lines at Math.round(viewportX)+0.5 for bar + quarter-note grid
+ *   edges: zoom 0.5 / 1 / 2 scales horizontal positions; 3/4 meter has fewer internal beats
+ */
+
 import type { Measure, SongData, Viewport } from '@vybpad/shared';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import {
   absoluteTickToViewportX,
   BEAT_WIDTH,
   computeGridBackgroundLayout,
   drawGridBackground,
+  MEASURE_HEADER_HEIGHT,
   MEASURE_NUMBER_COLOR,
   MEASURE_NUMBER_FONT,
   TPQN,
@@ -188,5 +198,163 @@ describe('grid background — TPQN alignment', () => {
       const ticks = Math.round(deltaPx / (BEAT_WIDTH / TPQN));
       expect(ticks % TPQN).toBe(0);
     }
+  });
+});
+
+/** Matches `drawGridBackground`: crisp vertical lines on half-pixel coordinates. */
+function expectedVerticalLineX(viewportX: number): number {
+  return Math.round(viewportX) + 0.5;
+}
+
+function gridDrawCtxStub(
+  extra: Record<string, unknown>,
+): CanvasRenderingContext2D {
+  return {
+    save: vi.fn(),
+    restore: vi.fn(),
+    beginPath: vi.fn(),
+    moveTo: vi.fn(),
+    lineTo: vi.fn(),
+    stroke: vi.fn(),
+    fillText: vi.fn(),
+    lineWidth: 1,
+    set strokeStyle(_v: string) {
+      /* canvas stub */
+    },
+    get strokeStyle() {
+      return '';
+    },
+    set fillStyle(_v: string) {
+      /* canvas stub */
+    },
+    get fillStyle() {
+      return '';
+    },
+    set font(_v: string) {
+      /* canvas stub */
+    },
+    get font() {
+      return '';
+    },
+    textBaseline: 'alphabetic' as CanvasTextBaseline,
+    textAlign: 'start' as CanvasTextAlign,
+    ...extra,
+  } as unknown as CanvasRenderingContext2D;
+}
+
+describe('grid background — canvas draw calls (TASK-2.14)', () => {
+  it('calls fillText with measure number labels at label X and header midline Y', () => {
+    const song = minimalSong44(3);
+    const view = vp({ startMeasure: 0, measureCount: 3, zoom: 1 });
+    const layout = computeGridBackgroundLayout(song, view);
+    const fillText = vi.fn();
+    const ctx = gridDrawCtxStub({ fillText });
+
+    drawGridBackground(ctx, song, view, 400);
+
+    const labelY = MEASURE_HEADER_HEIGHT / 2;
+    expect(fillText).toHaveBeenCalledTimes(layout.measureNumbers.length);
+    for (const { label, x } of layout.measureNumbers) {
+      expect(fillText).toHaveBeenCalledWith(label, x, labelY);
+    }
+  });
+
+  it('uses MEASURE_NUMBER_COLOR and MEASURE_NUMBER_FONT immediately before fillText', () => {
+    const song = minimalSong44(1);
+    const view = vp({ measureCount: 1 });
+    const fillText = vi.fn();
+    const fillStyleSeq: string[] = [];
+    const fontSeq: string[] = [];
+    const ctx = {
+      save: vi.fn(),
+      restore: vi.fn(),
+      beginPath: vi.fn(),
+      moveTo: vi.fn(),
+      lineTo: vi.fn(),
+      stroke: vi.fn(),
+      fillText,
+      lineWidth: 1,
+      set strokeStyle(_v: string) {
+        /* canvas stub */
+      },
+      get strokeStyle() {
+        return '';
+      },
+      set fillStyle(v: string) {
+        fillStyleSeq.push(v);
+      },
+      get fillStyle() {
+        return fillStyleSeq[fillStyleSeq.length - 1] ?? '';
+      },
+      set font(v: string) {
+        fontSeq.push(v);
+      },
+      get font() {
+        return fontSeq[fontSeq.length - 1] ?? '';
+      },
+      textBaseline: 'alphabetic' as CanvasTextBaseline,
+      textAlign: 'start' as CanvasTextAlign,
+    } as unknown as CanvasRenderingContext2D;
+
+    drawGridBackground(ctx, song, view, 200);
+    const idx = fillStyleSeq.lastIndexOf(MEASURE_NUMBER_COLOR);
+    expect(idx).not.toBe(-1);
+    expect(fontSeq[idx]).toBe(MEASURE_NUMBER_FONT);
+  });
+
+  it('issues moveTo with half-pixel X matching rounded viewport X for bar lines and beat lines at zoom 1', () => {
+    const song = minimalSong44(2);
+    const view = vp({ measureCount: 2, zoom: 1 });
+    const layout = computeGridBackgroundLayout(song, view);
+    const moveTo = vi.fn();
+    const ctx = gridDrawCtxStub({ moveTo });
+
+    drawGridBackground(ctx, song, view, 300);
+
+    const expectedXs = new Set<number>();
+    for (const x of layout.gridLines) {
+      expectedXs.add(expectedVerticalLineX(x));
+    }
+    for (const x of layout.barLines) {
+      expectedXs.add(expectedVerticalLineX(x));
+    }
+    const moveXs = moveTo.mock.calls.map((c) => c[0] as number);
+    for (const xi of expectedXs) {
+      expect(moveXs).toContain(xi);
+    }
+  });
+
+  it('scales bar line and beat line moveTo X with zoom 2 (PAT-012 BEAT_WIDTH × zoom)', () => {
+    const song = minimalSong44(1);
+    const view = vp({ measureCount: 1, zoom: 2 });
+    const layout = computeGridBackgroundLayout(song, view);
+    const moveTo = vi.fn();
+    const ctx = gridDrawCtxStub({ moveTo });
+
+    drawGridBackground(ctx, song, view, 300);
+
+    // Single 4/4 measure: grid at beats 2–4 → ticks 48, 96, 144; bars at 0 and 192
+    expect(layout.gridLines).toHaveLength(3);
+    for (const gx of layout.gridLines) {
+      expect(moveTo).toHaveBeenCalledWith(expectedVerticalLineX(gx), 0);
+    }
+    for (const bx of layout.barLines) {
+      expect(moveTo).toHaveBeenCalledWith(expectedVerticalLineX(bx), 0);
+    }
+  });
+
+  it('uses wider horizontal spacing at zoom 0.5 so measure number fillText X shifts accordingly', () => {
+    const song = minimalSong44(2);
+    const view = vp({ startMeasure: 1, measureCount: 1, zoom: 0.5 });
+    const layout = computeGridBackgroundLayout(song, view);
+    const fillText = vi.fn();
+    const ctx = gridDrawCtxStub({ fillText });
+
+    drawGridBackground(ctx, song, view, 200);
+    expect(fillText).toHaveBeenCalledWith(
+      layout.measureNumbers[0]!.label,
+      layout.measureNumbers[0]!.x,
+      MEASURE_HEADER_HEIGHT / 2,
+    );
   });
 });
