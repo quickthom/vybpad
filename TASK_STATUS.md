@@ -218,15 +218,55 @@ All Phase 0 tasks merged to develop.
 
 ### TASK-2.11: UI store (viewport, selection, active voice, panels)
 
-- **Assigned role:** not yet started — **READY TO SPAWN**
-- **Branch:** `phase-2/ui-store` (not yet created)
-- **Status:** pending — all deps satisfied ✅
+- **Assigned role:** Builder + QA (in-progress)
+- **Branch:** `phase-2/ui-store`
+- **Worktree (PAT-017):** `/home/thom/py/vYbpad-worktrees/task-2-11-ui-store`
+- **Status:** in-progress
 - **Depends on:** TASK-0.2 (merged), TASK-2.1–2.10 (all merged ✓)
-- **Blocking notes:** none — TASK-2.9 merged 2026-04-12. Spawn Builder + QA next.
-- **Last updated:** 2026-04-12: All deps met. Ready for PM to spawn Builder + QA.
+- **Blocking notes:** none
+- **Last updated:** 2026-04-12: Worktree created; Builder + QA spawned (Tempo/PM).
+
+### TASK-2.12: Guide tone overlay (chord compatibility highlighting)
+
+- **Assigned role:** not yet started — **BLOCKED ON TASK-2.11** (EditorCanvas wiring conflicts)
+- **Branch:** `phase-2/guide-tone-overlay` (not yet created)
+- **Status:** queued — waiting for TASK-2.11 to merge
+- **Depends on:** TASK-1A.6 (merged ✓), TASK-2.5 (merged ✓); sequence after 2.11 to avoid EditorCanvas conflicts
+- **Blocking notes:** spawn after TASK-2.11 merges
+- **Last updated:** 2026-04-12: Queued; worktree TBD after 2.11 merges.
+
+### TASK-2.13: Color scheme implementation (diatonic + major-centric)
+
+- **Assigned role:** Builder + QA (in-progress)
+- **Branch:** `phase-2/color-scheme`
+- **Worktree (PAT-017):** `/home/thom/py/vYbpad-worktrees/task-2-13-color-scheme`
+- **Status:** in-progress
+- **Depends on:** TASK-2.4 (merged ✓), TASK-2.5 (merged ✓)
+- **Blocking notes:** none — parallel with 2.11 (no shared files)
+- **Last updated:** 2026-04-12: Worktree created; Builder + QA spawned (Tempo/PM).
+
+### TASK-2.14: Canvas renderer tests (mock context, draw call assertions)
+
+- **Assigned role:** QA (in-progress)
+- **Branch:** `phase-2/canvas-renderer-tests`
+- **Worktree (PAT-017):** `/home/thom/py/vYbpad-worktrees/task-2-14-canvas-tests`
+- **Status:** in-progress
+- **Depends on:** TASK-2.3–2.5 (all merged ✓)
+- **Blocking notes:** none — test files only
+- **Last updated:** 2026-04-12: Worktree created; QA spawned (Tempo/PM).
+
+### TASK-2.15: Song store tests (mutations, undo/redo)
+
+- **Assigned role:** QA (in-progress)
+- **Branch:** `phase-2/song-store-tests`
+- **Worktree (PAT-017):** `/home/thom/py/vYbpad-worktrees/task-2-15-song-store-tests`
+- **Status:** in-progress
+- **Depends on:** TASK-2.1 (merged ✓)
+- **Blocking notes:** none — test files only
+- **Last updated:** 2026-04-12: Worktree created; QA spawned (Tempo/PM).
 
 ---
 
 ## Phases 3–8
 
-**Phase 2 milestone complete** — TASK-2.1 through TASK-2.10 all merged to `develop` as of 2026-04-12. **TASK-2.11** (UI store) is now unblocked and ready to spawn. After TASK-2.11, Phase 2 is done → Phase 3 (Persistence) can begin.
+**Phase 2 active** — TASK-2.11 through 2.15 in-progress. After all merge, Phase 2 milestone complete → Phase 3 (Persistence) can begin. Remaining: 2.12 (queued behind 2.11), 2.11 + 2.13 + 2.14 + 2.15 in parallel.
