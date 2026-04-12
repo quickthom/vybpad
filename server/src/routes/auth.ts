@@ -139,39 +139,35 @@ export const authRoutes: FastifyPluginCallback = (app, _opts, done) => {
     return reply.status(200).send({ accessToken: outcome.accessToken });
   });
 
-  app.post(
-    '/auth/logout',
-    { preHandler: requireAccessToken },
-    async (request, reply) => {
-      const auth = request.auth!;
-      const raw = request.cookies[REFRESH_COOKIE];
-      let revokedFamily = false;
+  app.post('/auth/logout', { preHandler: requireAccessToken }, async (request, reply) => {
+    const auth = request.auth!;
+    const raw = request.cookies[REFRESH_COOKIE];
+    let revokedFamily = false;
 
-      if (raw) {
-        const unsigned = request.unsignCookie(raw);
-        if (unsigned.valid && unsigned.value) {
-          const parsed = parseRefreshOpaque(unsigned.value);
-          if (parsed) {
-            const row = await app.prisma.refreshToken.findUnique({
-              where: { id: parsed.id },
-            });
-            if (row && row.user_id === auth.userId) {
-              await revokeFamilyTokens(app.prisma, row.family_id);
-              revokedFamily = true;
-            }
+    if (raw) {
+      const unsigned = request.unsignCookie(raw);
+      if (unsigned.valid && unsigned.value) {
+        const parsed = parseRefreshOpaque(unsigned.value);
+        if (parsed) {
+          const row = await app.prisma.refreshToken.findUnique({
+            where: { id: parsed.id },
+          });
+          if (row && row.user_id === auth.userId) {
+            await revokeFamilyTokens(app.prisma, row.family_id);
+            revokedFamily = true;
           }
         }
       }
+    }
 
-      if (!revokedFamily) {
-        await revokeAllRefreshTokensForUser(app.prisma, auth.userId);
-      }
+    if (!revokedFamily) {
+      await revokeAllRefreshTokensForUser(app.prisma, auth.userId);
+    }
 
-      clearRefreshCookie(reply);
-      app.log.info({ reqId: request.id, userId: auth.userId }, 'User logged out');
-      return reply.status(204).send();
-    },
-  );
+    clearRefreshCookie(reply);
+    app.log.info({ reqId: request.id, userId: auth.userId }, 'User logged out');
+    return reply.status(204).send();
+  });
 
   done();
 };

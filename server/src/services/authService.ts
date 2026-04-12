@@ -189,7 +189,11 @@ export async function rotateRefreshToken(
       where: { id: row.id },
       data: { revoked_at: now },
     });
-    const { opaque: newOpaque, expiresAt } = await insertRefreshToken(tx, row.user_id, row.family_id);
+    const { opaque: newOpaque, expiresAt } = await insertRefreshToken(
+      tx,
+      row.user_id,
+      row.family_id,
+    );
     const accessToken = signAccessToken(user.id, user.email);
     return { status: 'ok' as const, accessToken, opaque: newOpaque, expiresAt };
   });
