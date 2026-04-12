@@ -24,6 +24,15 @@ export interface StoredRefreshToken {
   created_at: Date;
 }
 
+export interface StoredProject {
+  id: string;
+  user_id: string;
+  name: string;
+  song_data: unknown;
+  created_at: Date;
+  updated_at: Date;
+}
+
 function p2002(message = 'Unique constraint failed'): Prisma.PrismaClientKnownRequestError {
   return new Prisma.PrismaClientKnownRequestError(message, {
     code: 'P2002',
@@ -33,12 +42,13 @@ function p2002(message = 'Unique constraint failed'): Prisma.PrismaClientKnownRe
 }
 
 /**
- * In-memory mock implementing the Prisma surface used by auth routes and authService.
+ * In-memory mock implementing the Prisma surface used by auth routes, authService, and project routes.
  */
 export class InMemoryPrisma {
   readonly usersById = new Map<string, StoredUser>();
   readonly usersByEmail = new Map<string, string>();
   readonly refreshById = new Map<string, StoredRefreshToken>();
+  readonly projectsById = new Map<string, StoredProject>();
 
   user = {
     create: async (args: {
@@ -134,6 +144,84 @@ export class InMemoryPrisma {
         }
       }
       return { count };
+    },
+  };
+
+  project = {
+    create: async (args: {
+      data: { user_id: string; name: string; song_data: unknown };
+    }): Promise<StoredProject> => {
+      const id = randomUUID();
+      const now = new Date();
+      const row: StoredProject = {
+        id,
+        user_id: args.data.user_id,
+        name: args.data.name,
+        song_data: args.data.song_data,
+        created_at: now,
+        updated_at: now,
+      };
+      this.projectsById.set(id, row);
+      return row;
+    },
+
+    findMany: async (args: {
+      where: { user_id: string };
+      orderBy: { updated_at: 'desc' };
+      select: {
+        id: true;
+        name: true;
+        created_at: true;
+        updated_at: true;
+      };
+    }): Promise<
+      Pick<StoredProject, 'id' | 'name' | 'created_at' | 'updated_at'>[]
+    > => {
+      const rows = [...this.projectsById.values()].filter((p) => p.user_id === args.where.user_id);
+      rows.sort((a, b) => b.updated_at.getTime() - a.updated_at.getTime());
+      return rows.map((p) => ({
+        id: p.id,
+        name: p.name,
+        created_at: p.created_at,
+        updated_at: p.updated_at,
+      }));
+    },
+
+    findFirst: async (args: {
+      where: { id: string; user_id: string };
+    }): Promise<StoredProject | null> => {
+      const p = this.projectsById.get(args.where.id);
+      if (!p || p.user_id !== args.where.user_id) {
+        return null;
+      }
+      return { ...p };
+    },
+
+    update: async (args: {
+      where: { id: string };
+      data: { name?: string; song_data?: unknown };
+    }): Promise<StoredProject> => {
+      const row = this.projectsById.get(args.where.id);
+      if (!row) {
+        throw new Error(`project.update: missing id ${args.where.id}`);
+      }
+      if (args.data.name !== undefined) {
+        row.name = args.data.name;
+      }
+      if (args.data.song_data !== undefined) {
+        row.song_data = args.data.song_data;
+      }
+      row.updated_at = new Date();
+      return { ...row };
+    },
+
+    delete: async (args: { where: { id: string } }): Promise<StoredProject> => {
+      const row = this.projectsById.get(args.where.id);
+      if (!row) {
+        throw new Error(`project.delete: missing id ${args.where.id}`);
+      }
+      this.projectsById.delete(args.where.id);
+      return { ...row };
     },
   };
 
