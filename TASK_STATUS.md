@@ -2,7 +2,7 @@
 
 > Single source of truth for build state. Owned by the Project Manager. Updated on every state change.
 
-**`develop` tip:** `450bc34` — https://github.com/quickthom/vybpad (TASK-2.1 + TASK-2.2 merged; TASK_STATUS tip fix).
+**`develop` tip:** `2d3edc6` — https://github.com/quickthom/vybpad (Phase 2 wave 1 merge handoff docs).
 
 ---
 
