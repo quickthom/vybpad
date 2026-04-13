@@ -7,4 +7,5 @@ export * from './gridBackground';
 export * from './colorMaps';
 export * from './chordBlocks';
 export * from './noteBlocks';
+export * from './guideOverlay';
 export * from './hitTest';
