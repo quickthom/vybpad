@@ -1,4 +1,4 @@
-import type { ProjectResponse } from '@vybpad/shared';
+import type { ProjectResponse, SongData } from '@vybpad/shared';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
@@ -14,6 +14,11 @@ import { getApiErrorMessage } from '../utils/errorMessages';
 
 /** TASK-3.4: idle delay after the last edit before auto PUT (coalesces rapid edits). */
 const AUTOSAVE_DEBOUNCE_MS = 1500;
+
+/** Compare the song snapshot we PUT with current store state to detect edits during an in-flight save. */
+function songMatchesSentBaseline(sent: SongData, now: SongData): boolean {
+  return JSON.stringify(sent) === JSON.stringify(now);
+}
 
 /** Passed from `ProjectListPage` after POST create so the editor can hydrate without a duplicate GET. */
 export type EditorLocationState = { project?: ProjectResponse };
@@ -150,13 +155,34 @@ export function EditorLayout() {
           songData: current,
           ...(pn !== null ? { name: pn } : {}),
         });
-        loadSong(updated.songData);
-        setProjectName(updated.name);
-        if (source === 'manual') {
-          showSuccessToast('Saved.');
+        const latest = useSongStore.getState().song;
+        if (songMatchesSentBaseline(current, latest)) {
+          loadSong(updated.songData);
+          setProjectName(updated.name);
+          if (source === 'manual') {
+            showSuccessToast('Saved.');
+          }
+        } else {
+          // Newer edits landed while PUT was in flight — do not clobber with server echo; save again.
+          queuedSaveRef.current = true;
         }
       } catch (err) {
         showErrorToast(getApiErrorMessage(err));
+        if (
+          source === 'auto' &&
+          useSongStore.getState().isDirty &&
+          projectId &&
+          loadStatus === 'ready'
+        ) {
+          if (autosaveTimerRef.current) {
+            clearTimeout(autosaveTimerRef.current);
+            autosaveTimerRef.current = null;
+          }
+          autosaveTimerRef.current = setTimeout(() => {
+            autosaveTimerRef.current = null;
+            void runProjectSaveRef.current('auto');
+          }, AUTOSAVE_DEBOUNCE_MS);
+        }
       } finally {
         saveBusyRef.current = false;
         setSaveBusy(false);

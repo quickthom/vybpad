@@ -351,8 +351,9 @@ describe('TASK-3.4 auto-save — debounced projectsApi.update after song mutatio
         useSongStore.getState().updateMetadata({ title: 'Unsaved After Fail' });
       });
 
+      // Only the initial debounce — do not flush PAT-001 retry timers or rejections recurse forever.
       await act(async () => {
-        await vi.runAllTimersAsync();
+        await vi.advanceTimersByTimeAsync(1500);
       });
 
       expect(mockUpdate).toHaveBeenCalled();
@@ -362,6 +363,84 @@ describe('TASK-3.4 auto-save — debounced projectsApi.update after song mutatio
         expect(useSongStore.getState().isDirty).toBe(true);
       });
       expect(useSongStore.getState().song.metadata.title).toBe('Unsaved After Fail');
+    });
+  });
+
+  describe('in-flight save races', () => {
+    it('does not apply loadSong from a stale PUT when the user edited again before the response', async () => {
+      setAuthenticatedUser();
+
+      const projectId = 'ffffffff-ffff-4fff-8fff-ffffffffffff';
+      const loaded = makeProjectResponse(projectId, 'Race', 'Base');
+
+      mockGet.mockResolvedValue(loaded);
+
+      let unblockFirst!: () => void;
+      const firstGate = new Promise<void>((resolve) => {
+        unblockFirst = resolve;
+      });
+
+      mockUpdate
+        .mockImplementationOnce(async (_id, req) => {
+          await firstGate;
+          return {
+            ...loaded,
+            songData: req.songData!,
+            updatedAt: '2026-04-13T18:00:00.000Z',
+          };
+        })
+        .mockImplementation(async (_id, req) => ({
+          ...loaded,
+          songData: req.songData!,
+          updatedAt: '2026-04-13T18:05:00.000Z',
+        }));
+
+      renderRoutes([`/editor/${projectId}`]);
+
+      expect(await screen.findByRole('heading', { level: 1, name: 'Base' })).toBeInTheDocument();
+
+      useAutosaveFakeTimers();
+
+      act(() => {
+        useSongStore.getState().updateMetadata({ title: 'Inflight' });
+      });
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1500);
+      });
+
+      expect(mockUpdate).toHaveBeenCalledTimes(1);
+
+      act(() => {
+        useSongStore.getState().updateMetadata({ title: 'AfterInflight' });
+      });
+
+      expect(useSongStore.getState().song.metadata.title).toBe('AfterInflight');
+      expect(useSongStore.getState().isDirty).toBe(true);
+
+      await act(async () => {
+        unblockFirst();
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+
+      expect(useSongStore.getState().song.metadata.title).toBe('AfterInflight');
+
+      vi.useRealTimers();
+      await waitFor(() => {
+        expect(mockUpdate).toHaveBeenCalledTimes(2);
+        expect(useSongStore.getState().isDirty).toBe(false);
+      });
+
+      expect(mockUpdate).toHaveBeenNthCalledWith(
+        2,
+        projectId,
+        expect.objectContaining({
+          songData: expect.objectContaining({
+            metadata: expect.objectContaining({ title: 'AfterInflight' }),
+          }),
+        }),
+      );
     });
   });
 });
