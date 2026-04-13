@@ -429,6 +429,7 @@ interface EditorCanvasProps {
   onSelectionChange: (selection: Selection | null) => void;
   onViewportChange: (viewport: Viewport) => void;
   getSongAfterMutation?: () => SongData;  // post-mutation store snapshot for keyboard auto-advance; optional escape hatch for React render-cycle staleness
+  getSelectionAfterMutation?: () => Selection | null;  // post-mutation selection snapshot; same timing contract as getSongAfterMutation
   onToggleEntryMode?: () => void;          // callback for Tab key to signal mode switch to parent; paired with entryMode prop
 }
 
