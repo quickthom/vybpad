@@ -250,6 +250,7 @@ Each test file mirrors the source file it tests. Builders and QA may create test
 - `main` — production-ready code. Only the Integrator merges to main.
 - `develop` — integration branch. Feature branches merge here via PR.
 - Feature branches: `phase-<N>/<task-slug>` (e.g., `phase-1a/theory-engine`).
+- Hotfix branches: `fix/<task-id>-<slug>` (e.g., `fix/task-2-8-digit-key`). Use only for patches to `develop` outside normal phase flow.
 - One branch per task (per general rules). Branch from `develop`.
 - PRs require: description with task ID, ASSUMPTIONS block, self-review checklist, Spark disclosure if applicable.
 - Merges are squash-merge to `develop`, preserving a clean history.
@@ -309,3 +310,94 @@ Builders may implement the chromatic row positioning as: `baseY + (chromatic * N
 ## PAT-019: System Package Installation
 
 Agents can install system packages using `yay` (the AUR helper). This does not require `sudo` and works from agent shell sessions. Use `yay -S --noconfirm <package>` for non-interactive installs. Do not use `sudo pacman` — it will fail in agent contexts because no TTY is available for the password prompt.
+
+---
+
+## PAT-020: Commit Message Format
+
+All commits use this format:
+
+```
+<type>(<task-id>): <short description>
+```
+
+- **Types:** `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `style`
+- **Task ID:** The task identifier from the brief (e.g., `TASK-3.1`)
+- **Description:** Imperative mood, lowercase, no period, max 72 chars
+
+Examples:
+- `feat(TASK-2.7): add mouse drag interaction for note resize`
+- `fix(TASK-2.8): correct digit-key input for scale degrees`
+- `test(TASK-2.14): add canvas renderer draw-call assertions`
+
+The Integrator's squash-merge message must also follow this format, using the primary task ID. If a squash covers multiple tasks, list them: `feat(TASK-2.4, TASK-2.5): add chord and note block renderers`.
+
+A pre-commit hook (commitlint or equivalent) is authorized — DevOps may add one at the PM's discretion.
+
+---
+
+## PAT-021: Pre-Flight Interface Check
+
+Before issuing each task brief, the PM must verify that every function, prop, type, and store method the Builder will need already exists in INTERFACES.md. If any are missing, escalate to the Architect **before** the Builder starts.
+
+This shifts interface drift from reactive (caught in review) to proactive (caught in planning). The two unplanned INTERFACES.md modifications during Phase 2 (TASK-2.9, TASK-2.11) would have been avoided by this check.
+
+---
+
+## PAT-022: State File Archiving
+
+At each milestone boundary, the PM moves completed-phase detail out of `TASK_STATUS.md` into `TASK_STATUS_ARCHIVE.md`. The active file retains only:
+- The current phase's full task table
+- A one-line summary per completed phase with a pointer to the archive
+
+```markdown
+## Completed Phases
+- Phase 0 (7/7), Phase 1A (7/7), Phase 1B (6/6), Phase 2 (15/15) — see TASK_STATUS_ARCHIVE.md
+```
+
+Same treatment applies to `PM_STATE.md`: retrospective content that has been actioned moves to an archive section or file.
+
+---
+
+## PAT-023: Tech Debt Cleanup
+
+At the start of each new phase, the PM creates a dedicated cleanup task to resolve carried-over follow-ups before new feature work begins. Follow-ups are collected from:
+- Reviewer comments marked as non-blocking
+- Stale code comments referencing resolved escalations
+- Accumulated minor drift items
+
+The cleanup task is assigned to a Builder and reviewed like any other task. It does not block feature work but should be merged early in the phase.
+
+---
+
+## PAT-024: Expanded Spark Eligibility (Temporary)
+
+**Status:** Active while Codex-Spark is $0.00/token. When pricing changes, the Architect will reassess. Fallback: revert to boilerplate-only (the original Codex-Spark.md policy).
+
+**Policy:** Spark eligibility is expanded from boilerplate-only to **any self-contained subtask whose interface is fully specified** in the task brief or INTERFACES.md. Both Builders and QA agents may invoke Spark via the `invoke-spark` skill.
+
+**Rationale:** At zero cost and ~1,200 tokens/second throughput, the cost/quality tradeoff that justified limiting Spark to boilerplate no longer applies. The only real cost is review time on the receiving agent, and the hard discard rule bounds that cost.
+
+**Rules:**
+- The "never" list is unchanged: no auth, no security, no cross-service logic, no project-wide-state-dependent code.
+- One Spark attempt per subtask. No parallel runs on the same subtask.
+- **Hard discard rule:** If the reviewing agent spends more than a few minutes making structural corrections to Spark output, discard it and write from scratch. Spark's value is speed — heavy surgery is slower than a clean rewrite.
+- All Spark use must be disclosed in the PR per the `invoke-spark` skill (Step 4).
+
+---
+
+## PAT-025: State File Update Frequency
+
+State files (`TASK_STATUS.md`, `PM_STATE.md`, `ARCHITECT_STATE.md`) exist for **recovery from interruptions**, not real-time tracking. Interruptions are predictable — the HITL signals in advance. Write state files at batch boundaries and on HITL request, not after every event.
+
+### TASK_STATUS.md (two-section format)
+
+The file has two sections with different access patterns:
+
+1. **Status table** (top) — compact, one row per task. Read when you need the big picture. Update at batch boundaries: after issuing a wave of briefs, after an Integrator session, at milestone close, on HITL request. Exception: blocked tasks should be reflected promptly.
+
+2. **Event log** (bottom, append-only) — one line per event. Append on every status change. No file read required — replace the `<!-- LOG END -->` sentinel with `new line + sentinel`. This is one StrReplace of a known string.
+
+### PM_STATE.md and ARCHITECT_STATE.md
+
+Update on HITL request, before a known interruption, or at milestone close. Do not update after routine events.
