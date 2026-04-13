@@ -1,6 +1,6 @@
 # PM STATE — vYbpad
 
-> PM continuity handoff — **not** a duplicate of `TASK_STATUS.md`. Updated **2026-04-12** — TASKS-2.7 through 2.10 ALL MERGED. TASK-2.9 (#18) merged after Architect (Meridian) INTERFACES.md resolution + rebase conflict fix. `develop` = `5f94560`, 378 tests. **Wave B active:** TASK-2.11 + 2.13 Builder+QA ∥ TASK-2.14 + 2.15 QA — all spawned. TASK-2.12 queued behind 2.11.
+> PM continuity handoff — **not** a duplicate of `TASK_STATUS.md`. Updated **2026-04-12** — **Wave B complete:** TASK-2.11 (#20), 2.13 (#22), 2.14 (#21), 2.15 (#19) ALL MERGED to `develop` = `7b70fff`, 440 tests. **TASK-2.12** (guide tone overlay) spawned — Builder + QA active on `phase-2/guide-tones`. After 2.12 merges, Phase 2 milestone complete → Phase 3 (Persistence) can begin.
 
 ---
 
@@ -582,6 +582,134 @@ Interfaces to test against (from INTERFACES.md):
 
 Your tests must be committed and failing before the Builder raises their PR.
 When done, send a STATUS_UPDATE to the PM.
+──────────────────────────────────────────────
+```
+
+---
+
+## Issued briefs — TASK-2.12 (2026-04-12)
+
+**PAT-017 worktree created:** `/home/thom/py/vYbpad-worktrees/task-2-12-guide-tones` on branch `phase-2/guide-tones` from `origin/develop` (`7b70fff`). `npm install` run. Develop tip = `7b70fff`, 440 tests.
+
+### TASK-2.12 — Builder
+
+```
+TASK BRIEF
+──────────────────────────────────────────────
+Task ID:       TASK-2.12
+Branch:        phase-2/guide-tones
+Assigned to:   Builder
+Status:        in-progress
+
+Objective:
+  Implement the **guide tone overlay** renderer pass: when `showGuides === true`, after
+  the normal note block draw call, highlight each visible note block to indicate whether
+  the note is a chord-tone, scale-tone, or chromatic note relative to the active chord.
+  The active chord at any given note is determined by scanning the same measure's chord
+  track for the chord covering that note's beat position.
+
+Files expected to be created or modified:
+  - `client/src/engine/renderer/guideOverlay.ts` (NEW): pure Canvas2D function
+    `drawGuideOverlay(ctx, song, viewport, colorScheme)` — iterates visible measures +
+    voices, finds the active chord per note beat, calls `theoryEngine.getGuideCompatibility`,
+    then paints a guide indicator per UX §6 "Guide tones".
+  - `client/src/engine/renderer/index.ts`: append `export * from './guideOverlay';`.
+  - `client/src/components/editor/EditorCanvas.tsx`: after the `drawNoteBlocks` call in
+    the render effect, add a conditional `drawGuideOverlay(ctx, song, viewport, colorScheme)`
+    call guarded by `showGuides`. No changes to `EditorCanvasProps` (the `showGuides` prop
+    already exists per INTERFACES.md).
+  - `client/tests/unit/engine/renderer/guideOverlay.test.ts` (NEW): see QA brief.
+
+Acceptance criteria:
+  1. **Chord-tone notes** receive a "soft underline" or fill brightened by ~10% relative to
+     their PAT-010 base color (implementation: either a 2px bottom-aligned rect at full
+     opacity, or `filter: brightness(1.1)` equivalent via canvas `globalAlpha` + white
+     overlay at 10% opacity) — must not obscure the degree numeral; document chosen approach in PR.
+  2. **Scale-tone notes** receive no additional highlight (they already carry their base fill).
+  3. **Chromatic notes** receive a subtle dim overlay (`rgba(0,0,0,0.15)` over the block) to
+     visually de-emphasize non-chord, non-scale tones when guides are on.
+  4. Guide overlay is **skipped entirely** when `showGuides === false` — no performance penalty.
+  5. Active chord at a note's beat is determined by the last chord in the same measure whose
+     `beat <= note.beat`; if no chord exists in the measure the note's measure falls back to
+     the most recent chord in a previous measure (scan backwards max 4 measures); if still
+     none, skip guide highlighting for that note (no crash).
+  6. Module is pure (no React); `npm test` passes including QA-committed tests.
+
+Dependencies:
+  TASK-1A.6 (guideTones.ts merged ✓), TASK-2.5 (noteBlocks.ts merged ✓),
+  TASK-2.11 (UIStore + showGuides wired in App.tsx merged ✓)
+
+Interfaces this task consumes (from INTERFACES.md):
+  - `EditorCanvasProps.showGuides`, `SongData`, `Viewport`, `NoteEvent`, `ChordEvent`
+  - `theoryEngine.getGuideCompatibility(degree, chromatic, chord, scale): GuideCompatibility`
+  - `theoryEngine.getChordTones(chord, scale): ScaleDegree[]` (optional — for reference)
+
+UX guidelines this task must follow (from UX_GUIDELINES.md):
+  - §6 "Guide tones": soft underline **or** 10% brighter fill — must not obscure degree text.
+  - §6 "Note blocks": base fill from PAT-010 (colorScheme already applied by drawNoteBlocks).
+
+Patterns to apply (from PATTERNS.md):
+  - PAT-004: tick arithmetic for beat/measure position lookups.
+  - PAT-010: color scheme constants already in `colorMaps.ts` — import from there if needed.
+  - PAT-012: Canvas Rendering Constants (block geometry from `computeNoteBlockRect`).
+  - PAT-014: tests under `client/tests/unit/engine/renderer/`.
+  - PAT-015: branch `phase-2/guide-tones`.
+  - PAT-016: shared types from `@vybpad/shared`.
+  - PAT-017: isolated worktree — working directory below.
+
+Spark flag:
+  Spark not appropriate — guide tone coloring logic must integrate correctly with PAT-010
+  and theoryEngine; careful review required.
+
+Working directory: /home/thom/py/vYbpad-worktrees/task-2-12-guide-tones
+Branch `phase-2/guide-tones` is checked out. `npm install` already run at repo root.
+Read ARCHITECTURE.md, INTERFACES.md, PATTERNS.md, UX_GUIDELINES.md (§6 Guide tones),
+client/src/engine/theory/guideTones.ts, client/src/engine/renderer/noteBlocks.ts,
+client/src/engine/renderer/colorMaps.ts, and `.cursor/agents/Builder.md` before coding.
+──────────────────────────────────────────────
+```
+
+### TASK-2.12 — QA (concurrent)
+
+```
+QA BRIEF
+──────────────────────────────────────────────
+Task ID:       TASK-2.12
+Branch:        phase-2/guide-tones
+Assigned to:   QA / Test Writer
+
+This brief is concurrent with the Builder brief for TASK-2.12.
+The Builder is implementing the guide tone overlay renderer described below.
+Your job is to write a failing test suite against the acceptance criteria
+and commit it to the shared feature branch before the Builder's PR lands.
+
+Branch strategy:
+  Check out `phase-2/guide-tones` in worktree `/home/thom/py/vYbpad-worktrees/task-2-12-guide-tones`.
+  Create `client/tests/unit/engine/renderer/guideOverlay.test.ts`. Confirm tests fail
+  (module not yet implemented), commit, and notify PM.
+
+Acceptance criteria to test against:
+  1. Chord-tone notes: `drawGuideOverlay` calls a canvas draw operation (fillRect or similar)
+     with a color/opacity consistent with "brightening" on the note block rect — verify via
+     mock CanvasRenderingContext2D spy that `fillStyle` changes and `fillRect` is called at
+     the expected coordinates for a chord-tone note.
+  2. Scale-tone notes: no additional draw call over the note block rect for scale-tone notes
+     (spy verifies no extra fillRect at those coords after the baseline note draw).
+  3. Chromatic notes: a semi-transparent dark overlay fillRect is applied (verify `fillStyle`
+     contains `rgba(0,0,0` pattern and `fillRect` called at note coords).
+  4. No draw calls when `showGuides === false` — confirm draw spy not called.
+  5. Active chord lookup: test with a measure containing one chord at beat 0 and a note at
+     beat 48; verify the chord's classification is applied. Test with no chord in the measure
+     but a chord in the previous measure; verify fallback is used (no crash). Test with
+     completely empty chord track in preceding 4 measures; verify notes are skipped silently.
+  6. Integration smoke test: `drawGuideOverlay` exported from `client/src/engine/renderer/index.ts`.
+
+Interfaces to test against (from INTERFACES.md):
+  `SongData`, `Viewport`, `NoteEvent`, `ChordEvent`; `theoryEngine.getGuideCompatibility`.
+
+Working directory: /home/thom/py/vYbpad-worktrees/task-2-12-guide-tones
+Run `npm test` to confirm tests fail before implementation; commit failing suite; notify PM.
+Read `.cursor/agents/QA.md`, INTERFACES.md, and PATTERNS.md (PAT-014) before writing tests.
 ──────────────────────────────────────────────
 ```
 

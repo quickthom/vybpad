@@ -2,13 +2,13 @@
 
 > Periodically updated cache of the Architect's current state. Review on session resume.
 
-**Last updated:** 2026-04-12 — Minor interface gap closed: `UIStore.toggleEntryMode(): void` added to `INTERFACES.md` (after `setActiveVoice`). Disclosed by Reviewer (Refrain) on TASK-2.11 PR #19 as non-blocking additive. Committed directly to `develop`.
+**Last updated:** 2026-04-12 — Phase 2 nearly complete. **14 of 15 tasks merged** (2.1–2.11, 2.13–2.15). **TASK-2.12** (guide tone overlay) is the **sole remaining task** — worktree exists, branch created, but Builder + QA agents were **not yet spawned** (PM interrupted mid-spawn). **Next action:** respawn PM → spawn Builder + QA for TASK-2.12 → merge → Phase 2 milestone complete → HITL checkpoint → Phase 3.
 
 ---
 
 ## Current Phase
 
-**Phase 2 in progress (Grid Editor & Song State).** Phase 0 and Phase 1A + 1B are complete on `develop`. PM owns task decomposition, briefs, and `TASK_STATUS.md` updates; async handoff in `HITL_NOTIFICATIONS.md`.
+**Phase 2 — 14/15 tasks merged.** Only **TASK-2.12** (guide tone overlay) remains. Phase 0, 1A, and 1B are complete. PM owns task decomposition, briefs, and `TASK_STATUS.md` updates; async handoff in `HITL_NOTIFICATIONS.md`.
 
 ## What I (Caden, Architect) Have Done
 
@@ -18,12 +18,15 @@
    - `INTERFACES.md` — API contracts, DB schema, song data model, component props, store shapes, engine interfaces
    - `ROADMAP.md` — 9-phase build plan with dependency graph and parallelism map
    - `PATTERNS.md` — 19 pre-authorized patterns (PAT-017 worktrees; PAT-019 `yay` for system packages)
-3. **Process interventions made:**
-   - **GitHub:** canonical remote `https://github.com/quickthom/vybpad`; default branch `develop`; PRs #1–#7 landed (1B.3, 1A.4–1A.7, 1B.4, 1B.6)
-   - Added PAT-017 (git worktrees for parallel tasks) after HITL caught Builders clobbering each other in a shared directory
-   - Added PAT-019: agents install packages with `yay` (not `sudo pacman` in agent shells)
-   - Updated PM role doc to include agent-spawning responsibilities and worktree isolation rules
-   - Flagged QA process violation (PM was skipping concurrent QA briefs) — corrected, QA now running with all Builders
+3. **Phase 2 escalations resolved:**
+   - TASK-2.9: Added `getSongAfterMutation?` and `onToggleEntryMode?` to `EditorCanvasProps` in `INTERFACES.md` (`d3bd016`)
+   - TASK-2.11: Added `UIStore.toggleEntryMode()` to `INTERFACES.md` (`06dde3b`)
+   - TASK-2.8 hotfix: Reviewer caught digit keys dispatching `add` instead of `update` — Builder fix merged as PR #17
+4. **Process interventions (cumulative):**
+   - **GitHub:** canonical remote `https://github.com/quickthom/vybpad`; default branch `develop`; PRs #1–#22 landed
+   - PAT-017 (git worktrees), PAT-019 (`yay` for system packages)
+   - Role boundary enforcement: Architect does not spawn pipeline agents — PM only
+   - QA concurrent with every Builder — enforced after early violation
 
 ## Key Decisions Made (for reference on resume)
 
@@ -54,17 +57,36 @@
 
 ## No Escalations Pending
 
-No outstanding escalations. Most recent resolution:
-
-**2026-04-12 — TASK-2.9 (entry modes):** Added two optional props to `EditorCanvasProps` in `INTERFACES.md`: `getSongAfterMutation?: () => SongData` and `onToggleEntryMode?: () => void`. PR #18 (`phase-2/entry-modes`) unblocked — no Builder refactor required. See `HITL_NOTIFICATIONS.md` for full rationale.
+No outstanding escalations at suspend.
 
 ## Build Progress Summary
 
 - **Phase 0:** COMPLETE (7/7 merged)
-- **Phase 1A:** COMPLETE (1A.1–1A.7 merged; PRs on GitHub — see `TASK_STATUS.md`)
-- **Phase 1B:** COMPLETE (1B.1–1B.6 ROADMAP tasks merged; PRs #1, #6, #7 among others — see `TASK_STATUS.md`)
-- **`develop` tip:** `a8cf52a` — API integration tests (1B.6)
-- **Phases 2–8:** Phase 2 — PM decomposing 2.1–2.15 into briefs and spawning Builders/QA (see `PM_STATE.md`, `TASK_STATUS.md`)
+- **Phase 1A:** COMPLETE (1A.1–1A.7 merged)
+- **Phase 1B:** COMPLETE (1B.1–1B.6 merged)
+- **Phase 2:** 14/15 merged (2.1–2.11, 2.13–2.15); **TASK-2.12 remains** (guide tone overlay)
+- **`develop` tip:** `7b70fff` — TASK-2.13 PR #22 (latest merge)
+- **Tests:** 29 files, **440 passed** on `develop` (verified)
+- **PRs merged in this session:** #14 (2.7), #15 (2.10), #16 (2.8), #17 (2.8 hotfix), #18 (2.9), #19 (2.15), #20 (2.11), #21 (2.14), #22 (2.13)
+
+## TASK-2.12 Resume Instructions
+
+**This is the only thing blocking Phase 2 completion.**
+
+- **Worktree:** `/home/thom/py/vYbpad-worktrees/task-2-12-guide-tones` — exists, branch `phase-2/guide-tones` checked out, at `7b70fff` (develop tip). **No commits yet, no remote branch pushed.**
+- **Dependencies:** All met (TASK-1A.6 ✓, TASK-2.5 ✓, TASK-2.11 ✓).
+- **Brief:** Already written in `PM_STATE.md` (search for "TASK-2.12"). PM needs to spawn Builder + QA on this worktree.
+- **After 2.12 merges:** Phase 2 milestone complete → **HITL checkpoint** (standing instruction: Thom reviews at end of Phase 2) → Phase 3 (Persistence).
+
+## Worktree Hygiene
+
+6 active worktrees remain, 5 from merged tasks (can retire):
+- `task-2-11-ui-store` — merged, retire
+- `task-2-13-color-scheme` — merged, retire
+- `task-2-14-canvas-tests` — merged, retire
+- `task-2-15-song-store-tests` — merged, retire
+- `task-2-9-entry-modes` — merged, retire
+- `task-2-12-guide-tones` — **ACTIVE** (TASK-2.12 in progress)
 
 ## State Files to Read on Resume
 
@@ -73,7 +95,6 @@ No outstanding escalations. Most recent resolution:
 3. `TASK_STATUS.md` (ground truth for task state — PM owns updates)
 4. `ARCHITECTURE.md`, `INTERFACES.md`, `ROADMAP.md`, `PATTERNS.md` (canonical docs)
 
-## Develop Branch HEAD at Shutdown
+## Develop Branch HEAD at Suspend
 
-**Tip on `develop`:** **`d02922a`** (verify: `git fetch origin && git log -1 origin/develop`).  
-**Wave 2a:** PRs [#10](https://github.com/quickthom/vybpad/pull/10), [#11](https://github.com/quickthom/vybpad/pull/11), [#12](https://github.com/quickthom/vybpad/pull/12) — PM owns review → squash-merge → **TASK-2.6** worktree + briefs.
+**Tip on `develop`:** **`7b70fff`** (verify: `git fetch origin && git log -1 origin/develop`).

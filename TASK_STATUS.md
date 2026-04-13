@@ -2,7 +2,7 @@
 
 > Single source of truth for build state. Owned by the Project Manager. Updated on every state change.
 
-**`develop` tip:** `433266f` — https://github.com/quickthom/vybpad (TASK-2.9 merged 2026-04-12; 378 tests green). **Phase 2 milestone complete** — TASK-2.1–2.10 all merged. TASK-2.11 unblocked. Sync: `git fetch origin && npm install`.
+**`develop` tip:** `7b70fff` — https://github.com/quickthom/vybpad (TASK-2.11/2.13/2.14/2.15 merged 2026-04-12; 440 tests green). **TASK-2.12** (guide tone overlay) unblocked — spawn next. Sync: `git fetch origin && npm install`.
 **Worktree hygiene:** 14 stale Phase 1/2 worktrees removed 2026-04-12. Active worktrees: main (`develop`) + `task-2-8-keyboard` + `task-2-10-measure-bar` (retire after confirmation).
 
 ---
@@ -218,13 +218,16 @@ All Phase 0 tasks merged to develop.
 
 ### TASK-2.11: UI store (viewport, selection, active voice, panels)
 
-- **Assigned role:** Builder + QA (in-progress)
-- **Branch:** `phase-2/ui-store`
-- **Worktree (PAT-017):** `/home/thom/py/vYbpad-worktrees/task-2-11-ui-store`
-- **Status:** in-progress
+- **Assigned role:** Builder + QA → Reviewer (Refrain, APPROVED) → Integrator (PM direct)
+- **Branch:** `phase-2/ui-store` (merged; remote deleted)
+- **Worktree (PAT-017):** `/home/thom/py/vYbpad-worktrees/task-2-11-ui-store` — retire when convenient
+- **Status:** merged ✅
+- **PR:** https://github.com/quickthom/vybpad/pull/20
+- **Squash on develop:** `4529fff`
+- **Tests:** 392 passed (29 files)
 - **Depends on:** TASK-0.2 (merged), TASK-2.1–2.10 (all merged ✓)
-- **Blocking notes:** none
-- **Last updated:** 2026-04-12: Worktree created; Builder + QA spawned (Tempo/PM).
+- **Blocking notes:** none — `toggleEntryMode()` added to INTERFACES.md by Architect (`06dde3b`)
+- **Last updated:** 2026-04-12: Merged. App.tsx now uses useUIStore for all UI state.
 
 ### TASK-2.12: Guide tone overlay (chord compatibility highlighting)
 
@@ -237,36 +240,53 @@ All Phase 0 tasks merged to develop.
 
 ### TASK-2.13: Color scheme implementation (diatonic + major-centric)
 
-- **Assigned role:** Builder + QA (in-progress)
-- **Branch:** `phase-2/color-scheme`
-- **Worktree (PAT-017):** `/home/thom/py/vYbpad-worktrees/task-2-13-color-scheme`
-- **Status:** in-progress
-- **Depends on:** TASK-2.4 (merged ✓), TASK-2.5 (merged ✓)
-- **Blocking notes:** none — parallel with 2.11 (no shared files)
-- **Last updated:** 2026-04-12: Worktree created; Builder + QA spawned (Tempo/PM).
+- **Assigned role:** Builder + QA → PM direct merge (PR #22)
+- **Branch:** `phase-2/color-scheme` (merged)
+- **Worktree (PAT-017):** `/home/thom/py/vYbpad-worktrees/task-2-13-color-scheme` — retire when convenient
+- **Status:** merged ✅
+- **PR:** https://github.com/quickthom/vybpad/pull/22
+- **Squash on develop:** `7b70fff`
+- **Tests:** 440 passed (29 files)
+- **Depends on:** TASK-2.4 (merged ✓), TASK-2.5 (merged ✓), TASK-2.11 (merged ✓)
+- **Blocking notes:** Rebase conflict resolved via --skip of QA baseline commit.
+- **Last updated:** 2026-04-12: Merged. colorMaps.ts created; PAT-010 major-centric color scheme applied.
 
 ### TASK-2.14: Canvas renderer tests (mock context, draw call assertions)
 
-- **Assigned role:** QA (in-progress)
-- **Branch:** `phase-2/canvas-renderer-tests`
-- **Worktree (PAT-017):** `/home/thom/py/vYbpad-worktrees/task-2-14-canvas-tests`
-- **Status:** in-progress
+- **Assigned role:** QA → PM direct merge (PR #21)
+- **Branch:** `phase-2/canvas-renderer-tests` (merged)
+- **Worktree (PAT-017):** `/home/thom/py/vYbpad-worktrees/task-2-14-canvas-tests` — retire
+- **Status:** merged ✅
+- **PR:** https://github.com/quickthom/vybpad/pull/21
+- **Squash on develop:** `7e8e9b5`
+- **Tests:** (included in 440 total)
 - **Depends on:** TASK-2.3–2.5 (all merged ✓)
-- **Blocking notes:** none — test files only
-- **Last updated:** 2026-04-12: Worktree created; QA spawned (Tempo/PM).
+- **Last updated:** 2026-04-12: Merged. gridBackground, chordBlocks, noteBlocks draw-call assertions added.
 
 ### TASK-2.15: Song store tests (mutations, undo/redo)
 
-- **Assigned role:** QA (in-progress)
-- **Branch:** `phase-2/song-store-tests`
-- **Worktree (PAT-017):** `/home/thom/py/vYbpad-worktrees/task-2-15-song-store-tests`
-- **Status:** in-progress
+- **Assigned role:** QA → PM direct merge (PR #19)
+- **Branch:** `phase-2/song-store-tests` (merged)
+- **Worktree (PAT-017):** `/home/thom/py/vYbpad-worktrees/task-2-15-song-store-tests` — retire
+- **Status:** merged ✅
+- **PR:** https://github.com/quickthom/vybpad/pull/19
+- **Squash on develop:** `0b53846`
+- **Tests:** (included in 440 total)
 - **Depends on:** TASK-2.1 (merged ✓)
-- **Blocking notes:** none — test files only
-- **Last updated:** 2026-04-12: Worktree created; QA spawned (Tempo/PM).
+- **Last updated:** 2026-04-12: Merged. songStore.test.ts expanded with comprehensive mutation + undo/redo coverage.
+
+### TASK-2.12: Guide tone overlay (chord compatibility highlighting)
+
+- **Assigned role:** Builder + QA (queued)
+- **Branch:** `phase-2/guide-tones` (not yet created)
+- **Worktree (PAT-017):** `/home/thom/py/vYbpad-worktrees/task-2-12-guide-tones` (to create)
+- **Status:** queued → spawning now
+- **Depends on:** TASK-1A.6 (merged ✓), TASK-2.5 (merged ✓), TASK-2.11 (merged ✓)
+- **Blocking notes:** none — all dependencies satisfied
+- **Last updated:** 2026-04-12: Dependencies cleared; worktree + Builder + QA spawning.
 
 ---
 
 ## Phases 3–8
 
-**Phase 2 active** — TASK-2.11 through 2.15 in-progress. After all merge, Phase 2 milestone complete → Phase 3 (Persistence) can begin. Remaining: 2.12 (queued behind 2.11), 2.11 + 2.13 + 2.14 + 2.15 in parallel.
+**Wave B complete:** TASK-2.11, 2.13, 2.14, 2.15 all merged to `develop` (440 tests). **TASK-2.12** (guide tone overlay) now unblocked and spawning. After 2.12 merges, Phase 2 milestone complete → Phase 3 (Persistence) can begin.
