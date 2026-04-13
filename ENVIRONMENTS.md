@@ -13,15 +13,15 @@ The sections below expand this for **operators**: local development, Docker Comp
 
 ## Root variables (local / Compose)
 
-| Variable | Purpose | Default (if any) |
-|---|---|---|
-| `DATABASE_URL` | PostgreSQL connection string | — (required when DB is used) |
-| `JWT_SECRET` | Access token signing | — (required; min 32 chars in production) |
-| `JWT_REFRESH_SECRET` | Refresh token / cookie signing | — (required; min 32 chars in production) |
-| `PORT` | API listen port | `3001` |
-| `NODE_ENV` | Runtime mode | `development` |
-| `CORS_ORIGIN` | Allowed browser origin for CORS | `http://localhost:5173` |
-| `VITE_API_URL` | Client API base URL (Vite) | `http://localhost:3001` |
+| Variable             | Purpose                         | Default (if any)                         |
+| -------------------- | ------------------------------- | ---------------------------------------- |
+| `DATABASE_URL`       | PostgreSQL connection string    | — (required when DB is used)             |
+| `JWT_SECRET`         | Access token signing            | — (required; min 32 chars in production) |
+| `JWT_REFRESH_SECRET` | Refresh token / cookie signing  | — (required; min 32 chars in production) |
+| `PORT`               | API listen port                 | `3001`                                   |
+| `NODE_ENV`           | Runtime mode                    | `development`                            |
+| `CORS_ORIGIN`        | Allowed browser origin for CORS | `http://localhost:5173`                  |
+| `VITE_API_URL`       | Client API base URL (Vite)      | `http://localhost:3001`                  |
 
 When adding a new variable in application code, update **`.env.example` in the same PR** (PAT-026).
 
@@ -55,7 +55,6 @@ cp .env.example .env
 4. Two common development modes:
 
 - Run with native dev servers (recommended for day-to-day frontend/backend development):
-
   - In one terminal: `cd server && npm run dev` (API on `PORT` from `.env`, default 3001)
   - In another terminal: `cd client && npm run dev -- --host 0.0.0.0` (Vite dev server, default 5173)
 
@@ -76,6 +75,16 @@ npm run test
 
 Run these before opening PRs.
 
+### End-to-end (Playwright)
+
+| Variable                    | Purpose                                                                            | Default (if any)        |
+| --------------------------- | ---------------------------------------------------------------------------------- | ----------------------- |
+| `PLAYWRIGHT_BASE_URL`       | Browser base URL for Playwright                                                    | `http://127.0.0.1:5173` |
+| `PLAYWRIGHT_API_URL`        | API origin for contract checks from tests                                          | `http://127.0.0.1:3001` |
+| `PLAYWRIGHT_SKIP_WEBSERVER` | If set, Playwright does not spawn `npm run e2e:devstack` (use your own API + Vite) | —                       |
+
+Requires the same **root** variables as local development (`DATABASE_URL`, `JWT_SECRET`, `JWT_REFRESH_SECRET`, etc.) when using the built-in dev stack. See the root **README** “End-to-end (Playwright)” section for the full procedure.
+
 ## Docker Compose (development)
 
 The repository includes `docker-compose.yml` (v3.8) with three services:
@@ -95,7 +104,6 @@ Minimum variable expectations align with **Root variables** above and PAT-013; p
 ## CI / CD expectations
 
 - CI (GitHub Actions recommended) should run on PRs and pushes:
-
   - Install dependencies
   - Lint
   - Type-check (if applicable)
@@ -124,7 +132,6 @@ Notes:
   - Database backups: scheduled `pg_dump` (provider-dependent)
 
 - **Deployment options** (operator choice — escalate if architecture changes required):
-
   - Self-hosted VM(s) with Docker Compose + Traefik/Nginx for small installs
   - Managed container service (ECS/Fargate, GKE, Cloud Run) with load-balancer and TLS termination
   - Use a managed Postgres provider for backups and maintenance

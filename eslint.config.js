@@ -24,6 +24,7 @@ export default tseslint.config(
       // Typed by client/tsconfig.node.json; projectService does not attach it to client/tsconfig.json
       'client/vite.config.ts',
       'vitest.config.ts',
+      'playwright.config.ts',
       // Unit/integration tests use Vitest mocks and live outside package `src/` tsconfig roots
       'client/tests/**',
       'server/tests/**',
