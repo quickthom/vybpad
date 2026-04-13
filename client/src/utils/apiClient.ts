@@ -170,7 +170,24 @@ async function requestJson<T>(
     headers.set('Content-Type', 'application/json');
   }
 
-  const token = options.attachBearer ? config.getAccessToken() : null;
+  let token = options.attachBearer ? config.getAccessToken() : null;
+
+  // Cookie-only session (reload): avoid a bearer-less protected hop that always 401s — the browser
+  // still logs that failure even when we retry after refresh (Playwright `console` error).
+  const proactiveRefresh =
+    options.attachBearer &&
+    !token &&
+    options.retryOn401 &&
+    path !== '/api/auth/logout';
+
+  if (proactiveRefresh) {
+    const refreshed = await refreshAccessTokenLocked();
+    if (refreshed) {
+      config.onAccessTokenRefreshed?.(refreshed.accessToken);
+      token = refreshed.accessToken;
+    }
+  }
+
   if (token) {
     headers.set('Authorization', `Bearer ${token}`);
   }
