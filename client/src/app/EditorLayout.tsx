@@ -14,6 +14,12 @@ import { useToastStore } from '../store/toastStore';
 import { useUIStore } from '../store/uiStore';
 import { projectsApi } from '../utils/apiClient';
 import { getApiErrorMessage, isApiTransportFailure } from '../utils/errorMessages';
+import {
+  clearAllEditorPostBootstrap,
+  clearEditorPostBootstrap,
+  markEditorPostBootstrapFromNavigate,
+  shouldSkipDuplicateGetAfterPostBootstrap,
+} from './editorProjectHydration';
 
 /** TASK-3.4: idle delay after the last edit before auto PUT (coalesces rapid edits). */
 const AUTOSAVE_DEBOUNCE_MS = 1500;
@@ -78,6 +84,7 @@ export function EditorLayout() {
    * POST /projects → /editor/:id bootstrap hydrates from `location.state`. The load effect can re-run
    * when dependency identities change while state still holds the boot project; repeating `loadSong`
    * resets `isDirty` and drops debounced autosave (TASK-3.5 E2E).
+   * Module-level {@link markEditorPostBootstrapFromNavigate} survives Strict Mode remounts (TASK-4.2).
    */
   const editorBootstrapHydratedIdRef = useRef<string | null>(null);
 
@@ -94,6 +101,7 @@ export function EditorLayout() {
   const [selectedMeasures, setSelectedMeasures] = useState<[number, number] | null>(null);
 
   const getSongAfterMutation = useCallback(() => useSongStore.getState().song, []);
+  const getSelectionAfterMutation = useCallback(() => useUIStore.getState().selection, []);
 
   useEffect(() => {
     syncPlaybackEngineWithSong();
@@ -105,6 +113,7 @@ export function EditorLayout() {
 
     if (!projectId) {
       editorBootstrapHydratedIdRef.current = null;
+      clearAllEditorPostBootstrap();
       loadSong(buildDefaultSong());
       setProjectName(null);
       setLoadStatus('ready');
@@ -123,15 +132,24 @@ export function EditorLayout() {
         return;
       }
       editorBootstrapHydratedIdRef.current = projectId;
+      markEditorPostBootstrapFromNavigate(projectId);
       loadSong(boot.songData);
       setProjectName(boot.name);
       setLoadStatus('ready');
       return;
     }
 
+    // Strict Mode remount clears the ref; `location.state` may also be gone. If we already hydrated from
+    // POST /projects for this id, do not GET — it can race chord entry and `loadSong` would clear
+    // `isDirty` / wipe edits before autosave (TASK-4.2 E2E).
+    if (shouldSkipDuplicateGetAfterPostBootstrap(projectId)) {
+      editorBootstrapHydratedIdRef.current = projectId;
+      setLoadStatus('ready');
+      return;
+    }
+
     // Router may replace `location` and drop `state` while `projectId` is unchanged (see deps comment
-    // below). We already hydrated from POST /projects for this id — do not GET and clobber local edits
-    // / `isDirty` before debounced autosave completes (TASK-4.2 E2E).
+    // below). Legacy ref path kept for in-flight effect re-runs without unmount.
     if (editorBootstrapHydratedIdRef.current === projectId) {
       return;
     }
@@ -149,6 +167,7 @@ export function EditorLayout() {
         // 401 flows call `onAuthFailure` before throw, which unmounts this tree before catch runs.
         showErrorToast(getApiErrorMessage(err));
         if (cancelled) return;
+        clearEditorPostBootstrap(projectId);
         navigate('/projects', { replace: true });
       }
     })();
@@ -178,6 +197,7 @@ export function EditorLayout() {
   }, [song.measures.length]);
 
   async function handleLogout() {
+    if (projectId) clearEditorPostBootstrap(projectId);
     await logout();
     navigate('/login', { replace: true });
   }
@@ -327,7 +347,10 @@ export function EditorLayout() {
           ) : null}
           <button
             type="button"
-            onClick={() => navigate('/projects')}
+            onClick={() => {
+              if (projectId) clearEditorPostBootstrap(projectId);
+              navigate('/projects');
+            }}
             className="inline-flex h-10 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-4 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
           >
             Projects
@@ -382,6 +405,7 @@ export function EditorLayout() {
               onSelectionChange={setSelection}
               onViewportChange={setViewport}
               getSongAfterMutation={getSongAfterMutation}
+              getSelectionAfterMutation={getSelectionAfterMutation}
               onToggleEntryMode={toggleEntryMode}
             />
           )}
