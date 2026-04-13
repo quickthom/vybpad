@@ -3,6 +3,7 @@ import { Navigate, Route, Routes, useNavigate } from 'react-router-dom';
 
 import { LoginForm } from '../components/auth/LoginForm';
 import { RegisterForm } from '../components/auth/RegisterForm';
+import { ToastHost } from '../components/common/ToastHost';
 import { ProjectListPage } from '../components/projects/ProjectListPage';
 import { useAuthStore } from '../store/authStore';
 import { EditorLayout } from './EditorLayout';
@@ -50,6 +51,7 @@ export function AppRoutes() {
   return (
     <>
       <SessionInitializer />
+      <ToastHost />
       <Routes>
         <Route
           path="/login"

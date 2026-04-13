@@ -26,6 +26,7 @@ export function DeleteProjectDialog({ project, busy, onConfirm, onCancel }: Dele
   return (
     <dialog
       ref={ref}
+      aria-labelledby="delete-project-dialog-title"
       className="max-h-[min(560px,80vh)] w-[min(560px,calc(100vw-32px))] rounded-xl border border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)] p-6 shadow-lg backdrop:bg-[rgba(17,24,39,0.5)]"
       onCancel={(e) => {
         if (busy) e.preventDefault();
@@ -36,7 +37,9 @@ export function DeleteProjectDialog({ project, busy, onConfirm, onCancel }: Dele
     >
       {project ? (
         <div className="flex flex-col gap-4">
-          <h2 className="text-lg font-semibold text-[var(--color-text-primary,#111827)]">Delete project?</h2>
+          <h2 id="delete-project-dialog-title" className="text-lg font-semibold text-[var(--color-text-primary,#111827)]">
+            Delete project?
+          </h2>
           <p className="text-sm text-[var(--color-text-secondary,#4B5563)]">
             &quot;{project.name}&quot; will be permanently removed. This cannot be undone.
           </p>

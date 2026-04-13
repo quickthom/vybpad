@@ -3,8 +3,10 @@ import { useNavigate } from 'react-router-dom';
 
 import type { ProjectSummary } from '@vybpad/shared';
 
+import { useMinViewport1024 } from '../../hooks/useMinViewport1024';
 import { useProjects } from '../../hooks/useProjects';
 import { useAuthStore } from '../../store/authStore';
+import { useToastStore } from '../../store/toastStore';
 import { useSongStore } from '../../store/songStore';
 import { getApiErrorMessage } from '../../utils/errorMessages';
 import { projectsApi } from '../../utils/apiClient';
@@ -22,21 +24,22 @@ function formatIso(iso: string): string {
 
 /**
  * Authenticated project hub: list (ProjectSummary), create, open (load song + /editor), delete with confirm modal.
- * UX §3 max-width 480px; §5.10 row height 56px; page title h1.
+ * UX §3 max-width 480px; §5.10 row height 56px; page title h1; §4 viewport ≥1024px.
  */
 export function ProjectListPage() {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const loadSong = useSongStore((s) => s.loadSong);
+  const showErrorToast = useToastStore((s) => s.showError);
 
-  const { projects, status, errorMessage, refresh } = useProjects();
+  const wideEnough = useMinViewport1024();
+  const { projects, status, refresh } = useProjects();
   const [newName, setNewName] = useState('');
   const [createBusy, setCreateBusy] = useState(false);
   const [openBusyId, setOpenBusyId] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<ProjectSummary | null>(null);
   const [deleteBusy, setDeleteBusy] = useState(false);
-  const [bannerError, setBannerError] = useState<string | null>(null);
 
   async function handleLogout() {
     await logout();
@@ -47,15 +50,14 @@ export function ProjectListPage() {
     e.preventDefault();
     if (createBusy) return;
     setCreateBusy(true);
-    setBannerError(null);
     try {
       const created = await projectsApi.create({ name: newName.trim() });
       setNewName('');
-      await refresh();
       loadSong(created.songData);
       navigate('/editor', { replace: true });
+      // List refresh skipped here — POST response already has songData; next /projects visit refetches.
     } catch (err) {
-      setBannerError(getApiErrorMessage(err));
+      showErrorToast(getApiErrorMessage(err));
     } finally {
       setCreateBusy(false);
     }
@@ -64,13 +66,12 @@ export function ProjectListPage() {
   async function handleOpen(project: ProjectSummary) {
     if (openBusyId) return;
     setOpenBusyId(project.id);
-    setBannerError(null);
     try {
       const full = await projectsApi.get(project.id);
       loadSong(full.songData);
       navigate('/editor', { replace: true });
     } catch (err) {
-      setBannerError(getApiErrorMessage(err));
+      showErrorToast(getApiErrorMessage(err));
     } finally {
       setOpenBusyId(null);
     }
@@ -79,19 +80,28 @@ export function ProjectListPage() {
   async function handleConfirmDelete() {
     if (!pendingDelete || deleteBusy) return;
     setDeleteBusy(true);
-    setBannerError(null);
     try {
       await projectsApi.delete(pendingDelete.id);
       setPendingDelete(null);
       await refresh();
     } catch (err) {
-      setBannerError(getApiErrorMessage(err));
+      showErrorToast(getApiErrorMessage(err));
     } finally {
       setDeleteBusy(false);
     }
   }
 
   const loading = status === 'loading' && projects.length === 0;
+
+  if (!wideEnough) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[var(--color-app-bg,#F3F4F6)] px-6 py-12 font-[ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe_UI',Roboto,'Helvetica_Neue',Arial,'Noto_Sans',sans-serif]">
+        <p className="max-w-md text-center text-base text-[var(--color-text-secondary,#4B5563)]">
+          vYbpad needs a display at least 1024px wide. Please use a larger window or device.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[var(--color-app-bg,#F3F4F6)] px-4 py-12 font-[ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe_UI',Roboto,'Helvetica_Neue',Arial,'Noto_Sans',sans-serif] text-[var(--color-text-primary,#111827)]">
@@ -113,15 +123,6 @@ export function ProjectListPage() {
             Log out
           </button>
         </header>
-
-        {(errorMessage || bannerError) && (
-          <div
-            role="alert"
-            className="mb-6 rounded-lg border border-[var(--color-destructive,#DC2626)] bg-[var(--color-surface-muted,#F9FAFB)] px-3 py-2 text-sm text-[var(--color-destructive,#DC2626)]"
-          >
-            {bannerError ?? errorMessage}
-          </div>
-        )}
 
         <form
           onSubmit={(e) => {

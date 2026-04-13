@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 import type { ProjectSummary } from '@vybpad/shared';
 
+import { useToastStore } from '../store/toastStore';
 import { getApiErrorMessage } from '../utils/errorMessages';
 import { projectsApi } from '../utils/apiClient';
 
@@ -23,7 +24,9 @@ export function useProjects() {
       setProjects(rows);
       setStatus('ready');
     } catch (e) {
-      setErrorMessage(getApiErrorMessage(e));
+      const msg = getApiErrorMessage(e);
+      setErrorMessage(msg);
+      useToastStore.getState().showError(msg);
       setStatus('error');
     }
   }, []);
