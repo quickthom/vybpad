@@ -1,9 +1,9 @@
 import type { ChordEvent, NoteName, ScaleType, SongData } from '@vybpad/shared';
 
 import { getKeyAtMeasure, getMeasureStartTicks, getScaleAtMeasure } from '../renderer/tickUtils';
-import { bassMidiPat011, sortedL1Motion, voicingWithVoiceLeading } from '../theory/voicingEngine';
+import { bassMidiPat011, pat011MotionScore, voicingWithVoiceLeading } from '../theory/voicingEngine';
 
-export { baseCloseHarmonyMidi } from '../theory/voicingEngine';
+export { baseCloseHarmonyMidi, pat011MotionScore, sortedL1Motion } from '../theory/voicingEngine';
 
 /**
  * PAT-011 harmony output for scheduler integration: harmony voices + bass (slash/root rule via
@@ -23,9 +23,9 @@ export interface HarmonyVoicingResult {
 }
 
 /**
- * Sorted-voice L1 motion vs previous voicing (same metric as QA `totalL1Sorted`).
+ * PAT-011 motion metric for voicing pairs (finite for triad ↔ seventh — see {@link pat011MotionScore}).
  */
-export const motionCostBetweenVoicings = sortedL1Motion;
+export const motionCostBetweenVoicings = pat011MotionScore;
 
 /**
  * Full harmony + bass for one chord (voice leading in {@link voicingWithVoiceLeading}).

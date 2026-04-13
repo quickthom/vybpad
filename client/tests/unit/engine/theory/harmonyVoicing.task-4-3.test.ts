@@ -21,7 +21,9 @@ import type { ChordEvent } from '@vybpad/shared';
 import { describe, expect, it } from 'vitest';
 
 import {
+  baseCloseHarmonyMidi,
   bassMidiPat011,
+  pat011MotionScore,
   theoryEngine,
   voicingWithVoiceLeading,
 } from '../../../../src/engine/theory';
@@ -105,6 +107,36 @@ describe('Harmony voicing — TASK-4.3 — PAT-011 close voicing + inversions (s
   });
 });
 
+describe('Harmony voicing — TASK-4.3 — pat011MotionScore (unequal cardinality)', () => {
+  it('matches totalL1Sorted when cardinalities match', () => {
+    const a = [60, 67, 64];
+    const b = [55, 62, 59];
+    expect(pat011MotionScore(a, b)).toBe(totalL1Sorted(a, b));
+  });
+
+  it('is finite and positive for triad vs seventh voicings', () => {
+    const tri = [60, 64, 67];
+    const seven = [55, 59, 62, 65];
+    const cost = pat011MotionScore(tri, seven);
+    expect(Number.isFinite(cost)).toBe(true);
+    expect(cost).toBeGreaterThanOrEqual(0);
+  });
+
+  it('is finite for seventh vs triad', () => {
+    const seven = [60, 64, 67, 70];
+    const tri = [55, 59, 62];
+    expect(Number.isFinite(pat011MotionScore(seven, tri))).toBe(true);
+  });
+
+  it('voice-leading from triad previous to dom7 yields four notes and finite motion score', () => {
+    const prev = chordToMidiNotes(chord({ scaleDegree: 1, quality: 'major' }), 'C', 'major', 4);
+    const g7 = chord({ scaleDegree: 5, quality: 'major', seventh: 'dom7' });
+    const next = voicingWithVoiceLeading(g7, 'C', 'major', 4, prev);
+    expect(next).toHaveLength(4);
+    expect(Number.isFinite(pat011MotionScore(prev, next))).toBe(true);
+  });
+});
+
 describe('Harmony voicing — TASK-4.3 — minimal movement between chords', () => {
   describe('happy path', () => {
     it('resolves Cmaj to Gmaj with total motion ≤15 semitones when previous voicing is supplied (optimal close motion)', () => {
@@ -171,6 +203,20 @@ describe('Harmony voicing — TASK-4.3 — determinism and MIDI range', () => {
 
 describe('Harmony voicing — TASK-4.3 — PAT-011 bass register', () => {
   describe('happy path', () => {
+    it('bass pitch class matches lowest note of secondary-resolved harmony for inversion + secondary', () => {
+      const c = chord({
+        scaleDegree: 5,
+        quality: 'major',
+        seventh: 'dom7',
+        inversion: 1,
+        secondary: { function: 'V', target: 5 },
+      });
+      const resolved = baseCloseHarmonyMidi(c, 'C', 'major', 4);
+      const lowest = Math.min(...resolved);
+      const bass = bassMidiPat011(c, 'C', 'major', 4);
+      expect(bass % 12).toBe(((lowest % 12) + 12) % 12);
+    });
+
     it('plays C major root bass one octave below harmony center (MIDI C3 = 48 when center octave is 4)', () => {
       const c = chord({ scaleDegree: 1, quality: 'major', inversion: 0 });
       const expected = theoryEngine.scaleDegreeToMidi(1, 0, 0, 'C', 'major', 3);

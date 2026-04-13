@@ -40,7 +40,35 @@ function enumerateRegisterCandidates(base: readonly number[]): number[][] {
   return out;
 }
 
-/** L1 distance between equal-length voicings after sorting (QA `totalL1Sorted`). */
+/** k-combinations of indices 0..n-1 (deterministic order for tie-breaking callers). */
+function indexCombinations(n: number, k: number): number[][] {
+  if (k < 0 || k > n) {
+    return [];
+  }
+  if (k === 0) {
+    return [[]];
+  }
+  const res: number[][] = [];
+  const path: number[] = [];
+  function dfs(start: number) {
+    if (path.length === k) {
+      res.push([...path]);
+      return;
+    }
+    for (let i = start; i < n; i += 1) {
+      path.push(i);
+      dfs(i + 1);
+      path.pop();
+    }
+  }
+  dfs(0);
+  return res;
+}
+
+/**
+ * L1 distance between equal-length voicings after sorting (QA `totalL1Sorted`).
+ * Unequal lengths return Infinity — use {@link pat011MotionScore} for register optimization.
+ */
 export function sortedL1Motion(prev: readonly number[], cand: readonly number[]): number {
   const a = [...prev].sort((x, y) => x - y);
   const b = [...cand].sort((x, y) => x - y);
@@ -52,6 +80,59 @@ export function sortedL1Motion(prev: readonly number[], cand: readonly number[])
     s += Math.abs(a[i] - b[i]);
   }
   return s;
+}
+
+/**
+ * PAT-011 motion cost: sorted index-wise L1 when |prev| = |cand|; otherwise minimum total L1 over
+ * best subset pairing (choose which voices align when cardinality changes — triad ↔ seventh).
+ * Finite and deterministic for all non-empty MIDI sets used in close voicing.
+ */
+export function pat011MotionScore(prev: readonly number[], cand: readonly number[]): number {
+  const m = prev.length;
+  const n = cand.length;
+  if (m === 0 || n === 0) {
+    return 0;
+  }
+  const p = [...prev].sort((a, b) => a - b);
+  const c = [...cand].sort((a, b) => a - b);
+
+  if (m === n) {
+    let s = 0;
+    for (let i = 0; i < m; i += 1) {
+      s += Math.abs(p[i] - c[i]);
+    }
+    return s;
+  }
+
+  if (m < n) {
+    let best = Infinity;
+    for (const idx of indexCombinations(n, m)) {
+      const sub = idx
+        .map((i) => c[i])
+        .slice()
+        .sort((a, b) => a - b);
+      let s = 0;
+      for (let i = 0; i < m; i += 1) {
+        s += Math.abs(p[i] - sub[i]);
+      }
+      best = Math.min(best, s);
+    }
+    return best;
+  }
+
+  let best = Infinity;
+  for (const idx of indexCombinations(m, n)) {
+    const sub = idx
+      .map((i) => p[i])
+      .slice()
+      .sort((a, b) => a - b);
+    let s = 0;
+    for (let i = 0; i < n; i += 1) {
+      s += Math.abs(sub[i] - c[i]);
+    }
+    best = Math.min(best, s);
+  }
+  return best;
 }
 
 function lexLess(a: readonly number[], b: readonly number[]): boolean {
@@ -92,7 +173,7 @@ export function voicingWithVoiceLeading(
   let best: number[] | null = null;
 
   for (const cand of candidates) {
-    const cost = sortedL1Motion(prev, cand);
+    const cost = pat011MotionScore(prev, cand);
     if (best === null) {
       bestCost = cost;
       best = cand;
@@ -117,7 +198,8 @@ export function bassMidiPat011(
   scale: ScaleType,
   harmonyCenterOctave: number,
 ): number {
-  const voicing = chordToMidiNotes(chord, key, scale, harmonyCenterOctave);
+  // Same spelling path as harmony (`baseCloseHarmonyMidi` → secondary / borrowed aware).
+  const voicing = baseCloseHarmonyMidi(chord, key, scale, harmonyCenterOctave);
   const sorted = [...voicing].sort((a, b) => a - b);
   const lowest = sorted[0];
   if (lowest === undefined) {

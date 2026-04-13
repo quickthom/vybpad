@@ -23,6 +23,8 @@ export {
   computeHarmonyVoicing,
   getHarmonyVoicingOctave,
   motionCostBetweenVoicings,
+  pat011MotionScore,
+  sortedL1Motion,
 } from './harmonyVoicing';
 export type { HarmonyVoicingParams, HarmonyVoicingResult, SongHarmonyVoicingStep } from './harmonyVoicing';
 export { getPlaybackEngine, resetPlaybackEngineForTests } from './playbackEngineSingleton';
