@@ -16,6 +16,8 @@ export function ensureSessionBootstrapped(): Promise<void> {
         await useAuthStore.getState().refreshToken();
       } catch {
         /* INVALID_REFRESH_TOKEN / network — remain logged out */
+      } finally {
+        inflight = null;
       }
     })();
   }
