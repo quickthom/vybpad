@@ -13,6 +13,7 @@ import { absoluteTickToViewportX, getMeasureStartTicks, horizontalPxToTicks, hor
 import { drawGuideOverlay } from '../../engine/renderer/guideOverlay';
 import { computeNoteBlockRect, drawNoteBlocks } from '../../engine/renderer/noteBlocks';
 import { getMeterAtMeasure, measureLengthInTicks } from '../../engine/renderer/tickUtils';
+import { chordStripCaretSelectionFromPointer } from './editorKeyboardLogic';
 import {
   DRAG_THRESHOLD_PX,
   diatonicRowToDegreeAndOctave,
@@ -400,7 +401,10 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
 
     if (!hit) {
       keyboardTargetMeasureRef.current = null;
-      onSelectionChange(null);
+      // Empty chord strip: no chord rects yet, so hit-test misses — still establish a table caret
+      // (collapsed range) so digit entry targets harmony (TASK-4.2 / persistence E2E).
+      const chordStripCaret = chordStripCaretSelectionFromPointer(song, viewport, vx, vy);
+      onSelectionChange(chordStripCaret);
       sessionRef.current = {
         phase: 'pending',
         hit: null,
