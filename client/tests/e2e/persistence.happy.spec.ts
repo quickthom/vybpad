@@ -2,21 +2,45 @@
  * QA COVERAGE PLAN — TASK-3.5 (+ TASK-4.2 editor shell)
  *
  * Happy-path E2E — register → create project → chord grid edit → autosave PUT → refresh → re-login → persisted song.
- * Align chord entry with `develop`: fixed canvas click + Digit1/Digit2, PUT waiter registered before keys.
- * `waitForEditorRouteReady` covers TASK-4.2 transport/canvas hydration (PAT-029).
+ * Chord digits must target the **chord strip** (PAT-012). Clicking too low (e.g. y≈120) hits the staff and
+ * enters **notes**, not chords — then `measures[].chords` stays empty, autosave PUTs empty harmony, CI times out.
  *
- * INTERFACES.md — GET /api/projects/:id; second chord may land in measures[1] (table caret), so we scan all measures.
+ * INTERFACES.md — GET /api/projects/:id; second chord may land in measures[1] (table caret).
  */
 
-import { expect, test, type APIRequestContext } from '@playwright/test';
+import { expect, test, type APIRequestContext, type Locator, type Page } from '@playwright/test';
 
 import { waitForEditorRouteReady } from './helpers/editorReady';
 import { submitRegisterFormAndExpectProjects } from './helpers/registerFlow';
 
 const API_BASE = (process.env.PLAYWRIGHT_API_URL ?? 'http://127.0.0.1:3001').replace(/\/+$/, '');
 
+/** PAT-012 — chord strip vertical center below measure header. */
+const CHORD_STRIP_CLICK_Y = 24 + 40 / 2;
+
 function uniqueSuffix(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
+async function ensureTableEntryMode(page: Page): Promise<void> {
+  const btn = page.getByRole('button', { name: /Entry mode (Table|Text)/ });
+  await expect(btn).toBeVisible({ timeout: 15_000 });
+  const label = await btn.getAttribute('aria-label');
+  if (label?.includes('Text')) {
+    await btn.click();
+    await expect(btn).toHaveAttribute('aria-label', /Entry mode Table/);
+  }
+}
+
+async function focusChordStripForDigitEntry(canvas: Locator): Promise<void> {
+  const box = await canvas.boundingBox();
+  expect(box, 'editor canvas should have a layout box').toBeTruthy();
+  const w = box!.width;
+  const h = box!.height;
+  const x = Math.min(Math.max(40, w * 0.1), w - 4);
+  const y = Math.min(Math.max(28, CHORD_STRIP_CLICK_Y), h - 4);
+  await canvas.click({ position: { x, y } });
+  await expect(canvas).toBeFocused({ timeout: 15_000 });
 }
 
 async function loginApi(
@@ -88,25 +112,24 @@ test.describe('TASK-3.5 — persistence happy path', () => {
     const id = projectId as string;
 
     await waitForEditorRouteReady(page);
+    await ensureTableEntryMode(page);
 
     const canvas = page.getByRole('application', { name: /Song editor/i });
     await expect(page.getByRole('button', { name: /^Save$/ })).toBeDisabled({ timeout: 30_000 });
     await page.locator('#transport-tempo-input').blur();
-    await canvas.click({ position: { x: 400, y: 120 } });
+    await focusChordStripForDigitEntry(canvas);
 
-    const savePutPromise = page.waitForResponse(
-      (r) =>
-        r.request().method() === 'PUT' &&
-        r.url().includes(`/api/projects/${id}`) &&
-        r.ok(),
-      { timeout: 60_000 },
-    );
+    const autosavePutPromise = page.waitForResponse((response) => {
+      const req = response.request();
+      return req.method() === 'PUT' && /\/api\/projects\/[^/?#]+/.test(req.url());
+    }, { timeout: 90_000 });
 
-    await page.keyboard.press('Digit1');
-    await page.keyboard.press('Digit2');
+    await page.keyboard.type('12', { delay: 120 });
 
     await expect(page.getByRole('button', { name: /^Save$/ })).toBeEnabled({ timeout: 30_000 });
-    await savePutPromise;
+    const putRes = await autosavePutPromise;
+    expect(putRes.ok(), await putRes.text()).toBeTruthy();
+    await expect(page.getByRole('button', { name: /^Save$/ })).toBeDisabled({ timeout: 30_000 });
 
     let token = (await loginApi(request, email, password)).accessToken;
     let remote = await fetchProject(request, token, id);
