@@ -8,6 +8,7 @@
 
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { LoginForm } from '../../src/components/auth/LoginForm';
@@ -32,7 +33,11 @@ afterEach(() => {
 describe('LoginForm — TASK-3.1', () => {
   describe('error handling', () => {
     it('shows inline validation errors and does not call the API when email and password are empty on submit', async () => {
-      render(<LoginForm />);
+      render(
+        <MemoryRouter>
+          <LoginForm />
+        </MemoryRouter>,
+      );
       const user = userEvent.setup();
 
       await user.click(screen.getAllByRole('button', { name: /^sign in$/i })[0]!);
@@ -59,7 +64,11 @@ describe('LoginForm — TASK-3.1', () => {
         ),
       );
 
-      render(<LoginForm />);
+      render(
+        <MemoryRouter>
+          <LoginForm />
+        </MemoryRouter>,
+      );
       const user = userEvent.setup();
 
       await user.type(screen.getByRole('textbox', { name: /email/i }), 'ada@example.com');
@@ -78,7 +87,11 @@ describe('LoginForm — TASK-3.1', () => {
 describe('RegisterForm — TASK-3.1', () => {
   describe('error handling', () => {
     it('shows a password validation error when password is shorter than 8 characters', async () => {
-      render(<RegisterForm />);
+      render(
+        <MemoryRouter>
+          <RegisterForm />
+        </MemoryRouter>,
+      );
       const user = userEvent.setup();
 
       await user.type(screen.getByRole('textbox', { name: /email/i }), 'new@example.com');
@@ -108,7 +121,11 @@ describe('RegisterForm — TASK-3.1', () => {
         ),
       );
 
-      render(<RegisterForm />);
+      render(
+        <MemoryRouter>
+          <RegisterForm />
+        </MemoryRouter>,
+      );
       const user = userEvent.setup();
 
       await user.type(screen.getByRole('textbox', { name: /email/i }), 'new@example.com');
