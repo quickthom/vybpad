@@ -14,15 +14,33 @@
  * Shell: `waitForEditorRouteReady` ensures canvas + transport are present before chord entry (no hydration races).
  */
 
-import { expect, test, type APIRequestContext } from '@playwright/test';
+import { expect, test, type APIRequestContext, type Locator } from '@playwright/test';
 
 import { waitForEditorRouteReady } from './helpers/editorReady';
 import { submitRegisterFormAndExpectProjects } from './helpers/registerFlow';
 
 const API_BASE = (process.env.PLAYWRIGHT_API_URL ?? 'http://127.0.0.1:3001').replace(/\/+$/, '');
 
+/** PAT-012 — chord strip sits below the measure header; target mid-strip for hit-testing. */
+const CHORD_STRIP_CLICK_Y = 24 + 40 / 2;
+
 function uniqueSuffix(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
+/**
+ * Focus the chord table for digit entry: click inside the first visible measure’s chord row
+ * (viewport-stable vs a fixed x) and assert the editor canvas is focused so window key handlers run.
+ */
+async function focusChordStripForDigitEntry(canvas: Locator): Promise<void> {
+  const box = await canvas.boundingBox();
+  expect(box, 'editor canvas should have a layout box').toBeTruthy();
+  const w = box!.width;
+  const h = box!.height;
+  const x = Math.min(Math.max(40, w * 0.1), w - 4);
+  const y = Math.min(Math.max(28, CHORD_STRIP_CLICK_Y), h - 4);
+  await canvas.click({ position: { x, y } });
+  await expect(canvas).toBeFocused({ timeout: 15_000 });
 }
 
 async function loginApi(
@@ -43,10 +61,12 @@ async function fetchProject(request: APIRequestContext, accessToken: string, pro
     headers: { Authorization: `Bearer ${accessToken}` },
   });
   expect(res.ok(), await res.text()).toBeTruthy();
+  // INTERFACES.md — GET /api/projects/:id → ProjectResponse
   return res.json() as Promise<{
     id: string;
     name: string;
     songData: { measures: Array<{ chords: Array<{ scaleDegree: number; beat: number }> }> };
+    updatedAt: string;
   }>;
 }
 
@@ -81,11 +101,9 @@ test.describe('TASK-3.5 — persistence happy path', () => {
 
     const canvas = page.getByRole('application', { name: /Song editor/i });
     await expect(page.getByRole('button', { name: /^Save$/ })).toBeDisabled({ timeout: 30_000 });
-    // Chord strip (MEASURE_HEADER + CHORD_AREA in canvas space) — y≈120 targets the staff and can
-    // yield note entry or miss; chord row keeps table-mode chord digits for both keys.
-    await canvas.click({ position: { x: 400, y: 44 } });
-    await canvas.focus();
-    await page.keyboard.type('12', { delay: 40 });
+    await focusChordStripForDigitEntry(canvas);
+    // Slower typing avoids coalescing both digits before the first chord mutation on slow CI workers.
+    await page.keyboard.type('12', { delay: 85 });
 
     await expect(page.getByRole('button', { name: /^Save$/ })).toBeEnabled({ timeout: 30_000 });
 
@@ -98,9 +116,9 @@ test.describe('TASK-3.5 — persistence happy path', () => {
         },
         {
           timeout: 150_000,
-          intervals: [250, 500, 1000, 2000],
+          intervals: [100, 200, 400, 800, 1500, 2500],
           message:
-            'Expected debounced autosave to persist ≥2 entered chords (poll GET until server reflects PUT)',
+            'Expected debounced autosave to persist ≥2 entered chords (poll GET /api/projects/:id until songData reflects the PUT)',
         },
       )
       .toBe(true);
