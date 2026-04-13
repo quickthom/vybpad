@@ -302,10 +302,18 @@ What remains open:
 Do not re-litigate (resolved in prior rounds):
   <list, or "N/A — first round">
 
-Action: Fix all listed blockers. Re-run QA tests + existing suite.
+File ownership (PAT-030):
+  Builder scope: <files/dirs Builder may edit>
+  QA scope:      <files/dirs QA may edit — omit if QA not spawned>
+  Push order:    Builder first → QA rebases → QA pushes
+
+Action: Fix all listed blockers within your file scope (PAT-030).
+         Re-run QA tests + existing suite.
          Push to the same branch. Notify PM when ready for re-review.
 ──────────────────────────────────────────────
 ```
+
+**Remediation spawn rules (PAT-030):** Classify each blocker as `app`, `test`, or `shared-helper`. Spawn Builder only for pure `app` blockers, QA only for pure `test` blockers, both only when mixed. When both are spawned, enforce sequential push order (Builder first) and include the file-ownership block above.
 
 If the original Builder is unavailable or a circuit breaker has fired (PAT-027), spawn a new Builder and include the full prior review summary in addition to the delta brief fields.
 

@@ -1,12 +1,12 @@
 # PM STATE — vYbpad
 
-> PM continuity handoff — **not** a duplicate of `TASK_STATUS.md`. Updated **2026-04-13** — **PAT-029 rollout orchestration** (PR #35/#36 unblock path).
+> PM continuity handoff — **not** a duplicate of `TASK_STATUS.md`. Updated **2026-04-13** — **PAT-029 Step 2 complete**; PR #35/#36 CI polling (Helm PM).
 
 ---
 
 ## Designer continuity (persistent role)
 
-- **F-06:** Periodic full UX review (Phase 3 close — overdue) **complete** (2026-04-13). Deliverable: `UX_GUIDELINES.md` v1.2 deltas + `MILESTONE-F06-DESIGN-REVIEW.md` (commit/integrate when convenient; not gated on open PRs).
+- **F-06:** Periodic full UX review (Phase 3 close) **complete**; deliverables **on `develop`** (`b799146` with PAT-029): `UX_GUIDELINES.md` v1.2 deltas + `MILESTONE-F06-DESIGN-REVIEW.md`.
 - **Session resume ID (Task tool):** `1ec3a385-fc7d-49ab-ae75-d63afeeb8b91` — use for the next Designer brief.
 - **Prior shipped design work:** F-05 (#26) Phase 2 milestone review + UX v1.1; F-06 extends to Phase 3 persistence UI + Phase 4.1 playback shell on `develop`.
 - **Non-blocking follow-up (Designer):** Optional product decision — explicit autosave success indicator vs silent success + error toasts; escalate to Architect only if PM wants a binding call.
@@ -16,8 +16,8 @@
 ## Remote & Tip
 
 - **GitHub:** https://github.com/quickthom/vybpad — `origin`, default **`develop`**.
-- **`develop` (local, main worktree):** `b9c11ef` — includes TASK-4.1 stack in history (`ead7d21`) + HITL tip; **2026-04-13 verify:** `git ls-remote origin develop` returned `eab2ba3` — **local was 5 commits ahead of `origin/develop`** (reconcile push before using GitHub as sole SoT).
-- **PAT-029:** Dual `webServer` + `GET /api/health` readiness exists in **uncommitted** `playwright.config.ts` (and related doc deltas) — **not** committed on `develop`; PR #35 (`fa1e791`) and #36 (`4ce103f`) **do not** include it (confirmed via `git show origin/phase-4/...:playwright.config.ts`).
+- **`develop` (local, main worktree):** Aligned with `origin/develop` at `9060701` (PAT-029 + F-06 + TASK-4.1 history). **2026-04-13 Helm PM:** `git fetch` — no drift vs `origin/develop`.
+- **PAT-029:** On `develop` (`b799146` in history). PR #35 tip `d580624`, PR #36 tip `30de049` — rebased onto `9060701` and pushed (dual `webServer` harness inherited from `develop`).
 - **Merged PRs:** #1–#23 Phase 0–2; Phase 3: #24–#32; Phase 4 launch: #34 (see `TASK_STATUS.md`).
 - **Sync:** `git fetch origin && npm install` at repo root before any work.
 
@@ -91,7 +91,7 @@ All other Phase 2 worktrees retired 2026-04-13.
 
 ## PAT-029 rollout — PM sequence (PR #35 / #36)
 
-**Context:** PAT-029 = Playwright waits for **both** `GET /api/health` (API) and Vite before E2E (`PATTERNS.md`). Uncommitted files in main worktree `/home/thom/py/vYbpad` must land on `develop` first; feature PRs then rebase so CI runs with the harness.
+**Context:** PAT-029 = Playwright waits for **both** `GET /api/health` (API) and Vite before E2E (`PATTERNS.md`). Step 1 landed on `develop`; Step 2 completed 2026-04-13 (rebase + `--force-with-lease` on both feature branches).
 
 | Step | Owner | Action |
 |------|--------|--------|
@@ -101,39 +101,16 @@ All other Phase 2 worktrees retired 2026-04-13.
 
 ---
 
-## DevOps brief — Step 1 (PAT-029 commit + push) — **ISSUED**
 
-**Assigned to:** DevOps (ephemeral task). **Working directory:** `/home/thom/py/vYbpad` (main worktree). **Branch:** `develop` (checkout before commit).
+## PM tooling — Task spawn verification (2026-04-13)
 
-**Objective:** Land PAT-029 on remote `develop` so PR #35/#36 can rebase onto a harness-fixed base.
-
-**Files to include in one commit** (verify `git status`; uncommitted PAT-029 bundle):
-
-- `playwright.config.ts` — dual `webServer` entries (API health URL + Vite); matches PAT-029
-- `PATTERNS.md` — PAT-029 section
-- `ARCHITECTURE.md` — E2E harness note referencing PAT-029
-- `ENVIRONMENTS.md` — Playwright / E2E env alignment if touched
-- `README.md` — any PAT-029 / E2E doc delta
-- `ARCHITECT_STATE.md` — Architect continuity note if present in bundle
-
-**Do not** stage unrelated WIP (e.g. `TASK_STATUS.md`, `PM_STATE.md`, `UX_GUIDELINES.md`, `HITL_NOTIFICATIONS.md`, untracked `MILESTONE-F06-*`) unless HITL directs — keep this commit **harness + PAT-029 doc scope only**.
-
-**Acceptance criteria:**
-
-1. `develop` contains the dual–`webServer` `playwright.config.ts` at repo tip.
-2. `git push origin develop` succeeds (or HITL-documented resolution if remote diverged).
-3. Post-push: `git rev-parse origin/develop` matches local after fetch — PM updates `TASK_STATUS.md` event log on your STATUS_UPDATE.
-
-**Patterns:** PAT-029 (read `PATTERNS.md`). Read `.cursor/agents/DevOps.md` and `ARCHITECTURE.md` before committing.
-
-**Commit message (suggested):** `chore(ci): playwright dual webServer readiness (PAT-029)`
-
-**PM spawn note:** This Cursor/Composer agent **cannot invoke the Task tool / subagent spawn API**. **Step 1 DevOps must be started manually:** open a DevOps agent (or new chat with DevOps role), paste this brief + path to `PM_STATE.md`, and run git only in the main worktree.
+- **Latest check (2026-04-13):** `Task` tool **available** — micro-test `generalPurpose` agent returned `SPAWN_CHECK_OK` (agent id `91c8f033-fb65-471b-a190-05d493647199`).
+- **Prior Helm PM note:** Some Composer PM sessions lacked `Task`; if spawn fails again, use shell workarounds or human-started role sessions per PAT-029.
 
 ---
 
 ## Checkpoint — Handoff / Resume (2026-04-13)
 
-- **PR #35** tip `fa1e791`; last CI `24334812645` **failure** — pending Step 1–2.
-- **PR #36** tip `4ce103f`; last CI `24334450885` **failure** — same.
-- **Active gate:** Step 1 (DevOps commit + push PAT-029 to `develop`); then Step 2 (parallel Builder rebases in isolated worktrees); then Step 3 (CI triage by failure class).
+- **PR #35** tip **`29eec40`** — remediation for failed run `24349784133` pushed (session bootstrap + transport E2E locator); **new CI runs** in progress on branch (e.g. `24351089304`).
+- **PR #36** tip **`407a1cdd`** — CI run `24350860555` **FAILURE**: `client/tests/e2e/helpers/editor.ts` **regex literal** breaks Babel parse (`(?:/` closes `/.../` pattern) → **class: app test harness**; Builder+QA fix in flight.
+- **Active gate:** #35 await fresh CI on `29eec40`; #36 await regex fix + rerun.

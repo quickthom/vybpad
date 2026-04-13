@@ -491,3 +491,43 @@ Every remediation or re-review handoff must include:
 **Rule:** In `playwright.config.ts`, use **two** `webServer` entries (or `PLAYWRIGHT_SKIP_WEBSERVER` with both processes already up): one waits on `GET /api/health` at `PLAYWRIGHT_API_URL` (default `http://127.0.0.1:3001`), one waits on the Vite dev URL (`PLAYWRIGHT_BASE_URL`, default `http://127.0.0.1:5173`). Do not rely on `concurrently` alone as the readiness gate.
 
 **Manual dev:** `npm run e2e:devstack` remains valid for developers who prefer one shell; set `PLAYWRIGHT_SKIP_WEBSERVER=1` when those servers are already running.
+
+---
+
+## PAT-030: Remediation File Ownership (Builder vs QA)
+
+**Problem:** When both Builder and QA are spawned concurrently for a remediation round, both agents may edit the same files — shared E2E helpers, test fixtures, or even the same test specs — producing merge conflicts, duplicated fixes, or silently overwritten work. The event log shows repeated stalls, replacements, and multi-round churn on PR #35 and #36 where this overlap occurred.
+
+**Rule:** During remediation rounds, **Builder and QA have exclusive file scopes.** Neither role may edit files owned by the other without explicit PM coordination.
+
+### Ownership table
+
+| File scope | Owner during remediation | Examples |
+|---|---|---|
+| Application source code | Builder | `client/src/**`, `server/src/**`, `shared/**`, config files (`playwright.config.ts`, `vite.config.ts`, etc.) |
+| Test specs and assertions | QA | `**/tests/**/*.test.ts`, `**/tests/**/*.spec.ts` |
+| Shared E2E helpers and fixtures | **Builder** (single writer) | `client/tests/e2e/helpers/**`, `client/tests/e2e/fixtures/**` |
+| Type stubs / mocks used only by tests | QA | `**/tests/**/__mocks__/**`, test-local type overrides |
+
+### Coordination protocol
+
+1. **PM classifies each blocker** before issuing remediation briefs. Each blocker is tagged as `app` (Builder owns fix), `test` (QA owns fix), or `shared-helper` (Builder owns fix, QA reviews).
+2. **Builder pushes first.** When both roles have work, Builder commits and pushes, then signals `REMEDIATION_PUSH` to PM. QA then rebases onto the Builder's push before committing their changes.
+3. **No parallel pushes.** Only one role pushes to the PR branch at a time. PM enforces sequencing via the remediation brief ordering.
+4. **QA may not modify shared E2E helpers** (`helpers/**`, `fixtures/**`) during remediation. If a helper change is needed to fix a test, QA reports the required change to PM, who includes it in the Builder's remediation brief. This prevents the most common source of overlapping edits.
+5. **Builder must not delete or rewrite QA test assertions.** If a test is genuinely wrong (not just failing due to a code bug), Builder reports to PM, who routes to QA.
+
+### PM remediation brief additions
+
+When issuing concurrent Builder + QA remediation briefs, include:
+
+```
+File ownership (PAT-030):
+  Builder scope: <list of files/directories Builder may edit>
+  QA scope:      <list of files/directories QA may edit>
+  Push order:    Builder first → QA rebases → QA pushes
+```
+
+### Fallback
+
+If a remediation round only has `app`-class blockers, spawn **Builder only** (no concurrent QA). If only `test`-class blockers, spawn **QA only**. Concurrent spawns are only needed when both classes are present.

@@ -2,10 +2,10 @@
 
 > Single source of truth for build state. Owned by the Project Manager. See PAT-025 for update protocol.
 
-**`develop` (verify with `git fetch origin`):** Local `develop` tip `b9c11ef` includes TASK-4.1 work (`ead7d21` in history) + HITL tip commit — **2026-04-13 PM verification:** `origin/develop` was `eab2ba3` (TASK-3.5 merge); local branch was **5 commits ahead of `origin/develop`** (push drift — reconcile with GitHub before treating remote as SoT). **PAT-029** (dual `webServer` + `/api/health` gate): present in **uncommitted** `playwright.config.ts` + doc edits in this workspace — **not** in `git show develop:playwright.config.ts` and **not** on PR #35 (`fa1e791`) / #36 (`4ce103f`) tips until committed to `develop` and merged/rebased into those branches. Sync: `git fetch origin && npm install` — https://github.com/quickthom/vybpad.
+**`develop` (verify with `git fetch origin`):** Tip matches `origin/develop` at `9060701` (includes PAT-029 `b799146` + TASK-4.1 `ead7d21` in history). **PAT-029** is on `develop`; PR #35 / #36 were rebased onto `origin/develop` and force-pushed (2026-04-13 Helm PM). Sync: `git fetch origin && npm install` — https://github.com/quickthom/vybpad.
 **Worktree hygiene:** Phase 3/4 worktrees under `/home/thom/py/vYbpad-worktrees/`. Retire after merge (PAT-017). If `gh pr merge` could not delete remote branches, remove worktree then `git push origin --delete <branch>`.
 
-**PAT-029 rollout (PM):** **Step 1** — DevOps: commit harness + listed docs on `develop`, push `origin/develop` (brief in `PM_STATE.md`). **Step 2** — Builders (PAT-017): rebase `phase-4/piano-sample-loading` and `phase-4/harmony-voicing-engine` onto updated `develop`, push (#35, #36). **Step 3** — Monitor CI; **DevOps** if infra/harness; **Builder+QA** if feature/test logic.
+**PAT-029 rollout (PM):** **Step 1** — complete. **Step 2** — complete (2026-04-13): rebased `phase-4/piano-sample-loading` → `d580624`, `phase-4/harmony-voicing-engine` → `30de049`; pushed with `--force-with-lease`. **Step 3** — active: monitor GitHub Actions on PR #35 / #36; **DevOps** if infra/harness; **Builder+QA** if app/test logic still red. PM `Task` spawn verified 2026-04-13.
 
 ---
 
@@ -30,7 +30,7 @@ Phases 0 (7/7), 1A (7/7), 1B (6/6), Phase 2 (15/15) — see `TASK_STATUS_ARCHIVE
 | F-02a | Documenter | — | merged | #28 | — | README + CHANGELOG + ENVIRONMENTS stub |
 | F-02b | DevOps | — | merged | #27 | — | ENVIRONMENTS.md PAT-026 |
 | F-05 | Designer | — | merged | #26 | — | Phase 2 design review + UX v1.1 |
-| F-06 | Designer | — | approved | — | Phase 3 milestone | Periodic UX review complete; UX v1.2 + MILESTONE-F06; pending commit to `develop` |
+| F-06 | Designer | — | merged | — | Phase 3 milestone | UX v1.2 + `MILESTONE-F06-DESIGN-REVIEW.md` on `develop` (`b799146` with PAT-029) |
 
 **Milestone:** User registers, logs in, creates a project, edits it, sees it auto-save, refreshes, logs in again, finds work intact.
 
@@ -38,13 +38,13 @@ Phases 0 (7/7), 1A (7/7), 1B (6/6), Phase 2 (15/15) — see `TASK_STATUS_ARCHIVE
 
 ## Phase 4 — Audio Playback
 
-**Goal:** Press play, hear piano chords + melody, see cursor move. **Status:** Wave 2 active; TASK-4.2 / TASK-4.3 blocked on CI until **PAT-029** is on each PR branch (empty rerun alone does not apply harness).
+**Goal:** Press play, hear piano chords + melody, see cursor move. **Status:** Wave 2 active; TASK-4.2 / TASK-4.3 **in CI gate** — PAT-029 harness now on both PR branches post-rebase; await fresh Actions runs.
 
 | Task | Role | Branch | Status | PR | Depends | Notes |
 |---|---|---|---|---|---|---|
 | 4.1 | Builder + QA | — | merged | #34 | 0.2 | Integrator merged to develop (`ead7d21` in local history); keep CI Playwright verification gate |
-| 4.2 | Builder + QA | phase-4/piano-sample-loading | blocked | #35 | 4.1 | CI failed run `24334812645` (latest); code re-review: CI-only block. PR tip `fa1e791` still has legacy single `webServer` — **rebase onto `develop` after PAT-029 lands** in worktree `task-4-2-piano-samples`, push, then CI |
-| 4.3 | Builder + QA | phase-4/harmony-voicing-engine | blocked | #36 | 1A.3 | CI failed run `24334450885` (latest); same harness gap. PR tip `4ce103f` — **rebase post-PAT-029** in worktree `task-4-3-harmony-voicing`, push, then CI |
+| 4.2 | Builder + QA | phase-4/piano-sample-loading | in-review (CI) | #35 | 4.1 | PR tip `29eec40` (remediation for E2E); worktree `task-4-2-piano-samples`. Await CI on latest push |
+| 4.3 | Builder + QA | phase-4/harmony-voicing-engine | in-review (CI) | #36 | 1A.3 | PR tip `313206e` (regex fix `55f0725` + QA `eba1d54` + log `313206e`); worktree `task-4-3-harmony-voicing`. Await CI post-fix |
 | 4.4 | Builder + QA | — | pending | — | 4.1,4.2,4.3,1A.2 | scheduler + Tone.Part |
 | 4.5 | Builder + QA | — | pending | — | 0.2 | transport UI; may launch parallel once 4.1 contract stable |
 | 4.6 | Builder + QA | — | pending | — | 2.2,4.4 | playback cursor |
@@ -181,4 +181,23 @@ Per `ROADMAP.md`. Not yet decomposed into task briefs.
 2026-04-13 PM ordered: (1) commit+push PAT-029 to develop + push develop stack if drift (2) Builders rebase #35/#36 in isolated worktrees (3) CI rerun (4) remediation only if still red
 2026-04-13 PM — PAT-029 rollout plan locked: Step1 DevOps commit+push develop; Step2 parallel Builder rebase #35/#36 (PAT-017); Step3 CI monitor (DevOps vs Builder/QA by failure class); full brief in PM_STATE.md
 2026-04-13 PM — Step1 DevOps brief issued; Task/spawn API unavailable in Composer — human or Cursor multi-agent must start DevOps with PM_STATE DevOps brief
+2026-04-13 DevOps/PM — Step 1 complete: committed PAT-029 and F-06 to develop and pushed to origin (b799146)
+2026-04-13 PM — Step 2 active: Builders to rebase PR #35 and #36 in their isolated worktrees
+2026-04-13 PM — ESCALATION: Task tool not in PM agent tool list — Step 2 Builder spawns not executed; user must enable spawn or run two Builder sessions (see PM_STATE.md PAT-029 Step 2 + PM tooling section)
+2026-04-13 Helm PM — AGENCY_DIRECTORY.md entry; spawn check: **no Task/subagent tool** in Composer PM tool list (same as prior PM_STATE note)
+2026-04-13 Helm PM — PAT-029 **Step 2 executed** via shell: `task-4-2-piano-samples` rebase → push `d580624` (PR #35); `task-4-3-harmony-voicing` rebase → push `30de049` (PR #36); conflicts none
+2026-04-13 Helm PM — **Step 3:** monitor CI on #35/#36; route failures per PM_STATE (DevOps vs Builder+QA)
+2026-04-13 Helm PM — CI gate **in_progress** PR:#35 run:24349784133 PR:#36 run:24349784769 (post-rebase push)
+2026-04-13 PM spawn_check pass Task:generalPurpose proof:SPAWN_CHECK_OK agent:91c8f033-fb65-471b-a190-05d493647199
+2026-04-13 CI gate PR:#35 run:24349784133 status:completed/failure class:app-e2e (transport toolbar count 0 / playback-init+persistence+piano-samples specs)
+2026-04-13 CI gate PR:#36 run:24350860555 status:in_progress head:407a1cdd (supersedes 30de049; prior run 24349784769 failed app-e2e)
+2026-04-13 PM — TASK-4.2 remediation brief+Builder+QA spawned post-#35 CI classification (app)
+2026-04-13 TASK-4.2 remediation pushed commit:29eec40 (RequireAuth session bootstrap) + commit:d12f18b (transport locator QA) agents:ac1d4caf,6b464d0c PR:#35 tip:29eec40
+2026-04-13 CI monitor PR:#35 runs in_progress (e.g. 24351089304 post-push) supersede failed 24349784133
+2026-04-13 CI gate PR:#36 run:24350860555 status:completed/failure class:app-e2e-harness SyntaxError client/tests/e2e/helpers/editor.ts regex literal terminates early (Babel partialApplication); Error: No tests found
+2026-04-13 PM — TASK-4.3 Builder+QA spawned editor.ts regex fix PR:#36
+2026-04-13 TASK-4.3 remediation pushed commits:55f0725,eba1d54,313206e agents:ecdd5dc1,a394efd4 PR:#36 tip:313206e
+2026-04-13 CI monitor PR:#36 run:24351276146 in_progress (post-regex-fix); PR:#35 runs in_progress e.g.24351089304
+2026-04-13 Architect — PAT-030 (remediation file ownership) added to PATTERNS.md + PM brief template updated; ARCHITECTURE.md render-model aligned to single-canvas reality
+2026-04-13 Architect directive to PM — rebase PR #35 and #36 onto develop to inherit PAT-030 + ARCHITECTURE.md changes before next remediation/CI cycle; same PAT-029 Step 2 procedure (isolated worktrees, --force-with-lease)
 <!-- LOG END -->

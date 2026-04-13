@@ -126,22 +126,22 @@ Major (Ionian), Minor (Aeolian), Dorian, Phrygian, Lydian, Mixolydian, Locrian, 
 
 ## Canvas Editor Architecture
 
-The grid editor uses a **dual-canvas layered approach**:
+The grid editor currently uses a **single-canvas layered draw order** (all visual layers painted in one pass):
 
-| Canvas | Content | Redraw frequency |
+| Layer order (bottom -> top) | Content | Redraw trigger |
 |---|---|---|
-| **Main canvas** | Grid lines, beat markers, measure numbers, chord blocks, note blocks, guide tones | On edit, scroll, zoom |
-| **Overlay canvas** | Playback cursor, selection rectangle, drag preview | Every animation frame during playback; on mouse move during interaction |
-
-Both canvases are stacked via CSS `position: absolute` with identical dimensions. The overlay is transparent except for its drawn elements.
+| 1 | Grid background (measure/beat guides) | edit, scroll, zoom, resize |
+| 2 | Chord blocks | edit, scroll, zoom, resize |
+| 3 | Note blocks | edit, scroll, zoom, resize |
+| 4 | Guide overlay (optional) | edit, scroll, zoom, resize, showGuides toggle |
+| 5 | Interaction overlays | hover/selection highlights, drag feedback, playback cursor |
 
 **Rendering pipeline:**
 1. **Viewport** defines visible measure range and vertical scroll offset
 2. **Layout engine** computes pixel positions from tick positions + viewport
-3. **Main renderer** draws: grid → guide tones → chords → notes
-4. **Overlay renderer** draws: cursor → selection → drag ghost
+3. **Canvas renderer** paints deterministic layer order: grid -> chords -> notes -> optional guide overlay -> interaction overlays
 
-**Hit testing:** Maintained via a spatial index (flat array of axis-aligned bounding boxes keyed by event ID). On click/drag, iterate visible bounds to find hit target. No Canvas `isPointInPath` — pure math on cached rects.
+**Hit testing:** Computed geometry in renderer helpers and hit-test functions (rect math by visible measure/event); no Canvas `isPointInPath`.
 
 **Coordinate spaces:**
 - **Tick space:** horizontal position in musical time
@@ -268,4 +268,4 @@ These features exist in Hookpad but are **excluded or deferred** per the require
 **Playback highlight testing:** The playback engine emits tick-position events. We test that:
 1. The store updates `currentPlaybackTick` correctly over time (mocked Tone.Transport)
 2. The renderer, given a `currentPlaybackTick`, highlights the correct notes and chord (verified via mock canvas assertions)
-3. E2E: Playwright starts playback and asserts the cursor element moves (overlay canvas position or CSS transform)
+3. E2E: Playwright starts playback and asserts playback-state progression and transport-visible behavior; cursor visuals are canvas-rendered (no separate DOM cursor element)
