@@ -6,7 +6,8 @@ import { defineConfig } from 'vitest/config';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
-  plugins: [react()],
+  // Avoid double-mounting routes in component tests (duplicate buttons / headings).
+  plugins: [react({ strictMode: false })],
   test: {
     include: [
       'client/tests/**/*.test.ts',

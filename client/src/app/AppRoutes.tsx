@@ -3,6 +3,8 @@ import { Navigate, Route, Routes, useNavigate } from 'react-router-dom';
 
 import { LoginForm } from '../components/auth/LoginForm';
 import { RegisterForm } from '../components/auth/RegisterForm';
+import { ToastHost } from '../components/common/ToastHost';
+import { ProjectListPage } from '../components/projects/ProjectListPage';
 import { useAuthStore } from '../store/authStore';
 import { EditorLayout } from './EditorLayout';
 
@@ -19,7 +21,7 @@ function SessionInitializer() {
       if (useAuthStore.getState().accessToken) return;
       try {
         await useAuthStore.getState().refreshToken();
-        if (!cancelled) navigate('/editor', { replace: true });
+        if (!cancelled) navigate('/projects', { replace: true });
       } catch {
         /* remain on public route */
       }
@@ -42,13 +44,14 @@ function RequireAuth({ children }: { children: ReactNode }) {
 
 function RootRedirect() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  return <Navigate to={isAuthenticated ? '/editor' : '/login'} replace />;
+  return <Navigate to={isAuthenticated ? '/projects' : '/login'} replace />;
 }
 
 export function AppRoutes() {
   return (
     <>
       <SessionInitializer />
+      <ToastHost />
       <Routes>
         <Route
           path="/login"
@@ -74,7 +77,14 @@ export function AppRoutes() {
             </RequireAuth>
           }
         />
-        {/* TASK-3.2: add project list — <Route path="/projects" element={<RequireAuth><ProjectsPage /></RequireAuth>} /> */}
+        <Route
+          path="/projects"
+          element={
+            <RequireAuth>
+              <ProjectListPage />
+            </RequireAuth>
+          }
+        />
         <Route path="/" element={<RootRedirect />} />
         <Route path="*" element={<RootRedirect />} />
       </Routes>

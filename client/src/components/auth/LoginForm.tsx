@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { type FormEvent, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { useAuthStore } from '../../store/authStore';
 import { getApiErrorMessage } from '../../utils/errorMessages';
+
+type LoginField = 'email' | 'password';
 
 function validateLogin(email: string, password: string): Record<string, string> {
   const fields: Record<string, string> = {};
@@ -25,24 +27,46 @@ export function LoginForm() {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [touched, setTouched] = useState<Partial<Record<LoginField, boolean>>>({});
 
-  async function handleSubmit(e: React.FormEvent) {
+  function mergeFieldFromValidation(field: LoginField, next: Record<string, string>) {
+    setFieldErrors((prev) => {
+      const p = { ...prev };
+      if (next[field]) p[field] = next[field]!;
+      else delete p[field];
+      return p;
+    });
+  }
+
+  function handleBlur(field: LoginField) {
+    setTouched((t) => ({ ...t, [field]: true }));
+    const next = validateLogin(email, password);
+    mergeFieldFromValidation(field, next);
+  }
+
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setFormError(null);
     const next = validateLogin(email, password);
     setFieldErrors(next);
-    if (Object.keys(next).length > 0) return;
+    if (Object.keys(next).length > 0) {
+      setTouched({ email: true, password: true });
+      return;
+    }
 
     setSubmitting(true);
     try {
       await login(email.trim(), password);
-      navigate('/editor', { replace: true });
+      navigate('/projects', { replace: true });
     } catch (err) {
       setFormError(getApiErrorMessage(err));
     } finally {
       setSubmitting(false);
     }
   }
+
+  const showEmailError = Boolean(fieldErrors.email && touched.email);
+  const showPasswordError = Boolean(fieldErrors.password && touched.password);
 
   return (
     <div className="w-full max-w-[480px] rounded-xl border border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)] p-6 shadow-sm">
@@ -69,13 +93,18 @@ export function LoginForm() {
             type="email"
             autoComplete="email"
             aria-required="true"
-            aria-invalid={Boolean(fieldErrors.email)}
-            aria-describedby={fieldErrors.email ? 'login-email-error' : undefined}
+            aria-invalid={showEmailError}
+            aria-describedby={showEmailError ? 'login-email-error' : undefined}
             className="h-10 w-full rounded-lg border border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)] px-3 text-sm text-[var(--color-text-primary,#111827)] outline-none hover:border-[var(--color-border-strong,#D1D5DB)] focus:border-[var(--color-primary,#4F46E5)] focus:shadow-[0_0_0_1px_var(--color-primary,#4F46E5)]"
             value={email}
-            onChange={(ev) => setEmail(ev.target.value)}
+            onChange={(ev) => {
+              const v = ev.target.value;
+              setEmail(v);
+              if (touched.email) mergeFieldFromValidation('email', validateLogin(v, password));
+            }}
+            onBlur={() => handleBlur('email')}
           />
-          {fieldErrors.email ? (
+          {showEmailError ? (
             <p id="login-email-error" className="text-xs leading-snug text-[var(--color-destructive,#DC2626)]" role="alert">
               {fieldErrors.email}
             </p>
@@ -94,13 +123,18 @@ export function LoginForm() {
             type="password"
             autoComplete="current-password"
             aria-required="true"
-            aria-invalid={Boolean(fieldErrors.password)}
-            aria-describedby={fieldErrors.password ? 'login-password-error' : undefined}
+            aria-invalid={showPasswordError}
+            aria-describedby={showPasswordError ? 'login-password-error' : undefined}
             className="h-10 w-full rounded-lg border border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)] px-3 text-sm text-[var(--color-text-primary,#111827)] outline-none hover:border-[var(--color-border-strong,#D1D5DB)] focus:border-[var(--color-primary,#4F46E5)] focus:shadow-[0_0_0_1px_var(--color-primary,#4F46E5)]"
             value={password}
-            onChange={(ev) => setPassword(ev.target.value)}
+            onChange={(ev) => {
+              const v = ev.target.value;
+              setPassword(v);
+              if (touched.password) mergeFieldFromValidation('password', validateLogin(email, v));
+            }}
+            onBlur={() => handleBlur('password')}
           />
-          {fieldErrors.password ? (
+          {showPasswordError ? (
             <p id="login-password-error" className="text-xs leading-snug text-[var(--color-destructive,#DC2626)]" role="alert">
               {fieldErrors.password}
             </p>

@@ -1,13 +1,24 @@
 import '@testing-library/jest-dom/vitest';
+import { cleanup } from '@testing-library/react';
+import { afterEach, beforeEach } from 'vitest';
+
+import { useToastStore } from '@/store/toastStore';
 
 /**
  * Vitest jsdom has no native PointerEvent. @testing-library/dom synthesizes pointer events
  * via `new EventConstructor(...)`; when PointerEvent is missing, clientX/clientY stay 0 and
  * canvas hit-testing tests break. Subclass MouseEvent so pointer init matches real browsers.
  */
-import '@testing-library/jest-dom/vitest';
 
 export {};
+
+beforeEach(() => {
+  useToastStore.getState().dismiss();
+});
+
+afterEach(() => {
+  cleanup();
+});
 
 /** jsdom has no Canvas 2D — return a stub so shell tests that mount `EditorCanvas` do not throw. */
 if (typeof HTMLCanvasElement !== 'undefined') {
@@ -27,6 +38,16 @@ if (typeof HTMLCanvasElement !== 'undefined') {
       });
     }
     return orig.call(this, type as '2d');
+  };
+}
+
+/** jsdom: `<dialog>` exists but `showModal` / `close` are missing — needed for DeleteProjectDialog tests. */
+if (typeof HTMLDialogElement !== 'undefined' && typeof HTMLDialogElement.prototype.showModal !== 'function') {
+  HTMLDialogElement.prototype.showModal = function (this: HTMLDialogElement) {
+    this.setAttribute('open', '');
+  };
+  HTMLDialogElement.prototype.close = function (this: HTMLDialogElement) {
+    this.removeAttribute('open');
   };
 }
 

@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { type FormEvent, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { useAuthStore } from '../../store/authStore';
 import { getApiErrorMessage } from '../../utils/errorMessages';
+
+type RegisterField = 'email' | 'displayName' | 'password';
 
 function validateRegister(
   email: string,
@@ -35,24 +37,47 @@ export function RegisterForm() {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [touched, setTouched] = useState<Partial<Record<RegisterField, boolean>>>({});
 
-  async function handleSubmit(e: React.FormEvent) {
+  function mergeFieldFromValidation(field: RegisterField, next: Record<string, string>) {
+    setFieldErrors((prev) => {
+      const p = { ...prev };
+      if (next[field]) p[field] = next[field]!;
+      else delete p[field];
+      return p;
+    });
+  }
+
+  function handleBlur(field: RegisterField) {
+    setTouched((t) => ({ ...t, [field]: true }));
+    const next = validateRegister(email, password, displayName);
+    mergeFieldFromValidation(field, next);
+  }
+
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setFormError(null);
     const next = validateRegister(email, password, displayName);
     setFieldErrors(next);
-    if (Object.keys(next).length > 0) return;
+    if (Object.keys(next).length > 0) {
+      setTouched({ email: true, displayName: true, password: true });
+      return;
+    }
 
     setSubmitting(true);
     try {
       await register(email.trim(), password, displayName);
-      navigate('/editor', { replace: true });
+      navigate('/projects', { replace: true });
     } catch (err) {
       setFormError(getApiErrorMessage(err));
     } finally {
       setSubmitting(false);
     }
   }
+
+  const showEmailError = Boolean(fieldErrors.email && touched.email);
+  const showDisplayNameError = Boolean(fieldErrors.displayName && touched.displayName);
+  const showPasswordError = Boolean(fieldErrors.password && touched.password);
 
   return (
     <div className="w-full max-w-[480px] rounded-xl border border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)] p-6 shadow-sm">
@@ -79,13 +104,18 @@ export function RegisterForm() {
             type="email"
             autoComplete="email"
             aria-required="true"
-            aria-invalid={Boolean(fieldErrors.email)}
-            aria-describedby={fieldErrors.email ? 'register-email-error' : undefined}
+            aria-invalid={showEmailError}
+            aria-describedby={showEmailError ? 'register-email-error' : undefined}
             className="h-10 w-full rounded-lg border border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)] px-3 text-sm text-[var(--color-text-primary,#111827)] outline-none hover:border-[var(--color-border-strong,#D1D5DB)] focus:border-[var(--color-primary,#4F46E5)] focus:shadow-[0_0_0_1px_var(--color-primary,#4F46E5)]"
             value={email}
-            onChange={(ev) => setEmail(ev.target.value)}
+            onChange={(ev) => {
+              const v = ev.target.value;
+              setEmail(v);
+              if (touched.email) mergeFieldFromValidation('email', validateRegister(v, password, displayName));
+            }}
+            onBlur={() => handleBlur('email')}
           />
-          {fieldErrors.email ? (
+          {showEmailError ? (
             <p id="register-email-error" className="text-xs leading-snug text-[var(--color-destructive,#DC2626)]" role="alert">
               {fieldErrors.email}
             </p>
@@ -104,13 +134,19 @@ export function RegisterForm() {
             type="text"
             autoComplete="nickname"
             aria-required="true"
-            aria-invalid={Boolean(fieldErrors.displayName)}
-            aria-describedby={fieldErrors.displayName ? 'register-display-name-error' : undefined}
+            aria-invalid={showDisplayNameError}
+            aria-describedby={showDisplayNameError ? 'register-display-name-error' : undefined}
             className="h-10 w-full rounded-lg border border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)] px-3 text-sm text-[var(--color-text-primary,#111827)] outline-none hover:border-[var(--color-border-strong,#D1D5DB)] focus:border-[var(--color-primary,#4F46E5)] focus:shadow-[0_0_0_1px_var(--color-primary,#4F46E5)]"
             value={displayName}
-            onChange={(ev) => setDisplayName(ev.target.value)}
+            onChange={(ev) => {
+              const v = ev.target.value;
+              setDisplayName(v);
+              if (touched.displayName)
+                mergeFieldFromValidation('displayName', validateRegister(email, password, v));
+            }}
+            onBlur={() => handleBlur('displayName')}
           />
-          {fieldErrors.displayName ? (
+          {showDisplayNameError ? (
             <p
               id="register-display-name-error"
               className="text-xs leading-snug text-[var(--color-destructive,#DC2626)]"
@@ -133,13 +169,18 @@ export function RegisterForm() {
             type="password"
             autoComplete="new-password"
             aria-required="true"
-            aria-invalid={Boolean(fieldErrors.password)}
-            aria-describedby={fieldErrors.password ? 'register-password-error' : undefined}
+            aria-invalid={showPasswordError}
+            aria-describedby={showPasswordError ? 'register-password-error' : undefined}
             className="h-10 w-full rounded-lg border border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)] px-3 text-sm text-[var(--color-text-primary,#111827)] outline-none hover:border-[var(--color-border-strong,#D1D5DB)] focus:border-[var(--color-primary,#4F46E5)] focus:shadow-[0_0_0_1px_var(--color-primary,#4F46E5)]"
             value={password}
-            onChange={(ev) => setPassword(ev.target.value)}
+            onChange={(ev) => {
+              const v = ev.target.value;
+              setPassword(v);
+              if (touched.password) mergeFieldFromValidation('password', validateRegister(email, v, displayName));
+            }}
+            onBlur={() => handleBlur('password')}
           />
-          {fieldErrors.password ? (
+          {showPasswordError ? (
             <p id="register-password-error" className="text-xs leading-snug text-[var(--color-destructive,#DC2626)]" role="alert">
               {fieldErrors.password}
             </p>

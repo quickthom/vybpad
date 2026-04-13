@@ -31,13 +31,21 @@ export const useAuthStore = create<AuthStore>((set) => ({
   },
 
   logout: async () => {
-    await authApi.logout();
+    try {
+      await authApi.logout();
+    } catch {
+      /* still clear local session */
+    }
     set({ user: null, accessToken: null, isAuthenticated: false });
   },
 
   refreshToken: async () => {
-    const res = await authApi.refresh();
-    set({ accessToken: res.accessToken, isAuthenticated: true });
+    const { accessToken } = await authApi.refresh();
+    set((s) => ({
+      accessToken,
+      isAuthenticated: true,
+      user: s.user,
+    }));
   },
 }));
 
