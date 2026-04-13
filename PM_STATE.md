@@ -30,7 +30,7 @@
 ## Remote & Tip
 
 - **GitHub:** https://github.com/quickthom/vybpad — `origin`, default **`develop`**.
-- **`develop` / `origin/develop` tip (authoritative):** `ebc7fe5` — verify with `git fetch origin && git rev-parse origin/develop` (process roles + PAT-025 TASK_STATUS migration, 2026-04-14).
+- **`develop` / `origin/develop` tip (authoritative):** `3c44a95` — verify with `git fetch origin && git rev-parse origin/develop` (includes `ebc7fe5` process roles + PAT-025 migration + `3c44a95` tip/head recording, 2026-04-14).
 - **PAT-029:** Dual `webServer` harness lives on `develop`; feature branches must inherit it via rebase onto current `develop`.
 - **Merged PRs:** #1–#23 Phase 0–2; Phase 3: #24–#32; Phase 4 launch: #34 (see `TASK_STATUS.md`).
 - **Sync:** `git fetch origin && npm install` at repo root before any work.

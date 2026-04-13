@@ -2,7 +2,7 @@
 
 > Periodic Architect checkpoint cache. Review first on resume.
 
-**Last updated:** 2026-04-14 — Role/process docs aligned with **PAT-025** / **PAT-015** (`.cursor/agents`); `TASK_STATUS.md` event log migrated to **`TASK_STATUS_ARCHIVE.md`**. **`origin/develop`:** `ebc7fe5`. **PR heads post-rebase:** #35 `2e271a1`, #36 `4e37e8b` — verify with `git fetch origin && gh pr view 35 36 --json headRefOid`.
+**Last updated:** 2026-04-14 — Role/process docs aligned with **PAT-025** / **PAT-015** (`.cursor/agents`); `TASK_STATUS.md` event log migrated to **`TASK_STATUS_ARCHIVE.md`**. **`origin/develop`:** `3c44a95` (`ebc7fe5` + `3c44a95` recording). **PR heads post-rebase:** #35 `997b964`, #36 `2daf83b` — verify with `git fetch origin && gh pr view 35 36 --json headRefOid`.
 
 ---
 
