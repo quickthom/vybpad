@@ -144,8 +144,11 @@ export function EditorLayout() {
     return () => {
       cancelled = true;
     };
-    // `location.state` is intentionally read when `projectId` changes (POST create bootstrap).
-  }, [projectId, loadSong, navigate, showErrorToast, location.state]);
+    // Read `location.state` when `projectId` changes (POST create bootstrap). Do **not** list
+    // `location.state` in deps — Router can replace `location` without a project change and drop
+    // `state`, which would re-run this effect, GET the project, and `loadSong` would clear
+    // `isDirty` (TASK-3.5 E2E autosave).
+  }, [projectId, loadSong, navigate, showErrorToast]);
 
   useEffect(() => {
     setSelectedMeasures((prev) => {
