@@ -16,4 +16,13 @@ export type {
 } from './playbackErrors';
 export { createPlaybackEngine } from './createPlaybackEngine';
 export { formatTransportBeat } from './formatTransportBeat';
+export {
+  assertValidHarmonyVoicingSong,
+  baseCloseHarmonyMidi,
+  buildHarmonyVoicingSequence,
+  computeHarmonyVoicing,
+  getHarmonyVoicingOctave,
+  motionCostBetweenVoicings,
+} from './harmonyVoicing';
+export type { HarmonyVoicingParams, HarmonyVoicingResult, SongHarmonyVoicingStep } from './harmonyVoicing';
 export { getPlaybackEngine, resetPlaybackEngineForTests } from './playbackEngineSingleton';
