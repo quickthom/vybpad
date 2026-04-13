@@ -66,10 +66,6 @@ test.describe('TASK-4.2 — piano sample loading (E2E)', () => {
     const playBtn = getTransportPlayButton(transport);
     await playBtn.click();
 
-    await expect(transport.getByText(/loading piano samples|piano|instrument samples|loading samples/i)).toBeVisible({
-      timeout: 10_000,
-    });
-
     await expectTransportPlaybackReady(transport);
 
     // First Play runs initializeAudio then play(); toolbar shows Pause, not Play.

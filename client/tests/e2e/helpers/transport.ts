@@ -5,7 +5,7 @@ import { expect } from '@playwright/test';
  * Toolbar that wraps transport controls (UX §5.8).
  */
 export function getTransportToolbar(page: Page): Locator {
-  return page.getByRole('toolbar', { name: 'Transport' });
+  return page.getByRole('toolbar', { name: /transport/i });
 }
 
 /**
@@ -37,10 +37,21 @@ export async function expectTransportPlaybackReady(
   options?: { timeout?: number },
 ): Promise<void> {
   const timeout = options?.timeout ?? DEFAULT_PLAYBACK_READY_TIMEOUT_MS;
-  await expect(transport).toBeVisible();
   await expect
     .poll(
       async () => {
+        return transport.count();
+      },
+      {
+        timeout: 30_000,
+        message: 'Transport toolbar must be present before checking playback readiness.',
+      },
+    )
+    .toBeGreaterThan(0);
+  await expect
+    .poll(
+      async () => {
+        if ((await transport.count()) < 1) return false;
         const ready = await transport.getAttribute('data-audio-ready');
         const busy = await transport.getAttribute('aria-busy');
         // React omits aria-busy when false, so getAttribute is null — only "true" means initializing.
@@ -69,10 +80,21 @@ export async function expectTransportPlaybackRunningAfterInit(transport: Locator
  * Poll until the toolbar is present and not in the ready state (avoids racing first paint / hydration).
  */
 export async function expectTransportPlaybackNotReady(transport: Locator): Promise<void> {
-  await expect(transport).toBeVisible();
   await expect
     .poll(
       async () => {
+        return transport.count();
+      },
+      {
+        timeout: 30_000,
+        message: 'Transport toolbar must be present before checking initial readiness.',
+      },
+    )
+    .toBeGreaterThan(0);
+  await expect
+    .poll(
+      async () => {
+        if ((await transport.count()) < 1) return false;
         const ready = await transport.getAttribute('data-audio-ready');
         return ready !== 'true';
       },

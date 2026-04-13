@@ -77,12 +77,11 @@ test.describe('TASK-3.5 — persistence happy path', () => {
     await expect(page.getByText('Loading project…')).toBeHidden({ timeout: 30_000 });
 
     const canvas = page.getByRole('application', { name: /Song editor/i });
+    await expect(page.getByRole('button', { name: /^Save$/ })).toBeDisabled({ timeout: 30_000 });
     await canvas.click({ position: { x: 400, y: 120 } });
-    // Headless runs can leave focus on a non-editor target; global digit entry is ignored without canvas focus.
-    await canvas.focus();
-
-    await page.keyboard.press('1');
-    await page.keyboard.press('2');
+    // Press on the editor target itself so headless focus drift does not drop note/chord entry.
+    await canvas.press('1');
+    await canvas.press('2');
 
     await expect(page.getByRole('button', { name: /^Save$/ })).toBeEnabled({ timeout: 30_000 });
 
@@ -91,20 +90,20 @@ test.describe('TASK-3.5 — persistence happy path', () => {
         async () => {
           const token = (await loginApi(request, email, password)).accessToken;
           const remote = await fetchProject(request, token, id);
-          return (remote.songData.measures[0]?.chords?.length ?? 0) >= 1;
+          return (remote.songData.measures[0]?.chords?.length ?? 0) >= 2;
         },
         {
           timeout: 150_000,
           intervals: [250, 500, 1000, 2000],
           message:
-            'Expected debounced autosave to persist ≥1 chord (poll GET until server reflects PUT)',
+            'Expected debounced autosave to persist ≥2 entered chords (poll GET until server reflects PUT)',
         },
       )
       .toBe(true);
 
     let token = (await loginApi(request, email, password)).accessToken;
     let remote = await fetchProject(request, token, id);
-    expect(remote.songData.measures[0]?.chords?.length ?? 0).toBeGreaterThanOrEqual(1);
+    expect(remote.songData.measures[0]?.chords?.length ?? 0).toBeGreaterThanOrEqual(2);
 
     await page.reload();
     await expect(page.getByText('Loading project…')).toBeHidden({ timeout: 30_000 });
