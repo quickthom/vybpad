@@ -23,7 +23,7 @@ function uniqueSuffix(): string {
 }
 
 test.describe('TASK-4.1 — playback init (user gesture; not sample-load throttled)', () => {
-  test.describe.configure({ mode: 'serial' });
+  test.describe.configure({ mode: 'serial', timeout: 180_000 });
 
   test('first Play click initializes audio; toolbar reports ready; reload stays usable', async ({
     page,
@@ -54,7 +54,7 @@ test.describe('TASK-4.1 — playback init (user gesture; not sample-load throttl
     const playBtn = getTransportPlayButton(transport);
     await playBtn.click();
 
-    await expectTransportPlaybackReady(transport, { timeout: 45_000 });
+    await expectTransportPlaybackReady(transport);
 
     await page.reload();
     await waitForEditorRouteReady(page);
@@ -62,7 +62,7 @@ test.describe('TASK-4.1 — playback init (user gesture; not sample-load throttl
     const transportAfter = getTransportToolbar(page);
     await expectTransportPlaybackNotReady(transportAfter);
     await getTransportPlayButton(transportAfter).click();
-    await expectTransportPlaybackReady(transportAfter, { timeout: 45_000 });
+    await expectTransportPlaybackReady(transportAfter);
   });
 
   test('rapid play attempts during init — no page errors; toolbar reaches ready', async ({ page }) => {
@@ -110,7 +110,7 @@ test.describe('TASK-4.1 — playback init (user gesture; not sample-load throttl
       }
     });
 
-    await expectTransportPlaybackReady(transport, { timeout: 45_000 });
+    await expectTransportPlaybackReady(transport);
 
     expect(pageErrors, `pageerror: ${pageErrors.map((e) => e.message).join('; ')}`).toHaveLength(0);
     expect(

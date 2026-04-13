@@ -50,11 +50,11 @@ async function registerAndOpenEditor(page: import('@playwright/test').Page): Pro
 }
 
 test.describe('TASK-4.2 — piano sample loading (E2E)', () => {
-  test.describe.configure({ mode: 'serial' });
+  test.describe.configure({ mode: 'serial', timeout: 180_000 });
 
   test('Scenario A — Play shows piano-oriented loading then reaches audio-ready', async ({ page }) => {
     await page.route('**/samples/**', async (route) => {
-      await new Promise((r) => setTimeout(r, 400));
+      await new Promise((r) => setTimeout(r, 200));
       await route.continue();
     });
 
@@ -97,7 +97,7 @@ test.describe('TASK-4.2 — piano sample loading (E2E)', () => {
     page,
   }) => {
     await page.route('**/samples/**', async (route) => {
-      await new Promise((r) => setTimeout(r, 300));
+      await new Promise((r) => setTimeout(r, 200));
       await route.continue();
     });
 

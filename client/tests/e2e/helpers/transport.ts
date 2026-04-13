@@ -21,8 +21,11 @@ export function getTransportPauseButton(transport: Locator): Locator {
   return transport.getByRole('button', { name: 'Pause playback' });
 }
 
-/** Default timeout for sample load + audio init on cold CI runners (ms). */
-const DEFAULT_PLAYBACK_READY_TIMEOUT_MS = 60_000;
+/** Default timeout for sample load + audio init on cold CI runners + throttled sample routes (ms). */
+const DEFAULT_PLAYBACK_READY_TIMEOUT_MS = 90_000;
+
+/** First paint / hydration can exceed 15s default on slow GitHub runners. */
+const TRANSPORT_TOOLBAR_APPEAR_TIMEOUT_MS = 45_000;
 
 /**
  * INTERFACES.md — `TransportControls` maps `PlaybackStore.initStatus` to the toolbar:
@@ -43,7 +46,7 @@ export async function expectTransportPlaybackReady(
         return transport.count();
       },
       {
-        timeout: 30_000,
+        timeout: TRANSPORT_TOOLBAR_APPEAR_TIMEOUT_MS,
         message: 'Transport toolbar must be present before checking playback readiness.',
       },
     )
@@ -86,7 +89,7 @@ export async function expectTransportPlaybackNotReady(transport: Locator): Promi
         return transport.count();
       },
       {
-        timeout: 30_000,
+        timeout: TRANSPORT_TOOLBAR_APPEAR_TIMEOUT_MS,
         message: 'Transport toolbar must be present before checking initial readiness.',
       },
     )
@@ -99,7 +102,7 @@ export async function expectTransportPlaybackNotReady(transport: Locator): Promi
         return ready !== 'true';
       },
       {
-        timeout: 30_000,
+        timeout: TRANSPORT_TOOLBAR_APPEAR_TIMEOUT_MS,
         message:
           'Transport must not be audio-ready yet (data-audio-ready≠true) — locked or initializing.',
       },

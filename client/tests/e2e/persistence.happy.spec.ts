@@ -81,10 +81,11 @@ test.describe('TASK-3.5 — persistence happy path', () => {
 
     const canvas = page.getByRole('application', { name: /Song editor/i });
     await expect(page.getByRole('button', { name: /^Save$/ })).toBeDisabled({ timeout: 30_000 });
-    await canvas.click({ position: { x: 400, y: 120 } });
-    // Press on the editor target itself so headless focus drift does not drop note/chord entry.
-    await canvas.press('1');
-    await canvas.press('2');
+    // Chord strip (MEASURE_HEADER + CHORD_AREA in canvas space) — y≈120 targets the staff and can
+    // yield note entry or miss; chord row keeps table-mode chord digits for both keys.
+    await canvas.click({ position: { x: 400, y: 44 } });
+    await canvas.focus();
+    await page.keyboard.type('12', { delay: 40 });
 
     await expect(page.getByRole('button', { name: /^Save$/ })).toBeEnabled({ timeout: 30_000 });
 
