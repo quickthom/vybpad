@@ -211,6 +211,8 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
     ctx.fillStyle = '#FFFFFF';
     ctx.fillRect(0, 0, w, h);
 
+    // Main canvas layer stack (bottom → top). Keep in sync with hitTest.ts global Z-order notes.
+    // drawGridBackground → drawChordBlocks → drawNoteBlocks → drawGuideOverlay when showGuides.
     drawGridBackground(ctx, song, viewport, h);
     drawChordBlocks(ctx, song, viewport, theoryEngine, { colorScheme });
     drawNoteBlocks(ctx, song, viewport, { colorScheme });

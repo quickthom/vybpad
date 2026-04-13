@@ -1,8 +1,7 @@
 /**
  * Zustand UI shell state (TASK-2.11).
  *
- * Implements INTERFACES.md § UIStore. `toggleEntryMode` is required for App wiring but is not yet
- * listed in INTERFACES — flag for Architect to add to the shared contract.
+ * Implements `UIStore` from INTERFACES.md (viewport, selection, panels, `toggleEntryMode`, etc.).
  */
 
 import { enableMapSet } from 'immer';
@@ -21,7 +20,7 @@ const DEFAULT_VIEWPORT: Viewport = {
   zoom: 1,
 };
 
-/** INTERFACES.md `UIStore` plus `toggleEntryMode` until the interface is updated. */
+/** Mirrors INTERFACES.md `UIStore`. */
 export interface UIStore {
   viewport: Viewport;
   selection: Selection | null;
@@ -35,7 +34,7 @@ export interface UIStore {
   setSelection: (s: Selection | null) => void;
   setActiveVoice: (v: 0 | 1 | 2 | 3) => void;
   togglePanel: (panel: string) => void;
-  /** Not in INTERFACES.md yet — toggles `entryMode` between table and text. */
+  /** Toggles `entryMode` between `"table"` and `"text"` (per INTERFACES.md). */
   toggleEntryMode: () => void;
 }
 
