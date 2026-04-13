@@ -105,9 +105,10 @@ function hitNoteTopmost(x: number, y: number, song: SongData, viewport: Viewport
  * Note geometry uses the same row math as {@link layout.noteRowYFromNoteEvent} via
  * {@link noteBlocks.computeNoteBlockRect}.
  *
- * **Global Z-order:** The main renderer draws chords, then notes (ARCHITECTURE). Note blocks can overlap
- * the chord strip vertically when `scrollY` shifts the staff. When a point lies inside both a chord
- * block and a note block, the note wins — we test notes first, then chords.
+ * **Global Z-order (matches {@link EditorCanvas} `paint`):** `drawGridBackground` → `drawChordBlocks` →
+ * `drawNoteBlocks` → optional `drawGuideOverlay` when guides are on. Notes are painted after chords, so
+ * they win when a point lies in both regions (e.g. chord strip vs staff overlap when scrolled). Guide
+ * overlay is above notes and is not hit-tested. We test notes first, then chords.
  */
 export function hitTestEditorCanvas(x: number, y: number, song: SongData, viewport: Viewport): EditorCanvasHit | null {
   const noteHit = hitNoteTopmost(x, y, song, viewport);
