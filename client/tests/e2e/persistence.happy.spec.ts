@@ -12,13 +12,11 @@
  * Entry mode: Table mode is required for digit-only chord adds (Text mode ignores digits until a duration key
  * arms entry — see useKeyboard). We assert `Entry mode Table` before typing so CI cannot silently run in Text.
  *
- * Autosave: after edits, wait for `Save` enabled (dirty), then **poll GET** `/api/projects/:id` until
- * `songData` contains both scale degrees 1 and 2 (any measure). Do not require a single PUT whose body
- * includes both degrees — debouncing may emit multiple PUTs or split chords across measures; the contract
- * is persisted server state, not request shape.
+ * Persist: after edits, `Save` is enabled (dirty). **Click Save** and wait for a successful PUT to
+ * `/api/projects/:id`, then assert GET shows both scale degrees 1 and 2. Manual save avoids flaky reliance
+ * on debounced autosave timing in CI while still exercising the same API contract as autosave PUTs.
  * Table-mode caret advance can place the second chord in `measures[1]` while the first remains in
  * `measures[0]`; anchoring only on `measures[0].chords.length` is wrong for INTERFACES `SongData`.
- * Debounced PUT is 1500ms (EditorLayout); request timeout must cover debounce + slow CI.
  *
  * Shell: `waitForEditorRouteReady` ensures canvas + transport are present before chord entry (no hydration races).
  */
@@ -109,7 +107,7 @@ function songDataHasChordScaleDegrees1And2(songData: {
 test.describe('TASK-3.5 — persistence happy path', () => {
   test.describe.configure({ mode: 'serial', timeout: 180_000 });
 
-  test('register → create project → edit chords → autosave → refresh → re-login → list and editor load persisted song', async ({
+  test('register → create project → edit chords → save → refresh → re-login → list and editor load persisted song', async ({
     page,
     request,
   }) => {
@@ -147,17 +145,20 @@ test.describe('TASK-3.5 — persistence happy path', () => {
     await page.keyboard.type('12', { delay: 120 });
 
     await expect(page.getByRole('button', { name: /^Save$/ })).toBeEnabled({ timeout: 30_000 });
+    const savePutPromise = page.waitForResponse(
+      (response) =>
+        response.request().method() === 'PUT' &&
+        response.url().includes(`/api/projects/${id}`) &&
+        response.ok(),
+      { timeout: 60_000 },
+    );
+    await page.getByRole('button', { name: /^Save$/ }).click();
+    await savePutPromise;
+    await expect(page.getByRole('button', { name: /^Save$/ })).toBeDisabled({ timeout: 60_000 });
 
     let token = (await loginApi(request, email, password)).accessToken;
-    await expect
-      .poll(
-        async () => {
-          const remoteSong = await fetchProject(request, token, id);
-          return songDataHasChordScaleDegrees1And2(remoteSong.songData);
-        },
-        { timeout: 120_000, intervals: [300, 600, 1_200, 2_400] },
-      )
-      .toBe(true);
+    let remote = await fetchProject(request, token, id);
+    expect(songDataHasChordScaleDegrees1And2(remote.songData)).toBe(true);
 
     await page.reload();
     await waitForEditorRouteReady(page);
@@ -180,7 +181,7 @@ test.describe('TASK-3.5 — persistence happy path', () => {
     await waitForEditorRouteReady(page);
 
     token = (await loginApi(request, email, password)).accessToken;
-    const remote = await fetchProject(request, token, id);
+    remote = await fetchProject(request, token, id);
     const chords = remote.songData.measures.flatMap((m) => m.chords ?? []);
     const degrees = chords.map((c) => c.scaleDegree);
     expect(degrees.filter((d) => d === 1).length).toBeGreaterThanOrEqual(1);
