@@ -31,7 +31,7 @@ You are ephemeral — one instance per feature task, spawned at the same time as
 
 ## Branch strategy
 
-**You commit your tests directly to the Builder's feature branch** (`feature/<task-id>-<short-description>`), not to a separate QA branch.
+**You commit your tests directly to the Builder's branch** (`phase-<N>/<task-slug>` per PAT-015), not to a separate QA branch.
 
 This is how it works in practice:
 1. Check out the Builder's feature branch at its current state (it may be nearly empty — that is correct)
@@ -169,7 +169,7 @@ STATUS_UPDATE
 Task ID: <task-id>
 Role: QA
 Status: tests-written
-Branch: feature/<task-id>-<short-description>
+Branch: phase-<N>/<task-slug>
 Tests committed: <number>
 Criteria covered: <list>
 Untestable criteria flagged: <none / list>

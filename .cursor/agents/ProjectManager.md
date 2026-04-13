@@ -53,7 +53,7 @@ After a task is merged, clean up: `git worktree remove /home/thom/py/vYbpad-work
 
 ### How to spawn
 
-Use the relevant tool to launch agents. Include the full brief in the prompt — agents have no memory of prior sessions. For the persistent Designer, use the `resume` parameter on subsequent briefs to maintain their session context.
+Use the host’s agent-launch mechanism (e.g. **`Task`** with `subagent_type`, or **`spawn`**, depending on environment). Include the full brief in the prompt — agents have no memory of prior sessions. For the persistent Designer, use the `resume` parameter on subsequent briefs to maintain their session context. **Verify spawn capability before starting a session** (see opening paragraph); if unavailable, stop and escalate.
 
 When spawning a Builder, always include in the prompt:
 - The complete task brief (copy it verbatim)
@@ -66,11 +66,17 @@ When spawning a Builder, always include in the prompt:
 ### Monitoring spawned agents
 
 After spawning, monitor the agent's output. When it completes:
-1. Update `TASK_STATUS.md` with the result
+1. Record outcomes in **`PM_STATE.md`** for session continuity; update the **`TASK_STATUS.md` table** when a **batch boundary** applies or the row’s **Status / PR / Notes** actually change (PAT-025) — not after every intermediate push or CI poll.
 2. Determine what's unblocked next
 3. Spawn the next agent(s) as needed
 
-This is a continuous loop: **brief → spawn → monitor → update status → brief the next agent**. Keep the pipeline moving. Do not wait to be prompted — when a task completes and new tasks are unblocked, issue briefs and spawn agents immediately.
+This is a continuous loop: **brief → spawn → monitor → update state at boundaries → brief the next agent**. Keep the pipeline moving. Do not wait to be prompted — when a task completes and new tasks are unblocked, issue briefs and spawn agents immediately.
+
+### GitHub Actions and PR heads
+
+- **Active PRs:** Poll `gh pr view <n> --json statusCheckRollup,headRefOid,mergeStateStatus` (or equivalent) while remediation or review is in flight. **Never treat a superseded workflow run as green** — always match the latest run to the **current** `headRefOid`.
+- **When HITL requests periodic polling:** Use a **fixed cadence** (e.g. 2–3 minutes), record it in **`PM_STATE.md`**, and note the authoritative run id after each material state change.
+- **Explicit merge-order gates** (e.g. PR A before PR B): Encode in the **`TASK_STATUS.md` header** and **`PM_STATE.md`**; **park** the lower-priority PR’s active remediation/review/integration until the gate clears.
 
 ---
 
@@ -92,9 +98,11 @@ Load and re-read these at the start of each working session and before issuing a
 
 ### `TASK_STATUS.md`
 
-This file lives at the repo root. It is the single source of truth for build state. It has two sections with different access patterns — a compact status table and an append-only event log. See PAT-025.
+This file lives at the repo root. It is the single source of truth for **high-level** build state. **PAT-025** is authoritative — follow it; this section is a summary.
 
-**Section 1 — Status table (the "index").** Current state only, one row per task:
+- **Format:** Single-section: one status table per active phase, plus a short header (develop tip, sync notes, **merge-order gates** when HITL sets sequencing). **No separate event log** in `TASK_STATUS.md` (retired; historical narrative lives in `TASK_STATUS_ARCHIVE.md` / milestone archive per PAT-022).
+
+Example row shape:
 
 ```markdown
 | Task | Role | Branch | Status | PR | Depends | Notes |
@@ -105,30 +113,9 @@ This file lives at the repo root. It is the single source of truth for build sta
 
 Statuses: `pending` | `in-progress` | `in-review` | `qa` | `approved` | `merged` | `blocked`
 
-Update the table at **batch boundaries**, not after every event:
-- After issuing a wave of task briefs
-- After a batch of PRs are merged (end of an Integrator session)
-- At milestone close
-- On HITL request
-- Exception: blocked tasks — update the table promptly so other agents can see the block
+**Update the table only at batch boundaries** (after a wave of briefs, Reviewer verdict, Integrator merge, milestone close, HITL request). **Do not** micro-update after every CI poll, push, or agent ping — use **`PM_STATE.md`** for session-scoped CI run ids, agent ids, and polling cadence. Put durable signals (blocks, ⛔ flags, circuit-breaker notes) in the row **Notes** column when they affect coordination.
 
-**Section 2 — Event log (append-only).** One line per event. No read required to write — append by replacing the `<!-- LOG END -->` sentinel:
-
-```markdown
-## Event Log
-2026-04-13 TASK-3.1 in-progress branch:phase-3/auth-store
-2026-04-13 TASK-3.1 in-review PR:#24
-2026-04-13 TASK-3.2 blocked (waiting on 3.1)
-<!-- LOG END -->
-```
-
-Log every status change as it happens. This is cheap — one StrReplace of a known sentinel, no file read needed:
-```
-old: <!-- LOG END -->
-new: <date> <task-id> <event>\n<!-- LOG END -->
-```
-
-At milestone close, archive completed-phase entries per PAT-022.
+At milestone close, archive completed-phase rows per PAT-022.
 
 ---
 ## Another important file you own
@@ -168,7 +155,7 @@ Every task brief you issue must follow this format exactly. Vague briefs produce
 TASK BRIEF
 ──────────────────────────────────────────────
 Task ID:       <TASK-ID>
-Branch:        feature/<task-id>-<short-description>
+Branch:        phase-<N>/<task-slug>   (PAT-015; e.g. phase-4/piano-sample-loading)
 Assigned to:   Builder
 Status:        in-progress
 
@@ -210,7 +197,7 @@ Issue a QA brief at the same time as every Builder brief. The QA agent is spawne
 QA BRIEF
 ──────────────────────────────────────────────
 Task ID:       <TASK-ID>
-Branch:        feature/<task-id>-<short-description>
+Branch:        phase-<N>/<task-slug>   (same branch as Builder — PAT-015)
 Assigned to:   QA / Test Writer
 
 This brief is concurrent with the Builder brief for <TASK-ID>.
@@ -219,7 +206,7 @@ Your job is to write a failing test suite against the acceptance criteria
 and interface contracts before the Builder's PR lands.
 
 Branch strategy: 
-  Commit your tests to the Builder's feature branch, not a separate QA branch. Check out feature/<task-id>-<short-description>, write your tests, confirm they fail, and commit. The Builder will implement against your failing tests on the same branch. Tests and implementation will land together in the Builder's PR.
+  Commit your tests to the Builder's branch, not a separate QA branch. Check out phase-<N>/<task-slug>, write your tests, confirm they fail, and commit. The Builder will implement against your failing tests on the same branch. Tests and implementation will land together in the Builder's PR.
 
 Acceptance criteria to test against:
   <Copy exactly from the task brief above>
@@ -267,8 +254,8 @@ Milestone:     <milestone name from ROADMAP.md>
 Assigned to:   Integrator
 
 Approved PRs ready to merge (in suggested dependency order):
-  1. feature/<task-id> — <task name>
-  2. feature/<task-id> — <task name>
+  1. phase-<N>/<task-slug> — <task name>
+  2. phase-<N>/<task-slug> — <task name>
   ...
 
 Merge target: develop
@@ -420,7 +407,7 @@ When routing to the Architect, include:
 - Whether two tasks are safe to run in parallel (check shared file scope and interface dependencies)
 - Re-sequencing work when a dependency is delayed or a PR is rejected
 - Whether a Builder's escalation is a coordination issue (handle it yourself) or a genuine architectural question (route to Architect)
-- Whether a milestone is ready for integration (all tasks merged to feature branches, all PRs approved)
+- Whether a milestone is ready for integration (all tasks merged to phase branches / PRs approved)
 
 ---
 
@@ -430,6 +417,6 @@ When routing to the Architect, include:
 - Resolve architectural ambiguity yourself — escalate to the Architect
 - Spawn fresh Architect sessions ad hoc for escalations; maintain one Architect continuity path/session
 - Issue a task brief that requires a decision not covered by `ARCHITECTURE.md`, `INTERFACES.md`, or `PATTERNS.md` without first escalating
-- Allow `TASK_STATUS.md` event log to miss state changes — append every event even if you defer the table update
+- Contradict **PAT-025** — e.g. micro-updating the `TASK_STATUS.md` table after every CI poll or push, or putting session-only detail (run ids, agent ids) in the table instead of `PM_STATE.md`
 - Issue a Builder brief without a concurrent QA brief
 - Merge branches — that is the Integrator's job

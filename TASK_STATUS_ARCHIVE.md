@@ -70,3 +70,31 @@
 - Escalation: TASK-2.11 required `INTERFACES.md` update (`UIStore.toggleEntryMode()`).
 - Hotfix: TASK-2.8 digit keys dispatched `add` instead of `update` — caught by Reviewer, fixed in PR #17.
 - Non-blocking follow-ups carried to Phase 3 cleanup: hover cursor `grab` dead code in jsdom (2.7); `measuresPerLine=0` infinite loop guard (2.10); theory import facade (1A.7); deeper API test assertions (1B.6); stale `toggleEntryMode` comment in `uiStore.ts`.
+
+---
+
+## Phase 4 session log migration — 2026-04-14
+
+Migrated from `TASK_STATUS.md` (retired per PAT-025 single-section format).
+
+2026-04-13 TASK-4.2 ci-remediation active PR:#35 lane:Builder+QA (E2E 401 console errors; Actions run 24353007958)
+2026-04-13 TASK-4.2 ci-failure PR:#35 Actions:24354157756 (E2E strict mode duplicate role=alert; not infra)
+2026-04-13 TASK-4.2 remediation-pushed PR:#35 branch:phase-4/piano-sample-loading (single toast alert; E2E Scenario D; commit b3348e7 on worktree — verify on origin CI)
+2026-04-13 TASK-4.2 ci-failure PR:#35 Actions:24354792596 (E2E persistence.happy autosave ≥2 chords — app/tests; not infra)
+2026-04-13 TASK-4.2 remediation-pushed PR:#35 commits:e9425ff,9af5c18 (persistence E2E + canvas focus) await-next-CI
+2026-04-13 TASK-4.2 ci-failure PR:#35 Actions:24355475894 head:9af5c18 (E2E persistence.happy poll ≥2 chords — app/autosave; not infra)
+2026-04-13 TASK-4.2 pm-spawn Builder+QA PR:#35 lane:ci-remediation-round-2
+2026-04-13 TASK-4.2 remediation-pushed PR:#35 commits:d8e6c84,3bdedd5 (EditorLayout bootstrap; persistence E2E Table mode) CI:24356446158-in-progress
+2026-04-13 TASK-4.2 ci-failure PR:#35 Actions:24356446158 head:3bdedd5 (E2E persistence.happy poll ≥2 chords — app/tests; not infra)
+2026-04-13 TASK-4.2 ci-failure PR:#35 Actions:24358370117 head:c141228 (same E2E failure after commits through c141228)
+2026-04-13 TASK-4.2 pm-brief remediation-r3 PR:#35 lane:Builder+QA persistence E2E
+2026-04-13 TASK-4.2 remediation-pushed PR:#35 commits:1565698,57c4f23 (E2E degrees 1+2; POST bootstrap GET dedupe)
+2026-04-13 TASK-4.2 ci-failure PR:#35 Actions:24359135236 head:57c4f23 (tsc EditorCanvasProps getSelectionAfterMutation)
+2026-04-13 TASK-4.2 remediation-pushed PR:#35 commit:0e150d9 (INTERFACES EditorCanvasProps + doc) CI:24359238228
+2026-04-13 TASK-4.2 ci-failure PR:#35 Actions:24359238228 head:0e150d9 (E2E persistence.happy poll scale degrees 1+2 — app/tests)
+2026-04-13 TASK-4.2 blocking-flag PR:#35 INTERFACES.md edited commit:0e150d9 — Architect review
+2026-04-13 TASK-4.2 pm-brief remediation-r4 PR:#35 lane:Builder+QA persistence E2E
+2026-04-13 TASK-4.2 remediation-pushed PR:#35 commits:355c5fe,49b5183,3e73691 (E2E PUT wait strategies)
+2026-04-13 TASK-4.2 ci-failure PR:#35 Actions:24359972279 head:355c5fe (GET before PUT completed)
+2026-04-13 TASK-4.2 ci-failure PR:#35 Actions:24360173331 head:49b5183 (putReq.response() null)
+2026-04-13 TASK-4.2 ci-failure PR:#35 Actions:24360363016 head:3e73691 (waitForResponse 90s no matching PUT body)

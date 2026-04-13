@@ -1,6 +1,20 @@
 # PM STATE — vYbpad
 
-> PM continuity handoff — **not** a duplicate of `TASK_STATUS.md`. Updated **2026-04-13** — **PAT-029 Step 2 complete**; PR #35/#36 CI polling (Helm PM).
+> PM continuity handoff — **not** a duplicate of `TASK_STATUS.md`. Updated **2026-04-13** — **Priority:** **PR #35 merge is hard gate** before active work on **PR #36** (#36 parked). **Active lane:** #35 **CI remediation (Builder+QA spawned)** → green CI → PAT-027 handshake → Reviewer → Integrator → **then unpark #36** (same loop) → **TASK-4.4** next per dependency order after #36 merges.
+
+---
+
+## PR #35 — Active monitor (polling) — **ON**
+
+- **Cadence (in effect):** **150s (~2.5 min)** between polls (within the **2–3 minute** band). Same command each time:
+  `gh pr view 35 --repo quickthom/vybpad --json statusCheckRollup,headRefOid,mergeStateStatus,state`
+- **Periodic mode (started 2026-04-13):** Background loop appends to **`/tmp/vybpad-pr35-polling.log`** (sleep **150** then poll; repeats). Stop with `pkill -f 'vybpad-pr35-polling'` or kill the job PID if HITL ends monitoring.
+- **What changed vs stalled state:** Explicit **active monitor** flag here + fixed cadence + last-result line below so every PM/HITL touch includes a fresh poll or schedules the next one (no implicit “wait forever”).
+- **Merge-order gate:** **#35 before #36** — unchanged; **#36 stays parked** until #35 lands on `develop`.
+- **Latest CI (PR #35, 2026-04-13):** head **`3e73691`** — [run **`24360363016`](https://github.com/quickthom/vybpad/actions/runs/24360363016)** **`FAILURE`** — E2E **`persistence.happy`**: **`page.waitForResponse`** **90s timeout** (no response matched PUT + body predicate with both scale degrees). Prior **`49b5183`** fail: `putReq.response()` **null** ([`24360173331`](https://github.com/quickthom/vybpad/actions/runs/24360173331)). **Next push:** watch **new** `databaseId` on **`gh run list --branch phase-4/piano-sample-loading`** until **`test` SUCCESS** on current `headRefOid`.
+- **Prior CI (PR #35):** [run **`24359238228`](https://github.com/quickthom/vybpad/actions/runs/24359238228)** on **`0e150d9`** — **`FAILURE`** (E2E `persistence.happy` — GET poll). User snapshot **`24356446158`** @ `3bdedd5` — **superseded**. **Truth:** never treat a superseded run as green.
+- **Next poll:** after Builder+QA push → `gh pr view 35 --json statusCheckRollup` until **`test` conclusion SUCCESS** on **current** `headRefOid` (do not treat old run ids as green).
+- **Last poll (immediate):** see **Checkpoint** (timestamp + JSON summary).
 
 ---
 
@@ -16,8 +30,8 @@
 ## Remote & Tip
 
 - **GitHub:** https://github.com/quickthom/vybpad — `origin`, default **`develop`**.
-- **`develop` (local, main worktree):** Aligned with `origin/develop` at `9060701` (PAT-029 + F-06 + TASK-4.1 history). **2026-04-13 Helm PM:** `git fetch` — no drift vs `origin/develop`.
-- **PAT-029:** On `develop` (`b799146` in history). PR #35 tip `d580624`, PR #36 tip `30de049` — rebased onto `9060701` and pushed (dual `webServer` harness inherited from `develop`).
+- **`develop` / `origin/develop` tip (authoritative):** `f9b8bd5` — verify with `git fetch origin && git rev-parse origin/develop`.
+- **PAT-029:** Dual `webServer` harness lives on `develop`; feature branches must inherit it via rebase onto current `develop`.
 - **Merged PRs:** #1–#23 Phase 0–2; Phase 3: #24–#32; Phase 4 launch: #34 (see `TASK_STATUS.md`).
 - **Sync:** `git fetch origin && npm install` at repo root before any work.
 
@@ -34,6 +48,7 @@
 - **Escalations:** Route architectural ambiguity to Architect via `HITL.md` "Questions for Architect". Only hard product/external blockers go to HITL directly.
 - **Escalation routing correction (HITL):** use a single Architect continuity path/session for architecture escalations; do **not** spawn fresh Architect instances per escalation.
 - **PM model:** gpt-5.4 (HITL directive).
+- **PAT-025 (2026-04-14):** `TASK_STATUS.md` has no live append-only event log; historical lines migrated to `TASK_STATUS_ARCHIVE.md`. Session detail stays in this file and batch-updates the status table.
 
 ---
 
@@ -85,19 +100,21 @@ All other Phase 2 worktrees retired 2026-04-13.
   - `TASK-4.2`: CI failed (`run 24330614635`) with strict Play locator ambiguity and persistence timeout; remediation commit `4f0b488` pushed.
   - `TASK-4.3`: CI failed (`run 24330973093`) after prior code fixes; targeted remediation round 2 launched but was interrupted before completion status.
 - Operational risk: disk quota in this environment impacts local Playwright install and even some shell temp-file operations; CI check status currently pending for both PRs.
-- CI gate tracking snapshot: both PR runs have now failed once; immediate remediation is in progress and next action is CI rerun + delta re-review.
+- **Rebase gate:** **Complete.** Remote heads: **PR #35** `d7cbd0d600213cf20b7016ca32ebaff566e09b7c` (`phase-4/piano-sample-loading`); **PR #36** `2bc5be30a16901737104730ed9c71c0212997c04` (`phase-4/harmony-voicing-engine`). Both verified: `merge-base` includes `f9b8bd529fd24c8c83e104aa616f586c4ade44b8`.
+- **Merge-order gate (user):** Do **not** spawn remediation/reviewer/integrator for **#36** while **#35** is open on `develop`. **#36:** optional passive `gh pr view` / Actions URL only; no Builder/QA pushes toward merge until #35 integrated.
+- **CI — PR #35 (2026-04-13):** Remediation **`d8e6c84`** + **`3bdedd5`**; monitor [run **`24356446158`](https://github.com/quickthom/vybpad/actions/runs/24356446158)** on **`3bdedd5`**. Prior **failure** [`24355475894`](https://github.com/quickthom/vybpad/actions/runs/24355475894)/`9af5c18` (E2E persistence poll) **superseded**.
 
 ---
 
 ## PAT-029 rollout — PM sequence (PR #35 / #36)
 
-**Context:** PAT-029 = Playwright waits for **both** `GET /api/health` (API) and Vite before E2E (`PATTERNS.md`). Step 1 landed on `develop`; Step 2 completed 2026-04-13 (rebase + `--force-with-lease` on both feature branches).
+**Context:** PAT-029 = Playwright waits for **both** `GET /api/health` (API) and Vite before E2E (`PATTERNS.md`). Step 1 landed on `develop`; Step 2 **complete** 2026-04-13 (rebase onto `f9b8bd5` + `--force-with-lease`; tips `d7cbd0d` / `2bc5be30`).
 
 | Step | Owner | Action |
 |------|--------|--------|
 | **1** | **DevOps** | Commit listed PAT-029 files on **`develop`**, push to **`origin/develop`**. Main worktree only (PM/Integrator); do **not** use Builder worktrees for this. If push rejects (remote ahead), `git fetch` and coordinate with HITL before force-push. |
-| **2** | **Builder** (×2, **PAT-017**) | After Step 1: in `task-4-2-piano-samples` → `git fetch && git rebase origin/develop` on `phase-4/piano-sample-loading`, push PR #35. In parallel, `task-4-3-harmony-voicing` → same for `phase-4/harmony-voicing-engine`, PR #36. Resolve conflicts; **preserve** `playwright.config.ts` harness from `develop`. |
-| **3** | **PM + roles** | Monitor GitHub Actions on both PRs. **If failure is CI/workflow/Playwright harness/infra:** spawn **DevOps** to remediate. **If failure is app logic, tests, or feature code:** spawn **Builder + QA** (concurrent). When green, spawn **Reviewer** for final pass if needed. |
+| **2** | **Builder** (×2, **PAT-017**) | **Current bar:** rebase target is **`origin/develop` @ `f9b8bd5`** (refresh with `git fetch`). In `task-4-2-piano-samples` → `git rebase origin/develop` on `phase-4/piano-sample-loading`, push PR #35 (`--force-with-lease`). In parallel, `task-4-3-harmony-voicing` → same for `phase-4/harmony-voicing-engine`, PR #36. Resolve conflicts; **preserve** `playwright.config.ts` / harness from `develop`. |
+| **3** | **PM + roles** | **While #35 unmerged:** focus Actions + sequencing on **#35** only. **If failure:** infra → **DevOps**; app/tests → **Builder + QA**. **When #35 CI green + handshake:** spawn **Reviewer** (#35), then **Integrator** at approval. **#36:** defer active Step-3 execution until **#35 merged** (passive status OK). |
 
 ---
 
@@ -111,6 +128,10 @@ All other Phase 2 worktrees retired 2026-04-13.
 
 ## Checkpoint — Handoff / Resume (2026-04-13)
 
-- **PR #35** tip **`29eec40`** — remediation for failed run `24349784133` pushed (session bootstrap + transport E2E locator); **new CI runs** in progress on branch (e.g. `24351089304`).
-- **PR #36** tip **`407a1cdd`** — CI run `24350860555` **FAILURE**: `client/tests/e2e/helpers/editor.ts` **regex literal** breaks Babel parse (`(?:/` closes `/.../` pattern) → **class: app test harness**; Builder+QA fix in flight.
-- **Active gate:** #35 await fresh CI on `29eec40`; #36 await regex fix + rerun.
+- **Priority:** **#35 merge first** — **#36 parked** (no active remediation/review/integration on #36 until #35 on `develop`).
+- **PR #35 — latest CI (2026-04-13):** head **`3e73691`** — [Actions **`24360363016`](https://github.com/quickthom/vybpad/actions/runs/24360363016)** **`FAILURE`** — E2E **`persistence.happy`**: **`waitForResponse` 90s timeout** (no PUT matched body predicate with both scale degrees; debounced saves may differ). Prior **`49b5183`**: `putReq.response()` **null** ([`24360173331`](https://github.com/quickthom/vybpad/actions/runs/24360173331)). **Next remediation:** Builder+QA — align waiter with final PUT or revert to stable **GET `expect.poll`** / explicit **Save** path. Worktree **`/home/thom/py/vYbpad-worktrees/task-4-2-piano-samples`**. **#36:** **parked**.
+- **PR #35 — prior failure (run [`24359238228`](https://github.com/quickthom/vybpad/actions/runs/24359238228), head **`0e150d9`**):** E2E **`persistence.happy`** — GET poll **150s** timeout — **superseded** by later rounds. **Commits referenced:** QA `1565698`; Builder `57c4f23`; doc `0e150d9` (**`INTERFACES.md`** — **⛔ Architect review** if still on branch).
+- **Queue after #35 green + merged:** **PR #36** active remediation/review/integrate same pattern; then **TASK-4.4** (`scheduler + Tone.Part`) when deps **4.1, 4.2, 4.3, 1A.2** satisfied — **no user prompt required** for PM advance.
+- **2026-04-13 remediation spawn (PR #35) round 2:** Task **Builder** id `3ccdf5e9-61f0-4ef6-8856-79e2324f5f57` → pushed **`d8e6c84`** (EditorLayout: skip GET after POST bootstrap when Router drops `location.state`). Task **QA** id `535357e1-b963-4b8a-b1d8-6bfa93bbf249` → pushed **`3bdedd5`** (E2E: ensure Table entry mode before digit typing). **PR head:** `3bdedd5`.
+- **Polling:** **`gh run list --repo quickthom/vybpad --branch phase-4/piano-sample-loading`** — watch **latest** run for **current** `headRefOid` until **`test` SUCCESS** (never treat superseded run ids as green) → PAT-027 → **Reviewer** (#35) → **Integrator**.
+- **PR #36 (`2bc5be30`):** Passive only; **unpark** after #35 merge.

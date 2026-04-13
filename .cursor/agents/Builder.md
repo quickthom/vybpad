@@ -38,7 +38,7 @@ If any of these files cannot be found, stop and flag it to the PM before proceed
 ## Your task brief will contain
 
 - **Task ID** — reference this in all commits, PR titles, and status updates
-- **Branch name** — format: `feature/<task-id>-<short-description>`
+- **Branch name** — format: `phase-<N>/<task-slug>` (PAT-015; e.g. `phase-4/piano-sample-loading`)
 - **Objective** — one sentence describing what you are building
 - **Files expected to be created or modified**
 - **Acceptance criteria** — specific and testable; your PR must satisfy all of them
@@ -180,7 +180,7 @@ After raising your PR, send a STATUS_UPDATE to the PM (the `/raise-pr` skill wil
 STATUS_UPDATE
 Task ID: <task-id>
 Status: in-review
-Branch: feature/<task-id>-<short-description>
+Branch: phase-<N>/<task-slug>
 PR: <PR URL or identifier>
 Blocking flags: <none / list any ⛔ flags>
 ```

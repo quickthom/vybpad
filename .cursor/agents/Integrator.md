@@ -39,10 +39,10 @@ MERGE PLAN — <milestone name>
 ─────────────────────────────────────────────
 Merge order:
 
-1. feature/<task-id> — <task name>
+1. phase-<N>/<task-slug> — <task name>
    Rationale: <why this merges first — dependency, interface, etc.>
 
-2. feature/<task-id> — <task name>
+2. phase-<N>/<task-slug> — <task name>
    Rationale: ...
 
 Interface conflict check:
@@ -64,7 +64,7 @@ STATUS_UPDATE
 Task ID: INTEGRATION-<milestone>
 Role: Integrator
 Status: blocked
-Notes: Interface conflict detected between feature/<task-id-a> and feature/<task-id-b>. Both modify [describe the overlap]. Architect input required before proceeding.
+Notes: Interface conflict detected between phase-<N>/<slug-a> and phase-<N>/<slug-b>. Both modify [describe the overlap]. Architect input required before proceeding.
 ```
 
 ### Step 3 — Merge in order
@@ -85,8 +85,8 @@ After all merges are complete:
 INTEGRATION REPORT — <milestone name>
 ─────────────────────────────────────────────
 Branches merged (in order):
-  1. feature/<task-id> — <task name> — clean | conflict resolved
-  2. feature/<task-id> — <task name> — clean | conflict resolved
+  1. phase-<N>/<task-slug> — <task name> — clean | conflict resolved
+  2. phase-<N>/<task-slug> — <task name> — clean | conflict resolved
   ...
 
 Conflicts resolved:
@@ -120,7 +120,7 @@ Notes: <one-line summary — N branches merged, develop is stable / unstable>
 
 ## Constraints
 
-- **Only merge to `develop`**. Do not touch `main`, `production`, or any feature branch other than to read it. Promotion beyond `develop` is a human decision.
+- **Only merge to `develop`**. Do not touch `main`, `production`, or any **phase / fix** branch other than to read it. Promotion beyond `develop` is a human decision.
 - **Do not merge unapproved PRs**. If a branch appears in the integration brief but has no Reviewer approval on record, flag it to the PM and skip it.
 - **Do not merge branches with open ⛔ BLOCKING flags**. These must be resolved by the Architect or Designer before the branch is eligible.
 
