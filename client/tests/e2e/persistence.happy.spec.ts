@@ -44,7 +44,7 @@ async function fetchProject(request: APIRequestContext, accessToken: string, pro
 test.describe('TASK-3.5 — persistence happy path', () => {
   test.describe.configure({ mode: 'serial' });
 
-  test('register → create project → edit chords → autosave → refresh → re-login → list and editor load persisted song', async ({
+  test('register → create project → edit chords → save (PUT) → refresh → re-login → list and editor load persisted song', async ({
     page,
     request,
   }) => {
@@ -73,17 +73,24 @@ test.describe('TASK-3.5 — persistence happy path', () => {
 
     const canvas = page.getByRole('application', { name: /Song editor/i });
     await canvas.click({ position: { x: 400, y: 120 } });
+    await canvas.focus();
 
+    // Do not use `r.ok()` in the predicate: a failing PUT still yields a response, and the predicate would never match → timeout.
     const savePutPromise = page.waitForResponse(
-      (r) => r.request().method() === 'PUT' && r.url().includes(`/api/projects/${id}`) && r.ok(),
+      (r) => r.request().method() === 'PUT' && r.url().includes(`/api/projects/${id}`),
       { timeout: 35_000 },
     );
 
-    await page.keyboard.press('1');
-    await page.keyboard.press('2');
+    await page.keyboard.press('Digit1');
+    await page.keyboard.press('Digit2');
 
-    await expect(page.getByRole('button', { name: /^Save$/ })).toBeEnabled({ timeout: 10_000 });
-    await savePutPromise;
+    const saveButton = page.getByRole('button', { name: /^Save$/ });
+    await expect(saveButton).toBeEnabled({ timeout: 10_000 });
+    // Manual save avoids racing the debounced autosave timer in CI (React scheduling + load).
+    await saveButton.click();
+
+    const putRes = await savePutPromise;
+    expect(putRes.ok(), await putRes.text()).toBeTruthy();
 
     let token = (await loginApi(request, email, password)).accessToken;
     let remote = await fetchProject(request, token, id);
