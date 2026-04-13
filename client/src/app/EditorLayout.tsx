@@ -1,5 +1,5 @@
-import type { ProjectResponse } from '@vybpad/shared';
-import { useCallback, useEffect, useState } from 'react';
+import type { ProjectResponse, SongData } from '@vybpad/shared';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import { MeasureBar } from '../components/MeasureBar';
@@ -10,7 +10,15 @@ import { buildDefaultSong, useSongStore } from '../store/songStore';
 import { useToastStore } from '../store/toastStore';
 import { useUIStore } from '../store/uiStore';
 import { projectsApi } from '../utils/apiClient';
-import { getApiErrorMessage } from '../utils/errorMessages';
+import { getApiErrorMessage, isApiTransportFailure } from '../utils/errorMessages';
+
+/** TASK-3.4: idle delay after the last edit before auto PUT (coalesces rapid edits). */
+const AUTOSAVE_DEBOUNCE_MS = 1500;
+
+/** Compare the song snapshot we PUT with current store state to detect edits during an in-flight save. */
+function songMatchesSentBaseline(sent: SongData, now: SongData): boolean {
+  return JSON.stringify(sent) === JSON.stringify(now);
+}
 
 /** Passed from `ProjectListPage` after POST create so the editor can hydrate without a duplicate GET. */
 export type EditorLocationState = { project?: ProjectResponse };
@@ -44,6 +52,14 @@ export function EditorLayout() {
     projectId ? 'loading' : 'ready',
   );
   const [saveBusy, setSaveBusy] = useState(false);
+  /** Mirrors `saveBusy` for async guards without putting `saveBusy` in `useCallback` deps (would reset debounce). */
+  const saveBusyRef = useRef(false);
+  const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** When a save is already in flight, coalesce another attempt after it finishes (debounce may fire mid-PUT). */
+  const queuedSaveRef = useRef(false);
+  const runProjectSaveRef = useRef<(source: 'manual' | 'auto') => Promise<void>>(async () => {});
+  const projectNameRef = useRef(projectName);
+  projectNameRef.current = projectName;
 
   const viewport = useUIStore((s) => s.viewport);
   const selection = useUIStore((s) => s.selection);
@@ -122,23 +138,99 @@ export function EditorLayout() {
     navigate('/login', { replace: true });
   }
 
+  const runProjectSave = useCallback(
+    async (source: 'manual' | 'auto') => {
+      if (!projectId || loadStatus !== 'ready') return;
+      if (!useSongStore.getState().isDirty) return;
+      if (saveBusyRef.current) {
+        queuedSaveRef.current = true;
+        return;
+      }
+      saveBusyRef.current = true;
+      setSaveBusy(true);
+      try {
+        const current = useSongStore.getState().song;
+        const pn = projectNameRef.current;
+        const updated = await projectsApi.update(projectId, {
+          songData: current,
+          ...(pn !== null ? { name: pn } : {}),
+        });
+        const latest = useSongStore.getState().song;
+        if (songMatchesSentBaseline(current, latest)) {
+          loadSong(updated.songData);
+          setProjectName(updated.name);
+          if (source === 'manual') {
+            showSuccessToast('Saved.');
+          }
+        } else {
+          // Newer edits landed while PUT was in flight — do not clobber with server echo; save again.
+          queuedSaveRef.current = true;
+        }
+      } catch (err) {
+        showErrorToast(getApiErrorMessage(err));
+        // Re-queue autosave only for transport failures (PAT-001). Typed API errors must not spin retries.
+        if (
+          source === 'auto' &&
+          isApiTransportFailure(err) &&
+          useSongStore.getState().isDirty &&
+          projectId &&
+          loadStatus === 'ready'
+        ) {
+          if (autosaveTimerRef.current) {
+            clearTimeout(autosaveTimerRef.current);
+            autosaveTimerRef.current = null;
+          }
+          autosaveTimerRef.current = setTimeout(() => {
+            autosaveTimerRef.current = null;
+            void runProjectSaveRef.current('auto');
+          }, AUTOSAVE_DEBOUNCE_MS);
+        }
+      } finally {
+        saveBusyRef.current = false;
+        setSaveBusy(false);
+        if (queuedSaveRef.current && useSongStore.getState().isDirty) {
+          queuedSaveRef.current = false;
+          void runProjectSaveRef.current('auto');
+        }
+      }
+    },
+    [loadSong, loadStatus, projectId, showErrorToast, showSuccessToast],
+  );
+
+  runProjectSaveRef.current = runProjectSave;
+
+  // TASK-3.4: debounced PUT while a project is open and the document is dirty (coalesces rapid edits).
+  useEffect(() => {
+    if (!projectId || loadStatus !== 'ready' || !isDirty) {
+      if (autosaveTimerRef.current) {
+        clearTimeout(autosaveTimerRef.current);
+        autosaveTimerRef.current = null;
+      }
+      return;
+    }
+    if (autosaveTimerRef.current) {
+      clearTimeout(autosaveTimerRef.current);
+    }
+    autosaveTimerRef.current = setTimeout(() => {
+      autosaveTimerRef.current = null;
+      // Return promise so Vitest fake timers (`runAllTimersAsync`) await the PUT + store update.
+      return runProjectSave('auto');
+    }, AUTOSAVE_DEBOUNCE_MS);
+    return () => {
+      if (autosaveTimerRef.current) {
+        clearTimeout(autosaveTimerRef.current);
+        autosaveTimerRef.current = null;
+      }
+    };
+  }, [song, isDirty, projectId, loadStatus, runProjectSave]);
+
   async function handleSave() {
     if (!projectId || saveBusy || loadStatus !== 'ready') return;
-    setSaveBusy(true);
-    try {
-      const current = useSongStore.getState().song;
-      const updated = await projectsApi.update(projectId, {
-        songData: current,
-        ...(projectName !== null ? { name: projectName } : {}),
-      });
-      loadSong(updated.songData);
-      setProjectName(updated.name);
-      showSuccessToast('Saved.');
-    } catch (err) {
-      showErrorToast(getApiErrorMessage(err));
-    } finally {
-      setSaveBusy(false);
+    if (autosaveTimerRef.current) {
+      clearTimeout(autosaveTimerRef.current);
+      autosaveTimerRef.current = null;
     }
+    await runProjectSave('manual');
   }
 
   const headerTitle = song.metadata.title || 'vYbpad';
