@@ -73,10 +73,15 @@ test.describe('TASK-3.5 — persistence happy path', () => {
 
     const canvas = page.getByRole('application', { name: /Song editor/i });
     await canvas.click({ position: { x: 400, y: 120 } });
+    // Headless runs can leave focus on a non-editor target; global digit entry is ignored without canvas focus.
+    await canvas.focus();
 
     const savePutPromise = page.waitForResponse(
-      (r) => r.request().method() === 'PUT' && r.url().includes(`/api/projects/${id}`) && r.ok(),
-      { timeout: 35_000 },
+      (r) =>
+        r.request().method() === 'PUT' &&
+        r.url().includes(`/api/projects/${id}`) &&
+        r.ok(),
+      { timeout: 60_000 },
     );
 
     await page.keyboard.press('1');

@@ -4,6 +4,8 @@
 
 import { expect, test } from '@playwright/test';
 
+import { getTransportPlayButton, getTransportToolbar } from './helpers/transport';
+
 function uniqueSuffix(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
@@ -31,10 +33,10 @@ test.describe('TASK-4.2 — piano sample loading', () => {
 
     await expect(page.getByText('Loading project…')).toBeHidden({ timeout: 30_000 });
 
-    const transport = page.getByRole('toolbar', { name: 'Transport' });
+    const transport = getTransportToolbar(page);
     await expect(transport).toHaveAttribute('data-audio-ready', 'false');
 
-    const playBtn = transport.getByRole('button', { name: /Start audio and play|Play/i });
+    const playBtn = getTransportPlayButton(transport);
     await playBtn.click();
 
     await expect
@@ -75,16 +77,16 @@ test.describe('TASK-4.2 — piano sample loading', () => {
 
     await expect(page.getByText('Loading project…')).toBeHidden({ timeout: 30_000 });
 
-    const transport = page.getByRole('toolbar', { name: 'Transport' });
-    await transport.getByRole('button', { name: /Start audio and play|Play/i }).click();
+    const transport = getTransportToolbar(page);
+    await getTransportPlayButton(transport).click();
     await expect(transport).toHaveAttribute('data-audio-ready', 'true', { timeout: 45_000 });
 
     await page.reload();
     await expect(page.getByText('Loading project…')).toBeHidden({ timeout: 30_000 });
 
-    const transportAfter = page.getByRole('toolbar', { name: 'Transport' });
+    const transportAfter = getTransportToolbar(page);
     await expect(transportAfter).toHaveAttribute('data-audio-ready', 'false');
-    await transportAfter.getByRole('button', { name: /Start audio and play|Play/i }).click();
+    await getTransportPlayButton(transportAfter).click();
 
     await expect(transportAfter).toHaveAttribute('data-audio-ready', 'true', { timeout: 45_000 });
     await expect(transportAfter).toHaveAttribute('aria-busy', 'false');
@@ -121,8 +123,8 @@ test.describe('TASK-4.2 — piano sample loading', () => {
 
     await expect(page.getByText('Loading project…')).toBeHidden({ timeout: 30_000 });
 
-    const transport = page.getByRole('toolbar', { name: 'Transport' });
-    const playBtn = transport.getByRole('button', { name: /Start audio and play|Play/i });
+    const transport = getTransportToolbar(page);
+    const playBtn = getTransportPlayButton(transport);
 
     await playBtn.evaluate((el: HTMLButtonElement) => {
       for (let i = 0; i < 40; i += 1) {
