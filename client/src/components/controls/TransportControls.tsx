@@ -46,6 +46,7 @@ export function TransportControls({
         {isPlaying ? (
           <button
             type="button"
+            data-testid="vybpad-transport-pause"
             className="inline-flex h-10 min-w-[40px] items-center justify-center rounded-lg bg-[var(--color-primary,#4F46E5)] px-3 text-sm font-medium text-[var(--color-text-on-primary,#FFFFFF)] outline-none transition hover:bg-[var(--color-primary-hover,#4338CA)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
             aria-label="Pause playback"
             aria-pressed="true"
@@ -57,6 +58,7 @@ export function TransportControls({
         ) : (
           <button
             type="button"
+            data-testid="vybpad-transport-play"
             className="inline-flex h-10 min-w-[40px] items-center justify-center rounded-lg bg-[var(--color-primary,#4F46E5)] px-3 text-sm font-medium text-[var(--color-text-on-primary,#FFFFFF)] outline-none transition hover:bg-[var(--color-primary-hover,#4338CA)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
             aria-label={initStatus === 'ready' ? 'Play' : 'Start audio and play'}
             disabled={playDisabled}

@@ -7,8 +7,8 @@
  *
  * Note-level audio assertions are out of scope until scheduler 4.4; gates are crash/readiness only.
  *
- * Selectors: `helpers/transport` — toolbar via `[role="toolbar"][data-audio-ready]` (TASK-4.2 CI);
- * play control anchored to avoid strict-mode collisions; readiness polls `data-audio-ready` + `aria-busy`.
+ * Selectors: `helpers/transport` — `data-testid` toolbar + play (TASK-4.3); readiness polls `data-audio-ready`
+ * + `aria-busy`. `clickTransportPlayAndAwaitReady` optionally observes piano sample load UI then asserts ready.
  */
 
 import type { SongData } from '@vybpad/shared';
@@ -19,12 +19,7 @@ import {
   buildVoicingHeavySong,
 } from '../fixtures/voicingHeavySong';
 import { waitForEditorRouteReady } from './helpers/editorReady';
-import {
-  expectTransportPlaybackNotReady,
-  expectTransportPlaybackReady,
-  getTransportPlayButton,
-  getTransportToolbar,
-} from './helpers/transport';
+import { clickTransportPlayAndAwaitReady, getTransportToolbar } from './helpers/transport';
 
 const API_BASE = (process.env.PLAYWRIGHT_API_URL ?? 'http://127.0.0.1:3001').replace(/\/+$/, '');
 
@@ -109,9 +104,7 @@ test.describe('TASK-4.3 — harmony voicing playback resilience (E2E)', () => {
     await waitForEditorRouteReady(page);
 
     const transport = getTransportToolbar(page);
-    await expectTransportPlaybackNotReady(transport);
-    await getTransportPlayButton(transport).click();
-    await expectTransportPlaybackReady(transport);
+    await clickTransportPlayAndAwaitReady(transport);
 
     expect(pageErrors, `pageerror: ${pageErrors.map((e) => e.message).join('; ')}`).toHaveLength(0);
     expect(consoleErrors, `console errors: ${consoleErrors.join(' | ')}`).toHaveLength(0);
@@ -151,17 +144,13 @@ test.describe('TASK-4.3 — harmony voicing playback resilience (E2E)', () => {
     await waitForEditorRouteReady(page);
 
     const transport1 = getTransportToolbar(page);
-    await expectTransportPlaybackNotReady(transport1);
-    await getTransportPlayButton(transport1).click();
-    await expectTransportPlaybackReady(transport1);
+    await clickTransportPlayAndAwaitReady(transport1);
 
     await page.reload();
     await waitForEditorRouteReady(page);
 
     const transport2 = getTransportToolbar(page);
-    await expectTransportPlaybackNotReady(transport2);
-    await getTransportPlayButton(transport2).click();
-    await expectTransportPlaybackReady(transport2);
+    await clickTransportPlayAndAwaitReady(transport2);
   });
 
   test('scenario C — edge progression (borrowed / secondary / inversion mix): no page or console errors after play', async ({
@@ -209,9 +198,7 @@ test.describe('TASK-4.3 — harmony voicing playback resilience (E2E)', () => {
     await waitForEditorRouteReady(page);
 
     const transport = getTransportToolbar(page);
-    await expectTransportPlaybackNotReady(transport);
-    await getTransportPlayButton(transport).click();
-    await expectTransportPlaybackReady(transport);
+    await clickTransportPlayAndAwaitReady(transport);
 
     expect(pageErrors, `pageerror: ${pageErrors.map((e) => e.message).join('; ')}`).toHaveLength(0);
     expect(consoleErrors, `console errors: ${consoleErrors.join(' | ')}`).toHaveLength(0);
