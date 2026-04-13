@@ -13,7 +13,10 @@
  * arms entry — see useKeyboard). We assert `Entry mode Table` before typing so CI cannot silently run in Text.
  *
  * Autosave: after edits, wait for `Save` enabled (dirty), then poll GET /api/projects/:id until the server
- * reflects ≥2 chords — debounced PUT is 1500ms (EditorLayout); poll timeout must cover debounce + slow CI.
+ * reflects chord events with scale degrees 1 and 2 somewhere in `songData.measures` — table-mode caret
+ * advance can place the second chord in `measures[1]` while the first remains in `measures[0]`; anchoring
+ * only on `measures[0].chords.length` is therefore wrong for INTERFACES `SongData` (ordered measures[]).
+ * Debounced PUT is 1500ms (EditorLayout); poll timeout must cover debounce + slow CI.
  * Do not attach `waitForResponse` to PUT: autosave may complete before the listener, causing flaky timeouts.
  *
  * Shell: `waitForEditorRouteReady` ensures canvas + transport are present before chord entry (no hydration races).
@@ -86,6 +89,22 @@ async function fetchProject(request: APIRequestContext, accessToken: string, pro
   }>;
 }
 
+/** True when persisted `SongData` contains at least one diatonic chord with degree 1 and one with degree 2 (any measure). */
+function songDataHasChordScaleDegrees1And2(songData: {
+  measures: Array<{ chords: Array<{ scaleDegree: number }> }>;
+}): boolean {
+  let has1 = false;
+  let has2 = false;
+  for (const m of songData.measures) {
+    for (const c of m.chords ?? []) {
+      if (c.scaleDegree === 1) has1 = true;
+      if (c.scaleDegree === 2) has2 = true;
+      if (has1 && has2) return true;
+    }
+  }
+  return false;
+}
+
 test.describe('TASK-3.5 — persistence happy path', () => {
   test.describe.configure({ mode: 'serial', timeout: 180_000 });
 
@@ -127,25 +146,25 @@ test.describe('TASK-3.5 — persistence happy path', () => {
 
     await expect(page.getByRole('button', { name: /^Save$/ })).toBeEnabled({ timeout: 30_000 });
 
+    const pollToken = (await loginApi(request, email, password)).accessToken;
     await expect
       .poll(
         async () => {
-          const token = (await loginApi(request, email, password)).accessToken;
-          const remote = await fetchProject(request, token, id);
-          return (remote.songData.measures[0]?.chords?.length ?? 0) >= 2;
+          const remote = await fetchProject(request, pollToken, id);
+          return songDataHasChordScaleDegrees1And2(remote.songData);
         },
         {
           timeout: 150_000,
           intervals: [100, 200, 400, 800, 1500, 2500],
           message:
-            'Expected debounced autosave to persist ≥2 entered chords (poll GET /api/projects/:id until songData reflects the PUT)',
+            'Expected debounced autosave to persist entered chords with scale degrees 1 and 2 (poll GET /api/projects/:id until songData reflects the PUT; chords may span measures per caret advance)',
         },
       )
       .toBe(true);
 
     let token = (await loginApi(request, email, password)).accessToken;
     let remote = await fetchProject(request, token, id);
-    expect(remote.songData.measures[0]?.chords?.length ?? 0).toBeGreaterThanOrEqual(2);
+    expect(songDataHasChordScaleDegrees1And2(remote.songData)).toBe(true);
 
     await page.reload();
     await waitForEditorRouteReady(page);
@@ -169,10 +188,9 @@ test.describe('TASK-3.5 — persistence happy path', () => {
 
     token = (await loginApi(request, email, password)).accessToken;
     remote = await fetchProject(request, token, id);
-    const chords = remote.songData.measures[0]?.chords ?? [];
-    expect(chords.length).toBeGreaterThanOrEqual(2);
-    const degrees = chords.map((c) => c.scaleDegree).sort((a, b) => a - b);
-    expect(degrees).toContain(1);
-    expect(degrees).toContain(2);
+    const chords = remote.songData.measures.flatMap((m) => m.chords ?? []);
+    const degrees = chords.map((c) => c.scaleDegree);
+    expect(degrees.filter((d) => d === 1).length).toBeGreaterThanOrEqual(1);
+    expect(degrees.filter((d) => d === 2).length).toBeGreaterThanOrEqual(1);
   });
 });
