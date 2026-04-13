@@ -1,3 +1,7 @@
+import { existsSync, readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 import { defineConfig, devices } from '@playwright/test';
 import { config as loadRootEnv } from 'dotenv';
 import { dirname, join } from 'node:path';
@@ -11,6 +15,40 @@ import { fileURLToPath } from 'node:url';
 const repoRoot = dirname(fileURLToPath(import.meta.url));
 loadRootEnv({ path: join(repoRoot, '.env'), quiet: true });
 
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+/**
+ * Populate `process.env` from repo-root `.env` before webServer children spawn.
+ * Playwright does not load `.env` automatically; without this, the API process may miss
+ * `DATABASE_URL` / JWT secrets while `/api/health` still returns 200 (ENVIRONMENTS.md).
+ * Does not override variables already set in the environment (CI, shell).
+ */
+function loadRootEnvFile(): void {
+  const envPath = resolve(__dirname, '.env');
+  if (!existsSync(envPath)) return;
+  const text = readFileSync(envPath, 'utf8');
+  for (let raw of text.split('\n')) {
+    const line = raw.trim();
+    if (!line || line.startsWith('#')) continue;
+    const unexported = line.startsWith('export ') ? line.slice(7).trim() : line;
+    const eq = unexported.indexOf('=');
+    if (eq <= 0) continue;
+    const key = unexported.slice(0, eq).trim();
+    let val = unexported.slice(eq + 1).trim();
+    if (
+      (val.startsWith('"') && val.endsWith('"')) ||
+      (val.startsWith("'") && val.endsWith("'"))
+    ) {
+      val = val.slice(1, -1);
+    }
+    if (key && process.env[key] === undefined) {
+      process.env[key] = val;
+    }
+  }
+}
+
+loadRootEnvFile();
+
 /**
  * E2E against the Vite client + Fastify API (ARCHITECTURE.md — Playwright).
  * @see ENVIRONMENTS.md — local E2E prerequisites and env vars.
@@ -23,7 +61,8 @@ const apiHealthUrl = `${apiOrigin}/api/health`;
 export default defineConfig({
   testDir: './client/tests/e2e',
   timeout: 120_000,
-  expect: { timeout: 15_000 },
+  /** CPU-starved CI agents need headroom for auth, client navigations, and Web Audio init (TASK-4.3 E2E). */
+  expect: { timeout: 45_000 },
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,

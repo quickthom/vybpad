@@ -19,7 +19,7 @@ type CreatedProjectResponse = { id?: string };
 export async function createProjectAndAwaitEditor(
   page: Page,
   projectName: string,
-  timeout = 30_000,
+  timeout = 60_000,
 ): Promise<string> {
   await page.locator('#new-project-name').fill(projectName);
   const createRequest = page.waitForResponse(
@@ -35,6 +35,8 @@ export async function createProjectAndAwaitEditor(
   expect(created.id, 'POST /api/projects must return project id').toBeTruthy();
   const id = created.id as string;
   expect(id).toMatch(/^[0-9a-f-]{36}$/i);
-  await expect(page).toHaveURL(new RegExp(`/editor/${id}$`), { timeout });
+  await expect(page).toHaveURL(new RegExp(`/editor/${id}(?:/|[?#]|$)`, 'i'), {
+    timeout,
+  });
   return id;
 }

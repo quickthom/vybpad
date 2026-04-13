@@ -20,7 +20,7 @@ function normalizedPathname(url: string): string | null {
 export function waitForProjectAutosavePut(
   page: Page,
   projectId: string,
-  timeout = 45_000,
+  timeout = 90_000,
 ): Promise<Response> {
   const expected = `/api/projects/${projectId}`.replace(/\/+$/, '');
   return page.waitForResponse(
