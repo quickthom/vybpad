@@ -12,9 +12,11 @@
  * Entry mode: Table mode is required for digit-only chord adds (Text mode ignores digits until a duration key
  * arms entry — see useKeyboard). We assert `Entry mode Table` before typing so CI cannot silently run in Text.
  *
- * Autosave: after edits, wait for `Save` enabled (dirty), then `waitForRequest` on PUT /api/projects/:id whose
- * JSON body already contains scale degrees 1 and 2 (debounced save reflects both chord adds). Register the
- * waiter **before** typing so a fast PUT is never missed. Then assert GET /api/projects/:id matches (contract).
+ * Autosave: after edits, wait for `Save` enabled (dirty), then match PUT /api/projects/:id whose JSON body
+ * already contains scale degrees 1 and 2 (debounced save reflects both chord adds). Register the waiter
+ * **before** typing so a fast PUT is never missed. **Await `request.response()`** after `waitForRequest`:
+ * the waiter fires when the request is issued; without waiting for the response, a contract GET can race
+ * the server and read stale song_data. Then assert GET /api/projects/:id matches (contract).
  * Table-mode caret advance can place the second chord in `measures[1]` while the first remains in
  * `measures[0]`; anchoring only on `measures[0].chords.length` is wrong for INTERFACES `SongData`.
  * Debounced PUT is 1500ms (EditorLayout); request timeout must cover debounce + slow CI.
@@ -143,7 +145,7 @@ test.describe('TASK-3.5 — persistence happy path', () => {
     await focusChordStripForDigitEntry(canvas);
 
     /** Register before typing so we never miss a fast PUT; predicate matches debounced payload (both degrees), not an earlier coalesced save. */
-    const persistedPut = page.waitForRequest(
+    const persistedPutPromise = page.waitForRequest(
       (req) => {
         if (req.method() !== 'PUT') return false;
         if (!req.url().includes(`/api/projects/${id}`)) return false;
@@ -164,7 +166,10 @@ test.describe('TASK-3.5 — persistence happy path', () => {
 
     await expect(page.getByRole('button', { name: /^Save$/ })).toBeEnabled({ timeout: 30_000 });
 
-    await persistedPut;
+    const putReq = await persistedPutPromise;
+    const putRes = await putReq.response();
+    expect(putRes, 'PUT should receive a response').toBeTruthy();
+    expect(putRes!.ok(), putRes ? await putRes.text() : '').toBeTruthy();
 
     let token = (await loginApi(request, email, password)).accessToken;
     let remote = await fetchProject(request, token, id);
