@@ -7,6 +7,7 @@ import { ToastHost } from '../components/common/ToastHost';
 import { ProjectListPage } from '../components/projects/ProjectListPage';
 import { useAuthStore } from '../store/authStore';
 import { EditorLayout } from './EditorLayout';
+import { ensureSessionBootstrapped } from './sessionBootstrap';
 
 /**
  * Run cookie refresh before routing so `RequireAuth` does not redirect to `/login` on full reload
@@ -28,14 +29,17 @@ function AuthBootstrap({ children }: { children: ReactNode }) {
         if (!cancelled) setSessionReady(true);
         return;
       }
-      try {
-        await useAuthStore.getState().refreshToken();
-        if (cancelled) return;
-        if (location.pathname === '/' || location.pathname === '/login' || location.pathname === '/register') {
-          navigate('/projects', { replace: true });
-        }
-      } catch {
-        /* no valid refresh cookie */
+      await ensureSessionBootstrapped();
+      if (cancelled) return;
+      // Do not steal focus from deep links (`/editor/:id`) after a reload.
+      // Only redirect from public entry routes once refresh succeeds.
+      if (
+        useAuthStore.getState().accessToken &&
+        (location.pathname === '/' ||
+          location.pathname === '/login' ||
+          location.pathname === '/register')
+      ) {
+        navigate('/projects', { replace: true });
       }
       if (!cancelled) setSessionReady(true);
     })();
@@ -60,6 +64,33 @@ function AuthBootstrap({ children }: { children: ReactNode }) {
 
 function RequireAuth({ children }: { children: ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const [sessionChecked, setSessionChecked] = useState(() => !!useAuthStore.getState().accessToken);
+
+  useEffect(() => {
+    if (useAuthStore.getState().accessToken) {
+      setSessionChecked(true);
+      return;
+    }
+    let cancelled = false;
+    void ensureSessionBootstrapped().finally(() => {
+      if (!cancelled) setSessionChecked(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (!sessionChecked) {
+    return (
+      <div
+        className="flex min-h-screen items-center justify-center bg-[var(--color-app-bg,#F3F4F6)] px-4 text-sm text-[var(--color-text-secondary,#4B5563)]"
+        role="status"
+        aria-live="polite"
+      >
+        Loading session…
+      </div>
+    );
+  }
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
