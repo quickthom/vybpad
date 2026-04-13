@@ -2,10 +2,13 @@ import type { ProjectResponse, SongData } from '@vybpad/shared';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
+import { TransportControls } from '../components/controls/TransportControls';
 import { MeasureBar } from '../components/MeasureBar';
 import { EditorCanvas } from '../components/editor/EditorCanvas';
 import { EntryModeToggle } from '../components/editor/EntryModeToggle';
+import { formatTransportBeat } from '../engine/audio';
 import { useAuthStore } from '../store/authStore';
+import { syncPlaybackEngineWithSong, usePlaybackStore } from '../store/playbackStore';
 import { buildDefaultSong, useSongStore } from '../store/songStore';
 import { useToastStore } from '../store/toastStore';
 import { useUIStore } from '../store/uiStore';
@@ -42,6 +45,17 @@ export function EditorLayout() {
   const editNote = useSongStore((s) => s.editNote);
   const addMeasures = useSongStore((s) => s.addMeasures);
   const deleteMeasures = useSongStore((s) => s.deleteMeasures);
+  const updateMetadata = useSongStore((s) => s.updateMetadata);
+
+  const playbackTick = usePlaybackStore((s) => s.currentTick);
+  const isPlaying = usePlaybackStore((s) => s.isPlaying);
+  const audioReadyState = usePlaybackStore((s) => s.audioReadyState);
+  const audioErrorMessage = usePlaybackStore((s) => s.audioErrorMessage);
+  const initializeAudioFromUserGesture = usePlaybackStore((s) => s.initializeAudioFromUserGesture);
+  const playbackPlay = usePlaybackStore((s) => s.play);
+  const playbackPause = usePlaybackStore((s) => s.pause);
+  const playbackStop = usePlaybackStore((s) => s.stop);
+  const playbackRewind = usePlaybackStore((s) => s.rewind);
 
   const showErrorToast = useToastStore((s) => s.showError);
   const showSuccessToast = useToastStore((s) => s.showSuccess);
@@ -72,8 +86,13 @@ export function EditorLayout() {
   const colorScheme = useUIStore((s) => s.colorScheme);
 
   const [selectedMeasures, setSelectedMeasures] = useState<[number, number] | null>(null);
+  const [playBootstrapBusy, setPlayBootstrapBusy] = useState(false);
 
   const getSongAfterMutation = useCallback(() => useSongStore.getState().song, []);
+
+  useEffect(() => {
+    syncPlaybackEngineWithSong();
+  }, [song]);
 
   // Load song for `/editor/:projectId` (GET) or hydrate from navigation state after POST /projects (no duplicate GET).
   useEffect(() => {
@@ -236,6 +255,27 @@ export function EditorLayout() {
   const headerTitle = song.metadata.title || 'vYbpad';
   const saveDisabled = !projectId || !isDirty || saveBusy || loadStatus !== 'ready';
 
+  const currentBeatDisplay = formatTransportBeat(song, playbackTick ?? 0);
+
+  async function handleTransportPlay() {
+    if (usePlaybackStore.getState().audioReadyState === 'ready') {
+      playbackPlay();
+      return;
+    }
+    setPlayBootstrapBusy(true);
+    try {
+      await initializeAudioFromUserGesture();
+      const st = usePlaybackStore.getState();
+      if (st.audioReadyState === 'ready') {
+        st.play();
+      } else if (st.audioErrorMessage) {
+        showErrorToast(st.audioErrorMessage);
+      }
+    } finally {
+      setPlayBootstrapBusy(false);
+    }
+  }
+
   return (
     <div className="flex min-h-screen flex-col bg-[var(--color-app-bg,#F3F4F6)] text-[var(--color-text-primary,#111827)]">
       <header className="flex min-h-[48px] flex-wrap items-start justify-between gap-3 border-b border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)] px-4 py-3">
@@ -279,6 +319,23 @@ export function EditorLayout() {
           </button>
         </div>
       </header>
+      <TransportControls
+        isPlaying={isPlaying}
+        tempo={song.metadata.tempo}
+        currentBeat={currentBeatDisplay}
+        audioReadyState={audioReadyState}
+        audioErrorMessage={audioErrorMessage}
+        isBootstrapping={playBootstrapBusy}
+        onPlay={() => void handleTransportPlay()}
+        onPause={playbackPause}
+        onStop={playbackStop}
+        onRewind={playbackRewind}
+        onTempoChange={(bpm) => {
+          const n = Math.round(bpm);
+          if (!Number.isFinite(n) || n < 20 || n > 300) return;
+          updateMetadata({ tempo: n });
+        }}
+      />
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <main
           className="min-h-0 flex-1 overflow-x-auto p-4"
@@ -293,7 +350,7 @@ export function EditorLayout() {
               song={song}
               viewport={viewport}
               selection={selection}
-              playbackTick={null}
+              playbackTick={playbackTick}
               activeVoice={activeVoice}
               entryMode={entryMode}
               showGuides={showGuides}
