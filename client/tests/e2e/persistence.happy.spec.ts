@@ -12,12 +12,12 @@
  * Entry mode: Table mode is required for digit-only chord adds (Text mode ignores digits until a duration key
  * arms entry — see useKeyboard). We assert `Entry mode Table` before typing so CI cannot silently run in Text.
  *
- * Autosave: after edits, wait for `Save` enabled (dirty), then poll GET /api/projects/:id until the server
- * reflects chord events with scale degrees 1 and 2 somewhere in `songData.measures` — table-mode caret
- * advance can place the second chord in `measures[1]` while the first remains in `measures[0]`; anchoring
- * only on `measures[0].chords.length` is therefore wrong for INTERFACES `SongData` (ordered measures[]).
- * Debounced PUT is 1500ms (EditorLayout); poll timeout must cover debounce + slow CI.
- * Do not attach `waitForResponse` to PUT: autosave may complete before the listener, causing flaky timeouts.
+ * Autosave: after edits, wait for `Save` enabled (dirty), then `waitForRequest` on PUT /api/projects/:id whose
+ * JSON body already contains scale degrees 1 and 2 (debounced save reflects both chord adds). Register the
+ * waiter **before** typing so a fast PUT is never missed. Then assert GET /api/projects/:id matches (contract).
+ * Table-mode caret advance can place the second chord in `measures[1]` while the first remains in
+ * `measures[0]`; anchoring only on `measures[0].chords.length` is wrong for INTERFACES `SongData`.
+ * Debounced PUT is 1500ms (EditorLayout); request timeout must cover debounce + slow CI.
  *
  * Shell: `waitForEditorRouteReady` ensures canvas + transport are present before chord entry (no hydration races).
  */
@@ -141,26 +141,30 @@ test.describe('TASK-3.5 — persistence happy path', () => {
     // useKeyboard (`isEditableKeyboardTarget`). Blur before chord entry (TASK-4.2 CI remediation).
     await page.locator('#transport-tempo-input').blur();
     await focusChordStripForDigitEntry(canvas);
+
+    /** Register before typing so we never miss a fast PUT; predicate matches debounced payload (both degrees), not an earlier coalesced save. */
+    const persistedPut = page.waitForRequest(
+      (req) => {
+        if (req.method() !== 'PUT') return false;
+        if (!req.url().includes(`/api/projects/${id}`)) return false;
+        try {
+          const body = req.postDataJSON() as {
+            songData?: { measures: Array<{ chords: Array<{ scaleDegree: number }> }> };
+          };
+          return !!(body.songData && songDataHasChordScaleDegrees1And2(body.songData));
+        } catch {
+          return false;
+        }
+      },
+      { timeout: 90_000 },
+    );
+
     // Slower typing avoids coalescing both digits before the first chord mutation on slow CI workers.
     await page.keyboard.type('12', { delay: 120 });
 
     await expect(page.getByRole('button', { name: /^Save$/ })).toBeEnabled({ timeout: 30_000 });
 
-    const pollToken = (await loginApi(request, email, password)).accessToken;
-    await expect
-      .poll(
-        async () => {
-          const remote = await fetchProject(request, pollToken, id);
-          return songDataHasChordScaleDegrees1And2(remote.songData);
-        },
-        {
-          timeout: 150_000,
-          intervals: [100, 200, 400, 800, 1500, 2500],
-          message:
-            'Expected debounced autosave to persist entered chords with scale degrees 1 and 2 (poll GET /api/projects/:id until songData reflects the PUT; chords may span measures per caret advance)',
-        },
-      )
-      .toBe(true);
+    await persistedPut;
 
     let token = (await loginApi(request, email, password)).accessToken;
     let remote = await fetchProject(request, token, id);

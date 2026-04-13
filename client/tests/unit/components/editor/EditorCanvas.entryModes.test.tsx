@@ -21,6 +21,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { EditorCanvas } from '../../../../src/components/editor/EditorCanvas';
 import { type EditorKeyboardContext, handleEditorKeydown } from '../../../../src/hooks/useKeyboard';
 import { buildDefaultSong, useSongStore } from '../../../../src/store/songStore';
+import { useUIStore } from '../../../../src/store/uiStore';
 
 const DEFAULT_VIEWPORT: Viewport = {
   startMeasure: 0,
@@ -234,6 +235,31 @@ describe('TASK-2.9 entry modes — handleEditorKeydown (contract)', () => {
     expect(chords.map((c) => c.scaleDegree).sort((a, b) => a - b)).toEqual([1, 2]);
 
     useSongStore.getState().loadSong(buildDefaultSong());
+  });
+
+  /** Mirrors EditorLayout wiring: both snapshots read live Zustand (TASK-4.2 E2E / persistence poll). */
+  it('table mode: consecutive digits with getSongAfterMutation + getSelectionAfterMutation (Zustand) append two chords', () => {
+    useSongStore.getState().loadSong(makeSongEmptyFirstMeasure());
+    useUIStore.getState().setSelection(null);
+    const buildCtx = (): EditorKeyboardContext =>
+      baseCtx({
+        song: useSongStore.getState().song,
+        selection: useUIStore.getState().selection,
+        onChordEdit: useSongStore.getState().editChord,
+        onSelectionChange: useUIStore.getState().setSelection,
+        getSongAfterMutation: () => useSongStore.getState().song,
+        getSelectionAfterMutation: () => useUIStore.getState().selection,
+      });
+
+    handleEditorKeydown(keydown('1'), buildCtx());
+    handleEditorKeydown(keydown('2'), buildCtx());
+
+    const chords = useSongStore.getState().song.measures[0]?.chords ?? [];
+    expect(chords.length).toBe(2);
+    expect(chords.map((c) => c.scaleDegree).sort((a, b) => a - b)).toEqual([1, 2]);
+
+    useSongStore.getState().loadSong(buildDefaultSong());
+    useUIStore.getState().setSelection(null);
   });
 
   it('table mode: consecutive digits use fresh selection snapshots even if the rendered prop is stale', () => {
