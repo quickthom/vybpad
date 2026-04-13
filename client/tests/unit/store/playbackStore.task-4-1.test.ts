@@ -2,21 +2,21 @@
  * QA COVERAGE PLAN — 4.1 (PlaybackStore + engine wiring)
  *
  * Criterion 1: Audio engine does not initialize before user gesture
- *   happy: play() before initializeAudioFromUserGesture does not start playback
+ *   happy: play() before initializeAudio does not start playback
  *   error: —
  *   edges: —
  *
  * Criterion 2: User gesture initializes audio exactly once and exposes ready state
- *   happy: initializeAudioFromUserGesture() then play() reaches isPlaying
+ *   happy: initializeAudio() then play() reaches isPlaying
  *   error: —
  *   edges: —
  *
  * Criterion 3: Repeated init attempts are idempotent
- *   happy: duplicate initializeAudioFromUserGesture + duplicate engine.initialize paths
+ *   happy: duplicate initializeAudio + duplicate engine.initialize paths
  *   error: —
  *   edges: —
  *
- * Interface: INTERFACES.md — PlaybackStore; TASK-4.1 store extensions (audioReadyState, initializeAudioFromUserGesture)
+ * Interface: INTERFACES.md — PlaybackStore (initStatus, initErrorCode, initializeAudio, clearInitError)
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -79,40 +79,41 @@ describe('PlaybackStore — TASK 4.1 — INTERFACES PlaybackStore + gesture-gate
       const s = usePlaybackStore.getState();
       expect(s.isPlaying).toBe(false);
       expect(s.currentTick).toBeNull();
-      expect(s.audioReadyState).toBe('idle');
+      expect(s.initStatus).toBe('locked');
       expect(typeof s.play).toBe('function');
       expect(typeof s.pause).toBe('function');
       expect(typeof s.stop).toBe('function');
       expect(typeof s.rewind).toBe('function');
       expect(typeof s.seekTo).toBe('function');
       expect(typeof s.setLoop).toBe('function');
-      expect(typeof s.initializeAudioFromUserGesture).toBe('function');
+      expect(typeof s.initializeAudio).toBe('function');
+      expect(typeof s.clearInitError).toBe('function');
     });
 
-    it('does not start playback before initializeAudioFromUserGesture completes', async () => {
+    it('does not start playback before initializeAudio completes', async () => {
       usePlaybackStore.getState().play();
       await Promise.resolve();
       await Promise.resolve();
-      expect(usePlaybackStore.getState().audioReadyState).toBe('idle');
+      expect(usePlaybackStore.getState().initStatus).toBe('locked');
       expect(usePlaybackStore.getState().isPlaying).toBe(false);
     });
 
-    it('reaches isPlaying after initializeAudioFromUserGesture and play()', async () => {
-      await usePlaybackStore.getState().initializeAudioFromUserGesture();
-      await usePlaybackStore.getState().initializeAudioFromUserGesture();
+    it('reaches isPlaying after initializeAudio and play()', async () => {
+      await usePlaybackStore.getState().initializeAudio();
+      await usePlaybackStore.getState().initializeAudio();
 
       usePlaybackStore.getState().play();
 
-      expect(usePlaybackStore.getState().audioReadyState).toBe('ready');
+      expect(usePlaybackStore.getState().initStatus).toBe('ready');
       expect(usePlaybackStore.getState().isPlaying).toBe(true);
     });
   });
 
   describe('idempotent initialization', () => {
-    it('keeps a single ready state when initializeAudioFromUserGesture is awaited twice', async () => {
-      await usePlaybackStore.getState().initializeAudioFromUserGesture();
-      await usePlaybackStore.getState().initializeAudioFromUserGesture();
-      expect(usePlaybackStore.getState().audioReadyState).toBe('ready');
+    it('keeps a single ready state when initializeAudio is awaited twice', async () => {
+      await usePlaybackStore.getState().initializeAudio();
+      await usePlaybackStore.getState().initializeAudio();
+      expect(usePlaybackStore.getState().initStatus).toBe('ready');
     });
   });
 
@@ -126,7 +127,7 @@ describe('PlaybackStore — TASK 4.1 — INTERFACES PlaybackStore + gesture-gate
     });
 
     it('does not throw when play is invoked repeatedly immediately after init', async () => {
-      await usePlaybackStore.getState().initializeAudioFromUserGesture();
+      await usePlaybackStore.getState().initializeAudio();
 
       expect(() => {
         usePlaybackStore.getState().play();

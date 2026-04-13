@@ -1,18 +1,21 @@
 /**
- * Playback + Tone.js readiness (TASK-4.1). Extends INTERFACES.md `PlaybackStore` with
- * `audioReadyState` / `audioErrorMessage` / `initializeAudioFromUserGesture` — Architect to
- * fold into INTERFACES if accepted (PR blocking flag).
+ * Zustand `PlaybackStore` per INTERFACES.md (init lifecycle + transport).
  */
 
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 
-import { getPlaybackEngine, getPlaybackErrorMessage } from '../engine/audio';
+import {
+  getPlaybackEngine,
+  getPlaybackInitErrorCode,
+  type PlaybackInitErrorCode,
+  type PlaybackInitStatus,
+} from '../engine/audio';
 import { useSongStore } from './songStore';
 
-export type AudioReadyState = 'idle' | 'initializing' | 'ready' | 'error';
+export type { PlaybackInitErrorCode, PlaybackInitStatus };
 
-/** INTERFACES `PlaybackStore` + audio lifecycle for autoplay-policy compliance. */
+/** INTERFACES.md `PlaybackStore` — client implementation. */
 export interface PlaybackStore {
   isPlaying: boolean;
   currentTick: number | null;
@@ -20,10 +23,11 @@ export interface PlaybackStore {
   loopStart: number;
   loopEnd: number;
 
-  audioReadyState: AudioReadyState;
-  audioErrorMessage: string | null;
+  initStatus: PlaybackInitStatus;
+  initErrorCode: PlaybackInitErrorCode | null;
 
-  initializeAudioFromUserGesture: () => Promise<void>;
+  initializeAudio: () => Promise<void>;
+  clearInitError: () => void;
 
   play: () => void;
   pause: () => void;
@@ -64,27 +68,36 @@ export const usePlaybackStore = create<PlaybackStore>()(
     loopStart: 0,
     loopEnd: 0,
 
-    audioReadyState: 'idle',
-    audioErrorMessage: null,
+    initStatus: 'locked',
+    initErrorCode: null,
 
-    initializeAudioFromUserGesture: async () => {
+    clearInitError: () => {
+      set((draft) => {
+        draft.initErrorCode = null;
+        if (draft.initStatus === 'error') {
+          draft.initStatus = 'locked';
+        }
+      });
+    },
+
+    initializeAudio: async () => {
       if (getPlaybackEngine().isReady()) {
         set((draft) => {
-          draft.audioReadyState = 'ready';
-          draft.audioErrorMessage = null;
+          draft.initStatus = 'ready';
+          draft.initErrorCode = null;
         });
         ensureTickSubscription(set);
         syncEngineFromSong();
         return;
       }
-      if (get().audioReadyState === 'ready') {
+      if (get().initStatus === 'ready') {
         return;
       }
       if (!initChain) {
         initChain = (async () => {
           set((draft) => {
-            draft.audioReadyState = 'initializing';
-            draft.audioErrorMessage = null;
+            draft.initStatus = 'initializing';
+            draft.initErrorCode = null;
           });
           try {
             const engine = getPlaybackEngine();
@@ -92,13 +105,13 @@ export const usePlaybackStore = create<PlaybackStore>()(
             ensureTickSubscription(set);
             syncEngineFromSong();
             set((draft) => {
-              draft.audioReadyState = 'ready';
+              draft.initStatus = 'ready';
             });
           } catch (err) {
-            const message = getPlaybackErrorMessage(err);
+            const code = getPlaybackInitErrorCode(err);
             set((draft) => {
-              draft.audioReadyState = 'error';
-              draft.audioErrorMessage = message;
+              draft.initStatus = 'error';
+              draft.initErrorCode = code;
             });
           } finally {
             initChain = null;
@@ -190,7 +203,7 @@ export function resetPlaybackStoreForTests(): void {
     isLooping: false,
     loopStart: 0,
     loopEnd: 0,
-    audioReadyState: 'idle',
-    audioErrorMessage: null,
+    initStatus: 'locked',
+    initErrorCode: null,
   });
 }

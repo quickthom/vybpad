@@ -1,7 +1,29 @@
 /**
  * PAT-001 — typed client-side playback errors (not API shapes).
  * User-visible strings live in {@link getPlaybackErrorMessage}; components must not surface raw exceptions.
+ *
+ * {@link PlaybackInitErrorCode} / {@link getPlaybackInitErrorMessage} align with INTERFACES.md `PlaybackStore`.
  */
+
+/** INTERFACES.md — mirrors `PlaybackStore` init lifecycle. */
+export type PlaybackInitStatus = 'locked' | 'initializing' | 'ready' | 'error';
+
+/** INTERFACES.md — persisted on the store as `initErrorCode`. */
+export type PlaybackInitErrorCode =
+  | 'AUDIO_CONTEXT_BLOCKED'
+  | 'SAMPLE_LOAD_FAILED'
+  | 'ENGINE_INIT_FAILED';
+
+const PLAYBACK_INIT_ERROR_MESSAGES: Record<PlaybackInitErrorCode, string> = {
+  AUDIO_CONTEXT_BLOCKED:
+    'Audio could not start. Check that sound is allowed in your browser and try again.',
+  SAMPLE_LOAD_FAILED: 'Instrument samples failed to load. Check your connection and try again.',
+  ENGINE_INIT_FAILED: 'The audio engine could not start. Try reloading the page.',
+};
+
+export function getPlaybackInitErrorMessage(code: PlaybackInitErrorCode): string {
+  return PLAYBACK_INIT_ERROR_MESSAGES[code];
+}
 
 export const PLAYBACK_ERROR_CODES = {
   AUDIO_INIT_FAILED: 'AUDIO_INIT_FAILED',
@@ -23,6 +45,14 @@ export class PlaybackError extends Error {
 
 export function isPlaybackError(value: unknown): value is PlaybackError {
   return value instanceof PlaybackError;
+}
+
+/** Maps engine/runtime errors to INTERFACES `PlaybackInitErrorCode` for the store. */
+export function getPlaybackInitErrorCode(error: unknown): PlaybackInitErrorCode {
+  if (isPlaybackError(error) && error.code === PLAYBACK_ERROR_CODES.AUDIO_INIT_FAILED) {
+    return 'AUDIO_CONTEXT_BLOCKED';
+  }
+  return 'ENGINE_INIT_FAILED';
 }
 
 export function playbackError(code: PlaybackErrorCode): PlaybackError {

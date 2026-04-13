@@ -6,7 +6,7 @@ import { TransportControls } from '../components/controls/TransportControls';
 import { MeasureBar } from '../components/MeasureBar';
 import { EditorCanvas } from '../components/editor/EditorCanvas';
 import { EntryModeToggle } from '../components/editor/EntryModeToggle';
-import { formatTransportBeat } from '../engine/audio';
+import { formatTransportBeat, getPlaybackInitErrorMessage } from '../engine/audio';
 import { useAuthStore } from '../store/authStore';
 import { syncPlaybackEngineWithSong, usePlaybackStore } from '../store/playbackStore';
 import { buildDefaultSong, useSongStore } from '../store/songStore';
@@ -49,9 +49,9 @@ export function EditorLayout() {
 
   const playbackTick = usePlaybackStore((s) => s.currentTick);
   const isPlaying = usePlaybackStore((s) => s.isPlaying);
-  const audioReadyState = usePlaybackStore((s) => s.audioReadyState);
-  const audioErrorMessage = usePlaybackStore((s) => s.audioErrorMessage);
-  const initializeAudioFromUserGesture = usePlaybackStore((s) => s.initializeAudioFromUserGesture);
+  const initStatus = usePlaybackStore((s) => s.initStatus);
+  const initErrorCode = usePlaybackStore((s) => s.initErrorCode);
+  const initializeAudio = usePlaybackStore((s) => s.initializeAudio);
   const playbackPlay = usePlaybackStore((s) => s.play);
   const playbackPause = usePlaybackStore((s) => s.pause);
   const playbackStop = usePlaybackStore((s) => s.stop);
@@ -258,18 +258,18 @@ export function EditorLayout() {
   const currentBeatDisplay = formatTransportBeat(song, playbackTick ?? 0);
 
   async function handleTransportPlay() {
-    if (usePlaybackStore.getState().audioReadyState === 'ready') {
+    if (usePlaybackStore.getState().initStatus === 'ready') {
       playbackPlay();
       return;
     }
     setPlayBootstrapBusy(true);
     try {
-      await initializeAudioFromUserGesture();
+      await initializeAudio();
       const st = usePlaybackStore.getState();
-      if (st.audioReadyState === 'ready') {
+      if (st.initStatus === 'ready') {
         st.play();
-      } else if (st.audioErrorMessage) {
-        showErrorToast(st.audioErrorMessage);
+      } else if (st.initErrorCode) {
+        showErrorToast(getPlaybackInitErrorMessage(st.initErrorCode));
       }
     } finally {
       setPlayBootstrapBusy(false);
@@ -323,8 +323,8 @@ export function EditorLayout() {
         isPlaying={isPlaying}
         tempo={song.metadata.tempo}
         currentBeat={currentBeatDisplay}
-        audioReadyState={audioReadyState}
-        audioErrorMessage={audioErrorMessage}
+        initStatus={initStatus}
+        initErrorCode={initErrorCode}
         isBootstrapping={playBootstrapBusy}
         onPlay={() => void handleTransportPlay()}
         onPause={playbackPause}
