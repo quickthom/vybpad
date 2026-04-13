@@ -31,7 +31,7 @@ export const useToastStore = create<ToastState>((set) => ({
     dismissTimer = setTimeout(() => {
       set({ message: null });
       dismissTimer = null;
-    }, 8000);
+    }, 6000);
   },
   dismiss: () => {
     if (dismissTimer) clearTimeout(dismissTimer);

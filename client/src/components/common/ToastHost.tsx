@@ -1,6 +1,9 @@
 import { useToastStore } from '../../store/toastStore';
 
-/** Fixed region for API/error toasts — UX §5.7: assertive live region for errors. */
+/**
+ * API/error toasts — UX §5.7: bottom-right stack, width min(400px, 100vw − 32px), 16px inset,
+ * 8px stack gap, error = 4px destructive left accent + assertive live region.
+ */
 export function ToastHost() {
   const message = useToastStore((s) => s.message);
   const dismiss = useToastStore((s) => s.dismiss);
@@ -8,12 +11,14 @@ export function ToastHost() {
   if (!message) return null;
 
   return (
-    <div
-      role="alert"
-      className="pointer-events-none fixed bottom-6 left-1/2 z-[9999] flex max-w-[min(480px,calc(100vw-32px))] -translate-x-1/2 justify-center px-4"
-    >
-      <div className="pointer-events-auto flex items-start gap-3 rounded-lg border border-[var(--color-destructive,#DC2626)] bg-[var(--color-surface,#FFFFFF)] px-4 py-3 text-sm text-[var(--color-destructive,#DC2626)] shadow-lg">
-        <span className="min-w-0 flex-1">{message}</span>
+    <div className="pointer-events-none fixed bottom-4 right-4 z-[9999] flex w-[min(400px,calc(100vw-32px))] flex-col gap-2">
+      <div
+        role="alert"
+        className="pointer-events-auto flex items-start gap-3 rounded-lg border border-[var(--color-border,#E5E7EB)] border-l-4 border-l-[var(--color-destructive,#DC2626)] bg-[var(--color-surface,#FFFFFF)] p-4 shadow-lg"
+      >
+        <span className="min-w-0 flex-1 text-sm font-semibold leading-normal text-[var(--color-text-primary,#111827)]">
+          {message}
+        </span>
         <button
           type="button"
           onClick={() => dismiss()}

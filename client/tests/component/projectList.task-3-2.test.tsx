@@ -316,6 +316,69 @@ describe('TASK-3.2 project list — create flow', () => {
         expect(parsed.name).toBe('My New Project');
       });
     });
+
+    it('hydrates the song store from POST ProjectResponse and navigates to /editor without relying on a follow-up GET /api/projects', async () => {
+      const user = userEvent.setup();
+
+      useAuthStore.setState({
+        user: {
+          id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+          email: 'hydrate@vybpad.test',
+          displayName: 'Hydrator',
+          createdAt: '2026-01-01T00:00:00.000Z',
+        },
+        accessToken: 'qa-hydrate-token',
+        isAuthenticated: true,
+        login: async () => {},
+        register: async () => {},
+        logout: async () => {},
+        refreshToken: async () => {},
+      });
+
+      const emptyList: ProjectListResponse = { projects: [] };
+      const created = makeProjectResponse(
+        'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+        'Regression project',
+        'PostBody-Immediate-Hydration',
+      );
+
+      let listGetCount = 0;
+
+      vi.mocked(fetch).mockImplementation((input, init) => {
+        const url = requestUrl(input);
+        if (apiPath(url) === '/api/projects' && (init?.method ?? 'GET') === 'GET') {
+          listGetCount += 1;
+          // If a post-create list refresh is added, it must not be required for editor entry:
+          // a failing refetch should not block hydration (song comes from POST body).
+          if (listGetCount >= 2) {
+            return jsonResponse({ code: 'INTERNAL_ERROR', message: 'list refresh failed' }, { status: 500 });
+          }
+          return jsonResponse(emptyList);
+        }
+        if (apiPath(url) === '/api/projects' && init?.method === 'POST') {
+          return jsonResponse(created, { status: 201 });
+        }
+        return jsonResponse({});
+      });
+
+      renderRoutes(['/projects']);
+
+      await screen.findByRole('heading', { name: /^projects$/i });
+
+      const nameField = screen.getByLabelText(/new project name/i);
+      await user.type(nameField, 'Regression project');
+
+      await user.click(screen.getByRole('button', { name: /^create project$/i }));
+
+      expect(
+        await screen.findByRole('heading', { level: 1, name: 'PostBody-Immediate-Hydration' }),
+      ).toBeInTheDocument();
+
+      expect(useSongStore.getState().song).toEqual(created.songData);
+      expect(useSongStore.getState().song.metadata.title).toBe('PostBody-Immediate-Hydration');
+
+      expect(listGetCount).toBe(1);
+    });
   });
 
   describe('error handling', () => {
