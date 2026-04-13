@@ -6,6 +6,9 @@
  * C) Edge progression (borrowed / secondary / inversion mix) stays responsive — no unhandled errors
  *
  * Note-level audio assertions are out of scope until scheduler 4.4; gates are crash/readiness only.
+ *
+ * Selectors: `helpers/transport` — toolbar via `[role="toolbar"][data-audio-ready]` (TASK-4.2 CI);
+ * play control anchored to avoid strict-mode collisions; readiness polls `data-audio-ready` + `aria-busy`.
  */
 
 import type { SongData } from '@vybpad/shared';
@@ -15,6 +18,13 @@ import {
   buildEdgeCaseVoicingSong,
   buildVoicingHeavySong,
 } from '../fixtures/voicingHeavySong';
+import { waitForEditorRouteReady } from './helpers/editorReady';
+import {
+  expectTransportPlaybackNotReady,
+  expectTransportPlaybackReady,
+  getTransportPlayButton,
+  getTransportToolbar,
+} from './helpers/transport';
 
 const API_BASE = (process.env.PLAYWRIGHT_API_URL ?? 'http://127.0.0.1:3001').replace(/\/+$/, '');
 
@@ -90,19 +100,18 @@ test.describe('TASK-4.3 — harmony voicing playback resilience (E2E)', () => {
     expect(projectId).toBeTruthy();
     const id = projectId as string;
 
-    await expect(page.getByText('Loading project…')).toBeHidden({ timeout: 30_000 });
+    await waitForEditorRouteReady(page);
 
     const { accessToken } = await loginApi(request, email, password);
     await putSong(request, accessToken, id, buildVoicingHeavySong());
 
     await page.reload();
-    await expect(page.getByText('Loading project…')).toBeHidden({ timeout: 30_000 });
+    await waitForEditorRouteReady(page);
 
-    const transport = page.getByRole('toolbar', { name: 'Transport' });
-    await expect(transport).toBeVisible();
-    const playBtn = transport.getByRole('button', { name: /Start audio and play|Play/i });
-    await playBtn.click();
-    await expect(transport).toHaveAttribute('data-audio-ready', 'true', { timeout: 25_000 });
+    const transport = getTransportToolbar(page);
+    await expectTransportPlaybackNotReady(transport);
+    await getTransportPlayButton(transport).click();
+    await expectTransportPlaybackReady(transport);
 
     expect(pageErrors, `pageerror: ${pageErrors.map((e) => e.message).join('; ')}`).toHaveLength(0);
     expect(consoleErrors, `console errors: ${consoleErrors.join(' | ')}`).toHaveLength(0);
@@ -133,25 +142,26 @@ test.describe('TASK-4.3 — harmony voicing playback resilience (E2E)', () => {
     expect(projectId).toBeTruthy();
     const id = projectId as string;
 
-    await expect(page.getByText('Loading project…')).toBeHidden({ timeout: 30_000 });
+    await waitForEditorRouteReady(page);
 
     const { accessToken } = await loginApi(request, email, password);
     await putSong(request, accessToken, id, buildVoicingHeavySong());
 
     await page.reload();
-    await expect(page.getByText('Loading project…')).toBeHidden({ timeout: 30_000 });
+    await waitForEditorRouteReady(page);
 
-    const transport1 = page.getByRole('toolbar', { name: 'Transport' });
-    await transport1.getByRole('button', { name: /Start audio and play|Play/i }).click();
-    await expect(transport1).toHaveAttribute('data-audio-ready', 'true', { timeout: 25_000 });
+    const transport1 = getTransportToolbar(page);
+    await expectTransportPlaybackNotReady(transport1);
+    await getTransportPlayButton(transport1).click();
+    await expectTransportPlaybackReady(transport1);
 
     await page.reload();
-    await expect(page.getByText('Loading project…')).toBeHidden({ timeout: 30_000 });
+    await waitForEditorRouteReady(page);
 
-    const transport2 = page.getByRole('toolbar', { name: 'Transport' });
-    await expect(transport2).toHaveAttribute('data-audio-ready', 'false');
-    await transport2.getByRole('button', { name: /Start audio and play|Play/i }).click();
-    await expect(transport2).toHaveAttribute('data-audio-ready', 'true', { timeout: 25_000 });
+    const transport2 = getTransportToolbar(page);
+    await expectTransportPlaybackNotReady(transport2);
+    await getTransportPlayButton(transport2).click();
+    await expectTransportPlaybackReady(transport2);
   });
 
   test('scenario C — edge progression (borrowed / secondary / inversion mix): no page or console errors after play', async ({
@@ -190,17 +200,18 @@ test.describe('TASK-4.3 — harmony voicing playback resilience (E2E)', () => {
     expect(projectId).toBeTruthy();
     const id = projectId as string;
 
-    await expect(page.getByText('Loading project…')).toBeHidden({ timeout: 30_000 });
+    await waitForEditorRouteReady(page);
 
     const { accessToken } = await loginApi(request, email, password);
     await putSong(request, accessToken, id, buildEdgeCaseVoicingSong());
 
     await page.reload();
-    await expect(page.getByText('Loading project…')).toBeHidden({ timeout: 30_000 });
+    await waitForEditorRouteReady(page);
 
-    const transport = page.getByRole('toolbar', { name: 'Transport' });
-    await transport.getByRole('button', { name: /Start audio and play|Play/i }).click();
-    await expect(transport).toHaveAttribute('data-audio-ready', 'true', { timeout: 25_000 });
+    const transport = getTransportToolbar(page);
+    await expectTransportPlaybackNotReady(transport);
+    await getTransportPlayButton(transport).click();
+    await expectTransportPlaybackReady(transport);
 
     expect(pageErrors, `pageerror: ${pageErrors.map((e) => e.message).join('; ')}`).toHaveLength(0);
     expect(consoleErrors, `console errors: ${consoleErrors.join(' | ')}`).toHaveLength(0);
