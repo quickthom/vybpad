@@ -93,12 +93,13 @@ export const usePlaybackStore = create<PlaybackStore>()(
       if (get().initStatus === 'ready') {
         return;
       }
+      // Sync so TransportControls can derive loading UI from `initStatus` only (no parent isBootstrapping).
+      set((draft) => {
+        draft.initStatus = 'initializing';
+        draft.initErrorCode = null;
+      });
       if (!initChain) {
         initChain = (async () => {
-          set((draft) => {
-            draft.initStatus = 'initializing';
-            draft.initErrorCode = null;
-          });
           try {
             const engine = getPlaybackEngine();
             await engine.initialize();

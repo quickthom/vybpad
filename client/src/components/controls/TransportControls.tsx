@@ -10,8 +10,6 @@ export interface TransportControlsProps {
   currentBeat: string;
   initStatus: PlaybackInitStatus;
   initErrorCode: PlaybackInitErrorCode | null;
-  /** True while the first Play click is awaiting Tone.start() / init chain */
-  isBootstrapping: boolean;
   onPlay: () => void;
   onPause: () => void;
   onStop: () => void;
@@ -25,14 +23,13 @@ export function TransportControls({
   currentBeat,
   initStatus,
   initErrorCode,
-  isBootstrapping,
   onPlay,
   onPause,
   onStop,
   onRewind,
   onTempoChange,
 }: TransportControlsProps) {
-  const playDisabled = initStatus === 'initializing' || isBootstrapping;
+  const playDisabled = initStatus === 'initializing';
   /** Pause / stop / rewind require a running engine (INTERFACES transport actions). */
   const transportLocked = initStatus !== 'ready';
 
@@ -63,7 +60,7 @@ export function TransportControls({
             disabled={playDisabled}
             onClick={onPlay}
           >
-            {isBootstrapping || initStatus === 'initializing' ? 'Starting…' : 'Play'}
+            {initStatus === 'initializing' ? 'Starting…' : 'Play'}
           </button>
         )}
         <button
@@ -111,7 +108,7 @@ export function TransportControls({
         </span>
       </label>
 
-      {(initStatus === 'initializing' || isBootstrapping) && (
+      {initStatus === 'initializing' && (
         <div
           className="flex items-center gap-2 text-sm text-[var(--color-text-secondary,#4B5563)]"
           aria-live="polite"

@@ -53,4 +53,57 @@ test.describe('TASK-4.1 — playback init (user gesture)', () => {
     await transportAfter.getByRole('button', { name: /Start audio and play|Play/i }).click();
     await expect(transportAfter).toHaveAttribute('data-audio-ready', 'true', { timeout: 20_000 });
   });
+
+  test('rapid play attempts during init — no page errors; toolbar reaches ready', async ({ page }) => {
+    const suffix = uniqueSuffix();
+    const email = `e2e-play-spam-${suffix}@vybpad-e2e.test`;
+    const password = 'E2ETestPass-123';
+    const displayName = `E2E Spam ${suffix}`;
+    const projectName = `E2E Spam Project ${suffix}`;
+
+    const pageErrors: Error[] = [];
+    const consoleErrors: string[] = [];
+    page.on('pageerror', (err) => {
+      pageErrors.push(err);
+    });
+    page.on('console', (msg) => {
+      if (msg.type() === 'error') {
+        consoleErrors.push(msg.text());
+      }
+    });
+
+    await page.goto('/register');
+    await page.locator('#register-email').fill(email);
+    await page.locator('#register-display-name').fill(displayName);
+    await page.locator('#register-password').fill(password);
+    await page.getByRole('button', { name: 'Create account' }).click();
+    await expect(page).toHaveURL(/\/projects$/);
+
+    await page.locator('#new-project-name').fill(projectName);
+    await page.getByRole('button', { name: 'Create project' }).click();
+    await expect(page).toHaveURL(/\/editor\/[0-9a-f-]{36}/i);
+
+    await expect(page.getByText('Loading project…')).toBeHidden({ timeout: 30_000 });
+
+    const transport = page.getByRole('toolbar', { name: 'Transport' });
+    await expect(transport).toBeVisible();
+    await expect(transport).toHaveAttribute('data-audio-ready', 'false');
+
+    const playBtn = transport.getByRole('button', { name: /Start audio and play|Play/i });
+
+    // Many synchronous DOM clicks before React can disable the button — exercises parallel initializeAudio awaits.
+    await playBtn.evaluate((el: HTMLButtonElement) => {
+      for (let i = 0; i < 50; i += 1) {
+        el.click();
+      }
+    });
+
+    await expect(transport).toHaveAttribute('data-audio-ready', 'true', { timeout: 25_000 });
+
+    expect(pageErrors, `pageerror: ${pageErrors.map((e) => e.message).join('; ')}`).toHaveLength(0);
+    expect(
+      consoleErrors,
+      `console errors: ${consoleErrors.join(' | ')}`,
+    ).toHaveLength(0);
+  });
 });

@@ -86,7 +86,6 @@ export function EditorLayout() {
   const colorScheme = useUIStore((s) => s.colorScheme);
 
   const [selectedMeasures, setSelectedMeasures] = useState<[number, number] | null>(null);
-  const [playBootstrapBusy, setPlayBootstrapBusy] = useState(false);
 
   const getSongAfterMutation = useCallback(() => useSongStore.getState().song, []);
 
@@ -262,17 +261,12 @@ export function EditorLayout() {
       playbackPlay();
       return;
     }
-    setPlayBootstrapBusy(true);
-    try {
-      await initializeAudio();
-      const st = usePlaybackStore.getState();
-      if (st.initStatus === 'ready') {
-        st.play();
-      } else if (st.initErrorCode) {
-        showErrorToast(getPlaybackInitErrorMessage(st.initErrorCode));
-      }
-    } finally {
-      setPlayBootstrapBusy(false);
+    await initializeAudio();
+    const st = usePlaybackStore.getState();
+    if (st.initStatus === 'ready') {
+      st.play();
+    } else if (st.initErrorCode) {
+      showErrorToast(getPlaybackInitErrorMessage(st.initErrorCode));
     }
   }
 
@@ -325,7 +319,6 @@ export function EditorLayout() {
         currentBeat={currentBeatDisplay}
         initStatus={initStatus}
         initErrorCode={initErrorCode}
-        isBootstrapping={playBootstrapBusy}
         onPlay={() => void handleTransportPlay()}
         onPause={playbackPause}
         onStop={playbackStop}
