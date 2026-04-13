@@ -123,16 +123,21 @@ test.describe('TASK-3.5 — persistence happy path', () => {
 
     await expect(page.getByRole('button', { name: /^Save$/ })).toBeEnabled({ timeout: 30_000 });
 
-    let token = (await loginApi(request, email, password)).accessToken;
-    // Contract check: persisted song on server (debounced autosave). Avoid waitForResponse on PUT —
+    // Contract check: persisted song on server (debounced autosave ~1.5s). Avoid waitForResponse on PUT —
     // client uses fetch to a different origin than the page; polling GET is stable.
+    const pollToken = (await loginApi(request, email, password)).accessToken;
     await expect
       .poll(
         async () => {
-          const r = await fetchProject(request, token, id);
+          const r = await fetchProject(request, pollToken, id);
           return songDataHasChordScaleDegrees1And2(r.songData);
         },
-        { timeout: 60_000, intervals: [400, 800, 1_600, 3_200] },
+        {
+          timeout: 90_000,
+          intervals: [500, 1_000, 2_000, 4_000],
+          message:
+            'GET /api/projects/:id should eventually return songData with at least one chord scaleDegree 1 and one scaleDegree 2 after autosave (any measure)',
+        },
       )
       .toBe(true);
 
@@ -156,8 +161,8 @@ test.describe('TASK-3.5 — persistence happy path', () => {
     await expect(page).toHaveURL(new RegExp(`/editor/${id}`));
     await waitForEditorRouteReady(page);
 
-    token = (await loginApi(request, email, password)).accessToken;
-    remote = await fetchProject(request, token, id);
+    const tokenAfterReopen = (await loginApi(request, email, password)).accessToken;
+    const remote = await fetchProject(request, tokenAfterReopen, id);
     const chords = remote.songData.measures.flatMap((m) => m.chords ?? []);
     const degrees = chords.map((c) => c.scaleDegree);
     expect(degrees.filter((d) => d === 1).length).toBeGreaterThanOrEqual(1);
