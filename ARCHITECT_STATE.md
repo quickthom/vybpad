@@ -2,7 +2,7 @@
 
 > Periodic Architect checkpoint cache. Review first on resume.
 
-**Last updated:** 2026-04-13 - PAT-030 (remediation file ownership) shipped; render architecture drift audit completed earlier this session.
+**Last updated:** 2026-04-13 - PAT-030 shipped; event log removed from TASK_STATUS.md; PAT-025 rewritten; develop tip `ea9f386`.
 
 ---
 
@@ -13,7 +13,8 @@
 3. **Active gate:** Phase 4 PRs `#35` and `#36` continue through CI/remediation/re-review loop. PM owns ongoing orchestration.
 4. **Architect follow-up completed:** PM retrospective warning about render-order drift (TASK-2.12 note) has been audited and resolved in canonical docs.
 5. **PAT-030 shipped:** Remediation file-ownership pattern added to `PATTERNS.md`; PM brief template updated in `ProjectManager.md`. Open PRs (#35, #36) must rebase onto `develop` to pick up the new process.
-6. **Architect focus now:** monitor only for true escalations (interface/architecture ambiguity). No open architecture blocker at this checkpoint.
+6. **PAT-025 rewritten + event log removed:** `TASK_STATUS.md` is now a single-section status-table file (59 lines). Active-session detail lives in `PM_STATE.md`. PM brief instructions updated.
+7. **Architect focus now:** monitor only for true escalations (interface/architecture ambiguity). No open architecture blocker at this checkpoint.
 
 ---
 
@@ -27,8 +28,8 @@
 
 ## Branch / Tip Snapshot
 
-- `origin/develop` last verified by PM state at `9060701` (includes PAT-029/F-06/TASK-4.1 history).
-- PR lane heads reported by PM at checkpoint:
+- `origin/develop` tip: `ea9f386` (PAT-030 + PAT-025 event-log removal + PAT-029 + F-06 + TASK-4.1 history).
+- PR lane last known heads (require rebase onto `ea9f386` before next CI run):
   - `#35` (`phase-4/piano-sample-loading`): `29eec40`
   - `#36` (`phase-4/harmony-voicing-engine`): `313206e`
 - Verify on resume with: `git fetch origin && git log -1 origin/develop`.
