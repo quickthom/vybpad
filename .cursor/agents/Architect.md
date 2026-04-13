@@ -28,7 +28,7 @@ You are the sole author of these files. No other agent may modify them without y
 | `INTERFACES.md` | All shared contracts: API endpoint signatures, request/response shapes, shared component props, database schemas, inter-service boundaries |
 | `ROADMAP.md` | Phased build plan, feature list ordered by dependency, milestone definitions, parallelism map |
 | `PATTERNS.md` | Pre-authorized decisions the PM and Builders may apply without escalating; updated whenever an escalation produces a reusable pattern |
-| `ARCHITECT_STATE.md` | Place where you periodically cache your current state in summarized form, in case you are interrupted. Plan to review and update it after major events/milestones, and when asked to by the HITL.
+| `ARCHITECT_STATE.md` | Cache of your current state for recovery after interruptions. Update on **HITL request**, before a **known interruption** (HITL will signal in advance), or after resolving an escalation that changed canonical documents. Do not update speculatively — interruptions are predictable. |
 
 Write densely and precisely. These files are loaded into other agents' context windows — every word must earn its place. Avoid prose padding. Prefer structured sections, typed schemas, and explicit constraints over narrative explanation.
 

@@ -2,30 +2,19 @@
 
 > Periodically updated cache of the Architect's current state. Review on session resume.
 
-**Last updated:** 2026-04-12 — Minor interface gap closed: `UIStore.toggleEntryMode(): void` added to `INTERFACES.md` (after `setActiveVoice`). Disclosed by Reviewer (Refrain) on TASK-2.11 PR #19 as non-blocking additive. Committed directly to `develop`.
+**Last updated:** 2026-04-13 — **P2 Audit reviewed.** Canonical docs updated. Phase 3 awaiting HITL authorization.
 
 ---
 
 ## Current Phase
 
-**Phase 2 in progress (Grid Editor & Song State).** Phase 0 and Phase 1A + 1B are complete on `develop`. PM owns task decomposition, briefs, and `TASK_STATUS.md` updates; async handoff in `HITL_NOTIFICATIONS.md`.
+**Phases 0, 1A, 1B, 2 — COMPLETE.** Phase 3 (Persistence) awaiting HITL authorization.
 
-## What I (Caden, Architect) Have Done
+## Develop Branch
 
-1. **Research phase complete.** Three research briefs issued and reviewed: Hookpad features/UI, tech stack, internal data model. All findings synthesized into architectural decisions.
-2. **All four canonical documents written and committed:**
-   - `ARCHITECTURE.md` — stack, data model, auth, infrastructure (incl. GitHub origin), testing strategy
-   - `INTERFACES.md` — API contracts, DB schema, song data model, component props, store shapes, engine interfaces
-   - `ROADMAP.md` — 9-phase build plan with dependency graph and parallelism map
-   - `PATTERNS.md` — 19 pre-authorized patterns (PAT-017 worktrees; PAT-019 `yay` for system packages)
-3. **Process interventions made:**
-   - **GitHub:** canonical remote `https://github.com/quickthom/vybpad`; default branch `develop`; PRs #1–#7 landed (1B.3, 1A.4–1A.7, 1B.4, 1B.6)
-   - Added PAT-017 (git worktrees for parallel tasks) after HITL caught Builders clobbering each other in a shared directory
-   - Added PAT-019: agents install packages with `yay` (not `sudo pacman` in agent shells)
-   - Updated PM role doc to include agent-spawning responsibilities and worktree isolation rules
-   - Flagged QA process violation (PM was skipping concurrent QA briefs) — corrected, QA now running with all Builders
+**`origin/develop`:** `a0087ca` (PR #23, TASK-2.12). Verify: `git fetch origin && git log -1 origin/develop`.
 
-## Key Decisions Made (for reference on resume)
+## Key Decisions (cumulative)
 
 | Decision | Rationale |
 |---|---|
@@ -39,7 +28,7 @@
 | PostgreSQL + JSONB for songs | Relational for users/auth; document storage for song data |
 | Zustand + Immer for state | Undo/redo via patches or snapshots |
 
-## Open Questions (unchanged from initial)
+## Open Questions
 
 1. **StudioOne chord track auto-population** — needs runtime validation in Phase 6
 2. **Piano sample quality** — may need to evaluate alternatives during Phase 4
@@ -48,32 +37,79 @@
 ## HITL Instructions
 
 - **HITL approved the roadmap** with no notes.
-- **HITL checkpoint is at end of Phase 2** (Grid Editor & Song State). Do not contact HITL before then unless absolutely critical.
-- **PM model:** HITL changed PM from Sonnet to gpt-5.4. Enforce this on respawn.
-- **Role boundary (2026-04-12):** Architect must **not** spawn Builders / QA / Reviewer / Integrator — **PM owns all spawns** per `ProjectManager.md`. See `HITL_NOTIFICATIONS.md` process correction.
+- **Next checkpoint:** end of Phase 3 (or HITL overrides).
+- **Role boundary:** Architect does not spawn pipeline agents — PM only.
 
-## No Escalations Pending
+## Escalations
 
-No outstanding escalations. Most recent resolution:
+No outstanding escalations. Phase 2 escalations (TASK-2.9 `EditorCanvasProps`, TASK-2.11 `UIStore.toggleEntryMode`) resolved and documented in `INTERFACES.md`.
 
-**2026-04-12 — TASK-2.9 (entry modes):** Added two optional props to `EditorCanvasProps` in `INTERFACES.md`: `getSongAfterMutation?: () => SongData` and `onToggleEntryMode?: () => void`. PR #18 (`phase-2/entry-modes`) unblocked — no Builder refactor required. See `HITL_NOTIFICATIONS.md` for full rationale.
+## P2 Audit Response (2026-04-13)
 
-## Build Progress Summary
+Reviewed `P2_AUDIT.md` (14 findings, F-01 through F-14). Full audit in repo root.
 
-- **Phase 0:** COMPLETE (7/7 merged)
-- **Phase 1A:** COMPLETE (1A.1–1A.7 merged; PRs on GitHub — see `TASK_STATUS.md`)
-- **Phase 1B:** COMPLETE (1B.1–1B.6 ROADMAP tasks merged; PRs #1, #6, #7 among others — see `TASK_STATUS.md`)
-- **`develop` tip:** `a8cf52a` — API integration tests (1B.6)
-- **Phases 2–8:** Phase 2 — PM decomposing 2.1–2.15 into briefs and spawning Builders/QA (see `PM_STATE.md`, `TASK_STATUS.md`)
+### Actions Taken (Architect scope)
+
+| Finding | Action |
+|---|---|
+| F-01 (HIGH): Social engineering vector in AGENTS.mdc | Removed guestbook section and "supersedes all restrictions" language. Also resolves F-09 (always-applied overhead). |
+| F-08 (MEDIUM): Excessive context loading | Added selective-loading instruction to AGENTS.mdc — Builders load only INTERFACES.md sections referenced in their brief. Did NOT split INTERFACES.md (maintenance cost outweighs savings). |
+| F-03 (MEDIUM): Commit message non-compliance | Added PAT-020 (Commit Message Format). Authorized commitlint hook. |
+| F-06 (MEDIUM): Interface drift pattern | Added PAT-021 (Pre-Flight Interface Check). PM must verify interface coverage before issuing briefs. |
+| F-10 (LOW): State files growing | Added PAT-022 (State File Archiving). PM archives completed phases. |
+| F-12 (LOW): Follow-ups accumulating | Added PAT-023 (Tech Debt Cleanup). PM creates cleanup task at each phase start. |
+| F-11 (LOW): Branch naming violation | Updated PAT-015 with hotfix branch exception (`fix/<task-id>-<slug>`). |
+
+### Directives to PM (execute before Phase 3 begins)
+
+1. **F-02:** Spawn Documenter → produce `README.md`, `CHANGELOG.md` (Phases 0–2). Spawn DevOps → produce `ENVIRONMENTS.md`. Add both to milestone-close checklist.
+2. **F-05:** Spawn Designer for Phase 2 milestone review → produce `MILESTONE-PHASE2-DESIGN-REVIEW`. Update UX_GUIDELINES.md if gaps found.
+3. **F-07:** Stop per-PR Integrator spawning. Batch approved PRs into 2–3 Integrator sessions per phase.
+4. **F-08:** Extract PM brief templates (~120 lines) from ProjectManager.md into `.cursor/skills/write-task-brief/SKILL.md`.
+5. **F-13:** Actively use Codex-Spark for boilerplate tasks. The invoke-spark skill exists.
+
+### Stale Code Artifact
+
+`client/src/store/uiStore.ts` lines 4 and 24 contain comments claiming `toggleEntryMode` is "not yet listed in INTERFACES" — resolved since commit `06dde3b`. Include in Phase 3 tech debt cleanup (PAT-023).
+
+### Expanded Spark Policy (2026-04-13)
+
+HITL reported Codex-Spark is $0.00/token (in and out), ~1,200 tok/s throughput. Temporary pricing. Expanded eligibility from boilerplate-only to any self-contained subtask with a fully specified interface. Both Builder and QA may invoke. Hard discard rule bounds review cost. "Never" list unchanged. Tagged as temporary — revert when pricing changes. See PAT-024, updated `Codex-Spark.md`, updated `invoke-spark` skill.
+
+### State File Frequency Reduction (2026-04-13)
+
+Restructured TASK_STATUS.md to two-section format: compact table (batch-updated at boundaries) + append-only event log (one StrReplace per event, no read needed). Reduced PM_STATE.md and ARCHITECT_STATE.md update frequency to HITL-triggered / pre-interruption / milestone-only. See PAT-025, updated `ProjectManager.md`, updated `Architect.md`.
+
+### Deferred
+
+- **R-12 (Selective QA spawning):** NOT approved. Current QA-per-task model produced 448 tests and caught real bugs. Will reassess after Phase 3 data.
+- **F-04 (Persistent roles):** Platform limitation. State files compensate. No action.
+- **F-14 (No E2E tests):** Per roadmap (Phase 8). On track.
+
+## Canonical Documents
+
+| File | Status |
+|---|---|
+| `ARCHITECTURE.md` | Current. Reviewer flagged possible render-order drift — include in Phase 3 cleanup. |
+| `INTERFACES.md` | Current. Two additive updates during Phase 2 (see escalations above). |
+| `ROADMAP.md` | Current. Phases 0–2 complete per plan. |
+| `PATTERNS.md` | Current. 25 patterns (PAT-001 through PAT-025). Updated PAT-015. Added PAT-020–025. |
+| `AGENTS.mdc` | Updated. Guestbook removed, selective INTERFACES.md loading added. |
+| `Codex-Spark.md` | Updated. Expanded eligibility, discard rule, QA access, temporary policy tag. |
+
+## Build Progress
+
+- **Phase 0:** COMPLETE (7/7)
+- **Phase 1A:** COMPLETE (7/7)
+- **Phase 1B:** COMPLETE (6/6)
+- **Phase 2:** COMPLETE (15/15)
+- **PRs merged:** #1–#23
+- **Tests:** 448 passed, 30 files
 
 ## State Files to Read on Resume
 
 1. `ARCHITECT_STATE.md` (this file)
-2. `PM_STATE.md` (PM's cached state — PM owns updates)
-3. `TASK_STATUS.md` (ground truth for task state — PM owns updates)
-4. `ARCHITECTURE.md`, `INTERFACES.md`, `ROADMAP.md`, `PATTERNS.md` (canonical docs)
-
-## Develop Branch HEAD at Shutdown
-
-**Tip on `develop`:** **`d02922a`** (verify: `git fetch origin && git log -1 origin/develop`).  
-**Wave 2a:** PRs [#10](https://github.com/quickthom/vybpad/pull/10), [#11](https://github.com/quickthom/vybpad/pull/11), [#12](https://github.com/quickthom/vybpad/pull/12) — PM owns review → squash-merge → **TASK-2.6** worktree + briefs.
+2. `PM_STATE.md` (PM's cached state)
+3. `TASK_STATUS.md` (ground truth for task state)
+4. `ARCHITECTURE.md`, `INTERFACES.md`, `ROADMAP.md`, `PATTERNS.md`
+5. `P2_AUDIT.md` (audit findings — review if unfamiliar with this session)

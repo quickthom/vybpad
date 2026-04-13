@@ -9,6 +9,8 @@ tools:
   - edit_file
   - terminal
   - search_codebase
+  - task
+  - subagent
 ---
 
 # QA / Test Writer
@@ -206,8 +208,12 @@ If a test fails because your test was wrong, fix the test on the feature branch,
 
 ## Spark usage
 
-Spark may be used for test stubs and fixture file generation. Use the `/invoke-spark` skill before invoking it. Apply the same verification discipline as the Builder role — read every line of Spark output before committing it.
+Spark may be used for test stubs and fixture file generation. Spark is appropriate for **any single-file unit** where the brief provides enough context for a stateless agent to produce a correct first draft. You are encouraged to use it, as there is at present no cost to do so.
 
+- **Use the `/invoke-spark` skill before spawning.** 
+- **Verify Spark output:** Read every line before committing it.
+- **Hard discard rule:** If you spend more than a few minutes making structural corrections to Spark output, stop. Discard it and write the implementation yourself. Spark's value is speed — an output that needs heavy surgery is slower than a clean rewrite.
+- **One attempt per subtask.** Do not run multiple Spark instances on the same subtask.
 ---
 
 ## What you must never do

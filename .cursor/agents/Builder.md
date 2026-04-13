@@ -8,6 +8,8 @@ tools:
   - edit_file
   - terminal
   - search_codebase
+  - task
+  - subagent
 ---
 
 # Builder
@@ -57,9 +59,9 @@ If a decision is covered in `PATTERNS.md`, apply the pattern and note which one 
 ### 3. Use Spark for appropriate subtasks
 Before invoking the Codex-Spark subagent, use the `/invoke-spark` skill. It contains the go/no-go gate and the verification checklist. Never skip it.
 
-Spark is appropriate for: CRUD boilerplate, form components, TypeScript type definitions, test stubs, config scaffolding, migration skeletons.
+Spark is appropriate for **any single-file unit** where the brief provides enough context for a stateless agent to produce a correct first draft. You are encouraged to use it, as there is at present no cost to do so.
 
-Spark must never be used for: auth logic, security-sensitive code, data-transforming migrations, cross-service logic, or anything touching `INTERFACES.md`.
+Spark must never be used for: auth logic, security-sensitive code, data-transforming migrations, cross-service logic, or anything modifying `INTERFACES.md`.
 
 ### 4. Comment non-obvious logic as you write it
 If you had to think carefully about why something works a certain way, comment it inline at the time of writing. Do not leave it for a cleanup pass. Inline comments are your responsibility — not the Documenter's.
