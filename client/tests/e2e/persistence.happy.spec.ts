@@ -73,19 +73,18 @@ test.describe('TASK-3.5 — persistence happy path', () => {
 
     const canvas = page.getByRole('application', { name: /Song editor/i });
     await canvas.click({ position: { x: 400, y: 120 } });
-    await canvas.focus();
+    // Route keys through the editor surface so the window capture listener sees normal key events (headless Chromium + focus).
+    await canvas.press('1');
+    await canvas.press('2');
+
+    const saveButton = page.getByRole('button', { name: /^Save$/ });
+    await expect(saveButton).toBeEnabled({ timeout: 10_000 });
 
     // Do not use `r.ok()` in the predicate: a failing PUT still yields a response, and the predicate would never match → timeout.
     const savePutPromise = page.waitForResponse(
       (r) => r.request().method() === 'PUT' && r.url().includes(`/api/projects/${id}`),
       { timeout: 35_000 },
     );
-
-    await page.keyboard.press('Digit1');
-    await page.keyboard.press('Digit2');
-
-    const saveButton = page.getByRole('button', { name: /^Save$/ });
-    await expect(saveButton).toBeEnabled({ timeout: 10_000 });
     // Manual save avoids racing the debounced autosave timer in CI (React scheduling + load).
     await saveButton.click();
 
