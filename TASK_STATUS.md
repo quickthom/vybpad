@@ -2,7 +2,7 @@
 
 > Single source of truth for build state. Owned by the Project Manager. Updated on every state change.
 
-**`develop` tip:** `7b70fff` — https://github.com/quickthom/vybpad (TASK-2.11/2.13/2.14/2.15 merged 2026-04-12; 440 tests green). **TASK-2.12** (guide tone overlay) unblocked — spawn next. Sync: `git fetch origin && npm install`.
+**`develop` tip:** `7b70fff` — https://github.com/quickthom/vybpad (TASK-2.11/2.13/2.14/2.15 merged 2026-04-12; 440 tests green). **TASK-2.12** (guide tone overlay) is in progress on `phase-2/guide-tones`. Sync: `git fetch origin && npm install`.
 **Worktree hygiene:** 14 stale Phase 1/2 worktrees removed 2026-04-12. Active worktrees: main (`develop`) + `task-2-8-keyboard` + `task-2-10-measure-bar` (retire after confirmation).
 
 ---
@@ -277,13 +277,13 @@ All Phase 0 tasks merged to develop.
 
 ### TASK-2.12: Guide tone overlay (chord compatibility highlighting)
 
-- **Assigned role:** Builder + QA (queued)
-- **Branch:** `phase-2/guide-tones` (not yet created)
-- **Worktree (PAT-017):** `/home/thom/py/vYbpad-worktrees/task-2-12-guide-tones` (to create)
-- **Status:** queued → spawning now
+- **Assigned role:** Builder + QA (active)
+- **Branch:** `phase-2/guide-tones`
+- **Worktree (PAT-017):** `/home/thom/py/vYbpad-worktrees/task-2-12-guide-tones`
+- **Status:** in-progress
 - **Depends on:** TASK-1A.6 (merged ✓), TASK-2.5 (merged ✓), TASK-2.11 (merged ✓)
 - **Blocking notes:** none — all dependencies satisfied
-- **Last updated:** 2026-04-12: Dependencies cleared; worktree + Builder + QA spawning.
+- **Last updated:** 2026-04-12: Tempo resumed PM session, verified briefs/worktree, and launched Builder + QA concurrently.
 
 ---
 

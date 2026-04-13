@@ -8,6 +8,8 @@ tools:
   - edit_file
   - terminal
   - search_codebase
+  - task
+  - subagent
 ---
 
 # Builder
