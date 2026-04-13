@@ -16,9 +16,10 @@
 import type { ComponentProps } from 'react';
 import { useState } from 'react';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { BrowserRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { App } from '../../src/App';
+import { EditorLayout } from '../../src/app/EditorLayout';
 import { MeasureBar } from '../../src/components/MeasureBar';
 import { buildDefaultSong, useSongStore } from '../../src/store/songStore';
 
@@ -295,7 +296,11 @@ describe('App — MeasureBar integration (criterion 5)', () => {
 
   describe('happy path', () => {
     it('renders the measure strip region in the bottom shell and increases song measure count when Add is used', () => {
-      render(<App />);
+      render(
+        <BrowserRouter>
+          <EditorLayout />
+        </BrowserRouter>,
+      );
       const regions = screen.getAllByRole('region', { name: 'Measures' });
       expect(regions.length).toBeGreaterThanOrEqual(1);
       const strip = regions[regions.length - 1]!;
@@ -307,7 +312,11 @@ describe('App — MeasureBar integration (criterion 5)', () => {
     });
 
     it('wires Delete to deleteMeasures on the song store when a range is selected', () => {
-      render(<App />);
+      render(
+        <BrowserRouter>
+          <EditorLayout />
+        </BrowserRouter>,
+      );
       const regions = screen.getAllByRole('region', { name: 'Measures' });
       const strip = regions[regions.length - 1]!;
       fireEvent.click(within(strip).getByRole('button', { name: measureLabel(1) }));
