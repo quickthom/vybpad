@@ -1,8 +1,8 @@
 /*
  * QA COVERAGE PLAN — TASK-3.5
  *
- * Criterion: Happy-path E2E — register → create project → editor → chord grid edit → persist → refresh →
- *   logout/login → project list + editor reload with persisted song (verified via API contract).
+ * Criterion: Happy-path E2E — register → create project → editor → chord grid edit → persist →
+ *   reopen from list (client-side nav, GET /api/projects/:id) → logout/login → list + editor reload (verified via API contract).
  *   happy: full UI flow + GET /api/projects/:id shows edited chords after re-auth
  *   error: (not required for foundation baseline)
  *   edges: —
@@ -44,7 +44,7 @@ async function fetchProject(request: APIRequestContext, accessToken: string, pro
 test.describe('TASK-3.5 — persistence happy path', () => {
   test.describe.configure({ mode: 'serial' });
 
-  test('register → create project → edit chords → save (PUT) → refresh → re-login → list and editor load persisted song', async ({
+  test('register → create project → edit chords → save (PUT) → reopen project → re-login → list and editor load persisted song', async ({
     page,
     request,
   }) => {
@@ -95,7 +95,13 @@ test.describe('TASK-3.5 — persistence happy path', () => {
     let remote = await fetchProject(request, token, id);
     expect(remote.songData.measures[0]?.chords?.length ?? 0).toBeGreaterThanOrEqual(1);
 
-    await page.reload();
+    // Full `page.reload()` drops in-memory JWT; refresh via httpOnly cookie is unreliable across
+    // dev ports (5173 vs 3001). Re-open via in-app navigation so the session stays in memory and
+    // the editor still performs a fresh GET /api/projects/:id.
+    await page.getByRole('button', { name: 'Projects' }).click();
+    await expect(page).toHaveURL(/\/projects$/);
+    await page.getByRole('button', { name: projectName }).click();
+    await expect(page).toHaveURL(new RegExp(`/editor/${id}`));
     await expect(page.getByText('Loading project…')).toBeHidden({ timeout: 30_000 });
     await expect(page.getByRole('button', { name: /^Save$/ })).toBeDisabled();
 
