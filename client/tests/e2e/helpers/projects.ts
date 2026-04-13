@@ -1,5 +1,7 @@
 import { expect, type Page } from '@playwright/test';
 
+import { expectedEditorUrlRegex } from './editorReady';
+
 function normalizedPathname(url: string): string | null {
   try {
     const { pathname } = new URL(url);
@@ -35,7 +37,7 @@ export async function createProjectAndAwaitEditor(
   expect(created.id, 'POST /api/projects must return project id').toBeTruthy();
   const id = created.id as string;
   expect(id).toMatch(/^[0-9a-f-]{36}$/i);
-  await expect(page).toHaveURL(new RegExp(`/editor/${id}(?:/|[?#]|$)`, 'i'), {
+  await expect(page).toHaveURL(expectedEditorUrlRegex(id), {
     timeout,
   });
   return id;
