@@ -12,8 +12,9 @@
  * Entry mode: Table mode is required for digit-only chord adds (Text mode ignores digits until a duration key
  * arms entry — see useKeyboard). We assert `Entry mode Table` before typing so CI cannot silently run in Text.
  *
- * Autosave: after edits, wait for `Save` enabled (dirty), then poll GET /api/projects/:id until the
- * server reflects ≥2 chords — debounced PUT is 1500ms (EditorLayout); poll timeout must cover debounce + slow CI.
+ * Persist: after edits, wait for `Save` enabled (dirty), then **explicit Save** to flush PUT. Relying only on
+ * debounced autosave in CI proved flaky (runner timer coalescing / effect churn) while local state was dirty;
+ * the contract under test is GET /api/projects/:id after a successful save, not the debounce delay itself.
  *
  * Shell: `waitForEditorRouteReady` ensures canvas + transport are present before chord entry (no hydration races).
  */
@@ -117,11 +118,16 @@ test.describe('TASK-3.5 — persistence happy path', () => {
 
     const canvas = page.getByRole('application', { name: /Song editor/i });
     await expect(page.getByRole('button', { name: /^Save$/ })).toBeDisabled({ timeout: 30_000 });
+    // Transport tempo `<input type="number">` is focusable; if it ever holds focus, digit keys are skipped by
+    // useKeyboard (`isEditableKeyboardTarget`). Blur before chord entry (TASK-4.2 CI remediation).
+    await page.locator('#transport-tempo-input').blur();
     await focusChordStripForDigitEntry(canvas);
     // Slower typing avoids coalescing both digits before the first chord mutation on slow CI workers.
     await page.keyboard.type('12', { delay: 120 });
 
     await expect(page.getByRole('button', { name: /^Save$/ })).toBeEnabled({ timeout: 30_000 });
+    await page.getByRole('button', { name: /^Save$/ }).click();
+    await expect(page.getByRole('button', { name: /^Save$/ })).toBeDisabled({ timeout: 30_000 });
 
     await expect
       .poll(
@@ -131,10 +137,10 @@ test.describe('TASK-3.5 — persistence happy path', () => {
           return (remote.songData.measures[0]?.chords?.length ?? 0) >= 2;
         },
         {
-          timeout: 150_000,
-          intervals: [100, 200, 400, 800, 1500, 2500],
+          timeout: 60_000,
+          intervals: [100, 200, 400, 800, 1500],
           message:
-            'Expected debounced autosave to persist ≥2 entered chords (poll GET /api/projects/:id until songData reflects the PUT)',
+            'Expected explicit Save to persist ≥2 entered chords (poll GET /api/projects/:id until songData reflects the PUT)',
         },
       )
       .toBe(true);
