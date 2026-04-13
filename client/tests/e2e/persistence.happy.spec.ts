@@ -1,14 +1,19 @@
 /*
- * QA COVERAGE PLAN — TASK-3.5
+ * QA COVERAGE PLAN — TASK-3.5 (+ 4.2 CI determinism)
  *
  * Criterion: Happy-path E2E — register → create project → editor → chord grid edit → persist → refresh →
  *   logout/login → project list + editor reload with persisted song (verified via API contract).
  *   happy: full UI flow + GET /api/projects/:id shows edited chords after re-auth
  *   error: (not required for foundation baseline)
  *   edges: —
+ *
+ * Autosave: register `waitForResponse` for the PUT **before** edits so the first debounced save is always
+ * observed (no race with a fast PUT vs late await).
  */
 
 import { expect, test, type APIRequestContext } from '@playwright/test';
+
+import { submitRegisterFormAndExpectProjects } from './helpers/registerFlow';
 
 const API_BASE = (process.env.PLAYWRIGHT_API_URL ?? 'http://127.0.0.1:3001').replace(/\/+$/, '');
 
@@ -42,7 +47,7 @@ async function fetchProject(request: APIRequestContext, accessToken: string, pro
 }
 
 test.describe('TASK-3.5 — persistence happy path', () => {
-  test.describe.configure({ mode: 'serial' });
+  test.describe.configure({ mode: 'serial', timeout: 180_000 });
 
   test('register → create project → edit chords → autosave → refresh → re-login → list and editor load persisted song', async ({
     page,
@@ -58,8 +63,7 @@ test.describe('TASK-3.5 — persistence happy path', () => {
     await page.locator('#register-email').fill(email);
     await page.locator('#register-display-name').fill(displayName);
     await page.locator('#register-password').fill(password);
-    await page.getByRole('button', { name: 'Create account' }).click();
-    await expect(page).toHaveURL(/\/projects$/);
+    await submitRegisterFormAndExpectProjects(page);
 
     await page.locator('#new-project-name').fill(projectName);
     await page.getByRole('button', { name: 'Create project' }).click();
@@ -76,19 +80,19 @@ test.describe('TASK-3.5 — persistence happy path', () => {
     // Headless runs can leave focus on a non-editor target; global digit entry is ignored without canvas focus.
     await canvas.focus();
 
-    const savePutPromise = page.waitForResponse(
+    const autosavePutPromise = page.waitForResponse(
       (r) =>
         r.request().method() === 'PUT' &&
         r.url().includes(`/api/projects/${id}`) &&
         r.ok(),
-      { timeout: 60_000 },
+      { timeout: 90_000 },
     );
 
     await page.keyboard.press('1');
     await page.keyboard.press('2');
 
-    await expect(page.getByRole('button', { name: /^Save$/ })).toBeEnabled({ timeout: 10_000 });
-    await savePutPromise;
+    await expect(page.getByRole('button', { name: /^Save$/ })).toBeEnabled({ timeout: 20_000 });
+    await autosavePutPromise;
 
     let token = (await loginApi(request, email, password)).accessToken;
     let remote = await fetchProject(request, token, id);

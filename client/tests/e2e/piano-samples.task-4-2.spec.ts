@@ -1,19 +1,27 @@
 /*
- * QA COVERAGE PLAN — 4.2 (Playwright)
+ * QA COVERAGE PLAN — 4.2 (Playwright, remediation round 2)
  *
- * Criterion 5: E2E critical path + edge cases
+ * Contracts: INTERFACES.md — TransportControls (initStatus via toolbar), PlaybackStore init lifecycle,
+ *            AudioEngine.initialize + sample load → ready.
+ *
+ * Criterion — E2E piano sample loading
  *   Scenario A: login → editor → Play → loading (piano/samples) → ready
- *   Scenario B: reload → Play → no stuck initializing
+ *   Scenario B: reload → Play → ready (not stuck initializing) — robust toolbar assertions
  *   Scenario C: rapid Play during load → no pageerror / console error → eventual ready
  *   Scenario D: blocked sample fetch → safe alert copy, no crash
  *
  * CI: `npm run test:e2e` from repo root (starts devstack unless PLAYWRIGHT_SKIP_WEBSERVER=1).
- * Local: ensure client+API running on PLAYWRIGHT_BASE_URL or use default 127.0.0.1:5173.
  */
 
 import { expect, test } from '@playwright/test';
 
-import { getTransportPlayButton, getTransportToolbar } from './helpers/transport';
+import { submitRegisterFormAndExpectProjects } from './helpers/registerFlow';
+import {
+  expectTransportPlaybackNotReady,
+  expectTransportPlaybackReady,
+  getTransportPlayButton,
+  getTransportToolbar,
+} from './helpers/transport';
 
 function uniqueSuffix(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
@@ -30,8 +38,7 @@ async function registerAndOpenEditor(page: import('@playwright/test').Page): Pro
   await page.locator('#register-email').fill(email);
   await page.locator('#register-display-name').fill(displayName);
   await page.locator('#register-password').fill(password);
-  await page.getByRole('button', { name: 'Create account' }).click();
-  await expect(page).toHaveURL(/\/projects$/);
+  await submitRegisterFormAndExpectProjects(page);
 
   await page.locator('#new-project-name').fill(projectName);
   await page.getByRole('button', { name: 'Create project' }).click();
@@ -53,16 +60,18 @@ test.describe('TASK-4.2 — piano sample loading (E2E)', () => {
 
     const transport = getTransportToolbar(page);
     await expect(transport).toBeVisible();
-    await expect(transport).toHaveAttribute('data-audio-ready', 'false');
+    await expectTransportPlaybackNotReady(transport);
 
     const playBtn = getTransportPlayButton(transport);
     await playBtn.click();
 
-    await expect(transport.getByText(/piano|instrument samples|loading samples/i)).toBeVisible({
+    await expect(transport.getByText(/loading piano samples|piano|instrument samples|loading samples/i)).toBeVisible({
       timeout: 10_000,
     });
 
-    await expect(transport).toHaveAttribute('data-audio-ready', 'true', { timeout: 45_000 });
+    await expectTransportPlaybackReady(transport);
+
+    await expect(getTransportPlayButton(transport)).toHaveAccessibleName(/^Play$/);
   });
 
   test('Scenario B — after reload, Play reaches ready (not stuck initializing)', async ({ page }) => {
@@ -70,16 +79,19 @@ test.describe('TASK-4.2 — piano sample loading (E2E)', () => {
 
     const transport = getTransportToolbar(page);
     await getTransportPlayButton(transport).click();
-    await expect(transport).toHaveAttribute('data-audio-ready', 'true', { timeout: 45_000 });
+    await expectTransportPlaybackReady(transport);
 
     await page.reload();
     await expect(page.getByText('Loading project…')).toBeHidden({ timeout: 30_000 });
 
     const transportAfter = getTransportToolbar(page);
-    await expect(transportAfter).toHaveAttribute('data-audio-ready', 'false');
+    await expectTransportPlaybackNotReady(transportAfter);
     await getTransportPlayButton(transportAfter).click();
 
-    await expect(transportAfter).toHaveAttribute('data-audio-ready', 'true', { timeout: 45_000 });
+    await expectTransportPlaybackReady(transportAfter);
+
+    await expect(transportAfter.getByRole('button', { name: 'Starting…' })).toHaveCount(0);
+    await expect(getTransportPlayButton(transportAfter)).toBeEnabled();
   });
 
   test('Scenario C — rapid Play clicks during loading; no pageerror/console error; eventual ready', async ({
@@ -112,7 +124,7 @@ test.describe('TASK-4.2 — piano sample loading (E2E)', () => {
       }
     });
 
-    await expect(transport).toHaveAttribute('data-audio-ready', 'true', { timeout: 45_000 });
+    await expectTransportPlaybackReady(transport);
 
     expect(pageErrors, `pageerror: ${pageErrors.map((e) => e.message).join('; ')}`).toHaveLength(0);
     expect(
