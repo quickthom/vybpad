@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { Navigate, Route, Routes, useNavigate } from 'react-router-dom';
 
 import { LoginForm } from '../components/auth/LoginForm';
@@ -8,34 +8,56 @@ import { ProjectListPage } from '../components/projects/ProjectListPage';
 import { useAuthStore } from '../store/authStore';
 import { EditorLayout } from './EditorLayout';
 
+const SessionHydratedContext = createContext(false);
+
 /**
- * Try cookie-based refresh once on startup so returning users with a valid refresh token
- * regain an access token without typing credentials again.
+ * One refresh attempt on startup (httpOnly cookie) so deep links to `/editor/:id` work after reload.
+ * Must finish before RequireAuth runs — otherwise we redirect to /login before refresh completes.
+ * Only auto-navigate to `/projects` from auth forms when refresh succeeds (not from editor/projects).
  */
-function SessionInitializer() {
-  const navigate = useNavigate();
+function useSessionHydration(navigate: ReturnType<typeof useNavigate>): boolean {
+  const [hydrated, setHydrated] = useState(() => Boolean(useAuthStore.getState().accessToken));
 
   useEffect(() => {
+    if (useAuthStore.getState().accessToken) {
+      return;
+    }
+
     let cancelled = false;
+    const pathAtStart = window.location.pathname;
+
     void (async () => {
-      if (useAuthStore.getState().accessToken) return;
       try {
         await useAuthStore.getState().refreshToken();
-        if (!cancelled) navigate('/projects', { replace: true });
+        if (cancelled) return;
+        if (pathAtStart === '/login' || pathAtStart === '/register') {
+          navigate('/projects', { replace: true });
+        }
       } catch {
-        /* remain on public route */
+        /* stay on current route */
+      } finally {
+        if (!cancelled) setHydrated(true);
       }
     })();
+
     return () => {
       cancelled = true;
     };
   }, [navigate]);
 
-  return null;
+  return hydrated;
 }
 
 function RequireAuth({ children }: { children: ReactNode }) {
+  const sessionHydrated = useContext(SessionHydratedContext);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  if (!sessionHydrated) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[var(--color-app-bg,#F3F4F6)] text-sm text-[var(--color-text-secondary,#4B5563)]">
+        Loading session…
+      </div>
+    );
+  }
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
@@ -43,14 +65,24 @@ function RequireAuth({ children }: { children: ReactNode }) {
 }
 
 function RootRedirect() {
+  const sessionHydrated = useContext(SessionHydratedContext);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  if (!sessionHydrated) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[var(--color-app-bg,#F3F4F6)] text-sm text-[var(--color-text-secondary,#4B5563)]">
+        Loading session…
+      </div>
+    );
+  }
   return <Navigate to={isAuthenticated ? '/projects' : '/login'} replace />;
 }
 
 export function AppRoutes() {
+  const navigate = useNavigate();
+  const sessionHydrated = useSessionHydration(navigate);
+
   return (
-    <>
-      <SessionInitializer />
+    <SessionHydratedContext.Provider value={sessionHydrated}>
       <ToastHost />
       <Routes>
         <Route
@@ -96,6 +128,6 @@ export function AppRoutes() {
         <Route path="/" element={<RootRedirect />} />
         <Route path="*" element={<RootRedirect />} />
       </Routes>
-    </>
+    </SessionHydratedContext.Provider>
   );
 }
