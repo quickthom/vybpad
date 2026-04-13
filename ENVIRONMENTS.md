@@ -9,7 +9,7 @@ The sections below expand this for **operators**: local development, Docker Comp
 - **Development:** Use git-ignored `.env` files. The repo root provides `.env.example`; copy it to `.env` and fill in secrets. `docker-compose.yml` loads the root `.env` where configured (`env_file` / `environment`).
 - **Production:** Inject variables via the hosting platform or orchestrator (no in-app secrets manager for MVP).
 - **Never commit** real secrets. `.env` and `*.env.local` are git-ignored.
-- **CI (if/when added):** supply secrets through the CI provider (for example GitHub Actions secrets), not inline in workflow files.
+- **CI:** prefer GitHub Actions secrets `CI_JWT_SECRET` / `CI_JWT_REFRESH_SECRET` (see `.github/workflows/ci.yml`). The workflow falls back to documented CI-only placeholders when secrets are unset so forks can run without configuration.
 
 ## Root variables (local / Compose)
 
@@ -20,8 +20,8 @@ The sections below expand this for **operators**: local development, Docker Comp
 | `JWT_REFRESH_SECRET` | Refresh token / cookie signing  | — (required; min 32 chars in production) |
 | `PORT`               | API listen port                 | `3001`                                   |
 | `NODE_ENV`           | Runtime mode                    | `development`                            |
-| `CORS_ORIGIN`        | Allowed browser origin for CORS | `http://localhost:5173`                  |
-| `VITE_API_URL`       | Client API base URL (Vite)      | `http://localhost:3001`                  |
+| `CORS_ORIGIN`        | Allowed browser origin for CORS | `http://127.0.0.1:5173`                  |
+| `VITE_API_URL`       | Client API base URL (Vite)      | `http://127.0.0.1:3001`                  |
 
 When adding a new variable in application code, update **`.env.example` in the same PR** (PAT-026).
 

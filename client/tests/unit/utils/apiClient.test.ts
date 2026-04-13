@@ -7,7 +7,7 @@
  * Criterion 11–13: single refresh on 401, retry original request, no retry on other statuses.
  * Criterion 12: onAuthFailure when refresh fails or second 401 after refresh.
  * Criterion 14: rejects with typed error objects (toMatchObject code/fields), not Response.
- * Criterion 15: VITE_API_URL base URL; default localhost when unset/blank.
+ * Criterion 15: VITE_API_URL base URL; default 127.0.0.1 when unset/blank.
  * Criterion 16: all HTTP via global fetch (mocked; no Axios).
  */
 
@@ -488,7 +488,7 @@ describe('apiClient — VITE_API_URL base URL (PAT-013)', () => {
     expect(vi.mocked(fetch).mock.calls[0]![0]).toBe('https://example.com/v1/api/projects');
   });
 
-  it('defaults to http://localhost:3001 when VITE_API_URL is blank', async () => {
+  it('defaults to http://127.0.0.1:3001 when VITE_API_URL is blank', async () => {
     vi.stubEnv('VITE_API_URL', '');
     vi.resetModules();
     vi.stubGlobal('fetch', vi.fn());
@@ -502,7 +502,7 @@ describe('apiClient — VITE_API_URL base URL (PAT-013)', () => {
 
     await m.projectsApi.list();
 
-    expect(vi.mocked(fetch).mock.calls[0]![0]).toBe('http://localhost:3001/api/projects');
+    expect(vi.mocked(fetch).mock.calls[0]![0]).toBe('http://127.0.0.1:3001/api/projects');
   });
 });
 

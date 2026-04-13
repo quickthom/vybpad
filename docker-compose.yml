@@ -27,6 +27,7 @@ services:
       DATABASE_URL: postgres://vybpad:vybpad@postgres:5432/vybpad_dev
       PORT: 3001
       NODE_ENV: development
+      CORS_ORIGIN: http://127.0.0.1:5173
     depends_on:
       - postgres
     command: sh -c "cd server && npm run dev"
@@ -43,7 +44,7 @@ services:
     env_file:
       - .env
     environment:
-      VITE_API_URL: http://localhost:3001
+      VITE_API_URL: http://127.0.0.1:3001
     command: sh -c "cd client && npm run dev -- --host 0.0.0.0"
 
 volumes:

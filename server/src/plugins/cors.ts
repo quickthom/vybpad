@@ -2,10 +2,11 @@ import cors from '@fastify/cors';
 import fp from 'fastify-plugin';
 import type { FastifyPluginAsync } from 'fastify';
 
-const DEFAULT_ORIGIN = 'http://localhost:5173';
+/** Align with `playwright.config` / `e2e:devstack` (127.0.0.1) so CORS matches the browser `Origin` header. */
+const DEFAULT_ORIGIN = 'http://127.0.0.1:5173';
 
 /**
- * PAT-013: CORS_ORIGIN defaults to Vite dev server URL.
+ * PAT-013: CORS_ORIGIN defaults to the Vite dev server origin (see `.env.example` / Playwright).
  * Wrapped with fastify-plugin so hooks apply to all routes (Fastify encapsulation).
  */
 const corsPluginImpl: FastifyPluginAsync = async (app) => {
