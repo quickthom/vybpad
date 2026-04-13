@@ -12,12 +12,10 @@
  * Entry mode: Table mode is required for digit-only chord adds (Text mode ignores digits until a duration key
  * arms entry — see useKeyboard). We assert `Entry mode Table` before typing so CI cannot silently run in Text.
  *
- * Autosave: after edits, wait for `Save` enabled (dirty), then match PUT /api/projects/:id whose JSON body
- * already contains scale degrees 1 and 2 (debounced save reflects both chord adds). Register
- * `page.waitForResponse` **before** typing so a fast PUT is never missed. Use `waitForResponse` (not
- * `waitForRequest` + `request.response()`) — Playwright’s `response()` can be null if the response finished
- * before subscription. Predicate checks PUT URL, ok status, and post body. Then assert GET /api/projects/:id
- * matches (contract).
+ * Autosave: after edits, wait for `Save` enabled (dirty), then **poll GET** `/api/projects/:id` until
+ * `songData` contains both scale degrees 1 and 2 (any measure). Do not require a single PUT whose body
+ * includes both degrees — debouncing may emit multiple PUTs or split chords across measures; the contract
+ * is persisted server state, not request shape.
  * Table-mode caret advance can place the second chord in `measures[1]` while the first remains in
  * `measures[0]`; anchoring only on `measures[0].chords.length` is wrong for INTERFACES `SongData`.
  * Debounced PUT is 1500ms (EditorLayout); request timeout must cover debounce + slow CI.
@@ -145,36 +143,21 @@ test.describe('TASK-3.5 — persistence happy path', () => {
     await page.locator('#transport-tempo-input').blur();
     await focusChordStripForDigitEntry(canvas);
 
-    /** Register before typing so we never miss a fast PUT; predicate matches debounced payload (both degrees), not an earlier coalesced save. */
-    const persistedPutResponsePromise = page.waitForResponse(
-      async (response) => {
-        const req = response.request();
-        if (req.method() !== 'PUT') return false;
-        if (!req.url().includes(`/api/projects/${id}`)) return false;
-        if (!response.ok()) return false;
-        try {
-          const body = req.postDataJSON() as {
-            songData?: { measures: Array<{ chords: Array<{ scaleDegree: number }> }> };
-          };
-          return !!(body.songData && songDataHasChordScaleDegrees1And2(body.songData));
-        } catch {
-          return false;
-        }
-      },
-      { timeout: 90_000 },
-    );
-
     // Slower typing avoids coalescing both digits before the first chord mutation on slow CI workers.
     await page.keyboard.type('12', { delay: 120 });
 
     await expect(page.getByRole('button', { name: /^Save$/ })).toBeEnabled({ timeout: 30_000 });
 
-    const putRes = await persistedPutResponsePromise;
-    expect(putRes.ok(), await putRes.text()).toBeTruthy();
-
     let token = (await loginApi(request, email, password)).accessToken;
-    let remote = await fetchProject(request, token, id);
-    expect(songDataHasChordScaleDegrees1And2(remote.songData)).toBe(true);
+    await expect
+      .poll(
+        async () => {
+          const remoteSong = await fetchProject(request, token, id);
+          return songDataHasChordScaleDegrees1And2(remoteSong.songData);
+        },
+        { timeout: 120_000, intervals: [300, 600, 1_200, 2_400] },
+      )
+      .toBe(true);
 
     await page.reload();
     await waitForEditorRouteReady(page);
@@ -197,7 +180,7 @@ test.describe('TASK-3.5 — persistence happy path', () => {
     await waitForEditorRouteReady(page);
 
     token = (await loginApi(request, email, password)).accessToken;
-    remote = await fetchProject(request, token, id);
+    const remote = await fetchProject(request, token, id);
     const chords = remote.songData.measures.flatMap((m) => m.chords ?? []);
     const degrees = chords.map((c) => c.scaleDegree);
     expect(degrees.filter((d) => d === 1).length).toBeGreaterThanOrEqual(1);
