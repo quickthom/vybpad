@@ -100,7 +100,7 @@ test.describe('TASK-3.5 — persistence happy path', () => {
     // the editor still performs a fresh GET /api/projects/:id.
     await page.getByRole('button', { name: 'Projects' }).click();
     await expect(page).toHaveURL(/\/projects$/);
-    await page.getByRole('button', { name: projectName }).click();
+    await page.getByRole('button', { name: projectName, exact: true }).click();
     await expect(page).toHaveURL(new RegExp(`/editor/${id}`));
     await expect(page.getByText('Loading project…')).toBeHidden({ timeout: 30_000 });
     await expect(page.getByRole('button', { name: /^Save$/ })).toBeDisabled();
@@ -114,9 +114,9 @@ test.describe('TASK-3.5 — persistence happy path', () => {
     await expect(page).toHaveURL(/\/projects$/);
 
     await expect(page.getByRole('heading', { name: 'Projects', exact: true })).toBeVisible();
-    await expect(page.getByRole('button', { name: projectName })).toBeVisible();
+    await expect(page.getByRole('button', { name: projectName, exact: true })).toBeVisible();
 
-    await page.getByRole('button', { name: projectName }).click();
+    await page.getByRole('button', { name: projectName, exact: true }).click();
     await expect(page).toHaveURL(new RegExp(`/editor/${id}`));
     await expect(page.getByText('Loading project…')).toBeHidden({ timeout: 30_000 });
 
