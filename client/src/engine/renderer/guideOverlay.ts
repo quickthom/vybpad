@@ -1,5 +1,6 @@
 import type { ChordEvent, SongData, Viewport } from '@vybpad/shared';
 
+import type { TheoryEngine } from '../theory/theoryEngine';
 import { theoryEngine } from '../theory';
 import {
   beginRoundRectPath,
@@ -102,16 +103,30 @@ function drawChromaticDim(ctx: CanvasRenderingContext2D, rect: { x: number; y: n
   ctx.restore();
 }
 
+export interface DrawGuideOverlayOptions {
+  /** When false, skip all overlay draws (TASK-2.12 AC4). EditorCanvas may also gate the call. */
+  showGuides?: boolean;
+  /** Defaults to shared {@link theoryEngine}. */
+  theoryEngine?: TheoryEngine;
+}
+
 /**
  * Second pass after {@link drawNoteBlocks}: guide-tone highlights for visible measures.
- * Pure Canvas2D — no React. Call only when `showGuides` is true (EditorCanvas) so there is no cost when off.
+ * Pure Canvas2D — no React. Prefer gating with `showGuides: false` for unit tests; EditorCanvas also skips the call when off.
  */
 export function drawGuideOverlay(
   ctx: CanvasRenderingContext2D,
   song: SongData,
   viewport: Viewport,
   colorScheme: 'diatonic' | 'major',
+  options: DrawGuideOverlayOptions = {},
 ): void {
+  if (options.showGuides === false) {
+    return;
+  }
+
+  const te = options.theoryEngine ?? theoryEngine;
+
   const start = viewport.startMeasure;
   const end = Math.min(start + viewport.measureCount, song.measures.length);
   const voices: readonly (0 | 1 | 2 | 3)[] = [0, 1, 2, 3];
@@ -137,7 +152,7 @@ export function drawGuideOverlay(
           continue;
         }
 
-        const compat = theoryEngine.getGuideCompatibility(note.scaleDegree, note.chromatic, chord, scale);
+        const compat = te.getGuideCompatibility(note.scaleDegree, note.chromatic, chord, scale);
         if (compat === 'scale-tone') {
           continue;
         }
