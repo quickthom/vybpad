@@ -5,7 +5,6 @@ import '@testing-library/jest-dom/vitest';
  * via `new EventConstructor(...)`; when PointerEvent is missing, clientX/clientY stay 0 and
  * canvas hit-testing tests break. Subclass MouseEvent so pointer init matches real browsers.
  */
-import '@testing-library/jest-dom/vitest';
 
 export {};
 
