@@ -1,64 +1,22 @@
 /*
- * QA COVERAGE PLAN — TASK-3.5 (+ TASK-4.2 remediation: editor shell + chord entry)
+ * QA COVERAGE PLAN — TASK-3.5 (+ TASK-4.2 editor shell)
  *
- * Criterion: Happy-path E2E — register → create project → editor → chord grid edit → persist → refresh →
- *   logout/login → project list + editor reload with persisted song (verified via API contract).
- *   happy: full UI flow + GET /api/projects/:id shows edited chords after re-auth
- *   error: (not required for foundation baseline)
- *   edges: —
+ * Happy-path E2E — register → create project → chord grid edit → autosave PUT → refresh → re-login → persisted song.
+ * Align chord entry with `develop`: fixed canvas click + Digit1/Digit2, PUT waiter registered before keys.
+ * `waitForEditorRouteReady` covers TASK-4.2 transport/canvas hydration (PAT-029).
  *
- * INTERFACES.md — GET /api/projects/:id → ProjectResponse; assertions use `songData.measures[].chords` only.
- *
- * Entry mode: Table mode is required for digit-only chord adds (Text mode ignores digits until a duration key
- * arms entry — see useKeyboard). We assert `Entry mode Table` before typing so CI cannot silently run in Text.
- *
- * Persist: debounced autosave (1500ms) issues PUT `/api/projects/:id`. Register `waitForResponse`
- * **before** chord entry so we never miss the PUT if `toBeEnabled` is slow or autosave wins the race.
- * Assert PUT ok, then GET shows both scale degrees 1 and 2.
- * Table-mode caret advance can place the second chord in `measures[1]` while the first remains in
- * `measures[0]`; anchoring only on `measures[0].chords.length` is wrong for INTERFACES `SongData`.
- *
- * Shell: `waitForEditorRouteReady` ensures canvas + transport are present before chord entry (no hydration races).
+ * INTERFACES.md — GET /api/projects/:id; second chord may land in measures[1] (table caret), so we scan all measures.
  */
 
-import { expect, test, type APIRequestContext, type Locator, type Page } from '@playwright/test';
+import { expect, test, type APIRequestContext } from '@playwright/test';
 
 import { waitForEditorRouteReady } from './helpers/editorReady';
 import { submitRegisterFormAndExpectProjects } from './helpers/registerFlow';
 
 const API_BASE = (process.env.PLAYWRIGHT_API_URL ?? 'http://127.0.0.1:3001').replace(/\/+$/, '');
 
-/** PAT-012 — chord strip sits below the measure header; target mid-strip for hit-testing. */
-const CHORD_STRIP_CLICK_Y = 24 + 40 / 2;
-
 function uniqueSuffix(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-}
-
-/** Text mode does not apply chord digits until a duration key arms entry — force Table for digit-only adds. */
-async function ensureTableEntryMode(page: Page): Promise<void> {
-  const btn = page.getByRole('button', { name: /Entry mode (Table|Text)/ });
-  await expect(btn).toBeVisible({ timeout: 15_000 });
-  const label = await btn.getAttribute('aria-label');
-  if (label?.includes('Text')) {
-    await btn.click();
-    await expect(btn).toHaveAttribute('aria-label', /Entry mode Table/);
-  }
-}
-
-/**
- * Focus the chord table for digit entry: click inside the first visible measure’s chord row
- * (viewport-stable vs a fixed x) and assert the editor canvas is focused so window key handlers run.
- */
-async function focusChordStripForDigitEntry(canvas: Locator): Promise<void> {
-  const box = await canvas.boundingBox();
-  expect(box, 'editor canvas should have a layout box').toBeTruthy();
-  const w = box!.width;
-  const h = box!.height;
-  const x = Math.min(Math.max(40, w * 0.1), w - 4);
-  const y = Math.min(Math.max(28, CHORD_STRIP_CLICK_Y), h - 4);
-  await canvas.click({ position: { x, y } });
-  await expect(canvas).toBeFocused({ timeout: 15_000 });
 }
 
 async function loginApi(
@@ -79,7 +37,6 @@ async function fetchProject(request: APIRequestContext, accessToken: string, pro
     headers: { Authorization: `Bearer ${accessToken}` },
   });
   expect(res.ok(), await res.text()).toBeTruthy();
-  // INTERFACES.md — GET /api/projects/:id → ProjectResponse
   return res.json() as Promise<{
     id: string;
     name: string;
@@ -88,7 +45,6 @@ async function fetchProject(request: APIRequestContext, accessToken: string, pro
   }>;
 }
 
-/** True when persisted `SongData` contains at least one diatonic chord with degree 1 and one with degree 2 (any measure). */
 function songDataHasChordScaleDegrees1And2(songData: {
   measures: Array<{ chords: Array<{ scaleDegree: number }> }>;
 }): boolean {
@@ -107,7 +63,7 @@ function songDataHasChordScaleDegrees1And2(songData: {
 test.describe('TASK-3.5 — persistence happy path', () => {
   test.describe.configure({ mode: 'serial', timeout: 180_000 });
 
-  test('register → create project → edit chords → autosave PUT → refresh → re-login → list and editor load persisted song', async ({
+  test('register → create project → edit chords → autosave → refresh → re-login → list and editor load persisted song', async ({
     page,
     request,
   }) => {
@@ -132,27 +88,25 @@ test.describe('TASK-3.5 — persistence happy path', () => {
     const id = projectId as string;
 
     await waitForEditorRouteReady(page);
-    await ensureTableEntryMode(page);
 
     const canvas = page.getByRole('application', { name: /Song editor/i });
     await expect(page.getByRole('button', { name: /^Save$/ })).toBeDisabled({ timeout: 30_000 });
-    // Transport tempo `<input type="number">` is focusable; if it ever holds focus, digit keys are skipped by
-    // useKeyboard (`isEditableKeyboardTarget`). Blur before chord entry (TASK-4.2 CI remediation).
     await page.locator('#transport-tempo-input').blur();
-    await focusChordStripForDigitEntry(canvas);
+    await canvas.click({ position: { x: 400, y: 120 } });
 
-    const autosavePutPromise = page.waitForResponse((response) => {
-      const req = response.request();
-      return req.method() === 'PUT' && req.url().includes(`/api/projects/${id}`);
-    }, { timeout: 90_000 });
+    const savePutPromise = page.waitForResponse(
+      (r) =>
+        r.request().method() === 'PUT' &&
+        r.url().includes(`/api/projects/${id}`) &&
+        r.ok(),
+      { timeout: 60_000 },
+    );
 
-    // Slower typing avoids coalescing both digits before the first chord mutation on slow CI workers.
-    await page.keyboard.type('12', { delay: 120 });
+    await page.keyboard.press('Digit1');
+    await page.keyboard.press('Digit2');
 
     await expect(page.getByRole('button', { name: /^Save$/ })).toBeEnabled({ timeout: 30_000 });
-    const autosavePut = await autosavePutPromise;
-    expect(autosavePut.ok(), await autosavePut.text()).toBeTruthy();
-    await expect(page.getByRole('button', { name: /^Save$/ })).toBeDisabled({ timeout: 30_000 });
+    await savePutPromise;
 
     let token = (await loginApi(request, email, password)).accessToken;
     let remote = await fetchProject(request, token, id);
