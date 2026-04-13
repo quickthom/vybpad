@@ -236,6 +236,40 @@ describe('TASK-2.9 entry modes — handleEditorKeydown (contract)', () => {
     useSongStore.getState().loadSong(buildDefaultSong());
   });
 
+  it('table mode: consecutive digits use fresh selection snapshots even if the rendered prop is stale', () => {
+    const renderedSong = makeSongEmptyFirstMeasure();
+    let currentSong = structuredClone(renderedSong);
+    let currentSelection: EditorKeyboardContext['selection'] = null;
+    const onSelectionChange = vi.fn((next) => {
+      currentSelection = next;
+    });
+    const onChordEdit = vi.fn<EditorKeyboardContext['onChordEdit']>((measureIndex, event) => {
+      if (event.type !== 'add') return;
+      const measure = currentSong.measures[measureIndex];
+      if (!measure) return;
+      measure.chords.push({ ...event.chord, id: randomUUID() });
+      measure.chords.sort((a, b) => a.beat - b.beat);
+    });
+    const ctx = baseCtx({
+      song: renderedSong,
+      selection: { type: 'range', measureIndex: 0, rangeStart: 0, rangeEnd: 96 },
+      onChordEdit,
+      onSelectionChange,
+      getSongAfterMutation: () => currentSong,
+      getSelectionAfterMutation: () => currentSelection,
+    });
+
+    handleEditorKeydown(keydown('1'), ctx);
+    handleEditorKeydown(keydown('2'), ctx);
+
+    const chords = currentSong.measures[0]?.chords ?? [];
+    expect(chords).toHaveLength(2);
+    expect(chords.map((c) => ({ scaleDegree: c.scaleDegree, beat: c.beat }))).toEqual([
+      { scaleDegree: 1, beat: 0 },
+      { scaleDegree: 2, beat: 48 },
+    ]);
+  });
+
   it('table mode: after note digit append, onSelectionChange receives collapsed range at next beat', () => {
     const chordId = randomUUID();
     const noteId = randomUUID();

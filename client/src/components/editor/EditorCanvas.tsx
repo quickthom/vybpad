@@ -37,6 +37,7 @@ export interface EditorCanvasProps {
   onSelectionChange: (selection: Selection | null) => void;
   onViewportChange: (viewport: Viewport) => void;
   getSongAfterMutation?: () => SongData;
+  getSelectionAfterMutation?: () => Selection | null;
   onToggleEntryMode?: () => void;
 }
 
@@ -128,6 +129,7 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
     onNoteEdit,
     onSelectionChange,
     getSongAfterMutation,
+    getSelectionAfterMutation,
     onToggleEntryMode,
   } = props;
 
@@ -166,6 +168,7 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
     keyboardTargetMeasureRef,
     textDurationArmedRef,
     getSongAfterMutation,
+    getSelectionAfterMutation,
     onToggleEntryMode,
     onChordEdit,
     onNoteEdit,
