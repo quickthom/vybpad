@@ -37,6 +37,7 @@ export function TransportControls({
     <div
       role="toolbar"
       aria-label="Transport"
+      aria-busy={initStatus === 'initializing' ? true : undefined}
       data-audio-ready={initStatus === 'ready' ? 'true' : 'false'}
       className="flex min-h-[48px] flex-wrap items-center gap-2 border-b border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)] px-4 py-2"
     >
@@ -110,6 +111,7 @@ export function TransportControls({
 
       {initStatus === 'initializing' && (
         <div
+          role="status"
           className="flex items-center gap-2 text-sm text-[var(--color-text-secondary,#4B5563)]"
           aria-live="polite"
         >
@@ -117,18 +119,18 @@ export function TransportControls({
             className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-[var(--color-primary,#4F46E5)] border-t-transparent"
             aria-hidden="true"
           />
-          <span>Loading audio engine…</span>
+          <span>Loading piano samples…</span>
         </div>
       )}
 
       {initStatus === 'ready' && (
-        <p className="sr-only" aria-live="polite">
-          Playback audio ready
+        <p className="sr-only" role="status" aria-live="polite">
+          Playback ready. Piano samples loaded.
         </p>
       )}
 
       {initErrorCode ? (
-        <p className="max-w-md text-sm text-[var(--color-destructive,#DC2626)]" role="alert">
+        <p className="max-w-md text-sm text-[var(--color-destructive,#DC2626)]">
           {getPlaybackInitErrorMessage(initErrorCode)}
         </p>
       ) : null}

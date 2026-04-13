@@ -1,6 +1,7 @@
 import type { ChordEvent, Measure, NoteEvent, ScaleDegree, Selection, SongData, Viewport } from '@vybpad/shared';
 
-import { getMeterAtMeasure, getScaleAtMeasure, measureLengthInTicks } from '../../engine/renderer/tickUtils';
+import { chordAreaTopY, noteStaffTopY, viewportXToAbsoluteTick } from '../../engine/renderer/layout';
+import { getMeterAtMeasure, getScaleAtMeasure, getMeasureStartTicks, measureLengthInTicks } from '../../engine/renderer/tickUtils';
 import { theoryEngine } from '../../engine/theory';
 
 /**
@@ -39,6 +40,21 @@ export function resolveTargetMeasureIndex(selection: Selection | null, viewport:
   if (n === 0) return 0;
   const raw = selection?.measureIndex ?? viewport.startMeasure;
   return Math.max(0, Math.min(raw, n - 1));
+}
+
+/**
+ * Map an absolute tick (song timeline) to the measure that contains or follows its downbeat.
+ * Used when translating pointer X to a chord-strip insert target (TASK-4.2).
+ */
+export function measureIndexFromAbsoluteTick(song: SongData, absoluteTick: number): number {
+  const starts = getMeasureStartTicks(song);
+  const n = song.measures.length;
+  if (n === 0) return 0;
+  let idx = 0;
+  for (let i = 0; i < n; i++) {
+    if ((starts[i] ?? 0) <= absoluteTick) idx = i;
+  }
+  return idx;
 }
 
 /** TASK-2.9 table mode: caret advances as a collapsed range at the next beat (PAT-004 tick math). */
@@ -124,6 +140,30 @@ export function nextAppendBeat(
   }
   if (end >= len) return null;
   return end;
+}
+
+/**
+ * When {@link hitTestEditorCanvas} misses (no chord/note block), a click in the **empty chord strip**
+ * still needs a table-mode caret: collapsed `range` at the next chord append beat for the measure under X.
+ * Otherwise pointer-down clears selection to `null` and digit keys that rely on a collapsed range / measure
+ * context can fail to enter harmony (E2E persistence).
+ */
+export function chordStripCaretSelectionFromPointer(
+  song: SongData,
+  viewport: Viewport,
+  viewportX: number,
+  viewportY: number,
+): Selection | null {
+  if (viewportY < chordAreaTopY() || viewportY >= noteStaffTopY()) {
+    return null;
+  }
+  const absoluteTick = viewportXToAbsoluteTick(viewportX, viewport, song);
+  const measureIndex = measureIndexFromAbsoluteTick(song, absoluteTick);
+  const nb = nextAppendBeat(song, measureIndex, 'chord', 0);
+  if (nb == null) {
+    return null;
+  }
+  return { type: 'range', measureIndex, rangeStart: nb, rangeEnd: nb };
 }
 
 export function shouldUseNoteEntry(selection: Selection | null): boolean {

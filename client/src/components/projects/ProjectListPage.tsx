@@ -9,6 +9,7 @@ import { useAuthStore } from '../../store/authStore';
 import { useToastStore } from '../../store/toastStore';
 import { getApiErrorMessage } from '../../utils/errorMessages';
 import { projectsApi } from '../../utils/apiClient';
+import { clearEditorPostBootstrap } from '../../app/editorProjectHydration';
 import { DeleteProjectDialog } from './DeleteProjectDialog';
 
 const dateFmt = new Intl.DateTimeFormat(undefined, {
@@ -63,6 +64,7 @@ export function ProjectListPage() {
   }
 
   function handleOpen(project: ProjectSummary) {
+    clearEditorPostBootstrap(project.id);
     navigate(`/editor/${project.id}`, { replace: true });
   }
 

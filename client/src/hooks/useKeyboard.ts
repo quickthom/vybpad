@@ -8,7 +8,6 @@ import {
   clampDurationToMeasure,
   DURATION_KEYS,
   entryEndsAtOrPastMeasureEnd,
-  findChordIdByPlacement,
   findNoteIdByPlacement,
   isEditableKeyboardTarget,
   navigateSelection,
@@ -35,6 +34,8 @@ export interface EditorKeyboardContext {
   textDurationArmedRef: MutableRefObject<boolean>;
   /** After editChord/editNote, read authoritative song (App wires Zustand). Tests simulate with mocks. */
   getSongAfterMutation?: () => SongData;
+  /** After selection changes, read authoritative selection so rapid key bursts use the latest caret. */
+  getSelectionAfterMutation?: () => Selection | null;
   onToggleEntryMode?: () => void;
   onEntryModeToggle?: () => void;
   onChordEdit: (measureIndex: number, event: ChordEditAction) => void;
@@ -58,6 +59,14 @@ function findVoiceForNote(song: SongData, measureIndex: number, noteId: string):
 
 function pickSong(ctx: EditorKeyboardContext): SongData {
   return ctx.getSongAfterMutation?.() ?? ctx.song;
+}
+
+function pickSelection(ctx: EditorKeyboardContext): Selection | null {
+  // Do not use `??`: authoritative `null` (no caret) must not fall back to a stale React prop.
+  if (ctx.getSelectionAfterMutation) {
+    return ctx.getSelectionAfterMutation();
+  }
+  return ctx.selection;
 }
 
 /** Collapsed range in table mode acts as a caret beat for the next insertion (TASK-2.9). */
@@ -87,6 +96,7 @@ export function handleEditorKeydown(e: KeyboardEvent, ctx: EditorKeyboardContext
   if (isEditableKeyboardTarget(document.activeElement)) return;
   if (isEditableKeyboardTarget(e.target)) return;
   if (e.ctrlKey || e.metaKey || e.altKey) return;
+  const selection = pickSelection(ctx);
 
   const applyDurationKey = (ticks: number): void => {
     const rounded = Math.round(ticks);
@@ -95,7 +105,7 @@ export function handleEditorKeydown(e: KeyboardEvent, ctx: EditorKeyboardContext
       ctx.textDurationArmedRef.current = true;
       return;
     }
-    const sel = ctx.selection;
+    const sel = selection;
     const id = sel?.eventIds?.[0];
     if (!id || !sel || sel.type === 'range') return;
     if (sel.type === 'chord') {
@@ -124,7 +134,7 @@ export function handleEditorKeydown(e: KeyboardEvent, ctx: EditorKeyboardContext
 
   if (key === 'ArrowLeft' || key === 'ArrowRight') {
     const dir = key === 'ArrowLeft' ? -1 : 1;
-    const next = navigateSelection(ctx.song, ctx.viewport, ctx.selection, ctx.activeVoice, dir, ctx.entryMode);
+    const next = navigateSelection(ctx.song, ctx.viewport, selection, ctx.activeVoice, dir, ctx.entryMode);
     if (next) {
       e.preventDefault();
       ctx.onSelectionChange(next);
@@ -133,7 +143,7 @@ export function handleEditorKeydown(e: KeyboardEvent, ctx: EditorKeyboardContext
   }
 
   if (key === 'Backspace' || key === 'Delete') {
-    const sel = ctx.selection;
+    const sel = selection;
     const id = sel?.eventIds?.[0];
     if (!sel || !id || sel.type === 'range') return;
     e.preventDefault();
@@ -158,7 +168,7 @@ export function handleEditorKeydown(e: KeyboardEvent, ctx: EditorKeyboardContext
 
   const degree = parseScaleDegreeKey(key);
   if (degree != null) {
-    const sel = ctx.selection;
+    const sel = selection;
     if (sel?.type === 'range') {
       const isCollapsedCaret = sel.rangeStart === sel.rangeEnd && ctx.entryMode === 'table';
       if (!isCollapsedCaret) return;
@@ -167,17 +177,17 @@ export function handleEditorKeydown(e: KeyboardEvent, ctx: EditorKeyboardContext
     if (ctx.entryMode === 'text' && !ctx.textDurationArmedRef.current) return;
 
     const measureIndex = resolveMeasureIndexForKeyboardDigit(
-      ctx.selection,
+      selection,
       ctx.viewport,
-      ctx.song,
+      pickSong(ctx),
       ctx.keyboardTargetMeasureRef,
     );
 
-    const noteEntry = shouldUseNoteEntry(ctx.selection);
+    const noteEntry = shouldUseNoteEntry(selection);
     const chordDigitsOk = shouldAllowChordDigitEntry(ctx.entryMode) && !noteEntry;
 
     if (noteEntry) {
-      const selNoteId = ctx.selection?.type === 'note' ? ctx.selection.eventIds?.[0] : undefined;
+      const selNoteId = selection?.type === 'note' ? selection.eventIds?.[0] : undefined;
       const voice =
         selNoteId != null ? (findVoiceForNote(ctx.song, measureIndex, selNoteId) ?? ctx.activeVoice) : ctx.activeVoice;
 
@@ -196,7 +206,7 @@ export function handleEditorKeydown(e: KeyboardEvent, ctx: EditorKeyboardContext
         return;
       }
 
-      const nb = tableInsertBeatFromSelection(ctx.selection, ctx.song, measureIndex, 'note', voice);
+      const nb = tableInsertBeatFromSelection(selection, ctx.song, measureIndex, 'note', voice);
       if (nb == null) return;
       e.preventDefault();
       const durClamped = clampDurationToMeasure(ctx.song, measureIndex, nb, ctx.currentDurationTicks);
@@ -221,15 +231,15 @@ export function handleEditorKeydown(e: KeyboardEvent, ctx: EditorKeyboardContext
 
     if (chordDigitsOk) {
       if (ctx.entryMode === 'text') {
-        if (ctx.selection?.type === 'chord' && ctx.selection.eventIds?.[0]) {
-          const id = ctx.selection.eventIds[0];
-          const ch = ctx.song.measures[ctx.selection.measureIndex]?.chords.find((c) => c.id === id);
+        if (selection?.type === 'chord' && selection.eventIds?.[0]) {
+          const id = selection.eventIds[0];
+          const ch = ctx.song.measures[selection.measureIndex]?.chords.find((c) => c.id === id);
           if (!ch) return;
           e.preventDefault();
           ctx.textDurationArmedRef.current = false;
-          const durClamped = clampDurationToMeasure(ctx.song, ctx.selection.measureIndex, ch.beat, ctx.currentDurationTicks);
-          const p = buildDiatonicChordPayload(ctx.song, ctx.selection.measureIndex, degree, ch.beat, durClamped);
-          ctx.onChordEdit(ctx.selection.measureIndex, {
+          const durClamped = clampDurationToMeasure(ctx.song, selection.measureIndex, ch.beat, ctx.currentDurationTicks);
+          const p = buildDiatonicChordPayload(ctx.song, selection.measureIndex, degree, ch.beat, durClamped);
+          ctx.onChordEdit(selection.measureIndex, {
             type: 'update',
             chordId: id,
             changes: {
@@ -246,7 +256,7 @@ export function handleEditorKeydown(e: KeyboardEvent, ctx: EditorKeyboardContext
           });
           return;
         }
-        const nb = tableInsertBeatFromSelection(ctx.selection, ctx.song, measureIndex, 'chord', ctx.activeVoice);
+        const nb = tableInsertBeatFromSelection(selection, ctx.song, measureIndex, 'chord', ctx.activeVoice);
         if (nb == null) return;
         e.preventDefault();
         ctx.textDurationArmedRef.current = false;
@@ -256,25 +266,25 @@ export function handleEditorKeydown(e: KeyboardEvent, ctx: EditorKeyboardContext
         return;
       }
 
-      const nb = tableInsertBeatFromSelection(ctx.selection, ctx.song, measureIndex, 'chord', ctx.activeVoice);
+      // Use the authoritative store snapshot when available so append-beat math matches the last mutation
+      // (TASK-3.5 / TASK-4.2 persistence E2E: consecutive digits must not depend on a stale `ctx.song` closure).
+      const songForChord = pickSong(ctx);
+      const nb = tableInsertBeatFromSelection(selection, songForChord, measureIndex, 'chord', ctx.activeVoice);
       if (nb == null) return;
       e.preventDefault();
-      const durClamped = clampDurationToMeasure(ctx.song, measureIndex, nb, ctx.currentDurationTicks);
-      const payload = buildDiatonicChordPayload(ctx.song, measureIndex, degree, nb, durClamped);
+      const durClamped = clampDurationToMeasure(songForChord, measureIndex, nb, ctx.currentDurationTicks);
+      const payload = buildDiatonicChordPayload(songForChord, measureIndex, degree, nb, durClamped);
       ctx.onChordEdit(measureIndex, { type: 'add', chord: payload });
 
       const songAfter = pickSong(ctx);
-      const m = songAfter.measures[measureIndex];
-      const cid = m ? findChordIdByPlacement(m, nb, degree, durClamped) : null;
-      if (ctx.getSongAfterMutation && cid) {
-        if (entryEndsAtOrPastMeasureEnd(songAfter, measureIndex, nb, durClamped) && measureIndex + 1 < songAfter.measures.length) {
-          ctx.keyboardTargetMeasureRef.current = measureIndex + 1;
-          ctx.onSelectionChange(null);
-        } else {
-          ctx.onSelectionChange({ type: 'chord', measureIndex, eventIds: [cid] });
-        }
+      // Table mode always advances a collapsed range caret (TASK-2.9). Do not select the new chord here:
+      // with `getSongAfterMutation` wired, selecting `{ type: 'chord' }` made the next digit follow a
+      // different code path than the caret path and could miss the second append under rapid input / CI.
+      if (entryEndsAtOrPastMeasureEnd(songAfter, measureIndex, nb, durClamped) && measureIndex + 1 < songAfter.measures.length) {
+        ctx.keyboardTargetMeasureRef.current = measureIndex + 1;
+        ctx.onSelectionChange(null);
       } else {
-        ctx.onSelectionChange(tableModeAdvanceRange(ctx.song, measureIndex, nb, durClamped));
+        ctx.onSelectionChange(tableModeAdvanceRange(songAfter, measureIndex, nb, durClamped));
       }
     }
   }

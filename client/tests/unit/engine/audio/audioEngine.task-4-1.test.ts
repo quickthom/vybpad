@@ -37,10 +37,20 @@ const { toneStart } = vi.hoisted(() => ({
   toneStart: vi.fn<[], Promise<void>>(),
 }));
 
+vi.mock('@/engine/audio/pianoSampleLoader', () => ({
+  ensurePianoSamplesLoaded: vi.fn(() => Promise.resolve()),
+  disposePianoSamples: vi.fn(),
+  resetPianoSampleCacheForTests: vi.fn(),
+  getPianoInstrument: vi.fn(() => null),
+}));
+
 /** Tone is imported as `await import('tone')` — `start` / `getTransport` live on the namespace, not `default`. */
 vi.mock('tone', () => ({
   __esModule: true,
   start: () => toneStart(),
+  getContext: () => ({
+    rawContext: {},
+  }),
   getTransport: () => ({
     PPQ: 48,
     bpm: { value: 120 },

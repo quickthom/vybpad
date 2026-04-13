@@ -14,6 +14,12 @@ import { useToastStore } from '../store/toastStore';
 import { useUIStore } from '../store/uiStore';
 import { projectsApi } from '../utils/apiClient';
 import { getApiErrorMessage, isApiTransportFailure } from '../utils/errorMessages';
+import {
+  clearAllEditorPostBootstrap,
+  clearEditorPostBootstrap,
+  markEditorPostBootstrapFromNavigate,
+  shouldSkipDuplicateGetAfterPostBootstrap,
+} from './editorProjectHydration';
 
 /** TASK-3.4: idle delay after the last edit before auto PUT (coalesces rapid edits). */
 const AUTOSAVE_DEBOUNCE_MS = 1500;
@@ -74,6 +80,13 @@ export function EditorLayout() {
   const runProjectSaveRef = useRef<(source: 'manual' | 'auto') => Promise<void>>(async () => {});
   const projectNameRef = useRef(projectName);
   projectNameRef.current = projectName;
+  /**
+   * POST /projects → /editor/:id bootstrap hydrates from `location.state`. The load effect can re-run
+   * when dependency identities change while state still holds the boot project; repeating `loadSong`
+   * resets `isDirty` and drops debounced autosave (TASK-3.5 E2E).
+   * Module-level {@link markEditorPostBootstrapFromNavigate} survives Strict Mode remounts (TASK-4.2).
+   */
+  const editorBootstrapHydratedIdRef = useRef<string | null>(null);
 
   const viewport = useUIStore((s) => s.viewport);
   const selection = useUIStore((s) => s.selection);
@@ -88,6 +101,7 @@ export function EditorLayout() {
   const [selectedMeasures, setSelectedMeasures] = useState<[number, number] | null>(null);
 
   const getSongAfterMutation = useCallback(() => useSongStore.getState().song, []);
+  const getSelectionAfterMutation = useCallback(() => useUIStore.getState().selection, []);
 
   useEffect(() => {
     syncPlaybackEngineWithSong();
@@ -98,18 +112,45 @@ export function EditorLayout() {
     let cancelled = false;
 
     if (!projectId) {
+      editorBootstrapHydratedIdRef.current = null;
+      clearAllEditorPostBootstrap();
       loadSong(buildDefaultSong());
       setProjectName(null);
       setLoadStatus('ready');
       return;
     }
 
+    // POST-bootstrap ref is only meaningful for the current route param; clear when switching projects.
+    if (editorBootstrapHydratedIdRef.current != null && editorBootstrapHydratedIdRef.current !== projectId) {
+      editorBootstrapHydratedIdRef.current = null;
+    }
+
     const navState = location.state as EditorLocationState | null;
     const boot = navState?.project;
     if (boot && boot.id === projectId) {
+      if (editorBootstrapHydratedIdRef.current === projectId) {
+        return;
+      }
+      editorBootstrapHydratedIdRef.current = projectId;
+      markEditorPostBootstrapFromNavigate(projectId);
       loadSong(boot.songData);
       setProjectName(boot.name);
       setLoadStatus('ready');
+      return;
+    }
+
+    // Strict Mode remount clears the ref; `location.state` may also be gone. If we already hydrated from
+    // POST /projects for this id, do not GET — it can race chord entry and `loadSong` would clear
+    // `isDirty` / wipe edits before autosave (TASK-4.2 E2E).
+    if (shouldSkipDuplicateGetAfterPostBootstrap(projectId)) {
+      editorBootstrapHydratedIdRef.current = projectId;
+      setLoadStatus('ready');
+      return;
+    }
+
+    // Router may replace `location` and drop `state` while `projectId` is unchanged (see deps comment
+    // below). Legacy ref path kept for in-flight effect re-runs without unmount.
+    if (editorBootstrapHydratedIdRef.current === projectId) {
       return;
     }
 
@@ -126,6 +167,7 @@ export function EditorLayout() {
         // 401 flows call `onAuthFailure` before throw, which unmounts this tree before catch runs.
         showErrorToast(getApiErrorMessage(err));
         if (cancelled) return;
+        clearEditorPostBootstrap(projectId);
         navigate('/projects', { replace: true });
       }
     })();
@@ -133,8 +175,11 @@ export function EditorLayout() {
     return () => {
       cancelled = true;
     };
-    // `location.state` is intentionally read when `projectId` changes (POST create bootstrap).
-  }, [projectId, loadSong, navigate, showErrorToast, location.state]);
+    // Read `location.state` when `projectId` changes (POST create bootstrap). Do **not** list
+    // `location.state` in deps — Router can replace `location` without a project change and drop
+    // `state`, which would re-run this effect, GET the project, and `loadSong` would clear
+    // `isDirty` (TASK-3.5 E2E autosave).
+  }, [projectId, loadSong, navigate, showErrorToast]);
 
   useEffect(() => {
     setSelectedMeasures((prev) => {
@@ -152,6 +197,7 @@ export function EditorLayout() {
   }, [song.measures.length]);
 
   async function handleLogout() {
+    if (projectId) clearEditorPostBootstrap(projectId);
     await logout();
     navigate('/login', { replace: true });
   }
@@ -231,8 +277,10 @@ export function EditorLayout() {
     }
     autosaveTimerRef.current = setTimeout(() => {
       autosaveTimerRef.current = null;
+      // Use ref (not `runProjectSave` closure) so this effect does not re-run when only the
+      // callback identity changes — otherwise the cleanup can clear the timer and autosave never fires (TASK-3.5 E2E).
       // Return promise so Vitest fake timers (`runAllTimersAsync`) await the PUT + store update.
-      return runProjectSave('auto');
+      return runProjectSaveRef.current('auto');
     }, AUTOSAVE_DEBOUNCE_MS);
     return () => {
       if (autosaveTimerRef.current) {
@@ -240,7 +288,8 @@ export function EditorLayout() {
         autosaveTimerRef.current = null;
       }
     };
-  }, [song, isDirty, projectId, loadStatus, runProjectSave]);
+    // `runProjectSave` is invoked via `runProjectSaveRef` so this effect does not depend on callback identity.
+  }, [song, isDirty, projectId, loadStatus]);
 
   async function handleSave() {
     if (!projectId || saveBusy || loadStatus !== 'ready') return;
@@ -298,7 +347,10 @@ export function EditorLayout() {
           ) : null}
           <button
             type="button"
-            onClick={() => navigate('/projects')}
+            onClick={() => {
+              if (projectId) clearEditorPostBootstrap(projectId);
+              navigate('/projects');
+            }}
             className="inline-flex h-10 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-4 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
           >
             Projects
@@ -353,6 +405,7 @@ export function EditorLayout() {
               onSelectionChange={setSelection}
               onViewportChange={setViewport}
               getSongAfterMutation={getSongAfterMutation}
+              getSelectionAfterMutation={getSelectionAfterMutation}
               onToggleEntryMode={toggleEntryMode}
             />
           )}

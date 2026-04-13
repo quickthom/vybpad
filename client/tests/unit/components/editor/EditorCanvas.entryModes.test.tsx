@@ -20,6 +20,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { EditorCanvas } from '../../../../src/components/editor/EditorCanvas';
 import { type EditorKeyboardContext, handleEditorKeydown } from '../../../../src/hooks/useKeyboard';
+import { buildDefaultSong, useSongStore } from '../../../../src/store/songStore';
+import { useUIStore } from '../../../../src/store/uiStore';
 
 const DEFAULT_VIEWPORT: Viewport = {
   startMeasure: 0,
@@ -212,6 +214,86 @@ describe('TASK-2.9 entry modes — handleEditorKeydown (contract)', () => {
       rangeStart: 48,
       rangeEnd: 48,
     });
+  });
+
+  it('table mode: consecutive digits with getSongAfterMutation (store) append two chords (TASK-4.2 persistence)', () => {
+    useSongStore.getState().loadSong(makeSongEmptyFirstMeasure());
+    const onSelectionChange = vi.fn();
+    const buildCtx = (): EditorKeyboardContext =>
+      baseCtx({
+        song: useSongStore.getState().song,
+        onChordEdit: useSongStore.getState().editChord,
+        onSelectionChange,
+        getSongAfterMutation: () => useSongStore.getState().song,
+      });
+
+    handleEditorKeydown(keydown('1'), buildCtx());
+    handleEditorKeydown(keydown('2'), buildCtx());
+
+    const chords = useSongStore.getState().song.measures[0]?.chords ?? [];
+    expect(chords.length).toBe(2);
+    expect(chords.map((c) => c.scaleDegree).sort((a, b) => a - b)).toEqual([1, 2]);
+
+    useSongStore.getState().loadSong(buildDefaultSong());
+  });
+
+  /** Mirrors EditorLayout wiring: both snapshots read live Zustand (TASK-4.2 E2E / persistence poll). */
+  it('table mode: consecutive digits with getSongAfterMutation + getSelectionAfterMutation (Zustand) append two chords', () => {
+    useSongStore.getState().loadSong(makeSongEmptyFirstMeasure());
+    useUIStore.getState().setSelection(null);
+    const buildCtx = (): EditorKeyboardContext =>
+      baseCtx({
+        song: useSongStore.getState().song,
+        selection: useUIStore.getState().selection,
+        onChordEdit: useSongStore.getState().editChord,
+        onSelectionChange: useUIStore.getState().setSelection,
+        getSongAfterMutation: () => useSongStore.getState().song,
+        getSelectionAfterMutation: () => useUIStore.getState().selection,
+      });
+
+    handleEditorKeydown(keydown('1'), buildCtx());
+    handleEditorKeydown(keydown('2'), buildCtx());
+
+    const chords = useSongStore.getState().song.measures[0]?.chords ?? [];
+    expect(chords.length).toBe(2);
+    expect(chords.map((c) => c.scaleDegree).sort((a, b) => a - b)).toEqual([1, 2]);
+
+    useSongStore.getState().loadSong(buildDefaultSong());
+    useUIStore.getState().setSelection(null);
+  });
+
+  it('table mode: consecutive digits use fresh selection snapshots even if the rendered prop is stale', () => {
+    const renderedSong = makeSongEmptyFirstMeasure();
+    let currentSong = structuredClone(renderedSong);
+    let currentSelection: EditorKeyboardContext['selection'] = null;
+    const onSelectionChange = vi.fn((next) => {
+      currentSelection = next;
+    });
+    const onChordEdit = vi.fn<EditorKeyboardContext['onChordEdit']>((measureIndex, event) => {
+      if (event.type !== 'add') return;
+      const measure = currentSong.measures[measureIndex];
+      if (!measure) return;
+      measure.chords.push({ ...event.chord, id: randomUUID() });
+      measure.chords.sort((a, b) => a.beat - b.beat);
+    });
+    const ctx = baseCtx({
+      song: renderedSong,
+      selection: { type: 'range', measureIndex: 0, rangeStart: 0, rangeEnd: 96 },
+      onChordEdit,
+      onSelectionChange,
+      getSongAfterMutation: () => currentSong,
+      getSelectionAfterMutation: () => currentSelection,
+    });
+
+    handleEditorKeydown(keydown('1'), ctx);
+    handleEditorKeydown(keydown('2'), ctx);
+
+    const chords = currentSong.measures[0]?.chords ?? [];
+    expect(chords).toHaveLength(2);
+    expect(chords.map((c) => ({ scaleDegree: c.scaleDegree, beat: c.beat }))).toEqual([
+      { scaleDegree: 1, beat: 0 },
+      { scaleDegree: 2, beat: 48 },
+    ]);
   });
 
   it('table mode: after note digit append, onSelectionChange receives collapsed range at next beat', () => {

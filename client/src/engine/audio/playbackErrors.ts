@@ -28,6 +28,7 @@ export function getPlaybackInitErrorMessage(code: PlaybackInitErrorCode): string
 export const PLAYBACK_ERROR_CODES = {
   AUDIO_INIT_FAILED: 'AUDIO_INIT_FAILED',
   AUDIO_NOT_READY: 'AUDIO_NOT_READY',
+  SAMPLE_LOAD_FAILED: 'SAMPLE_LOAD_FAILED',
 } as const;
 
 export type PlaybackErrorCode = (typeof PLAYBACK_ERROR_CODES)[keyof typeof PLAYBACK_ERROR_CODES];
@@ -49,8 +50,13 @@ export function isPlaybackError(value: unknown): value is PlaybackError {
 
 /** Maps engine/runtime errors to INTERFACES `PlaybackInitErrorCode` for the store. */
 export function getPlaybackInitErrorCode(error: unknown): PlaybackInitErrorCode {
-  if (isPlaybackError(error) && error.code === PLAYBACK_ERROR_CODES.AUDIO_INIT_FAILED) {
-    return 'AUDIO_CONTEXT_BLOCKED';
+  if (isPlaybackError(error)) {
+    if (error.code === PLAYBACK_ERROR_CODES.AUDIO_INIT_FAILED) {
+      return 'AUDIO_CONTEXT_BLOCKED';
+    }
+    if (error.code === PLAYBACK_ERROR_CODES.SAMPLE_LOAD_FAILED) {
+      return 'SAMPLE_LOAD_FAILED';
+    }
   }
   return 'ENGINE_INIT_FAILED';
 }
@@ -64,6 +70,8 @@ const PLAYBACK_ERROR_MESSAGES: Record<PlaybackErrorCode, string> = {
   [PLAYBACK_ERROR_CODES.AUDIO_INIT_FAILED]:
     'Audio could not start. Check that sound is allowed in your browser and try again.',
   [PLAYBACK_ERROR_CODES.AUDIO_NOT_READY]: 'Playback is still starting. Please wait a moment.',
+  [PLAYBACK_ERROR_CODES.SAMPLE_LOAD_FAILED]:
+    'Instrument samples failed to load. Check your connection and try again.',
 };
 
 export function getPlaybackErrorMessage(error: unknown): string {

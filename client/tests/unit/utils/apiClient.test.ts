@@ -359,13 +359,20 @@ describe('apiClient — Authorization header (PAT-007)', () => {
       );
     });
 
-    it('does not attach Authorization when getAccessToken returns null', async () => {
+    it('refreshes first when getAccessToken returns null so the first project request is not a doomed 401', async () => {
       accessToken = null;
-      vi.mocked(fetch).mockResolvedValueOnce(jsonResponse({ projects: [] }));
+      vi.mocked(fetch)
+        .mockResolvedValueOnce(jsonResponse({ accessToken: 'from-cookie-refresh' }))
+        .mockResolvedValueOnce(jsonResponse({ projects: [] }));
 
       await projectsApi.list();
 
-      expect(authHeader(vi.mocked(fetch).mock.calls[0]![1] as RequestInit)).toBeNull();
+      expect(vi.mocked(fetch).mock.calls).toHaveLength(2);
+      expect(vi.mocked(fetch).mock.calls[0]![0]).toBe('http://api.test/api/auth/refresh');
+      expect(authHeader(vi.mocked(fetch).mock.calls[1]![1] as RequestInit)).toBe(
+        'Bearer from-cookie-refresh',
+      );
+      expect(onAccessTokenRefreshed).toHaveBeenCalledWith('from-cookie-refresh');
     });
   });
 });

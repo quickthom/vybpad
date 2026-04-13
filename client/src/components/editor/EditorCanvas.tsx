@@ -13,6 +13,7 @@ import { absoluteTickToViewportX, getMeasureStartTicks, horizontalPxToTicks, hor
 import { drawGuideOverlay } from '../../engine/renderer/guideOverlay';
 import { computeNoteBlockRect, drawNoteBlocks } from '../../engine/renderer/noteBlocks';
 import { getMeterAtMeasure, measureLengthInTicks } from '../../engine/renderer/tickUtils';
+import { chordStripCaretSelectionFromPointer } from './editorKeyboardLogic';
 import {
   DRAG_THRESHOLD_PX,
   diatonicRowToDegreeAndOctave,
@@ -37,6 +38,7 @@ export interface EditorCanvasProps {
   onSelectionChange: (selection: Selection | null) => void;
   onViewportChange: (viewport: Viewport) => void;
   getSongAfterMutation?: () => SongData;
+  getSelectionAfterMutation?: () => Selection | null;
   onToggleEntryMode?: () => void;
 }
 
@@ -128,6 +130,7 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
     onNoteEdit,
     onSelectionChange,
     getSongAfterMutation,
+    getSelectionAfterMutation,
     onToggleEntryMode,
   } = props;
 
@@ -155,6 +158,13 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
     textDurationArmedRef.current = false;
   }, [entryMode]);
 
+  // After route load the focused element may still be a toolbar `<input>` (e.g. tempo). Grid digit
+  // entry is suppressed while `document.activeElement` is editable — focus the canvas once mounted
+  // so `handleEditorKeydown` receives 1–7 unless the user deliberately focuses another control (TASK-4.2).
+  useEffect(() => {
+    canvasRef.current?.focus({ preventScroll: true });
+  }, []);
+
   useKeyboard({
     song,
     viewport,
@@ -166,6 +176,7 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
     keyboardTargetMeasureRef,
     textDurationArmedRef,
     getSongAfterMutation,
+    getSelectionAfterMutation,
     onToggleEntryMode,
     onChordEdit,
     onNoteEdit,
@@ -383,6 +394,9 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
 
   const handlePointerDown = (e: ReactPointerEvent<HTMLCanvasElement>) => {
     const canvas = e.currentTarget;
+    // Ensure the grid receives focus so window `keydown` handling (digits, durations) runs instead of
+    // an accidental transport `<input>` focus skipping the handler (TASK-3.5 / TASK-4.2 E2E).
+    canvas.focus({ preventScroll: true });
     const cx = e.clientX ?? 0;
     const cy = e.clientY ?? 0;
     const { x: vx, y: vy } = pointerEventToViewportXY(canvas, cx, cy);
@@ -394,7 +408,10 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
 
     if (!hit) {
       keyboardTargetMeasureRef.current = null;
-      onSelectionChange(null);
+      // Empty chord strip: no chord rects yet, so hit-test misses — still establish a table caret
+      // (collapsed range) so digit entry targets harmony (TASK-4.2 / persistence E2E).
+      const chordStripCaret = chordStripCaretSelectionFromPointer(song, viewport, vx, vy);
+      onSelectionChange(chordStripCaret);
       sessionRef.current = {
         phase: 'pending',
         hit: null,

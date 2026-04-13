@@ -137,10 +137,32 @@ async function parseErrorResponse(response: Response): Promise<never> {
   throwApiError(toTypedApiError(response.status, body));
 }
 
+async function fetchWithOptionalTimeout(url: string, init: RequestInit, timeoutMs?: number): Promise<Response> {
+  if (timeoutMs == null || timeoutMs <= 0) {
+    return fetch(url, init);
+  }
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => {
+    controller.abort(new Error('REQUEST_TIMEOUT'));
+  }, timeoutMs);
+
+  const forwardAbort = () => {
+    controller.abort();
+  };
+  init.signal?.addEventListener('abort', forwardAbort, { once: true });
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timeoutId);
+    init.signal?.removeEventListener('abort', forwardAbort);
+  }
+}
+
 async function requestJson<T>(
   path: string,
   init: RequestInit,
-  options: { attachBearer: boolean; retryOn401: boolean },
+  options: { attachBearer: boolean; retryOn401: boolean; timeoutMs?: number },
 ): Promise<T> {
   const url = `${getBaseUrl()}${path}`;
   const headers = new Headers(init.headers);
@@ -148,7 +170,24 @@ async function requestJson<T>(
     headers.set('Content-Type', 'application/json');
   }
 
-  const token = options.attachBearer ? config.getAccessToken() : null;
+  let token = options.attachBearer ? config.getAccessToken() : null;
+
+  // Cookie-only session (reload): avoid a bearer-less protected hop that always 401s — the browser
+  // still logs that failure even when we retry after refresh (Playwright `console` error).
+  const proactiveRefresh =
+    options.attachBearer &&
+    !token &&
+    options.retryOn401 &&
+    path !== '/api/auth/logout';
+
+  if (proactiveRefresh) {
+    const refreshed = await refreshAccessTokenLocked();
+    if (refreshed) {
+      config.onAccessTokenRefreshed?.(refreshed.accessToken);
+      token = refreshed.accessToken;
+    }
+  }
+
   if (token) {
     headers.set('Authorization', `Bearer ${token}`);
   }
@@ -162,7 +201,7 @@ async function requestJson<T>(
         h.delete('Authorization');
       }
     }
-    return fetch(url, { ...init, headers: h, credentials: 'include' });
+    return fetchWithOptionalTimeout(url, { ...init, headers: h, credentials: 'include' }, options.timeoutMs);
   };
 
   let response = await exec(null);
@@ -267,7 +306,8 @@ export const projectsApi = {
     return requestJson<ProjectResponse>(
       `/api/projects/${encodeURIComponent(id)}`,
       { method: 'PUT', body: JSON.stringify(data) },
-      { attachBearer: true, retryOn401: true },
+      // Hung PUTs would otherwise leave autosave pending until the browser gives up; CI benefits from a bounded wait + PAT-001 transport retry.
+      { attachBearer: true, retryOn401: true, timeoutMs: 90_000 },
     );
   },
 

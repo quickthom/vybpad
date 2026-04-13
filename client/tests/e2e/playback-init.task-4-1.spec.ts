@@ -1,17 +1,29 @@
 /*
- * QA COVERAGE — TASK-4.1
+ * QA COVERAGE — TASK-4.1 (distinct from TASK-4.2)
  *
- * User gesture gates Tone.js init; transport toolbar exposes readiness for regression.
+ * Regression: user gesture unlocks Tone / playback init. TASK-4.2 adds deferred SoundFont fetch;
+ * this file intentionally does not throttle sample fetches — it only checks initStatus → ready via the toolbar.
+ *
+ * Contract: INTERFACES.md — TransportControls (initStatus), PlaybackStore.initializeAudio, AudioEngine.initialize.
  */
 
 import { expect, test } from '@playwright/test';
+
+import { waitForEditorRouteReady } from './helpers/editorReady';
+import { submitRegisterFormAndExpectProjects } from './helpers/registerFlow';
+import {
+  expectTransportPlaybackNotReady,
+  expectTransportPlaybackReady,
+  getTransportPlayButton,
+  getTransportToolbar,
+} from './helpers/transport';
 
 function uniqueSuffix(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
-test.describe('TASK-4.1 — playback init (user gesture)', () => {
-  test.describe.configure({ mode: 'serial' });
+test.describe('TASK-4.1 — playback init (user gesture; not sample-load throttled)', () => {
+  test.describe.configure({ mode: 'serial', timeout: 180_000 });
 
   test('first Play click initializes audio; toolbar reports ready; reload stays usable', async ({
     page,
@@ -26,34 +38,31 @@ test.describe('TASK-4.1 — playback init (user gesture)', () => {
     await page.locator('#register-email').fill(email);
     await page.locator('#register-display-name').fill(displayName);
     await page.locator('#register-password').fill(password);
-    await page.getByRole('button', { name: 'Create account' }).click();
-    await expect(page).toHaveURL(/\/projects$/);
+    await submitRegisterFormAndExpectProjects(page);
 
     await page.locator('#new-project-name').fill(projectName);
     await page.getByRole('button', { name: 'Create project' }).click();
     await expect(page).toHaveURL(/\/editor\/[0-9a-f-]{36}/i);
 
-    await expect(page.getByText('Loading project…')).toBeHidden({ timeout: 30_000 });
+    await waitForEditorRouteReady(page);
 
-    const transport = page.getByRole('toolbar', { name: 'Transport' });
+    const transport = getTransportToolbar(page);
     await expect(transport).toBeVisible();
 
-    await expect(transport).toHaveAttribute('data-audio-ready', 'false');
+    await expectTransportPlaybackNotReady(transport);
 
-    const playBtn = transport.getByRole('button', { name: 'Start audio and play', exact: true });
+    const playBtn = getTransportPlayButton(transport);
     await playBtn.click();
 
-    await expect(transport).toHaveAttribute('data-audio-ready', 'true', { timeout: 20_000 });
+    await expectTransportPlaybackReady(transport);
 
     await page.reload();
-    await expect(page.getByText('Loading project…')).toBeHidden({ timeout: 30_000 });
+    await waitForEditorRouteReady(page);
 
-    const transportAfter = page.getByRole('toolbar', { name: 'Transport' });
-    await expect(transportAfter).toHaveAttribute('data-audio-ready', 'false');
-    await transportAfter
-      .getByRole('button', { name: 'Start audio and play', exact: true })
-      .click();
-    await expect(transportAfter).toHaveAttribute('data-audio-ready', 'true', { timeout: 20_000 });
+    const transportAfter = getTransportToolbar(page);
+    await expectTransportPlaybackNotReady(transportAfter);
+    await getTransportPlayButton(transportAfter).click();
+    await expectTransportPlaybackReady(transportAfter);
   });
 
   test('rapid play attempts during init — no page errors; toolbar reaches ready', async ({ page }) => {
@@ -63,24 +72,22 @@ test.describe('TASK-4.1 — playback init (user gesture)', () => {
     const displayName = `E2E Spam ${suffix}`;
     const projectName = `E2E Spam Project ${suffix}`;
 
-    const pageErrors: Error[] = [];
-    const consoleErrors: string[] = [];
-
     await page.goto('/register');
     await page.locator('#register-email').fill(email);
     await page.locator('#register-display-name').fill(displayName);
     await page.locator('#register-password').fill(password);
-    await page.getByRole('button', { name: 'Create account' }).click();
-    await expect(page).toHaveURL(/\/projects$/);
+    await submitRegisterFormAndExpectProjects(page);
 
     await page.locator('#new-project-name').fill(projectName);
     await page.getByRole('button', { name: 'Create project' }).click();
     await expect(page).toHaveURL(/\/editor\/[0-9a-f-]{36}/i);
 
-    await expect(page.getByText('Loading project…')).toBeHidden({ timeout: 30_000 });
+    await waitForEditorRouteReady(page);
 
-    // Only assert on errors after the editor is up — anonymous session bootstrap may 401 `/api/auth/refresh`
-    // (expected) and the browser logs that as a console error.
+    // Attach after editor is ready — avoids expected 401 console noise from
+    // POST /api/auth/refresh during anonymous session bootstrap (TASK-4.2 CI).
+    const pageErrors: Error[] = [];
+    const consoleErrors: string[] = [];
     page.on('pageerror', (err) => {
       pageErrors.push(err);
     });
@@ -90,20 +97,19 @@ test.describe('TASK-4.1 — playback init (user gesture)', () => {
       }
     });
 
-    const transport = page.getByRole('toolbar', { name: 'Transport' });
+    const transport = getTransportToolbar(page);
     await expect(transport).toBeVisible();
-    await expect(transport).toHaveAttribute('data-audio-ready', 'false');
+    await expectTransportPlaybackNotReady(transport);
 
-    const playBtn = transport.getByRole('button', { name: 'Start audio and play', exact: true });
+    const playBtn = getTransportPlayButton(transport);
 
-    // Many synchronous DOM clicks before React can disable the button — exercises parallel initializeAudio awaits.
     await playBtn.evaluate((el: HTMLButtonElement) => {
       for (let i = 0; i < 50; i += 1) {
         el.click();
       }
     });
 
-    await expect(transport).toHaveAttribute('data-audio-ready', 'true', { timeout: 25_000 });
+    await expectTransportPlaybackReady(transport);
 
     expect(pageErrors, `pageerror: ${pageErrors.map((e) => e.message).join('; ')}`).toHaveLength(0);
     expect(

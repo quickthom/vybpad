@@ -51,24 +51,28 @@ describe('App routing — TASK-3.1', () => {
       expect(screen.queryByRole('button', { name: /^log out$/i })).not.toBeInTheDocument();
     });
 
-    it('shows the sign-in screen at /login', () => {
+    it('shows the sign-in screen at /login', async () => {
       render(
         <MemoryRouter initialEntries={['/login']}>
           <AppRoutes />
         </MemoryRouter>,
       );
 
-      expect(screen.getByRole('heading', { name: /^sign in$/i })).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByRole('heading', { name: /^sign in$/i })).toBeInTheDocument();
+      });
     });
 
-    it('shows the register screen at /register', () => {
+    it('shows the register screen at /register', async () => {
       render(
         <MemoryRouter initialEntries={['/register']}>
           <AppRoutes />
         </MemoryRouter>,
       );
 
-      expect(screen.getByRole('heading', { name: /create account/i })).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByRole('heading', { name: /create account/i })).toBeInTheDocument();
+      });
     });
   });
 
