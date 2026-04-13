@@ -4,7 +4,7 @@ developer: vYb Agency
 date: 4/12/2026
 ---
 
-# **vYbpad*** - REQUIREMENTS SPECIFICATION
+# **vYbpad** — REQUIREMENTS SPECIFICATION
 
 ## BASIC INFO
 * **Project**: vYbpad (Initial Version)
@@ -47,7 +47,7 @@ That includes front-end/client-side code and UI/UX elements. It's not enough to 
 
 The team is expected to make a good-faith effort to learn as much about Hookpad as is feasible in order to accurately replicate it. There are many sources that could prove valuable--feature lists, changelogs, screenshots, user reports, client-side code from the actual site--and the team is expected to do its due diligence in the research phase.
 
-On delivery, it is expected that any fully omitted features (with no previous report to the HITL) not documented anywhere the team could have found them. If this is not the case, and well-documented features have been omitted, the product will not be accepted.
+On delivery, any feature that is omitted entirely must either have been reported to the HITL when it was identified as infeasible or unknowable, **or** be absent from every source the team could reasonably have consulted. If well-documented features are omitted without prior HITL notification, the product will not be accepted.
 
 ## RESOURCES
 

@@ -14,6 +14,12 @@ const corsPluginImpl: FastifyPluginAsync = async (app) => {
   await app.register(cors, {
     origin: allowOrigin,
     credentials: true,
+    /**
+     * @fastify/cors defaults to `GET,HEAD,POST` only. Browsers run a CORS preflight for
+     * credentialed cross-origin PUT/DELETE; without these methods the actual request is blocked
+     * client-side (`TypeError: Failed to fetch`) — see TASK-3.5 persistence E2E autosave PUT.
+     */
+    methods: ['GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   });
 };
 

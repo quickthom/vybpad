@@ -1,5 +1,5 @@
-import { useEffect, type ReactNode } from 'react';
-import { Navigate, Route, Routes, useNavigate } from 'react-router-dom';
+import { useEffect, useState, type ReactNode } from 'react';
+import { Navigate, Route, Routes } from 'react-router-dom';
 
 import { LoginForm } from '../components/auth/LoginForm';
 import { RegisterForm } from '../components/auth/RegisterForm';
@@ -9,29 +9,44 @@ import { useAuthStore } from '../store/authStore';
 import { EditorLayout } from './EditorLayout';
 
 /**
- * Try cookie-based refresh once on startup so returning users with a valid refresh token
- * regain an access token without typing credentials again.
+ * Run cookie refresh before routing so `RequireAuth` does not redirect to `/login` on full reload
+ * while the access token is still being restored. Without this gate, `/editor/:id` reload briefly
+ * sees `isAuthenticated === false` and swaps the URL before refresh completes.
  */
-function SessionInitializer() {
-  const navigate = useNavigate();
+function AuthBootstrap({ children }: { children: ReactNode }) {
+  const [sessionReady, setSessionReady] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     void (async () => {
-      if (useAuthStore.getState().accessToken) return;
+      if (useAuthStore.getState().accessToken) {
+        if (!cancelled) setSessionReady(true);
+        return;
+      }
       try {
         await useAuthStore.getState().refreshToken();
-        if (!cancelled) navigate('/projects', { replace: true });
       } catch {
-        /* remain on public route */
+        /* no valid refresh cookie */
       }
+      if (!cancelled) setSessionReady(true);
     })();
     return () => {
       cancelled = true;
     };
-  }, [navigate]);
+  }, []);
 
-  return null;
+  if (!sessionReady) {
+    return (
+      <div
+        className="flex min-h-screen items-center justify-center bg-[var(--color-app-bg,#F3F4F6)] text-sm text-[var(--color-text-secondary,#4B5563)]"
+        aria-busy="true"
+      >
+        Loading session…
+      </div>
+    );
+  }
+
+  return <>{children}</>;
 }
 
 function RequireAuth({ children }: { children: ReactNode }) {
@@ -49,8 +64,7 @@ function RootRedirect() {
 
 export function AppRoutes() {
   return (
-    <>
-      <SessionInitializer />
+    <AuthBootstrap>
       <ToastHost />
       <Routes>
         <Route
@@ -96,6 +110,6 @@ export function AppRoutes() {
         <Route path="/" element={<RootRedirect />} />
         <Route path="*" element={<RootRedirect />} />
       </Routes>
-    </>
+    </AuthBootstrap>
   );
 }

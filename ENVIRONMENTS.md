@@ -1,15 +1,16 @@
 # Environments
 
-This document summarizes how environment variables are used across tiers (per **PATTERNS.md** PAT-026). It is not a substitute for `.env.example`, which remains the committed template for required keys and placeholders.
+This document summarizes how environment variables are used across tiers (per **PATTERNS.md** PAT-013). It is not a substitute for `.env.example`, which remains the committed template for required keys and placeholders.
 
-The sections below expand this for **operators**: local development, Docker Compose, CI/CD expectations, and a production deployment sketch (per **ARCHITECTURE.md**). If anything here conflicts with PAT-026 or `ARCHITECTURE.md`, follow those sources and escalate to the Architect.
+The sections below expand this for **operators**: local development, Docker Compose, CI/CD expectations, and a production deployment sketch (per **ARCHITECTURE.md**). If anything here conflicts with PAT-013 or `ARCHITECTURE.md`, follow those sources and escalate to the Architect.
 
-## Rules (PAT-026)
+## Rules (PAT-013)
 
 - **Development:** Use git-ignored `.env` files. The repo root provides `.env.example`; copy it to `.env` and fill in secrets. `docker-compose.yml` loads the root `.env` where configured (`env_file` / `environment`).
 - **Production:** Inject variables via the hosting platform or orchestrator (no in-app secrets manager for MVP).
 - **Never commit** real secrets. `.env` and `*.env.local` are git-ignored.
 - **CI:** prefer GitHub Actions secrets `CI_JWT_SECRET` / `CI_JWT_REFRESH_SECRET` (see `.github/workflows/ci.yml`). The workflow falls back to documented CI-only placeholders when secrets are unset so forks can run without configuration.
+- **Local CI parity:** [docs/CI_LOCAL.md](docs/CI_LOCAL.md) mirrors the workflow’s env and step order for pre-push validation; [scripts/ci-local.sh](scripts/ci-local.sh) runs that sequence.
 
 ## Root variables (local / Compose)
 
@@ -23,7 +24,35 @@ The sections below expand this for **operators**: local development, Docker Comp
 | `CORS_ORIGIN`        | Allowed browser origin for CORS | `http://127.0.0.1:5173`                  |
 | `VITE_API_URL`       | Client API base URL (Vite)      | `http://127.0.0.1:3001`                  |
 
-When adding a new variable in application code, update **`.env.example` in the same PR** (PAT-026).
+When adding a new variable in application code, update **`.env.example` in the same PR** (PAT-013).
+
+## Git worktrees (PAT-017)
+
+Parallel Builders use **isolated git worktrees** (see `PATTERNS.md` PAT-017). Paths are **operator-specific**. Define:
+
+- **`<REPO_ROOT>`** — path to the primary clone where the PM and Integrator work (usually on `develop`).
+- **`<WORKTREE_ROOT>`** — a directory **outside** that clone reserved for additional worktrees (not committed; choose any location on the machine).
+
+Example (adjust paths for your environment):
+
+```bash
+export REPO_ROOT="$HOME/src/vybpad"
+export WORKTREE_ROOT="$HOME/src/vybpad-worktrees"
+mkdir -p "$WORKTREE_ROOT"
+cd "$REPO_ROOT" && git checkout develop
+git worktree add "$WORKTREE_ROOT/<task-slug>" <branch-name>
+```
+
+After a task’s PR merges: `git worktree remove <path-to-worktree>`. Each worktree needs its own `npm install`.
+
+## System packages (agents, PAT-019)
+
+Agents may install OS packages when required. Use a **non-interactive** flow appropriate to the host (see `PATTERNS.md` PAT-019). Examples:
+
+- **Arch Linux (AUR):** `yay -S --noconfirm <package>` — often usable without an interactive TTY. Avoid `sudo pacman` in unattended sessions that cannot prompt for a password.
+- **Debian/Ubuntu:** `apt-get install -y <package>` where non-interactive use is allowed.
+
+Team policy may narrow this further; [REQUIREMENTS.md](REQUIREMENTS.md) grants broad installation authority for the project.
 
 ---
 
@@ -99,7 +128,7 @@ Key notes:
 - `.env` is referenced by services via `env_file: .env` — keep secrets out of git.
 - Use `docker compose up --build` to start the stack; use `docker compose down --volumes` to tear it down.
 
-Minimum variable expectations align with **Root variables** above and PAT-013; production and staging use the same logical keys, injected by the platform (PAT-026).
+Minimum variable expectations align with **Root variables** above and PAT-013; production and staging use the same logical keys, injected by the platform per PAT-013.
 
 ## CI / CD expectations
 
@@ -115,7 +144,7 @@ Minimum variable expectations align with **Root variables** above and PAT-013; p
 
 Notes:
 
-- For CI: inject sensitive values via the CI platform’s secret mechanism (for example GitHub Actions secrets). Do not put secrets in workflow files (PAT-026).
+- For CI: inject sensitive values via the CI platform’s secret mechanism (for example GitHub Actions secrets). Do not put secrets in workflow files (PAT-013).
 - Any new environment variables must be documented here and in `.env.example`, and wired in CI as needed.
 
 ## Production deployment sketch (per ARCHITECTURE.md)
@@ -128,7 +157,7 @@ Notes:
 - **Requirements:**
   - HTTPS required (TLS certs at reverse proxy)
   - Static assets served by Nginx under `/` and piano samples served under `/samples/`
-  - Environment variables injected into containers at runtime by the host/platform (PAT-026) — not by an in-app secrets manager for MVP
+  - Environment variables injected into containers at runtime by the host/platform (PAT-013) — not by an in-app secrets manager for MVP
   - Database backups: scheduled `pg_dump` (provider-dependent)
 
 - **Deployment options** (operator choice — escalate if architecture changes required):
@@ -139,11 +168,11 @@ Notes:
 Security and secrets:
 
 - Do not store secrets in the repository.
-- For MVP, supply production configuration through platform-level environment injection (container env, orchestrator secrets surfaced as env, etc.) per PAT-026 — not through a separate Vault/AWS Secrets Manager integration inside the application.
+- For MVP, supply production configuration through platform-level environment injection (container env, orchestrator secrets surfaced as env, etc.) per PAT-013 — not through a separate Vault/AWS Secrets Manager integration inside the application.
 
 ## Manual actions required
 
-- **Developer:** copy `.env.example` to `.env` and fill values before running locally (PAT-026).
+- **Developer:** copy `.env.example` to `.env` and fill values before running locally (PAT-013).
 - **DevOps / Architect:**
   - Configure staging/production hosts or platforms to inject the same variables the app expects (documented here and in `.env.example`).
   - Provision DNS and TLS certs for staging/production.

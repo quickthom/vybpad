@@ -40,7 +40,7 @@ test.describe('TASK-4.1 — playback init (user gesture)', () => {
 
     await expect(transport).toHaveAttribute('data-audio-ready', 'false');
 
-    const playBtn = transport.getByRole('button', { name: /Start audio and play|Play/i });
+    const playBtn = transport.getByRole('button', { name: 'Start audio and play', exact: true });
     await playBtn.click();
 
     await expect(transport).toHaveAttribute('data-audio-ready', 'true', { timeout: 20_000 });
@@ -50,7 +50,9 @@ test.describe('TASK-4.1 — playback init (user gesture)', () => {
 
     const transportAfter = page.getByRole('toolbar', { name: 'Transport' });
     await expect(transportAfter).toHaveAttribute('data-audio-ready', 'false');
-    await transportAfter.getByRole('button', { name: /Start audio and play|Play/i }).click();
+    await transportAfter
+      .getByRole('button', { name: 'Start audio and play', exact: true })
+      .click();
     await expect(transportAfter).toHaveAttribute('data-audio-ready', 'true', { timeout: 20_000 });
   });
 
@@ -63,14 +65,6 @@ test.describe('TASK-4.1 — playback init (user gesture)', () => {
 
     const pageErrors: Error[] = [];
     const consoleErrors: string[] = [];
-    page.on('pageerror', (err) => {
-      pageErrors.push(err);
-    });
-    page.on('console', (msg) => {
-      if (msg.type() === 'error') {
-        consoleErrors.push(msg.text());
-      }
-    });
 
     await page.goto('/register');
     await page.locator('#register-email').fill(email);
@@ -85,11 +79,22 @@ test.describe('TASK-4.1 — playback init (user gesture)', () => {
 
     await expect(page.getByText('Loading project…')).toBeHidden({ timeout: 30_000 });
 
+    // Only assert on errors after the editor is up — anonymous session bootstrap may 401 `/api/auth/refresh`
+    // (expected) and the browser logs that as a console error.
+    page.on('pageerror', (err) => {
+      pageErrors.push(err);
+    });
+    page.on('console', (msg) => {
+      if (msg.type() === 'error') {
+        consoleErrors.push(msg.text());
+      }
+    });
+
     const transport = page.getByRole('toolbar', { name: 'Transport' });
     await expect(transport).toBeVisible();
     await expect(transport).toHaveAttribute('data-audio-ready', 'false');
 
-    const playBtn = transport.getByRole('button', { name: /Start audio and play|Play/i });
+    const playBtn = transport.getByRole('button', { name: 'Start audio and play', exact: true });
 
     // Many synchronous DOM clicks before React can disable the button — exercises parallel initializeAudio awaits.
     await playBtn.evaluate((el: HTMLButtonElement) => {

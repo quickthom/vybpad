@@ -36,13 +36,13 @@ Phases 0 (7/7), 1A (7/7), 1B (6/6), Phase 2 (15/15) — see `TASK_STATUS_ARCHIVE
 
 ## Phase 4 — Audio Playback
 
-**Goal:** Press play, hear piano chords + melody, see cursor move. **Status:** Wave 2 — **#35-first:** PR #35 head **`3e73691`**; **CI** [run `24360363016`](https://github.com/quickthom/vybpad/actions/runs/24360363016) **FAIL** — E2E `persistence.happy`: **`waitForResponse` 90s timeout** (no PUT matching predicate with both chord degrees in body). Prior attempts superseded (`24356446158`…`24360173331`). **⛔** **`INTERFACES.md`** still touched on ancestor **`0e150d9`** — **Architect review**. **Next:** Builder+QA — relax waiter vs coalesced PUTs or ensure one PUT includes both chords. PR #36 **parked**.
+**Goal:** Press play, hear piano chords + melody, see cursor move. **Status:** Wave 2 — **#35-first:** PR #35 head **`7af4055`**; **CI** [run `24368811569`](https://github.com/quickthom/vybpad/actions/runs/24368811569) **FAIL** — E2E `persistence.happy` (GET poll 90s, no chord degrees **1+2** on server). Prior pushes: **`27d138e`** empty chord-strip caret; **`467b538`** QA poll; **`7af4055`** canvas focus on mount + unit tests — **still red**. **Next:** Builder/QA continue remediation. **⛔** **`INTERFACES.md`** — **Architect** if merge requires. **#36 parked.**
 
 | Task | Role | Branch | Status | PR | Depends | Notes |
 |---|---|---|---|---|---|---|
 | 4.1 | Builder + QA | — | merged | #34 | 0.2 | merged to develop (`ead7d21`) |
-| 4.2 | Builder + QA | phase-4/piano-sample-loading | in-progress (CI remediation) | #35 | 4.1 | Head **`3e73691`**; **CI** [run `24360363016`](https://github.com/quickthom/vybpad/actions/runs/24360363016) **FAIL** E2E; **⛔ `INTERFACES.md`** (`0e150d9` ancestor); **#36 parked** |
-| 4.3 | Builder + QA | phase-4/harmony-voicing-engine | parked (blocked on #35) | #36 | 1A.3 | **Gate:** no active remediation/review/integration until **PR #35 merged**. Tip `2bc5be30`; passive CI/branch status only — worktree `task-4-3-harmony-voicing` |
+| 4.2 | Builder + QA | phase-4/piano-sample-loading | in-progress (CI remediation) | #35 | 4.1 | Head **`7af4055`**; **CI** [run `24368811569`](https://github.com/quickthom/vybpad/actions/runs/24368811569) **FAIL** E2E; **⛔ `INTERFACES.md`**; **#36 parked** |
+| 4.3 | Builder + QA | phase-4/harmony-voicing-engine | parked (blocked on #35) | #36 | 1A.3 | **Gate:** no active remediation/review/integration until **PR #35 merged**; passive CI/branch status only — worktree `task-4-3-harmony-voicing` |
 | 4.4 | Builder + QA | — | pending | — | 4.1,4.2,4.3,1A.2 | scheduler + Tone.Part |
 | 4.5 | Builder + QA | — | pending | — | 0.2 | transport UI |
 | 4.6 | Builder + QA | — | pending | — | 2.2,4.4 | playback cursor |
@@ -55,7 +55,7 @@ Phases 0 (7/7), 1A (7/7), 1B (6/6), Phase 2 (15/15) — see `TASK_STATUS_ARCHIVE
 
 ## Phases 5–8
 
-Per `ROADMAP.md`. Not yet decomposed into task briefs.
+**Phase 5 (and later):** User authorized full Phase 5 scope — decompose from `ROADMAP.md` into this table **after** Phase 4 playback milestone closes (PR #35 + remaining 4.x per dependencies). Not yet added as rows.
 
 ---
 

@@ -101,10 +101,11 @@ test.describe('TASK-3.5 — persistence happy path', () => {
     await page.getByRole('button', { name: 'Sign in' }).click();
     await expect(page).toHaveURL(/\/projects$/);
 
-    await expect(page.getByRole('heading', { name: 'Projects' })).toBeVisible();
-    await expect(page.getByRole('button', { name: projectName })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Projects' })).toBeVisible();
+    const projectRowButton = page.getByRole('button', { name: projectName, exact: true });
+    await expect(projectRowButton).toBeVisible();
 
-    await page.getByRole('button', { name: projectName }).click();
+    await projectRowButton.click();
     await expect(page).toHaveURL(new RegExp(`/editor/${id}`));
     await expect(page.getByText('Loading project…')).toBeHidden({ timeout: 30_000 });
 

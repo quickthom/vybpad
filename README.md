@@ -65,6 +65,8 @@ npm test
 
 You can also run `npm test` inside `client` for client-focused runs.
 
+**Full CI parity (build, lint, unit tests, Playwright):** use [docs/CI_LOCAL.md](docs/CI_LOCAL.md) or run `./scripts/ci-local.sh` from the repo root when validating before push (especially if GitHub Actions minutes are limited).
+
 ### End-to-end (Playwright)
 
 E2E specs live under `client/tests/e2e/` and exercise the real Fastify API plus the Vite client (see `ARCHITECTURE.md` — Playwright). You need PostgreSQL reachable via `DATABASE_URL` (see `.env.example`), JWT secrets set, and no other process on ports **3001** (API) and **5173** (Vite).
@@ -97,6 +99,7 @@ CI runs `npm run test:e2e` with a PostgreSQL service and auto-starts the stack; 
 | [`ROADMAP.md`](ROADMAP.md)             | Phased delivery plan                                       |
 | [`CHANGELOG.md`](CHANGELOG.md)         | Delivered work by phase milestone                          |
 | [`ENVIRONMENTS.md`](ENVIRONMENTS.md)   | Environment variables, defaults, and PAT-026 secrets rules |
+| [`docs/CI_LOCAL.md`](docs/CI_LOCAL.md) | Local commands matching GitHub Actions (`ci.yml`) for pre-push checks |
 | [`UX_GUIDELINES.md`](UX_GUIDELINES.md) | UI/UX standards                                            |
 
 ## Monorepo layout
