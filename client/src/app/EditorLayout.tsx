@@ -74,6 +74,12 @@ export function EditorLayout() {
   const runProjectSaveRef = useRef<(source: 'manual' | 'auto') => Promise<void>>(async () => {});
   const projectNameRef = useRef(projectName);
   projectNameRef.current = projectName;
+  /**
+   * POST /projects → /editor/:id bootstrap hydrates from `location.state`. The load effect can re-run
+   * when dependency identities change while state still holds the boot project; repeating `loadSong`
+   * resets `isDirty` and drops debounced autosave (TASK-3.5 E2E).
+   */
+  const editorBootstrapHydratedIdRef = useRef<string | null>(null);
 
   const viewport = useUIStore((s) => s.viewport);
   const selection = useUIStore((s) => s.selection);
@@ -98,6 +104,7 @@ export function EditorLayout() {
     let cancelled = false;
 
     if (!projectId) {
+      editorBootstrapHydratedIdRef.current = null;
       loadSong(buildDefaultSong());
       setProjectName(null);
       setLoadStatus('ready');
@@ -107,6 +114,10 @@ export function EditorLayout() {
     const navState = location.state as EditorLocationState | null;
     const boot = navState?.project;
     if (boot && boot.id === projectId) {
+      if (editorBootstrapHydratedIdRef.current === projectId) {
+        return;
+      }
+      editorBootstrapHydratedIdRef.current = projectId;
       loadSong(boot.songData);
       setProjectName(boot.name);
       setLoadStatus('ready');

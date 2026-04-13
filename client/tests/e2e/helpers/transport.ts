@@ -37,12 +37,14 @@ export async function expectTransportPlaybackReady(
       async () => {
         const ready = await transport.getAttribute('data-audio-ready');
         const busy = await transport.getAttribute('aria-busy');
-        return ready === 'true' && busy === 'false';
+        // React omits aria-busy when false, so getAttribute is null — only "true" means initializing.
+        const notBusy = busy !== 'true';
+        return ready === 'true' && notBusy;
       },
       {
         timeout,
         message:
-          'Transport must reach ready (data-audio-ready=true, aria-busy=false) — PlaybackInitStatus "ready".',
+          'Transport must reach ready (data-audio-ready=true, not aria-busy) — PlaybackInitStatus "ready".',
       },
     )
     .toBe(true);

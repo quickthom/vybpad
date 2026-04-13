@@ -120,6 +120,15 @@ export const usePlaybackStore = create<PlaybackStore>()(
         })();
       }
       await initChain;
+      // Defensive: if the engine finished but the store did not advance (e.g. interrupted batching), recover.
+      if (getPlaybackEngine().isReady() && get().initStatus === 'initializing') {
+        ensureTickSubscription(set);
+        syncEngineFromSong();
+        set((draft) => {
+          draft.initStatus = 'ready';
+          draft.initErrorCode = null;
+        });
+      }
     },
 
     play: () => {
