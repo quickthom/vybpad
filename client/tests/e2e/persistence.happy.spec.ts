@@ -1,5 +1,5 @@
 /*
- * QA COVERAGE PLAN — TASK-3.5 (+ TASK-4.2 remediation: editor shell ready)
+ * QA COVERAGE PLAN — TASK-3.5 (+ TASK-4.2 remediation: editor shell + chord entry)
  *
  * Criterion: Happy-path E2E — register → create project → editor → chord grid edit → persist → refresh →
  *   logout/login → project list + editor reload with persisted song (verified via API contract).
@@ -7,14 +7,18 @@
  *   error: (not required for foundation baseline)
  *   edges: —
  *
+ * INTERFACES.md — GET /api/projects/:id → ProjectResponse; assertions use `songData.measures[].chords` only.
+ *
+ * Entry mode: Table mode is required for digit-only chord adds (Text mode ignores digits until a duration key
+ * arms entry — see useKeyboard). We assert `Entry mode Table` before typing so CI cannot silently run in Text.
+ *
  * Autosave: after edits, wait for `Save` enabled (dirty), then poll GET /api/projects/:id until the
- * server reflects the edit — ties verification to persistence (debounced PUT) without racing `waitForResponse`
- * against slow CI or coalesced saves.
+ * server reflects ≥2 chords — debounced PUT is 1500ms (EditorLayout); poll timeout must cover debounce + slow CI.
  *
  * Shell: `waitForEditorRouteReady` ensures canvas + transport are present before chord entry (no hydration races).
  */
 
-import { expect, test, type APIRequestContext, type Locator } from '@playwright/test';
+import { expect, test, type APIRequestContext, type Locator, type Page } from '@playwright/test';
 
 import { waitForEditorRouteReady } from './helpers/editorReady';
 import { submitRegisterFormAndExpectProjects } from './helpers/registerFlow';
@@ -26,6 +30,17 @@ const CHORD_STRIP_CLICK_Y = 24 + 40 / 2;
 
 function uniqueSuffix(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
+/** Text mode does not apply chord digits until a duration key arms entry — force Table for digit-only adds. */
+async function ensureTableEntryMode(page: Page): Promise<void> {
+  const btn = page.getByRole('button', { name: /Entry mode (Table|Text)/ });
+  await expect(btn).toBeVisible({ timeout: 15_000 });
+  const label = await btn.getAttribute('aria-label');
+  if (label?.includes('Text')) {
+    await btn.click();
+    await expect(btn).toHaveAttribute('aria-label', /Entry mode Table/);
+  }
 }
 
 /**
@@ -98,12 +113,13 @@ test.describe('TASK-3.5 — persistence happy path', () => {
     const id = projectId as string;
 
     await waitForEditorRouteReady(page);
+    await ensureTableEntryMode(page);
 
     const canvas = page.getByRole('application', { name: /Song editor/i });
     await expect(page.getByRole('button', { name: /^Save$/ })).toBeDisabled({ timeout: 30_000 });
     await focusChordStripForDigitEntry(canvas);
     // Slower typing avoids coalescing both digits before the first chord mutation on slow CI workers.
-    await page.keyboard.type('12', { delay: 85 });
+    await page.keyboard.type('12', { delay: 120 });
 
     await expect(page.getByRole('button', { name: /^Save$/ })).toBeEnabled({ timeout: 30_000 });
 
