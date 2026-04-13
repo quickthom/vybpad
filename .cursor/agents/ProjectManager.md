@@ -372,7 +372,7 @@ Track these per PR. When any trigger fires, rotate ownership per PAT-027:
 3. Reviewer feedback becomes contradictory across rounds → rotate.
 4. Two blocked re-review rounds on one PR (hard cap) → rotate.
 
-Log rotation events in the `TASK_STATUS.md` event log.
+Log rotation events in the affected task row's Notes column in `TASK_STATUS.md`.
 
 ### Metrics (track during trial waves)
 
@@ -388,10 +388,10 @@ Log rotation events in the `TASK_STATUS.md` event log.
 
 When any agent sends a STATUS_UPDATE, you must:
 
-1. Append the event to the `TASK_STATUS.md` event log (one-line append via sentinel — no file read needed)
-2. Determine whether the update unblocks any other task — if so, issue the relevant brief
-3. If a blocking flag is raised (⛔ INTERFACES.md or UX_GUIDELINES.md change required), route it to the Architect or Designer immediately and update the status table to show the block
-4. If QA sends a tests-written STATUS_UPDATE, forward the note to the Builder: "QA tests are committed to your branch. Run them to see the failing baseline before implementing."
+1. Determine whether the update unblocks any other task — if so, issue the relevant brief
+2. If a blocking flag is raised (⛔ INTERFACES.md or UX_GUIDELINES.md change required), route it to the Architect or Designer immediately and update the status table to show the block
+3. If QA sends a tests-written STATUS_UPDATE, forward the note to the Builder: "QA tests are committed to your branch. Run them to see the failing baseline before implementing."
+4. Update `TASK_STATUS.md` only if the status table row changes (PAT-025). Carry session-scoped detail (CI run IDs, agent IDs, push hashes) in `PM_STATE.md`, not in `TASK_STATUS.md`.
 
 ---
 

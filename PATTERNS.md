@@ -390,17 +390,24 @@ The cleanup task is assigned to a Builder and reviewed like any other task. It d
 
 State files (`TASK_STATUS.md`, `PM_STATE.md`, `ARCHITECT_STATE.md`) exist for **recovery from interruptions**, not real-time tracking. Interruptions are predictable — the HITL signals in advance. Write state files at batch boundaries and on HITL request, not after every event.
 
-### TASK_STATUS.md (two-section format)
+### TASK_STATUS.md
 
-The file has two sections with different access patterns:
+Single-section format: one status table per phase, plus a brief header block for tip/sync info. No event log.
 
-1. **Status table** (top) — compact, one row per task. Read when you need the big picture. Update at batch boundaries: after issuing a wave of briefs, after an Integrator session, at milestone close, on HITL request. Exception: blocked tasks should be reflected promptly.
+Update the status table at these batch boundaries only:
+- After issuing a wave of briefs (update Status column to `in-progress`)
+- After a Reviewer verdict (update Status to `blocked` or `approved`)
+- After an Integrator merge (update Status to `merged`, clear Branch)
+- After milestone close (collapse phase to archive one-liner per PAT-022)
+- On HITL request
 
-2. **Event log** (bottom, append-only) — one line per event. Append on every status change. No file read required — replace the `<!-- LOG END -->` sentinel with `new line + sentinel`. This is one StrReplace of a known string.
+**Do not** update the table after every CI poll, agent status update, or intermediate push. Carry that detail in `PM_STATE.md` while a session is active; it will be discarded when the session closes.
+
+Significant transitions (escalation resolved, circuit breaker triggered, phase complete) go in the Notes column of the relevant task row, not in a separate log.
 
 ### PM_STATE.md and ARCHITECT_STATE.md
 
-Update on HITL request, before a known interruption, or at milestone close. Do not update after routine events.
+Update on HITL request, before a known interruption, or at milestone close. Do not update after routine events. `PM_STATE.md` is the correct place for active-session narrative — worktree state, CI run IDs, pending agent IDs. That context is session-scoped and does not belong in `TASK_STATUS.md`.
 
 ---
 
