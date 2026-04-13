@@ -1,5 +1,5 @@
 /*
- * QA COVERAGE PLAN — 4.2 (Playwright, remediation round 2)
+ * QA COVERAGE PLAN — 4.2 (Playwright, remediation round 3 — transport lifecycle + shared helpers)
  *
  * Contracts: INTERFACES.md — TransportControls (initStatus via toolbar), PlaybackStore init lifecycle,
  *            AudioEngine.initialize + sample load → ready.
@@ -19,6 +19,7 @@ import { submitRegisterFormAndExpectProjects } from './helpers/registerFlow';
 import {
   expectTransportPlaybackNotReady,
   expectTransportPlaybackReady,
+  expectTransportPlaybackRunningAfterInit,
   getTransportPlayButton,
   getTransportToolbar,
 } from './helpers/transport';
@@ -71,7 +72,8 @@ test.describe('TASK-4.2 — piano sample loading (E2E)', () => {
 
     await expectTransportPlaybackReady(transport);
 
-    await expect(getTransportPlayButton(transport)).toHaveAccessibleName(/^Play$/);
+    // First Play runs initializeAudio then play(); toolbar shows Pause, not Play.
+    await expectTransportPlaybackRunningAfterInit(transport);
   });
 
   test('Scenario B — after reload, Play reaches ready (not stuck initializing)', async ({ page }) => {
@@ -91,7 +93,7 @@ test.describe('TASK-4.2 — piano sample loading (E2E)', () => {
     await expectTransportPlaybackReady(transportAfter);
 
     await expect(transportAfter.getByRole('button', { name: 'Starting…' })).toHaveCount(0);
-    await expect(getTransportPlayButton(transportAfter)).toBeEnabled();
+    await expectTransportPlaybackRunningAfterInit(transportAfter);
   });
 
   test('Scenario C — rapid Play clicks during loading; no pageerror/console error; eventual ready', async ({

@@ -7,8 +7,9 @@
  *   error: (not required for foundation baseline)
  *   edges: —
  *
- * Autosave: register `waitForResponse` for the PUT **before** edits so the first debounced save is always
- * observed (no race with a fast PUT vs late await).
+ * Autosave: after edits, wait for `Save` enabled (dirty), then poll GET /api/projects/:id until the
+ * server reflects the edit — ties verification to persistence (debounced PUT) without racing `waitForResponse`
+ * against slow CI or coalesced saves.
  */
 
 import { expect, test, type APIRequestContext } from '@playwright/test';
@@ -80,19 +81,26 @@ test.describe('TASK-3.5 — persistence happy path', () => {
     // Headless runs can leave focus on a non-editor target; global digit entry is ignored without canvas focus.
     await canvas.focus();
 
-    const autosavePutPromise = page.waitForResponse(
-      (r) =>
-        r.request().method() === 'PUT' &&
-        r.url().includes(`/api/projects/${id}`) &&
-        r.ok(),
-      { timeout: 90_000 },
-    );
-
     await page.keyboard.press('1');
     await page.keyboard.press('2');
 
-    await expect(page.getByRole('button', { name: /^Save$/ })).toBeEnabled({ timeout: 20_000 });
-    await autosavePutPromise;
+    await expect(page.getByRole('button', { name: /^Save$/ })).toBeEnabled({ timeout: 30_000 });
+
+    await expect
+      .poll(
+        async () => {
+          const token = (await loginApi(request, email, password)).accessToken;
+          const remote = await fetchProject(request, token, id);
+          return (remote.songData.measures[0]?.chords?.length ?? 0) >= 1;
+        },
+        {
+          timeout: 120_000,
+          intervals: [250, 500, 1000, 2000],
+          message:
+            'Expected debounced autosave to persist ≥1 chord (poll GET until server reflects PUT)',
+        },
+      )
+      .toBe(true);
 
     let token = (await loginApi(request, email, password)).accessToken;
     let remote = await fetchProject(request, token, id);

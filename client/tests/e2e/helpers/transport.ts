@@ -16,6 +16,11 @@ export function getTransportPlayButton(transport: Locator): Locator {
   return transport.getByRole('button', { name: /^(Play|Start audio and play)$/ });
 }
 
+/** Visible while `isPlaying` after init — `getTransportPlayButton` does not match this. */
+export function getTransportPauseButton(transport: Locator): Locator {
+  return transport.getByRole('button', { name: 'Pause playback' });
+}
+
 /** Default timeout for sample load + audio init on cold CI runners (ms). */
 const DEFAULT_PLAYBACK_READY_TIMEOUT_MS = 60_000;
 
@@ -32,6 +37,7 @@ export async function expectTransportPlaybackReady(
   options?: { timeout?: number },
 ): Promise<void> {
   const timeout = options?.timeout ?? DEFAULT_PLAYBACK_READY_TIMEOUT_MS;
+  await expect(transport).toBeVisible();
   await expect
     .poll(
       async () => {
@@ -51,9 +57,30 @@ export async function expectTransportPlaybackReady(
 }
 
 /**
+ * `EditorLayout` calls `play()` after a successful first `initializeAudio()` from the Play control,
+ * so the primary button becomes Pause — do not assert `getTransportPlayButton` after ready.
+ */
+export async function expectTransportPlaybackRunningAfterInit(transport: Locator): Promise<void> {
+  await expect(getTransportPauseButton(transport)).toBeEnabled();
+}
+
+/**
  * After navigation/reload, the store resets to locked until the next user gesture.
- * Assert toolbar is not in the ready state before starting the next init cycle.
+ * Poll until the toolbar is present and not in the ready state (avoids racing first paint / hydration).
  */
 export async function expectTransportPlaybackNotReady(transport: Locator): Promise<void> {
-  await expect(transport).toHaveAttribute('data-audio-ready', 'false');
+  await expect(transport).toBeVisible();
+  await expect
+    .poll(
+      async () => {
+        const ready = await transport.getAttribute('data-audio-ready');
+        return ready !== 'true';
+      },
+      {
+        timeout: 30_000,
+        message:
+          'Transport must not be audio-ready yet (data-audio-ready≠true) — locked or initializing.',
+      },
+    )
+    .toBe(true);
 }
