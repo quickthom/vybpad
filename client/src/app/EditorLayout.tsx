@@ -70,6 +70,13 @@ export function EditorLayout() {
           {user ? (
             <span className="text-sm text-[var(--color-text-secondary,#4B5563)]">{user.displayName}</span>
           ) : null}
+          <button
+            type="button"
+            onClick={() => navigate('/projects')}
+            className="inline-flex h-10 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-4 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
+          >
+            Projects
+          </button>
           <EntryModeToggle mode={entryMode} onToggle={toggleEntryMode} />
           <button
             type="button"

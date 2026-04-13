@@ -30,6 +30,16 @@ if (typeof HTMLCanvasElement !== 'undefined') {
   };
 }
 
+/** jsdom: `<dialog>` exists but `showModal` / `close` are missing — needed for DeleteProjectDialog tests. */
+if (typeof HTMLDialogElement !== 'undefined' && typeof HTMLDialogElement.prototype.showModal !== 'function') {
+  HTMLDialogElement.prototype.showModal = function (this: HTMLDialogElement) {
+    this.setAttribute('open', '');
+  };
+  HTMLDialogElement.prototype.close = function (this: HTMLDialogElement) {
+    this.removeAttribute('open');
+  };
+}
+
 if (typeof window !== 'undefined' && typeof window.PointerEvent === 'undefined') {
   window.PointerEvent = class PointerEvent extends window.MouseEvent {
     declare pointerId: number;
