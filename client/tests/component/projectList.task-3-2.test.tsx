@@ -44,7 +44,7 @@ import { useAuthStore } from '../../src/store/authStore';
 import { buildDefaultSong, useSongStore } from '../../src/store/songStore';
 import { configureApiClient } from '../../src/utils/apiClient';
 
-/** Path-only matching: `apiClient` base URL comes from `import.meta.env` at bundle time (often localhost:3001 in Vitest). */
+/** Path-only matching: `apiClient` base URL comes from `import.meta.env` at bundle time (often 127.0.0.1:3001 in Vitest). */
 function apiPath(url: string): string {
   try {
     return new URL(url).pathname;

@@ -65,25 +65,48 @@ npm test
 
 You can also run `npm test` inside `client` for client-focused runs.
 
+### End-to-end (Playwright)
+
+E2E specs live under `client/tests/e2e/` and exercise the real Fastify API plus the Vite client (see `ARCHITECTURE.md` — Playwright). You need PostgreSQL reachable via `DATABASE_URL` (see `.env.example`), JWT secrets set, and no other process on ports **3001** (API) and **5173** (Vite).
+
+**Option A — let Playwright start the API and client** (default when `PLAYWRIGHT_SKIP_WEBSERVER` is unset):
+
+```bash
+# from repo root, after `cp .env.example .env` and `npx prisma db push --schema=prisma/schema.prisma`
+npm install
+npx playwright install chromium
+npm run test:e2e
+```
+
+**Option B — servers already running** (reuse existing dev stack):
+
+```bash
+PLAYWRIGHT_SKIP_WEBSERVER=1 npm run test:e2e
+```
+
+Optional overrides: `PLAYWRIGHT_BASE_URL` (default `http://127.0.0.1:5173`) and `PLAYWRIGHT_API_URL` (default `http://127.0.0.1:3001`) for API assertions from tests.
+
+CI runs `npm run test:e2e` with a PostgreSQL service and auto-starts the stack; see `.github/workflows/ci.yml`.
+
 ## Documentation map
 
-| Document | Role |
-|----------|------|
-| [`ARCHITECTURE.md`](ARCHITECTURE.md) | Canonical stack, structure, and technical decisions |
-| [`INTERFACES.md`](INTERFACES.md) | API contracts, shared types, and UI boundaries |
-| [`ROADMAP.md`](ROADMAP.md) | Phased delivery plan |
-| [`CHANGELOG.md`](CHANGELOG.md) | Delivered work by phase milestone |
-| [`ENVIRONMENTS.md`](ENVIRONMENTS.md) | Environment variables, defaults, and PAT-026 secrets rules |
-| [`UX_GUIDELINES.md`](UX_GUIDELINES.md) | UI/UX standards |
+| Document                               | Role                                                       |
+| -------------------------------------- | ---------------------------------------------------------- |
+| [`ARCHITECTURE.md`](ARCHITECTURE.md)   | Canonical stack, structure, and technical decisions        |
+| [`INTERFACES.md`](INTERFACES.md)       | API contracts, shared types, and UI boundaries             |
+| [`ROADMAP.md`](ROADMAP.md)             | Phased delivery plan                                       |
+| [`CHANGELOG.md`](CHANGELOG.md)         | Delivered work by phase milestone                          |
+| [`ENVIRONMENTS.md`](ENVIRONMENTS.md)   | Environment variables, defaults, and PAT-026 secrets rules |
+| [`UX_GUIDELINES.md`](UX_GUIDELINES.md) | UI/UX standards                                            |
 
 ## Monorepo layout
 
 npm workspaces packages:
 
-| Package | Path | Role |
-|---------|------|------|
+| Package          | Path      | Role                                            |
+| ---------------- | --------- | ----------------------------------------------- |
 | `@vybpad/client` | `client/` | React + Vite SPA, canvas editor, Zustand stores |
-| `@vybpad/server` | `server/` | Fastify API, Prisma client |
-| `@vybpad/shared` | `shared/` | Shared TypeScript types and exports |
+| `@vybpad/server` | `server/` | Fastify API, Prisma client                      |
+| `@vybpad/shared` | `shared/` | Shared TypeScript types and exports             |
 
 Root `package.json` holds workspace-wide scripts (`test`, `build`, `lint`). The Prisma schema lives under `prisma/`. Docker assets live under `docker/`.

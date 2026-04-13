@@ -14,8 +14,8 @@ import type {
   ValidationError,
 } from '@vybpad/shared';
 
-/** PAT-013 — default when `VITE_API_URL` is unset */
-const DEFAULT_API_BASE = 'http://localhost:3001';
+/** PAT-013 — default when `VITE_API_URL` is unset (127.0.0.1 matches Playwright/e2e:devstack; avoids cross-site credentialed fetch vs `localhost`). */
+const DEFAULT_API_BASE = 'http://127.0.0.1:3001';
 
 export interface ApiClientConfig {
   getAccessToken: () => string | null;
