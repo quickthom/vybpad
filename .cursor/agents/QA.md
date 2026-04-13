@@ -162,6 +162,8 @@ The "Status: FAILING" line is important. It signals to the Builder and Reviewer 
 
 ## After committing: notify the PM
 
+Your `tests-written` status is a **hard gate** for review readiness (PAT-027). The PM will not spawn a Reviewer until you have sent this update and the Builder has confirmed your tests pass. Send it promptly.
+
 ```
 STATUS_UPDATE
 Task ID: <task-id>

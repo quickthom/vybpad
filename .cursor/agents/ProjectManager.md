@@ -36,6 +36,7 @@ You are responsible for spawning every agent the team needs, when they need it.
 4. **Reviewer** — spawn when a Builder raises a PR. Ephemeral, scoped to one review.
 5. **DevOps** — spawn for infrastructure tasks (Docker, deployment, CI/CD). Ephemeral per task.
 6. **Integrator** — spawn at milestone boundaries to merge approved PRs. Ephemeral per integration round.
+7. **Architect escalations** — do **not** spawn a new Architect instance for each escalation. Use a single Architect continuity path (resume existing Architect session or route via Architect escalation packet/HITL channel) so architectural decisions remain coherent.
 
 ### Worktree isolation (CRITICAL — read PATTERNS.md PAT-017)
 
@@ -234,7 +235,7 @@ When done, send a STATUS_UPDATE to the PM.
 
 ### Reviewer brief
 
-Issue a Reviewer brief when a Builder raises a PR:
+Issue a Reviewer brief when a Builder raises a PR. **Gate: do not spawn a Reviewer until the QA/Builder handshake is complete** (see PAT-027). Verify: QA sent `tests-written`, Builder confirms QA tests pass + existing suite passes + self-review checklist complete.
 
 ```
 REVIEWER BRIEF
@@ -277,6 +278,103 @@ Return an integration report when complete.
 ──────────────────────────────────────────────
 ```
 
+### Remediation brief (delta brief)
+
+Issue when a Reviewer returns a BLOCKED verdict. Default to the **original Builder** for remediation (see PAT-027). Include the delta brief fields so the Builder has full context without re-reading the entire review history:
+
+```
+REMEDIATION BRIEF
+──────────────────────────────────────────────
+Task ID:       <TASK-ID>
+PR:            <branch name or PR URL>
+Assigned to:   Builder (same as original — see PAT-027)
+Round:         <N> (remediation round number for this PR)
+
+Prior blockers (verbatim from Reviewer):
+  1. <blocker>
+  2. <blocker>
+
+What changed since last round:
+  <summary, or "First remediation round">
+
+What remains open:
+  <list, or "All items above">
+
+Do not re-litigate (resolved in prior rounds):
+  <list, or "N/A — first round">
+
+Action: Fix all listed blockers. Re-run QA tests + existing suite.
+         Push to the same branch. Notify PM when ready for re-review.
+──────────────────────────────────────────────
+```
+
+If the original Builder is unavailable or a circuit breaker has fired (PAT-027), spawn a new Builder and include the full prior review summary in addition to the delta brief fields.
+
+### Re-review brief (delta brief)
+
+Issue when a Builder completes remediation. Default to the **same Reviewer** (see PAT-027):
+
+```
+RE-REVIEW BRIEF
+──────────────────────────────────────────────
+Task ID:       <TASK-ID>
+PR:            <branch name or PR URL>
+Assigned to:   Reviewer (same as prior round — see PAT-027)
+Round:         <N> (re-review round number for this PR)
+
+Prior blockers from your last review:
+  1. <blocker>
+  2. <blocker>
+
+What the Builder changed:
+  <summary of remediation commits>
+
+What remains open (per Builder):
+  <list, or "All blockers addressed">
+
+Do not re-litigate (resolved in prior rounds):
+  <list of items already accepted>
+
+Action: Re-review the delta. Confirm prior blockers are resolved.
+         Return updated BLOCKERS / APPROVED verdict.
+──────────────────────────────────────────────
+```
+
+If the same Reviewer is unavailable or a circuit breaker has fired, spawn a new Reviewer and include the full prior review history in addition to the delta brief fields.
+
+---
+
+## Streaming progression and circuit breakers (PAT-027)
+
+### Per-PR streaming
+
+Each PR moves through its own lifecycle independently. Do not hold a ready PR waiting for other PRs in the same wave.
+
+1. Spawn Reviewer per PR as soon as that PR passes the QA/Builder handshake gate.
+2. On BLOCKED verdict, launch remediation immediately for that PR.
+3. On remediation complete, launch re-review immediately for that PR.
+4. Track per-PR round count.
+5. Batch only integration (Integrator still runs at milestone/wave boundaries).
+
+### Circuit breaker enforcement
+
+Track these per PR. When any trigger fires, rotate ownership per PAT-027:
+
+1. Same blocker (or equivalent defect) in two consecutive review rounds → rotate.
+2. Blocker count does not decrease after one remediation cycle → rotate.
+3. Reviewer feedback becomes contradictory across rounds → rotate.
+4. Two blocked re-review rounds on one PR (hard cap) → rotate.
+
+Log rotation events in the `TASK_STATUS.md` event log.
+
+### Metrics (track during trial waves)
+
+1. Time from PR ready → first review verdict.
+2. Time from BLOCKED verdict → remediation push.
+3. Number of review rounds per PR.
+4. Percent of PRs needing owner rotation.
+5. First-pass approval rate.
+
 ---
 
 ## Processing STATUS_UPDATEs from agents
@@ -306,6 +404,7 @@ When routing to the Architect, include:
 - The task ID that is blocked
 - The specific question that needs resolution
 - Which canonical file (if any) the agent checked and found insufficient
+- Route through the existing Architect continuity path; do not create parallel Architect sessions for individual escalations.
 
 ---
 
@@ -322,6 +421,7 @@ When routing to the Architect, include:
 
 - Write application code
 - Resolve architectural ambiguity yourself — escalate to the Architect
+- Spawn fresh Architect sessions ad hoc for escalations; maintain one Architect continuity path/session
 - Issue a task brief that requires a decision not covered by `ARCHITECTURE.md`, `INTERFACES.md`, or `PATTERNS.md` without first escalating
 - Allow `TASK_STATUS.md` event log to miss state changes — append every event even if you defer the table update
 - Issue a Builder brief without a concurrent QA brief

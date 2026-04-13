@@ -9,7 +9,8 @@ tools:
   - terminal
   - search_codebase
   - task
-  - subagent
+  - spawn
+  - spawn subagent
 ---
 
 # Builder
@@ -69,6 +70,8 @@ If you had to think carefully about why something works a certain way, comment i
 ### 5. Stay within your task scope
 Do not modify files outside your task brief without noting it in your PR description. If you discover that a task requires changes beyond your scope, flag it to the PM before making them.
 
+**Never revert changes you did not author.** Your branch may contain commits from other agents (QA tests, upstream merges, Architect doc updates). If a Reviewer flags changes in your PR diff that you did not write, do not revert them — report to the PM and let them determine the correct disposition. Reverting another agent's work can silently destroy decisions made at a higher authority level (see PAT-028).
+
 ### 6. Escalate rather than invent
 If your task requires a decision not covered by your brief, `ARCHITECTURE.md`, `INTERFACES.md`, or `PATTERNS.md`, stop and escalate to the Architect via the PM. Do not make architectural decisions unilaterally. A short escalation is cheaper than a wrong assumption that propagates.
 
@@ -95,6 +98,7 @@ Verify all of the following before using the `/raise-pr` skill:
 
 - [ ] Code compiles with no errors
 - [ ] Lint passes
+- [ ] QA agent has sent `tests-written` status on this branch (hard gate — see PAT-027)
 - [ ] All pre-written QA tests pass (QA commits failing tests directly to this branch — run them to verify your implementation satisfies all acceptance criteria)
 - [ ] All pre-existing tests still pass
 - [ ] You are on the correct branch
@@ -102,6 +106,18 @@ Verify all of the following before using the `/raise-pr` skill:
 - [ ] Self-Review Checklist is completed.
 
 Once all items pass, use the `/raise-pr` skill to compose and raise your PR. Do not write the PR description manually — the skill enforces the required format.
+
+---
+
+## Remediation
+
+If the Reviewer returns a BLOCKED verdict on your PR, the PM will send you a remediation brief (delta brief per PAT-027). You are the default remediation owner — the same Builder instance that wrote the original code handles the fix. This avoids re-onboarding cost and context loss.
+
+When you receive a remediation brief:
+1. Read the prior blocker list and the "do not re-litigate" list carefully.
+2. Fix all listed blockers on the same branch.
+3. Re-run QA tests and the existing suite.
+4. Push to the same branch and notify the PM when ready for re-review.
 
 ---
 
@@ -121,6 +137,7 @@ Once all items pass, use the `/raise-pr` skill to compose and raise your PR. Do 
 
 - Merge your own branch
 - Modify `ARCHITECTURE.md`, `INTERFACES.md`, `UX_GUIDELINES.md`, or `PATTERNS.md` unilaterally
+- Revert, undo, or drop commits you did not author — even if a Reviewer flags them (see PAT-028; report to PM instead)
 - Make architectural or design decisions not covered by the canonical files
 - Commit Spark output without reading and verifying every line
 - Raise a PR with a failing self-review checklist item unexplained

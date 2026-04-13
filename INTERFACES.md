@@ -473,6 +473,8 @@ interface TransportControlsProps {
   isPlaying: boolean;
   tempo: number;
   currentBeat: string;                 // formatted display: "M:B" (measure:beat)
+  initStatus: PlaybackInitStatus;      // audio unlock lifecycle state
+  initErrorCode: PlaybackInitErrorCode | null;
   onPlay: () => void;
   onPause: () => void;
   onStop: () => void;
@@ -574,6 +576,8 @@ interface PlaybackStore {
   isLooping: boolean;
   loopStart: number;                   // tick
   loopEnd: number;                     // tick
+  initStatus: PlaybackInitStatus;      // user-gesture audio unlock lifecycle
+  initErrorCode: PlaybackInitErrorCode | null;
 
   play: () => void;
   pause: () => void;
@@ -581,7 +585,16 @@ interface PlaybackStore {
   rewind: () => void;
   seekTo: (tick: number) => void;
   setLoop: (start: number, end: number) => void;
+  initializeAudio: () => Promise<void>; // must be invoked from a user gesture; idempotent
+  clearInitError: () => void;
 }
+
+type PlaybackInitStatus = "locked" | "initializing" | "ready" | "error";
+
+type PlaybackInitErrorCode =
+  | "AUDIO_CONTEXT_BLOCKED"            // browser blocked audio context start
+  | "SAMPLE_LOAD_FAILED"               // SoundFont/sample load failure
+  | "ENGINE_INIT_FAILED";              // any other Tone/audio engine init failure
 
 interface AuthStore {
   user: UserResponse | null;

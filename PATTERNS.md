@@ -401,3 +401,83 @@ The file has two sections with different access patterns:
 ### PM_STATE.md and ARCHITECT_STATE.md
 
 Update on HITL request, before a known interruption, or at milestone close. Do not update after routine events.
+
+---
+
+## PAT-026: Playback Initialization Lifecycle
+
+For Phase 4 playback work, use this canonical store-level audio initialization contract:
+
+- `initStatus` state machine: `"locked" -> "initializing" -> "ready"` or `"error"`.
+- `initializeAudio()` is **idempotent** and safe to call multiple times; once `"ready"`, it resolves immediately.
+- `initializeAudio()` must be called from a **direct user gesture handler** (click/key/tap), not from autoplay effects.
+- While `"initializing"`, block duplicate init calls and keep transport controls non-reentrant.
+- On init failure, set `initStatus: "error"` and one of `initErrorCode` values from `PlaybackInitErrorCode`.
+- `clearInitError()` only clears the stored error and returns status to `"locked"`; it does not auto-retry.
+- `play()` is transport-only; it must not hide initialization side effects. UI or controller code explicitly calls `initializeAudio()` before `play()` on first-run paths.
+- `TransportControlsProps` carries `initStatus` and `initErrorCode` so controls can render lock/loading/error affordances without reaching into store internals.
+- Do not add a separate `isBootstrapping` prop to shared interfaces; derive it at the boundary as `initStatus === "initializing"` to avoid duplicated state contracts.
+
+---
+
+## PAT-027: Streaming Review/Remediation Orchestration
+
+**The delivery pipeline operates per-PR as a streaming system.** Each PR moves through its own lifecycle independently: `Builder/QA → Reviewer → Remediation → Re-review → Approved`. No "wait for all PRs in wave" barrier. Only integration remains batched at milestone/wave boundaries.
+
+### Ownership continuity
+
+Default to same owners for speed and context retention:
+
+| Role | Default owner | Fallback |
+|---|---|---|
+| Remediation | Original Builder for the task branch | PM must include prior review summary and delta in new Builder brief |
+| QA support during remediation | Original QA (when blocker scope impacts tests) | PM must include prior test coverage plan in new QA brief |
+| Re-review | Same Reviewer who issued the blockers | PM must include prior review summary and delta changes in new Reviewer brief |
+
+### Context-degradation circuit breakers
+
+Continuity is revoked for a PR when **any** trigger fires:
+
+1. Same blocker (or equivalent defect) appears in two consecutive review rounds.
+2. Blocker count does not decrease after one remediation cycle.
+3. Reviewer feedback becomes contradictory across rounds.
+4. Two blocked re-review rounds on one PR (hard cap).
+
+When triggered:
+- Rotate **Reviewer first** if issue appears to be feedback consistency.
+- Rotate **Builder first** if issue appears to be implementation quality.
+- Optionally run one tie-breaker second review for contentious cases.
+
+### QA/Builder handshake gate
+
+A PR is not review-ready until all of the following are true:
+1. QA has sent `tests-written` status on the same branch.
+2. Builder has run QA baseline (failing before implementation), then rerun with implementation (passing).
+3. Builder pre-flight checklist confirms: QA tests pass, existing suite passes, self-review checklist complete.
+
+PM must enforce this gate before spawning a Reviewer.
+
+### Delta brief (re-round handoffs)
+
+Every remediation or re-review handoff must include:
+- Task ID and PR link.
+- Prior blocker list (verbatim or concise normalized form).
+- What changed since last round.
+- What remains open.
+- Explicit "do not re-litigate" list for resolved items.
+
+---
+
+## PAT-028: Upstream Change Protection
+
+**Builders must never revert commits they did not author.** A feature branch may contain commits from other roles — QA test commits, upstream merges from `develop`, or Architect-owned document updates. These are not the Builder's to modify.
+
+**Problem this prevents:** An Architect (or PM, or other privileged role) merges a process or doc change to `develop`. A Builder branches from `develop` and the change appears in their PR diff. A Reviewer flags it as out-of-scope. The Builder reverts it. The Architect's decision is silently destroyed.
+
+**Rules:**
+
+| Role | Rule |
+|---|---|
+| Builder | Never revert, undo, or drop commits you did not author. If a Reviewer flags changes you didn't make, report to the PM — do not act on the feedback yourself. |
+| Reviewer | Do not flag upstream changes as irrelevant or instruct the Builder to revert them. Skip Architect-owned files (`ARCHITECTURE.md`, `INTERFACES.md`, `PATTERNS.md`, `UX_GUIDELINES.md`, `.cursor/agents/*.md`) and QA-authored test commits when reviewing a Builder's PR. If an upstream change appears genuinely wrong, route to the PM for the responsible role. |
+| PM | If a Reviewer reports a concern about an upstream change, route to the role that authored it. Never instruct a Builder to revert another role's work. |
