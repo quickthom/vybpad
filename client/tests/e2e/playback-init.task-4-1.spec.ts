@@ -9,6 +9,7 @@
 
 import { expect, test } from '@playwright/test';
 
+import { waitForEditorRouteReady } from './helpers/editorReady';
 import { submitRegisterFormAndExpectProjects } from './helpers/registerFlow';
 import {
   expectTransportPlaybackNotReady,
@@ -43,7 +44,7 @@ test.describe('TASK-4.1 — playback init (user gesture; not sample-load throttl
     await page.getByRole('button', { name: 'Create project' }).click();
     await expect(page).toHaveURL(/\/editor\/[0-9a-f-]{36}/i);
 
-    await expect(page.getByText('Loading project…')).toBeHidden({ timeout: 30_000 });
+    await waitForEditorRouteReady(page);
 
     const transport = getTransportToolbar(page);
     await expect(transport).toBeVisible();
@@ -56,7 +57,7 @@ test.describe('TASK-4.1 — playback init (user gesture; not sample-load throttl
     await expectTransportPlaybackReady(transport, { timeout: 45_000 });
 
     await page.reload();
-    await expect(page.getByText('Loading project…')).toBeHidden({ timeout: 30_000 });
+    await waitForEditorRouteReady(page);
 
     const transportAfter = getTransportToolbar(page);
     await expectTransportPlaybackNotReady(transportAfter);
@@ -84,7 +85,7 @@ test.describe('TASK-4.1 — playback init (user gesture; not sample-load throttl
     await page.getByRole('button', { name: 'Create project' }).click();
     await expect(page).toHaveURL(/\/editor\/[0-9a-f-]{36}/i);
 
-    await expect(page.getByText('Loading project…')).toBeHidden({ timeout: 30_000 });
+    await waitForEditorRouteReady(page);
 
     // Only assert on errors after the editor is up — anonymous session bootstrap may 401 `/api/auth/refresh`
     // (expected) and the browser logs that as a console error.

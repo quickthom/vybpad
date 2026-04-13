@@ -1,5 +1,5 @@
 /*
- * QA COVERAGE PLAN — TASK-3.5 (+ 4.2 CI determinism)
+ * QA COVERAGE PLAN — TASK-3.5 (+ TASK-4.2 remediation: editor shell ready)
  *
  * Criterion: Happy-path E2E — register → create project → editor → chord grid edit → persist → refresh →
  *   logout/login → project list + editor reload with persisted song (verified via API contract).
@@ -10,10 +10,13 @@
  * Autosave: after edits, wait for `Save` enabled (dirty), then poll GET /api/projects/:id until the
  * server reflects the edit — ties verification to persistence (debounced PUT) without racing `waitForResponse`
  * against slow CI or coalesced saves.
+ *
+ * Shell: `waitForEditorRouteReady` ensures canvas + transport are present before chord entry (no hydration races).
  */
 
 import { expect, test, type APIRequestContext } from '@playwright/test';
 
+import { waitForEditorRouteReady } from './helpers/editorReady';
 import { submitRegisterFormAndExpectProjects } from './helpers/registerFlow';
 
 const API_BASE = (process.env.PLAYWRIGHT_API_URL ?? 'http://127.0.0.1:3001').replace(/\/+$/, '');
@@ -74,7 +77,7 @@ test.describe('TASK-3.5 — persistence happy path', () => {
     expect(projectId).toBeTruthy();
     const id = projectId as string;
 
-    await expect(page.getByText('Loading project…')).toBeHidden({ timeout: 30_000 });
+    await waitForEditorRouteReady(page);
 
     const canvas = page.getByRole('application', { name: /Song editor/i });
     await expect(page.getByRole('button', { name: /^Save$/ })).toBeDisabled({ timeout: 30_000 });
@@ -106,7 +109,7 @@ test.describe('TASK-3.5 — persistence happy path', () => {
     expect(remote.songData.measures[0]?.chords?.length ?? 0).toBeGreaterThanOrEqual(2);
 
     await page.reload();
-    await expect(page.getByText('Loading project…')).toBeHidden({ timeout: 30_000 });
+    await waitForEditorRouteReady(page);
     await expect(page.getByRole('button', { name: /^Save$/ })).toBeDisabled();
 
     await page.getByRole('button', { name: 'Log out' }).click();
@@ -123,7 +126,7 @@ test.describe('TASK-3.5 — persistence happy path', () => {
 
     await projectRowButton.click();
     await expect(page).toHaveURL(new RegExp(`/editor/${id}`));
-    await expect(page.getByText('Loading project…')).toBeHidden({ timeout: 30_000 });
+    await waitForEditorRouteReady(page);
 
     token = (await loginApi(request, email, password)).accessToken;
     remote = await fetchProject(request, token, id);

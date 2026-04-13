@@ -1,4 +1,15 @@
 import { defineConfig, devices } from '@playwright/test';
+import { config as loadRootEnv } from 'dotenv';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+/**
+ * Load repo-root `.env` into `process.env` before Playwright spawns `webServer` children
+ * (Fastify + Vite). Matches local `npm run dev` expectations (ENVIRONMENTS.md). Does not
+ * override variables already set (CI injects `DATABASE_URL`, JWT secrets, etc.).
+ */
+const repoRoot = dirname(fileURLToPath(import.meta.url));
+loadRootEnv({ path: join(repoRoot, '.env'), quiet: true });
 
 /**
  * E2E against the Vite client + Fastify API (ARCHITECTURE.md — Playwright).

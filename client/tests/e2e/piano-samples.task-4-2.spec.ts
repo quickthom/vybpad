@@ -16,6 +16,7 @@
 import { expect, test } from '@playwright/test';
 
 import { submitRegisterFormAndExpectProjects } from './helpers/registerFlow';
+import { waitForEditorRouteReady } from './helpers/editorReady';
 import {
   expectTransportPlaybackNotReady,
   expectTransportPlaybackReady,
@@ -45,7 +46,7 @@ async function registerAndOpenEditor(page: import('@playwright/test').Page): Pro
   await page.getByRole('button', { name: 'Create project' }).click();
   await expect(page).toHaveURL(/\/editor\/[0-9a-f-]{36}/i);
 
-  await expect(page.getByText('Loading project…')).toBeHidden({ timeout: 30_000 });
+  await waitForEditorRouteReady(page);
 }
 
 test.describe('TASK-4.2 — piano sample loading (E2E)', () => {
@@ -80,7 +81,7 @@ test.describe('TASK-4.2 — piano sample loading (E2E)', () => {
     await expectTransportPlaybackReady(transport);
 
     await page.reload();
-    await expect(page.getByText('Loading project…')).toBeHidden({ timeout: 30_000 });
+    await waitForEditorRouteReady(page);
 
     const transportAfter = getTransportToolbar(page);
     await expectTransportPlaybackNotReady(transportAfter);
