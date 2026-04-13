@@ -383,6 +383,9 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
 
   const handlePointerDown = (e: ReactPointerEvent<HTMLCanvasElement>) => {
     const canvas = e.currentTarget;
+    // Ensure the grid receives focus so window `keydown` handling (digits, durations) runs instead of
+    // an accidental transport `<input>` focus skipping the handler (TASK-3.5 / TASK-4.2 E2E).
+    canvas.focus({ preventScroll: true });
     const cx = e.clientX ?? 0;
     const cy = e.clientY ?? 0;
     const { x: vx, y: vy } = pointerEventToViewportXY(canvas, cx, cy);
