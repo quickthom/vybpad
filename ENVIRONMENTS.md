@@ -56,7 +56,7 @@ cp .env.example .env
 
 - Run with native dev servers (recommended for day-to-day frontend/backend development):
   - In one terminal: `cd server && npm run dev` (API on `PORT` from `.env`, default 3001)
-  - In another terminal: `cd client && npm run dev -- --host 0.0.0.0` (Vite dev server, default 5173)
+  - In another terminal: `cd client && npm run dev -- --host 127.0.0.1 --port 5173` (Vite; match `CORS_ORIGIN` / `VITE_API_URL` — PAT-013 uses `127.0.0.1` so cookies + CORS align with the API origin)
 
 - Run via Docker Compose (provides a local Postgres and isolates services):
 

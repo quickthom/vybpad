@@ -25,7 +25,9 @@ jobs:
 
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/vybpad_ci
-      # Prefer repository secrets CI_JWT_SECRET / CI_JWT_REFRESH_SECRET (32+ chars). Fallback literals are CI-only, non-production placeholders.
+      # PAT-026: prefer GitHub Actions secrets CI_JWT_SECRET / CI_JWT_REFRESH_SECRET (32+ chars each).
+      # When unset, the expressions below use documented CI-only placeholders so forks run without
+      # extra configuration (see ENVIRONMENTS.md §Rules — not production secrets).
       JWT_SECRET: ${{ secrets.CI_JWT_SECRET || 'ci-jwt-secret-must-be-at-least-32-characters-long' }}
       JWT_REFRESH_SECRET: ${{ secrets.CI_JWT_REFRESH_SECRET || 'ci-refresh-secret-must-be-at-least-32-characters-long' }}
       CORS_ORIGIN: http://127.0.0.1:5173

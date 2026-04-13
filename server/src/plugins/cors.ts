@@ -14,6 +14,9 @@ const corsPluginImpl: FastifyPluginAsync = async (app) => {
   await app.register(cors, {
     origin: allowOrigin,
     credentials: true,
+    // @fastify/cors defaults to GET,HEAD,POST only — without PUT/DELETE, browsers block credentialed
+    // project saves (preflight succeeds but the actual PUT is never sent; see TASK-3.5 E2E).
+    methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   });
 };
 

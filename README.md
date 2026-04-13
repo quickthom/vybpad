@@ -45,7 +45,7 @@ This starts **PostgreSQL 16**, the **API** on port **3001**, and the **Vite dev 
 1. Start PostgreSQL and point `DATABASE_URL` at it (or use only the `postgres` service: `docker compose up postgres`).
 2. Apply the Prisma schema to your database using your usual Prisma workflow (`prisma/schema.prisma` at the repo root).
 3. In one terminal: `cd server && npm run dev` (API, default port from `PORT` / `.env`).
-4. In another: `cd client && npm run dev` (Vite, typically `http://localhost:5173`). Set `VITE_API_URL` if the API is not on the default in `.env.example`.
+4. In another: `cd client && npm run dev -- --host 127.0.0.1 --port 5173` (Vite; use the same host as `VITE_API_URL` / `CORS_ORIGIN` in `.env.example`, usually `http://127.0.0.1:5173`).
 
 ## Build and quality checks
 
