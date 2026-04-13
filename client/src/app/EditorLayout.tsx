@@ -10,7 +10,7 @@ import { buildDefaultSong, useSongStore } from '../store/songStore';
 import { useToastStore } from '../store/toastStore';
 import { useUIStore } from '../store/uiStore';
 import { projectsApi } from '../utils/apiClient';
-import { getApiErrorMessage } from '../utils/errorMessages';
+import { getApiErrorMessage, isApiTransportFailure } from '../utils/errorMessages';
 
 /** TASK-3.4: idle delay after the last edit before auto PUT (coalesces rapid edits). */
 const AUTOSAVE_DEBOUNCE_MS = 1500;
@@ -168,8 +168,10 @@ export function EditorLayout() {
         }
       } catch (err) {
         showErrorToast(getApiErrorMessage(err));
+        // Re-queue autosave only for transport failures (PAT-001). Typed API errors must not spin retries.
         if (
           source === 'auto' &&
+          isApiTransportFailure(err) &&
           useSongStore.getState().isDirty &&
           projectId &&
           loadStatus === 'ready'

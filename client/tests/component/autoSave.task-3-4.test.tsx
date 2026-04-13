@@ -330,14 +330,15 @@ describe('TASK-3.4 auto-save — debounced projectsApi.update after song mutatio
   });
 
   describe('error handling', () => {
-    it('leaves isDirty true when projectsApi.update rejects after a debounced autosave', async () => {
+    it('leaves isDirty true when projectsApi.update rejects with a typed API error (no autosave retry)', async () => {
       setAuthenticatedUser();
 
       const projectId = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
       const loaded = makeProjectResponse(projectId, 'Err', 'Stable');
 
       mockGet.mockResolvedValue(loaded);
-      mockUpdate.mockRejectedValue(new Error('network failed'));
+      const internalErr = Object.assign(new Error('INTERNAL_ERROR'), { code: 'INTERNAL_ERROR' as const });
+      mockUpdate.mockRejectedValue(internalErr);
 
       renderRoutes([`/editor/${projectId}`]);
 
@@ -351,18 +352,100 @@ describe('TASK-3.4 auto-save — debounced projectsApi.update after song mutatio
         useSongStore.getState().updateMetadata({ title: 'Unsaved After Fail' });
       });
 
-      // Only the initial debounce — do not flush PAT-001 retry timers or rejections recurse forever.
       await act(async () => {
         await vi.advanceTimersByTimeAsync(1500);
       });
 
-      expect(mockUpdate).toHaveBeenCalled();
+      expect(mockUpdate).toHaveBeenCalledTimes(1);
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(5000);
+      });
+      expect(mockUpdate).toHaveBeenCalledTimes(1);
 
       vi.useRealTimers();
       await waitFor(() => {
         expect(useSongStore.getState().isDirty).toBe(true);
       });
       expect(useSongStore.getState().song.metadata.title).toBe('Unsaved After Fail');
+    });
+
+    it('retries autosave after a transport failure and clears isDirty when the retry succeeds', async () => {
+      setAuthenticatedUser();
+
+      const projectId = '99999999-9999-4999-8999-999999999999';
+      const loaded = makeProjectResponse(projectId, 'Net', 'NetTitle');
+
+      mockGet.mockResolvedValue(loaded);
+      mockUpdate
+        .mockRejectedValueOnce(new Error('Failed to fetch'))
+        .mockImplementation(async (_id, req) => ({
+          ...loaded,
+          songData: req.songData ?? loaded.songData,
+          updatedAt: '2026-04-13T21:00:00.000Z',
+        }));
+
+      renderRoutes([`/editor/${projectId}`]);
+
+      expect(await screen.findByRole('heading', { level: 1, name: 'NetTitle' })).toBeInTheDocument();
+
+      useAutosaveFakeTimers();
+
+      act(() => {
+        useSongStore.getState().updateMetadata({ title: 'After Retry' });
+      });
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1500);
+      });
+      expect(mockUpdate).toHaveBeenCalledTimes(1);
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1500);
+      });
+      expect(mockUpdate).toHaveBeenCalledTimes(2);
+
+      vi.useRealTimers();
+      await waitFor(() => {
+        expect(useSongStore.getState().isDirty).toBe(false);
+      });
+      expect(useSongStore.getState().song.metadata.title).toBe('After Retry');
+    });
+
+    it('does not schedule a second autosave attempt for typed UNAUTHORIZED from projectsApi.update', async () => {
+      setAuthenticatedUser();
+
+      const projectId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaab';
+      const loaded = makeProjectResponse(projectId, 'Auth', 'AuthTitle');
+
+      mockGet.mockResolvedValue(loaded);
+      const unauthorized = Object.assign(new Error('UNAUTHORIZED'), { code: 'UNAUTHORIZED' as const });
+      mockUpdate.mockRejectedValue(unauthorized);
+
+      renderRoutes([`/editor/${projectId}`]);
+
+      expect(await screen.findByRole('heading', { level: 1, name: 'AuthTitle' })).toBeInTheDocument();
+
+      useAutosaveFakeTimers();
+
+      act(() => {
+        useSongStore.getState().updateMetadata({ title: 'Still Dirty' });
+      });
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1500);
+      });
+      expect(mockUpdate).toHaveBeenCalledTimes(1);
+
+      await act(async () => {
+        await vi.runAllTimersAsync();
+      });
+      expect(mockUpdate).toHaveBeenCalledTimes(1);
+
+      vi.useRealTimers();
+      await waitFor(() => {
+        expect(useSongStore.getState().isDirty).toBe(true);
+      });
     });
   });
 
