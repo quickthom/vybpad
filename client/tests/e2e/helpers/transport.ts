@@ -2,10 +2,13 @@ import type { Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
 /**
- * Toolbar that wraps transport controls (UX §5.8).
+ * Transport root for E2E: same node as `TransportControls` — `role="toolbar"` plus
+ * `data-audio-ready` mirroring `initStatus` (INTERFACES / TASK-4.1). Use this pair instead of
+ * `getByRole(..., { name })` so we do not depend on accessible-name resolution during cold hydration
+ * (CI was seeing toolbar `count() === 0` while the element was present).
  */
 export function getTransportToolbar(page: Page): Locator {
-  return page.getByRole('toolbar', { name: /transport/i });
+  return page.locator('[role="toolbar"][data-audio-ready]');
 }
 
 /**

@@ -77,6 +77,7 @@ test.describe('TASK-4.2 — piano sample loading (E2E)', () => {
     await registerAndOpenEditor(page);
 
     const transport = getTransportToolbar(page);
+    await expect(transport).toBeVisible();
     await getTransportPlayButton(transport).click();
     await expectTransportPlaybackReady(transport);
 
