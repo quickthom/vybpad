@@ -35,6 +35,7 @@ export function TransportControls({
 
   return (
     <div
+      data-testid="vybpad-transport-toolbar"
       role="toolbar"
       aria-label="Transport"
       aria-busy={initStatus === 'initializing' ? true : undefined}

@@ -8,7 +8,8 @@ import { expect } from '@playwright/test';
  * (CI was seeing toolbar `count() === 0` while the element was present).
  */
 export function getTransportToolbar(page: Page): Locator {
-  return page.locator('[role="toolbar"][data-audio-ready]');
+  // Stable hook for E2E (TASK-4.3); same node still exposes data-audio-ready / aria-busy per INTERFACES.
+  return page.getByTestId('vybpad-transport-toolbar');
 }
 
 /**
