@@ -111,6 +111,11 @@ export function EditorLayout() {
       return;
     }
 
+    // POST-bootstrap ref is only meaningful for the current route param; clear when switching projects.
+    if (editorBootstrapHydratedIdRef.current != null && editorBootstrapHydratedIdRef.current !== projectId) {
+      editorBootstrapHydratedIdRef.current = null;
+    }
+
     const navState = location.state as EditorLocationState | null;
     const boot = navState?.project;
     if (boot && boot.id === projectId) {
@@ -121,6 +126,13 @@ export function EditorLayout() {
       loadSong(boot.songData);
       setProjectName(boot.name);
       setLoadStatus('ready');
+      return;
+    }
+
+    // Router may replace `location` and drop `state` while `projectId` is unchanged (see deps comment
+    // below). We already hydrated from POST /projects for this id — do not GET and clobber local edits
+    // / `isDirty` before debounced autosave completes (TASK-4.2 E2E).
+    if (editorBootstrapHydratedIdRef.current === projectId) {
       return;
     }
 
