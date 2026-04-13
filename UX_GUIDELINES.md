@@ -9,6 +9,8 @@
 
 Builders MUST expose the semantic tokens below as CSS custom properties (recommended: `@theme` in Tailwind v4) so utilities can reference them consistently, e.g. `bg-[var(--color-surface)]` or mapped theme keys.
 
+**Interim:** Until a single global `@theme` (or `:root`) block lands, using Tailwind arbitrary values such as `bg-[var(--color-surface,#FFFFFF)]` — **same hex as the table below** — satisfies this rule. Reviewers treat the fallback hex as the canonical value for that token until centralized theme CSS exists.
+
 | Token | Hex | Usage |
 | --- | --- | --- |
 | `--color-app-bg` | `#F3F4F6` | Application background (behind panels and editor chrome) |
@@ -315,6 +317,8 @@ Values align with **PAT-012**; this section is the UX authority for Builders (su
 4. **Right:** mixer / band / key-scale panels — default **288px**, stack tabs or accordion if multiple; each panel obeys §3 width constraints when resizable.
 5. **Optional bottom:** measure strip (`MeasureBar`) — height **56px**, border-top `--color-border`, background `--color-surface`.
 
+**Phased delivery:** Early milestones may ship **without** regions 3–4 when those features are not yet implemented. Reserve `UIStore` / `INTERFACES` panel identifiers and apply §3 dimensions when panels first mount. Do not permanently fork layout token values for “temporary” shells — converge on §7 as features land.
+
 **Panel behavior**
 
 - **Collapsible:** each side panel MAY collapse to **48px** rail; toggle via toolbar button with `aria-expanded`.
@@ -386,6 +390,7 @@ Values align with **PAT-012**; this section is the UX authority for Builders (su
 **Touch targets**
 
 - Minimum **44×44px** clickable area for toolbar and panel controls; icon buttons may show **40px** visual with **44px** hit area via padding.
+- **Measure strip (§7 optional bottom):** All interactive controls in this row — including **Add**, **Delete**, and similar secondary buttons — MUST meet the **44×44px** minimum (e.g. `min-h-11`, padding, or an invisible hit-area extension). Do not rely on **32px** compact button height alone for pointer targets in this strip.
 
 **ARIA patterns**
 
@@ -408,4 +413,4 @@ Values align with **PAT-012**; this section is the UX authority for Builders (su
 
 ---
 
-*Document version: 1.0 — TASK-0.7*
+*Document version: 1.1 — MILESTONE-PHASE2-DESIGN-REVIEW (F-05): interim token fallbacks (§1), phased side panels (§7), measure-strip touch targets (§9).*
