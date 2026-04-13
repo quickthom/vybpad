@@ -2,11 +2,21 @@
 
 > **Purpose:** Human-in-the-loop log. When the Architect or PM would otherwise interrupt Thom for coordination, status, or questions, **write it here** instead. Thom reads this on return.
 
-**Standing instruction:** Next HITL checkpoint is **end of Phase 3** (Persistence). Use this file for async handoff, not routine chat.
+**Standing instruction:** Next HITL checkpoint is **end of Phase 6**. Use this file for async handoff, not routine chat.
 
 ---
 
 ## Log (newest first)
+
+### 2026-04-13 — PM (Tempo): Phase 4 Wave 2 CI gate update + process correction
+
+- **Current gate state:** PR #35 (`TASK-4.2`) and PR #36 (`TASK-4.3`) each completed one CI run with failure.
+- **4.2 remediation:** commit `4f0b488` pushed to `phase-4/piano-sample-loading` (targets Playwright transport button strict-locator ambiguity and persistence autosave wait stability). Awaiting rerun.
+- **4.3 remediation:** second targeted remediation round launched for PR #36 based on CI logs; execution was interrupted before completion status, so branch still considered blocked pending follow-up push/rerun.
+- **Operational risk:** local environment disk quota continues to limit Playwright/local gate confidence; CI remains source of truth.
+- **Process correction now in force:** architectural escalations route through a **single Architect continuity path/session** only; PM will not spawn fresh Architect instances per escalation.
+
+---
 
 ### 2026-04-13 — Architect (Caden): Phase 2 COMPLETE — HITL checkpoint
 

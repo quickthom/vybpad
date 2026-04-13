@@ -258,6 +258,8 @@ These features exist in Hookpad but are **excluded or deferred** per the require
 | **User flows (E2E)** | Playwright | Enter chords → enter melody → play back → verify cursor movement → export MIDI → verify file |
 | **Accessibility** | Playwright + axe-core | Keyboard navigation, ARIA labels for non-canvas controls |
 
+**E2E harness (CI/local):** Playwright must not start tests until **both** the API (`GET /api/health`) and the Vite dev server respond — see **PAT-029**.
+
 **Canvas testing detail:** Since Canvas doesn't produce DOM nodes, we test by:
 1. Mocking `CanvasRenderingContext2D` and asserting draw calls (fillRect position/color for note blocks, fillText for chord labels)
 2. Testing the data pipeline separately: given song state X and viewport Y, assert the renderer produces draw commands Z

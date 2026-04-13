@@ -140,6 +140,8 @@ ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monosp
 - Layout, spacing, and panel defaults above assume **≥1024px**.
 - Below 1024px: Builders SHOULD show a full-viewport message: brief explanation that a wider display is required, no interactive editor. Copy: use `body` size, centered, `--color-text-secondary`; optional link to documentation — keep minimal.
 
+**Where the guard applies (F-06):** Any route that renders the **interactive grid editor** MUST use the same blocking pattern (e.g. shared `useMinViewport1024` hook or layout wrapper). The project list alone is not sufficient — users can deep-link or navigate to `/editor/:id` below 1024px otherwise. **Login/register** SHOULD use the same guard or an equivalent full-viewport message so auth and editor expectations stay consistent.
+
 **Breakpoints** (for future responsive work; not required to ship adaptive layouts in MVP beyond the minimum-width guard)
 
 | Name | Min width | Intended behavior |
@@ -232,6 +234,8 @@ Aligned with **PAT-001**: API and client errors surface via toast; map codes in 
 - **Grouping:** related controls in **flex** with **8px** internal gap; groups separated by **1px × 24px** vertical divider `--color-border` or **16px** horizontal margin.
 - **Icon buttons:** **40px** hit area; playing state may use `--color-primary` fill for active transport icon.
 - **Tempo / key / meter:** use **compact** selects or **ghost** buttons opening popovers/modals per feature spec.
+
+**Phased delivery:** Transport chrome (play/pause/stop/rewind, tempo, audio-init loading state) may ship in an early milestone before the full `ROADMAP.md` Phase 4 playback feature set; all such controls still follow the table above, including `aria-live` / `role="toolbar"` and error surfacing for init failures.
 
 ### 5.9 Form layout (auth, settings)
 
@@ -349,6 +353,11 @@ Values align with **PAT-012**; this section is the UX authority for Builders (su
 - **Piano samples loading** (first play): inline **progress** or spinner in toolbar next to transport; `aria-live="polite"` message when ready.
 - **Skeleton:** use for project list rows only (not canvas); **3** rows of **12px** height placeholders, radius **4px**, `--color-surface-muted` animate pulse **1.5s** ease-in-out infinite.
 
+**Autosave (debounced PUT)**
+
+- **Errors** MUST surface via toast (PAT-001); transport retries only where product rules allow (see `PATTERNS.md` / API client).
+- **Success** MAY omit a toast to avoid noise. If success is silent, Builders SHOULD still provide a lightweight cue that the milestone “user sees persistence” expectation is met — e.g. optional **caption** or **“Last saved”** timestamp in editor chrome, or success toast on first save after edit session. Purely silent autosave with no chrome is acceptable only if PM confirms.
+
 **Empty states**
 
 - **No projects:** illustration optional; `h3` “No projects yet”, `body` secondary, primary “Create project”.
@@ -413,4 +422,4 @@ Values align with **PAT-012**; this section is the UX authority for Builders (su
 
 ---
 
-*Document version: 1.1 — MILESTONE-PHASE2-DESIGN-REVIEW (F-05): interim token fallbacks (§1), phased side panels (§7), measure-strip touch targets (§9).*
+*Document version: 1.2 — MILESTONE-F06-DESIGN-REVIEW: §4 editor-route viewport guard, §8 autosave feedback notes; F-05 items (§1 interim tokens, §7 phased panels, §9 measure-strip targets) unchanged.*

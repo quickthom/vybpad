@@ -81,9 +81,9 @@ Run these before opening PRs.
 | --------------------------- | ---------------------------------------------------------------------------------- | ----------------------- |
 | `PLAYWRIGHT_BASE_URL`       | Browser base URL for Playwright                                                    | `http://127.0.0.1:5173` |
 | `PLAYWRIGHT_API_URL`        | API origin for contract checks from tests                                          | `http://127.0.0.1:3001` |
-| `PLAYWRIGHT_SKIP_WEBSERVER` | If set, Playwright does not spawn `npm run e2e:devstack` (use your own API + Vite) | —                       |
+| `PLAYWRIGHT_SKIP_WEBSERVER` | If set, Playwright does not spawn the API + Vite dev servers (use your own stack, e.g. `npm run e2e:devstack`) | —                       |
 
-Requires the same **root** variables as local development (`DATABASE_URL`, `JWT_SECRET`, `JWT_REFRESH_SECRET`, etc.) when using the built-in dev stack. See the root **README** “End-to-end (Playwright)” section for the full procedure.
+Requires the same **root** variables as local development (`DATABASE_URL`, `JWT_SECRET`, `JWT_REFRESH_SECRET`, etc.) when Playwright starts the stack. By default it launches **two** processes (Fastify + Vite) and waits for `/api/health` and the Vite origin (see **PAT-029**). See the root **README** “End-to-end (Playwright)” section for the full procedure.
 
 ## Docker Compose (development)
 

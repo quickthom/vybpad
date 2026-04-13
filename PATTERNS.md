@@ -481,3 +481,13 @@ Every remediation or re-review handoff must include:
 | Builder | Never revert, undo, or drop commits you did not author. If a Reviewer flags changes you didn't make, report to the PM — do not act on the feedback yourself. |
 | Reviewer | Do not flag upstream changes as irrelevant or instruct the Builder to revert them. Skip Architect-owned files (`ARCHITECTURE.md`, `INTERFACES.md`, `PATTERNS.md`, `UX_GUIDELINES.md`, `.cursor/agents/*.md`) and QA-authored test commits when reviewing a Builder's PR. If an upstream change appears genuinely wrong, route to the PM for the responsible role. |
 | PM | If a Reviewer reports a concern about an upstream change, route to the role that authored it. Never instruct a Builder to revert another role's work. |
+
+---
+
+## PAT-029: Playwright E2E Dev Stack Readiness
+
+**Problem:** A single `webServer.url` that only probes the Vite port lets Playwright start while the Fastify API is still booting. Registration and project creation then race the API → flaky `toHaveURL`, autosave `waitForResponse`, and API contract checks.
+
+**Rule:** In `playwright.config.ts`, use **two** `webServer` entries (or `PLAYWRIGHT_SKIP_WEBSERVER` with both processes already up): one waits on `GET /api/health` at `PLAYWRIGHT_API_URL` (default `http://127.0.0.1:3001`), one waits on the Vite dev URL (`PLAYWRIGHT_BASE_URL`, default `http://127.0.0.1:5173`). Do not rely on `concurrently` alone as the readiness gate.
+
+**Manual dev:** `npm run e2e:devstack` remains valid for developers who prefer one shell; set `PLAYWRIGHT_SKIP_WEBSERVER=1` when those servers are already running.

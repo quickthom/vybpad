@@ -69,7 +69,7 @@ You can also run `npm test` inside `client` for client-focused runs.
 
 E2E specs live under `client/tests/e2e/` and exercise the real Fastify API plus the Vite client (see `ARCHITECTURE.md` — Playwright). You need PostgreSQL reachable via `DATABASE_URL` (see `.env.example`), JWT secrets set, and no other process on ports **3001** (API) and **5173** (Vite).
 
-**Option A — let Playwright start the API and client** (default when `PLAYWRIGHT_SKIP_WEBSERVER` is unset):
+**Option A — let Playwright start the API and client** (default when `PLAYWRIGHT_SKIP_WEBSERVER` is unset): Playwright waits for **both** `GET /api/health` and the Vite dev server before running tests (see **PAT-029**).
 
 ```bash
 # from repo root, after `cp .env.example .env` and `npx prisma db push --schema=prisma/schema.prisma`

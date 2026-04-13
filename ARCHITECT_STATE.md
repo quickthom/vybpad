@@ -2,7 +2,15 @@
 
 > Periodically updated cache of the Architect's current state. Review on session resume.
 
-**Last updated:** 2026-04-13 — **P2 Audit reviewed.** Canonical docs updated. Phase 3 awaiting HITL authorization.
+**Last updated:** 2026-04-13 — **E2E harness root cause addressed (PAT-029); PM should re-run CI on blocked PRs.**
+
+---
+
+## Resume Priority (Architect)
+
+1. **E2E infra fix (done):** Playwright `webServer` only waited on Vite (`:5173`), so tests could start before Fastify (`:3001`) accepted traffic → flaky `toHaveURL` after register/create and autosave `waitForResponse`. **Resolution:** `playwright.config.ts` now uses **two** `webServer` entries (API `GET /api/health` + Vite). Documented in **PAT-029**, `ARCHITECTURE.md` (Testing Strategy), `ENVIRONMENTS.md`, `README.md`.
+2. **Next for PM:** Re-run CI on PR `#35` / `#36` (or rebase onto `develop` after merge) to confirm green gates before further feature remediation.
+3. **Churn prevention:** PAT-029 encodes the readiness rule; optional follow-up — add a short milestone checklist item “Playwright multi-process readiness reviewed” if regressions recur.
 
 ---
 
@@ -42,7 +50,7 @@
 
 ## Escalations
 
-No outstanding escalations. Phase 2 escalations (TASK-2.9 `EditorCanvasProps`, TASK-2.11 `UIStore.toggleEntryMode`) resolved and documented in `INTERFACES.md`.
+No outstanding escalations. Latest resolved: TASK-4.1 transport-controls interface drift (added playback-init props to `TransportControlsProps`; clarified `isBootstrapping` derivation in PAT-026).
 
 ## P2 Audit Response (2026-04-13)
 
@@ -93,7 +101,7 @@ Restructured TASK_STATUS.md to two-section format: compact table (batch-updated 
 | `ARCHITECTURE.md` | Current. Reviewer flagged possible render-order drift — include in Phase 3 cleanup. |
 | `INTERFACES.md` | Current. Two additive updates during Phase 2 (see escalations above). |
 | `ROADMAP.md` | Current. Phases 0–2 complete per plan. |
-| `PATTERNS.md` | Current. 25 patterns (PAT-001 through PAT-025). Updated PAT-015. Added PAT-020–025. |
+| `PATTERNS.md` | Current. 29 patterns (PAT-001 through PAT-029). Added **PAT-029** (Playwright E2E dev stack readiness). |
 | `AGENTS.mdc` | Updated. Guestbook removed, selective INTERFACES.md loading added. |
 | `Codex-Spark.md` | Updated. Expanded eligibility, discard rule, QA access, temporary policy tag. |
 

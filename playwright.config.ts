@@ -3,8 +3,11 @@ import { defineConfig, devices } from '@playwright/test';
 /**
  * E2E against the Vite client + Fastify API (ARCHITECTURE.md — Playwright).
  * @see ENVIRONMENTS.md — local E2E prerequisites and env vars.
+ * @see PATTERNS.md PAT-029 — both API and client must be reachable before tests (avoids flaky auth/navigation).
  */
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://127.0.0.1:5173';
+const apiOrigin = (process.env.PLAYWRIGHT_API_URL ?? 'http://127.0.0.1:3001').replace(/\/+$/, '');
+const apiHealthUrl = `${apiOrigin}/api/health`;
 
 export default defineConfig({
   testDir: './client/tests/e2e',
@@ -26,12 +29,25 @@ export default defineConfig({
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: process.env.PLAYWRIGHT_SKIP_WEBSERVER
     ? undefined
-    : {
-        command: 'npm run e2e:devstack',
-        url: baseURL,
-        reuseExistingServer: !process.env.CI,
-        timeout: 180_000,
-        stdout: 'pipe',
-        stderr: 'pipe',
-      },
+    : [
+        {
+          name: 'api',
+          command: 'npm run dev --workspace=@vybpad/server',
+          url: apiHealthUrl,
+          reuseExistingServer: !process.env.CI,
+          timeout: 180_000,
+          stdout: 'pipe',
+          stderr: 'pipe',
+        },
+        {
+          name: 'client',
+          command:
+            'npm run dev --workspace=@vybpad/client -- --host 127.0.0.1 --port 5173',
+          url: baseURL,
+          reuseExistingServer: !process.env.CI,
+          timeout: 180_000,
+          stdout: 'pipe',
+          stderr: 'pipe',
+        },
+      ],
 });
