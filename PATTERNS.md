@@ -41,7 +41,7 @@ All errors surfaced to the user or returned from the API conform to the shapes d
 | **Database columns** | snake_case | `user_id`, `song_data`, `created_at` |
 | **API paths** | kebab-case, plural nouns | `/api/projects`, `/api/auth/refresh` |
 | **Environment variables** | SCREAMING_SNAKE | `DATABASE_URL`, `JWT_SECRET` |
-| **Git branches** | `<phase>/<task-slug>` | `phase-1a/theory-engine`, `phase-2/canvas-renderer` |
+| **Git branches** | `phase-<phase-id>/<task-slug>` | `phase-1a/theory-engine`, `phase-2/canvas-renderer` |
 | **Constants** | SCREAMING_SNAKE for true constants; camelCase for derived values | `TICKS_PER_QUARTER = 48` |
 
 ---
@@ -249,7 +249,7 @@ Each test file mirrors the source file it tests. Builders and QA may create test
 
 - `main` — production-ready code. Only the Integrator merges to main.
 - `develop` — integration branch. Feature branches merge here via PR.
-- Feature branches: `phase-<N>/<task-slug>` (e.g., `phase-1a/theory-engine`).
+- Feature branches: `phase-<phase-id>/<task-slug>` (e.g., `phase-1a/theory-engine`, `phase-4/piano-sample-loading`).
 - Hotfix branches: `fix/<task-id>-<slug>` (e.g., `fix/task-2-8-digit-key`). Use only for patches to `develop` outside normal phase flow.
 - One branch per task (per general rules). Branch from `develop`.
 - PRs require: description with task ID, ASSUMPTIONS block, self-review checklist, Spark disclosure if applicable.
@@ -275,19 +275,20 @@ Never duplicate these types in client or server packages. If a type is needed in
 
 **Worktree setup (PM responsibility before spawning parallel Builders):**
 
+Use a dedicated directory **outside** the main clone for additional worktrees. Let `<REPO_ROOT>` be the path to the primary clone (PM/Integrator workspace, usually on `develop`) and `<WORKTREE_ROOT>` be a directory you choose for parallel worktrees (see [ENVIRONMENTS.md](ENVIRONMENTS.md) for operator conventions).
+
 ```bash
-# Create a worktree directory
-mkdir -p /home/thom/py/vYbpad-worktrees
-# Create a worktree for a feature branch
-git worktree add /home/thom/py/vYbpad-worktrees/<branch-slug> <branch-name>
+mkdir -p <WORKTREE_ROOT>
+# From <REPO_ROOT>, on develop:
+git worktree add <WORKTREE_ROOT>/<task-slug> <branch-name>
 ```
 
 **Conventions:**
-- Worktree root: `/home/thom/py/vYbpad-worktrees/`
-- Worktree per branch: `/home/thom/py/vYbpad-worktrees/<task-slug>/`
-- The main worktree (`/home/thom/py/vYbpad`) stays on `develop` and is used by the PM and Integrator only
+- Worktree root: `<WORKTREE_ROOT>/` (one directory per operator machine; not committed)
+- Worktree per branch: `<WORKTREE_ROOT>/<task-slug>/`
+- The main worktree (`<REPO_ROOT>`) stays on `develop` and is used by the PM and Integrator only
 - Each Builder's task brief must specify the `working_directory` for their worktree
-- After a task's PR is merged, clean up: `git worktree remove /home/thom/py/vYbpad-worktrees/<task-slug>`
+- After a task's PR is merged, clean up: `git worktree remove <WORKTREE_ROOT>/<task-slug>`
 
 **When tasks are sequential** (no overlap), a single worktree is acceptable — just check out the new branch. But if two tasks might overlap in time, always use separate worktrees.
 
@@ -309,7 +310,7 @@ Builders may implement the chromatic row positioning as: `baseY + (chromatic * N
 
 ## PAT-019: System Package Installation
 
-Agents can install system packages using `yay` (the AUR helper). This does not require `sudo` and works from agent shell sessions. Use `yay -S --noconfirm <package>` for non-interactive installs. Do not use `sudo pacman` — it will fail in agent contexts because no TTY is available for the password prompt.
+Agents may install system packages when needed for the task. Use the **non-interactive** installer appropriate to the host OS (no prompts; no TTY for passwords). Do not use interactive `sudo` flows that require a password in unattended sessions. **OS-specific examples** (Arch AUR helper, apt flags, etc.) live in [ENVIRONMENTS.md](ENVIRONMENTS.md).
 
 ---
 
@@ -521,8 +522,10 @@ Every remediation or re-review handoff must include:
 1. **PM classifies each blocker** before issuing remediation briefs. Each blocker is tagged as `app` (Builder owns fix), `test` (QA owns fix), or `shared-helper` (Builder owns fix, QA reviews).
 2. **Builder pushes first.** When both roles have work, Builder commits and pushes, then signals `REMEDIATION_PUSH` to PM. QA then rebases onto the Builder's push before committing their changes.
 3. **No parallel pushes.** Only one role pushes to the PR branch at a time. PM enforces sequencing via the remediation brief ordering.
-4. **QA may not modify shared E2E helpers** (`helpers/**`, `fixtures/**`) during remediation. If a helper change is needed to fix a test, QA reports the required change to PM, who includes it in the Builder's remediation brief. This prevents the most common source of overlapping edits.
-5. **Builder must not delete or rewrite QA test assertions.** If a test is genuinely wrong (not just failing due to a code bug), Builder reports to PM, who routes to QA.
+4. **CI workflow concurrency:** `.github/workflows/ci.yml` uses `concurrency.group: ${{ github.workflow }}-${{ github.ref }}` with `cancel-in-progress: true`. For pull requests, `github.ref` is `refs/pull/<n>/merge`, so only one run per PR is in flight; newer pushes cancel the previous run. Prefer a single push after QA rebases (steps 2–3) to conserve Actions minutes; validate locally when possible ([docs/CI_LOCAL.md](docs/CI_LOCAL.md)).
+5. **Builder remediation — targeted E2E first:** While iterating on an E2E failure, the Builder runs **only** the failing spec (or `playwright -g`) locally until green — **not** the full E2E suite on every attempt. CI still runs the full pipeline on push. Before signaling the PM that remediation is ready, the previously failing test(s) must have passed locally at least once ([docs/CI_LOCAL.md](docs/CI_LOCAL.md) — targeted E2E).
+6. **QA may not modify shared E2E helpers** (`helpers/**`, `fixtures/**`) during remediation. If a helper change is needed to fix a test, QA reports the required change to PM, who includes it in the Builder's remediation brief. This prevents the most common source of overlapping edits.
+7. **Builder must not delete or rewrite QA test assertions.** If a test is genuinely wrong (not just failing due to a code bug), Builder reports to PM, who routes to QA.
 
 ### PM remediation brief additions
 

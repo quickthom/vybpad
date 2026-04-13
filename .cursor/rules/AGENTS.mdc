@@ -10,13 +10,13 @@ These rules apply to every agent on the team, regardless of role or model.
 `ARCHITECTURE.md` (at the repo root) is the canonical source of truth for all technical decisions. Read it at the start of every task. If you find a conflict between your task brief and the architecture doc, **stop and flag it** — do not resolve it yourself. Only the Architect may update `ARCHITECTURE.md`.
 
 ### The Interfaces File is Frozen Unless Escalated
-`INTERFACES.md` (at the repo root) defines all shared API contracts, component prop signatures, data schemas, and inter-service boundaries. You may **read** it freely — but **load only the sections referenced in your task brief**, not the full file, unless your task spans multiple domains. You may **never modify it unilaterally**. If your task requires a change to a shared interface, note it in your PR description as a blocking flag and wait for the Architect to adjudicate.
+`INTERFACES.md` (at the repo root) defines all shared API contracts, component prop signatures, data schemas, and inter-service boundaries. You may **read** it freely. **Default (most roles):** load only the sections referenced in your task brief, not the full file, unless your task spans multiple domains — this keeps context lean. **Exception — read the full file when your work depends on contracts end-to-end:** Builder, QA, Reviewer (when verifying interface compliance), and Integrator (when checking merges against shared contracts). The PM’s brief still quotes the minimum sections; reading fully ensures adjacent types, errors, and boundaries stay consistent. You may **never modify it unilaterally**. If your task requires a change to a shared interface, note it in your PR description as a blocking flag and wait for the Architect to adjudicate.
 
 ### The UX Guidelines File is Frozen Unless Escalated
 `UX_GUIDELINES.md` (at the repo root) defines all UI/UX standards: component patterns, spacing and color systems, typography, interaction conventions, and accessibility requirements. You may **read** it freely. You may **never modify it unilaterally**. Only the Designer may update `UX_GUIDELINES.md`. If your task requires a UX decision not covered by the file, escalate to the Designer.
 
 ### The Patterns File Enables Pre-Authorized Decisions
-`PATTERNS.md` (at the repo root) contains architectural decisions that have been pre-authorized by the Architect for the PM and Builders to apply without escalation. If a decision is covered in `PATTERNS.md`, apply it and note which pattern you used in your PR. If it is not covered, escalate.
+`PATTERNS.md` (at the repo root) contains pre-authorized decisions binding on the whole team. **Who may apply which pattern without Architect escalation** is defined per pattern (PM, Builder, QA, DevOps, etc.). If a decision is covered in `PATTERNS.md`, apply it and note which pattern you used in your PR or task output. If it is not covered, escalate.
 
 ### One Branch Per Task
 You work on the branch specified in your task brief. You do not touch other branches. You do not merge your own branch. Merges are handled by the Integrator.
@@ -25,7 +25,7 @@ You work on the branch specified in your task brief. You do not touch other bran
 At the start of any non-trivial task, write a brief `ASSUMPTIONS` block in your output or PR description listing any assumptions you made. This makes review faster and gives downstream agents a clear picture of your reasoning.
 
 ### Escalate, Don't Improvise
-If you encounter genuine ambiguity that isn't resolved by `ARCHITECTURE.md`, `INTERFACES.md`, `UX_GUIDELINES.md`, `PATTERNS.md`, or your task brief, escalate. Do not invent architectural or design decisions on the fly. A quick escalation is cheaper than a wrong assumption that propagates through the codebase.
+If you encounter genuine ambiguity that isn't resolved by `ARCHITECTURE.md`, `INTERFACES.md`, `ROADMAP.md` (phase order and dependencies), `UX_GUIDELINES.md`, `PATTERNS.md`, or your task brief, escalate. Do not invent architectural or design decisions on the fly. A quick escalation is cheaper than a wrong assumption that propagates through the codebase.
 
 ### Keep Context Lean
 Only load the files you actually need for your task. Do not dump the entire repo into your context window unless explicitly required. Be surgical.

@@ -6,6 +6,13 @@ on:
   pull_request:
     branches: [develop]
 
+# One in-flight run per PR or per branch. Keyed by `github.ref` so pull_request events always share
+# `refs/pull/<n>/merge` (stable for that PR); `pull_request.number` alone can be absent in some payloads.
+# Newer commits cancel older runs (Builder + QA quick succession — PAT-030).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     runs-on: ubuntu-latest

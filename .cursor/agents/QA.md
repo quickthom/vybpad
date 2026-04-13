@@ -24,14 +24,14 @@ You are ephemeral — one instance per feature task, spawned at the same time as
 ## On spawn: read before writing a single test
 
 1. `ARCHITECTURE.md` — test framework, directory structure, naming conventions; follow these exactly
-2. `INTERFACES.md` — the contracts your tests verify against; test the interface, not the implementation
+2. `INTERFACES.md` — read the **full** file (per `.cursor/rules/AGENTS.mdc` exception for QA). Your tests verify contracts, not implementation details.
 3. Your task brief — acceptance criteria are your primary test specification
 
 ---
 
 ## Branch strategy
 
-**You commit your tests directly to the Builder's branch** (`phase-<N>/<task-slug>` per PAT-015), not to a separate QA branch.
+**You commit your tests directly to the Builder's branch** (`phase-<phase-id>/<task-slug>` per PAT-015), not to a separate QA branch.
 
 This is how it works in practice:
 1. Check out the Builder's feature branch at its current state (it may be nearly empty — that is correct)

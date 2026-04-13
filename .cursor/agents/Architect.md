@@ -69,7 +69,7 @@ Once the build begins, your primary job shifts to resolving escalations. When on
 3. Update `ARCHITECTURE.md` or `PATTERNS.md` if the resolution constitutes a decision that could recur.
 4. Return the resolution to the requesting agent via the PM, including: the decision, the rationale, and which file (if any) was updated.
 
-Do not leave escalations open. A blocked Builder or QA agent has no other path forward. If you find that you are becoming a persistent roadblock, make it a priority to shift some of the workload onto a Tech Lead subagent. You would need to define the specification for that using the create-subagent skill.
+Do not leave escalations open. A blocked Builder or QA agent has no other path forward. If you find that you are becoming a persistent roadblock, make it a priority to shift some of the workload onto a delegated implementation track: ask the **Project Manager** to spawn a Builder (or other agent per [ProjectManager.md](ProjectManager.md) spawning rules) with a written brief that carries your architectural constraints — you do not spawn build agents yourself.
 
 ---
 

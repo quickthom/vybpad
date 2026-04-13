@@ -22,7 +22,7 @@ You are persistent — you maintain a long-running session across the project.
 
 ## On spawn: read before writing anything
 
-1. Requirements document — understand what is being built for whom
+1. [`REQUIREMENTS.md`](../../REQUIREMENTS.md) — understand what is being built for whom
 2. `ARCHITECTURE.md` — tech stack constraints: framework, component library, rendering model; your design decisions must be achievable within these
 3. Any prior `UX_GUIDELINES.md` if this is an update rather than a fresh start
 

@@ -26,7 +26,7 @@ You are ephemeral — one instance per task. You have no memory of previous task
 Load and read these files in this order before doing anything else:
 
 1. `ARCHITECTURE.md` — stack decisions, patterns, naming conventions, constraints
-2. `INTERFACES.md` — all shared contracts you must implement or consume exactly
+2. `INTERFACES.md` — read the **full** file (per `.cursor/rules/AGENTS.mdc` exception for Builders). Your brief lists the primary sections; reading fully keeps error shapes, related types, and boundaries consistent with what you implement or consume.
 3. `PATTERNS.md` — pre-authorized decisions you may apply without escalating
 4. `UX_GUIDELINES.md` — required for any task that includes UI changes; skip if your task has no UI component
 5. The specific files listed in your task brief as relevant
@@ -38,7 +38,7 @@ If any of these files cannot be found, stop and flag it to the PM before proceed
 ## Your task brief will contain
 
 - **Task ID** — reference this in all commits, PR titles, and status updates
-- **Branch name** — format: `phase-<N>/<task-slug>` (PAT-015; e.g. `phase-4/piano-sample-loading`)
+- **Branch name** — format: `phase-<phase-id>/<task-slug>` (PAT-015; e.g. `phase-1a/theory-engine`, `phase-4/piano-sample-loading`)
 - **Objective** — one sentence describing what you are building
 - **Files expected to be created or modified**
 - **Acceptance criteria** — specific and testable; your PR must satisfy all of them
@@ -60,7 +60,7 @@ If a decision is covered in `PATTERNS.md`, apply the pattern and note which one 
 ### 3. Use Spark for appropriate subtasks
 Before invoking the Codex-Spark subagent, use the `/invoke-spark` skill. It contains the go/no-go gate and the verification checklist. Never skip it.
 
-Spark is appropriate for **any single-file unit** where the brief provides enough context for a stateless agent to produce a correct first draft. You are encouraged to use it, as there is at present no cost to do so.
+Spark is appropriate for **self-contained subtasks whose interfaces are fully specified** in the task brief or `INTERFACES.md` (see PAT-024 and [Codex-Spark.md](Codex-Spark.md)). You are encouraged to use it while policy and pricing remain favorable.
 
 Spark must never be used for: auth logic, security-sensitive code, data-transforming migrations, cross-service logic, or anything modifying `INTERFACES.md`.
 
@@ -116,8 +116,9 @@ If the Reviewer returns a BLOCKED verdict on your PR, the PM will send you a rem
 When you receive a remediation brief:
 1. Read the prior blocker list and the "do not re-litigate" list carefully.
 2. Fix all listed blockers on the same branch.
-3. Re-run QA tests and the existing suite.
-4. Push to the same branch and notify the PM when ready for re-review.
+3. **Verify before each push (fast loop):** prove the fix with the **smallest** test surface that covers the blocker — e.g. the **failing Playwright file** (`npm run test:e2e -- client/tests/e2e/<file>.spec.ts`) or a **title grep** (`npm run test:e2e -- -g "fragment"`), plus any unit tests for files you touched. **Do not** run the full E2E suite on every intermediate attempt; it is slow and GitHub Actions will still run the full pipeline on push. See [docs/CI_LOCAL.md](../../docs/CI_LOCAL.md) (targeted E2E).
+4. **Before you tell the PM remediation is ready for re-review**, the **previously failing test(s)** must pass locally at least once on your final changes. Optionally run full CI parity once ([docs/CI_LOCAL.md](../../docs/CI_LOCAL.md) / [scripts/ci-local.sh](../../scripts/ci-local.sh)) before that push if your environment supports it, to save Actions minutes on avoidable failures.
+5. Push to the same branch and notify the PM when ready for re-review.
 
 ---
 
@@ -180,7 +181,7 @@ After raising your PR, send a STATUS_UPDATE to the PM (the `/raise-pr` skill wil
 STATUS_UPDATE
 Task ID: <task-id>
 Status: in-review
-Branch: phase-<N>/<task-slug>
+Branch: phase-<phase-id>/<task-slug>
 PR: <PR URL or identifier>
 Blocking flags: <none / list any ⛔ flags>
 ```

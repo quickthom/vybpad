@@ -41,15 +41,17 @@ You are responsible for spawning every agent the team needs, when they need it.
 
 **Multiple Builders must NEVER share a single working directory.** Before spawning parallel Builders, create a git worktree for each one:
 
+Paths are operator-specific; see [ENVIRONMENTS.md](ENVIRONMENTS.md) (Git worktrees). Use `<REPO_ROOT>` for this clone on `develop` and `<WORKTREE_ROOT>` for parallel Builder directories.
+
 ```bash
-mkdir -p /home/thom/py/vYbpad-worktrees
-# From the main worktree (/home/thom/py/vYbpad), on develop:
-git worktree add /home/thom/py/vYbpad-worktrees/<task-slug> <branch-name>
+mkdir -p <WORKTREE_ROOT>
+# From <REPO_ROOT>, on develop:
+git worktree add <WORKTREE_ROOT>/<task-slug> <branch-name>
 ```
 
-The main worktree (`/home/thom/py/vYbpad`) stays on `develop` and is your workspace (PM + Integrator only). Every Builder gets their own worktree directory.
+The main worktree (`<REPO_ROOT>`) stays on `develop` and is your workspace (PM + Integrator only). Every Builder gets their own worktree directory.
 
-After a task is merged, clean up: `git worktree remove /home/thom/py/vYbpad-worktrees/<task-slug>`.
+After a task is merged, clean up: `git worktree remove <WORKTREE_ROOT>/<task-slug>`.
 
 ### How to spawn
 
@@ -57,7 +59,7 @@ Use the host’s agent-launch mechanism (e.g. **`Task`** with `subagent_type`, o
 
 When spawning a Builder, always include in the prompt:
 - The complete task brief (copy it verbatim)
-- **The `working_directory` for their isolated git worktree** (e.g., `/home/thom/py/vYbpad-worktrees/<task-slug>`)
+- **The `working_directory` for their isolated git worktree** (e.g., `<WORKTREE_ROOT>/<task-slug>` — see [ENVIRONMENTS.md](ENVIRONMENTS.md))
 - Which branch is already checked out in the worktree
 - A reminder to run `npm install` first (worktrees don't share `node_modules`)
 - A reminder to read `ARCHITECTURE.md`, `INTERFACES.md`, and `PATTERNS.md` before writing code
@@ -300,7 +302,7 @@ Action: Fix all listed blockers within your file scope (PAT-030).
 ──────────────────────────────────────────────
 ```
 
-**Remediation spawn rules (PAT-030):** Classify each blocker as `app`, `test`, or `shared-helper`. Spawn Builder only for pure `app` blockers, QA only for pure `test` blockers, both only when mixed. When both are spawned, enforce sequential push order (Builder first) and include the file-ownership block above.
+**Remediation spawn rules (PAT-030):** Classify each blocker as `app`, `test`, or `shared-helper`. Spawn Builder only for pure `app` blockers, QA only for pure `test` blockers, both only when mixed. When both are spawned, enforce sequential push order (Builder first) and include the file-ownership block above. **CI:** workflow concurrency cancels overlapping runs for the same PR when pushes still race; point agents to `docs/CI_LOCAL.md` for pre-push validation to save Actions minutes.
 
 If the original Builder is unavailable or a circuit breaker has fired (PAT-027), spawn a new Builder and include the full prior review summary in addition to the delta brief fields.
 
