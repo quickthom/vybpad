@@ -7,7 +7,6 @@ import { useMinViewport1024 } from '../../hooks/useMinViewport1024';
 import { useProjects } from '../../hooks/useProjects';
 import { useAuthStore } from '../../store/authStore';
 import { useToastStore } from '../../store/toastStore';
-import { useSongStore } from '../../store/songStore';
 import { getApiErrorMessage } from '../../utils/errorMessages';
 import { projectsApi } from '../../utils/apiClient';
 import { DeleteProjectDialog } from './DeleteProjectDialog';
@@ -30,14 +29,12 @@ export function ProjectListPage() {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
-  const loadSong = useSongStore((s) => s.loadSong);
   const showErrorToast = useToastStore((s) => s.showError);
 
   const wideEnough = useMinViewport1024();
   const { projects, status, refresh } = useProjects();
   const [newName, setNewName] = useState('');
   const [createBusy, setCreateBusy] = useState(false);
-  const [openBusyId, setOpenBusyId] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<ProjectSummary | null>(null);
   const [deleteBusy, setDeleteBusy] = useState(false);
 
@@ -53,8 +50,10 @@ export function ProjectListPage() {
     try {
       const created = await projectsApi.create({ name: newName.trim() });
       setNewName('');
-      loadSong(created.songData);
-      navigate('/editor', { replace: true });
+      navigate(`/editor/${created.id}`, {
+        replace: true,
+        state: { project: created },
+      });
       // List refresh skipped here — POST response already has songData; next /projects visit refetches.
     } catch (err) {
       showErrorToast(getApiErrorMessage(err));
@@ -63,18 +62,8 @@ export function ProjectListPage() {
     }
   }
 
-  async function handleOpen(project: ProjectSummary) {
-    if (openBusyId) return;
-    setOpenBusyId(project.id);
-    try {
-      const full = await projectsApi.get(project.id);
-      loadSong(full.songData);
-      navigate('/editor', { replace: true });
-    } catch (err) {
-      showErrorToast(getApiErrorMessage(err));
-    } finally {
-      setOpenBusyId(null);
-    }
+  function handleOpen(project: ProjectSummary) {
+    navigate(`/editor/${project.id}`, { replace: true });
   }
 
   async function handleConfirmDelete() {
@@ -183,7 +172,6 @@ export function ProjectListPage() {
                       <td className="min-h-[56px] px-2 py-2 align-middle">
                         <button
                           type="button"
-                          disabled={openBusyId !== null}
                           aria-label={p.name}
                           onClick={() => void handleOpen(p)}
                           className="flex w-full min-w-0 flex-col rounded-md px-2 py-2 text-left transition hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] disabled:pointer-events-none disabled:opacity-50"

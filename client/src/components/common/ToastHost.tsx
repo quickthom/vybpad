@@ -2,19 +2,26 @@ import { useToastStore } from '../../store/toastStore';
 
 /**
  * API/error toasts — UX §5.7: bottom-right stack, width min(400px, 100vw − 32px), 16px inset,
- * 8px stack gap, error = 4px destructive left accent + assertive live region.
+ * 8px stack gap, error = destructive accent + assertive; success = success accent + status.
  */
 export function ToastHost() {
   const message = useToastStore((s) => s.message);
+  const variant = useToastStore((s) => s.variant);
   const dismiss = useToastStore((s) => s.dismiss);
 
   if (!message) return null;
 
+  const isError = variant === 'error';
+  const accent = isError
+    ? 'border-l-[var(--color-destructive,#DC2626)]'
+    : 'border-l-[var(--color-success,#16A34A)]';
+
   return (
     <div className="pointer-events-none fixed bottom-4 right-4 z-[9999] flex w-[min(400px,calc(100vw-32px))] flex-col gap-2">
       <div
-        role="alert"
-        className="pointer-events-auto flex items-start gap-3 rounded-lg border border-[var(--color-border,#E5E7EB)] border-l-4 border-l-[var(--color-destructive,#DC2626)] bg-[var(--color-surface,#FFFFFF)] p-4 shadow-lg"
+        role={isError ? 'alert' : 'status'}
+        aria-live={isError ? 'assertive' : 'polite'}
+        className={`pointer-events-auto flex items-start gap-3 rounded-lg border border-[var(--color-border,#E5E7EB)] border-l-4 ${accent} bg-[var(--color-surface,#FFFFFF)] p-4 shadow-lg`}
       >
         <span className="min-w-0 flex-1 text-sm font-semibold leading-normal text-[var(--color-text-primary,#111827)]">
           {message}

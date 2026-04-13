@@ -1,12 +1,19 @@
+import type { ProjectResponse } from '@vybpad/shared';
 import { useCallback, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import { MeasureBar } from '../components/MeasureBar';
 import { EditorCanvas } from '../components/editor/EditorCanvas';
 import { EntryModeToggle } from '../components/editor/EntryModeToggle';
 import { useAuthStore } from '../store/authStore';
-import { useSongStore } from '../store/songStore';
+import { buildDefaultSong, useSongStore } from '../store/songStore';
+import { useToastStore } from '../store/toastStore';
 import { useUIStore } from '../store/uiStore';
+import { projectsApi } from '../utils/apiClient';
+import { getApiErrorMessage } from '../utils/errorMessages';
+
+/** Passed from `ProjectListPage` after POST create so the editor can hydrate without a duplicate GET. */
+export type EditorLocationState = { project?: ProjectResponse };
 
 /**
  * Full grid editor shell (extracted from the former App root) so routing can swap auth vs editor
@@ -14,14 +21,29 @@ import { useUIStore } from '../store/uiStore';
  */
 export function EditorLayout() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { projectId } = useParams<{ projectId?: string }>();
+
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
 
   const song = useSongStore((s) => s.song);
+  const isDirty = useSongStore((s) => s.isDirty);
+  const loadSong = useSongStore((s) => s.loadSong);
   const editChord = useSongStore((s) => s.editChord);
   const editNote = useSongStore((s) => s.editNote);
   const addMeasures = useSongStore((s) => s.addMeasures);
   const deleteMeasures = useSongStore((s) => s.deleteMeasures);
+
+  const showErrorToast = useToastStore((s) => s.showError);
+  const showSuccessToast = useToastStore((s) => s.showSuccess);
+
+  const [projectName, setProjectName] = useState<string | null>(null);
+  /** `ready` = editor can render; for `/editor/:id` we wait for GET (or bootstrap state). */
+  const [loadStatus, setLoadStatus] = useState<'loading' | 'ready'>(() =>
+    projectId ? 'loading' : 'ready',
+  );
+  const [saveBusy, setSaveBusy] = useState(false);
 
   const viewport = useUIStore((s) => s.viewport);
   const selection = useUIStore((s) => s.selection);
@@ -36,6 +58,49 @@ export function EditorLayout() {
   const [selectedMeasures, setSelectedMeasures] = useState<[number, number] | null>(null);
 
   const getSongAfterMutation = useCallback(() => useSongStore.getState().song, []);
+
+  // Load song for `/editor/:projectId` (GET) or hydrate from navigation state after POST /projects (no duplicate GET).
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!projectId) {
+      loadSong(buildDefaultSong());
+      setProjectName(null);
+      setLoadStatus('ready');
+      return;
+    }
+
+    const navState = location.state as EditorLocationState | null;
+    const boot = navState?.project;
+    if (boot && boot.id === projectId) {
+      loadSong(boot.songData);
+      setProjectName(boot.name);
+      setLoadStatus('ready');
+      return;
+    }
+
+    void (async () => {
+      setLoadStatus('loading');
+      try {
+        const full = await projectsApi.get(projectId);
+        if (cancelled) return;
+        loadSong(full.songData);
+        setProjectName(full.name);
+        setLoadStatus('ready');
+      } catch (err) {
+        // Always surface API errors (PAT-001). Do not skip toast when `cancelled` is true:
+        // 401 flows call `onAuthFailure` before throw, which unmounts this tree before catch runs.
+        showErrorToast(getApiErrorMessage(err));
+        if (cancelled) return;
+        navigate('/projects', { replace: true });
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+    // `location.state` is intentionally read when `projectId` changes (POST create bootstrap).
+  }, [projectId, loadSong, navigate, showErrorToast, location.state]);
 
   useEffect(() => {
     setSelectedMeasures((prev) => {
@@ -57,11 +122,36 @@ export function EditorLayout() {
     navigate('/login', { replace: true });
   }
 
+  async function handleSave() {
+    if (!projectId || saveBusy || loadStatus !== 'ready') return;
+    setSaveBusy(true);
+    try {
+      const current = useSongStore.getState().song;
+      const updated = await projectsApi.update(projectId, {
+        songData: current,
+        ...(projectName !== null ? { name: projectName } : {}),
+      });
+      loadSong(updated.songData);
+      setProjectName(updated.name);
+      showSuccessToast('Saved.');
+    } catch (err) {
+      showErrorToast(getApiErrorMessage(err));
+    } finally {
+      setSaveBusy(false);
+    }
+  }
+
+  const headerTitle = song.metadata.title || 'vYbpad';
+  const saveDisabled = !projectId || !isDirty || saveBusy || loadStatus !== 'ready';
+
   return (
     <div className="flex min-h-screen flex-col bg-[var(--color-app-bg,#F3F4F6)] text-[var(--color-text-primary,#111827)]">
       <header className="flex min-h-[48px] flex-wrap items-start justify-between gap-3 border-b border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)] px-4 py-3">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight">{song.metadata.title || 'vYbpad'}</h1>
+          <h1 className="text-xl font-semibold tracking-tight">{headerTitle}</h1>
+          {projectName ? (
+            <p className="mt-0.5 text-sm text-[var(--color-text-secondary,#4B5563)]">{projectName}</p>
+          ) : null}
           <p className="mt-1 text-sm text-[var(--color-text-secondary,#4B5563)]">
             Grid editor — click to select, drag to move, drag trailing edge to resize (TASK-2.7)
           </p>
@@ -69,6 +159,16 @@ export function EditorLayout() {
         <div className="flex flex-wrap items-center gap-3">
           {user ? (
             <span className="text-sm text-[var(--color-text-secondary,#4B5563)]">{user.displayName}</span>
+          ) : null}
+          {projectId ? (
+            <button
+              type="button"
+              disabled={saveDisabled}
+              onClick={() => void handleSave()}
+              className="inline-flex h-10 items-center justify-center rounded-lg bg-[var(--color-primary,#4F46E5)] px-4 text-sm font-medium text-[var(--color-text-on-primary,#FFFFFF)] outline-none transition hover:bg-[var(--color-primary-hover,#4338CA)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+            >
+              {saveBusy ? 'Saving…' : 'Save'}
+            </button>
           ) : null}
           <button
             type="button"
@@ -88,23 +188,32 @@ export function EditorLayout() {
         </div>
       </header>
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-        <main className="min-h-0 flex-1 overflow-x-auto p-4">
-          <EditorCanvas
-            song={song}
-            viewport={viewport}
-            selection={selection}
-            playbackTick={null}
-            activeVoice={activeVoice}
-            entryMode={entryMode}
-            showGuides={showGuides}
-            colorScheme={colorScheme}
-            onChordEdit={editChord}
-            onNoteEdit={editNote}
-            onSelectionChange={setSelection}
-            onViewportChange={setViewport}
-            getSongAfterMutation={getSongAfterMutation}
-            onToggleEntryMode={toggleEntryMode}
-          />
+        <main
+          className="min-h-0 flex-1 overflow-x-auto p-4"
+          aria-busy={projectId ? loadStatus === 'loading' : false}
+        >
+          {projectId && loadStatus === 'loading' ? (
+            <div className="flex min-h-[240px] items-center justify-center text-sm text-[var(--color-text-secondary,#4B5563)]">
+              Loading project…
+            </div>
+          ) : (
+            <EditorCanvas
+              song={song}
+              viewport={viewport}
+              selection={selection}
+              playbackTick={null}
+              activeVoice={activeVoice}
+              entryMode={entryMode}
+              showGuides={showGuides}
+              colorScheme={colorScheme}
+              onChordEdit={editChord}
+              onNoteEdit={editNote}
+              onSelectionChange={setSelection}
+              onViewportChange={setViewport}
+              getSongAfterMutation={getSongAfterMutation}
+              onToggleEntryMode={toggleEntryMode}
+            />
+          )}
         </main>
         <MeasureBar
           measureCount={song.measures.length}
