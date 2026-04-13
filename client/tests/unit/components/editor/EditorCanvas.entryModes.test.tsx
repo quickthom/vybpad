@@ -20,6 +20,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { EditorCanvas } from '../../../../src/components/editor/EditorCanvas';
 import { type EditorKeyboardContext, handleEditorKeydown } from '../../../../src/hooks/useKeyboard';
+import { buildDefaultSong, useSongStore } from '../../../../src/store/songStore';
 
 const DEFAULT_VIEWPORT: Viewport = {
   startMeasure: 0,
@@ -212,6 +213,27 @@ describe('TASK-2.9 entry modes — handleEditorKeydown (contract)', () => {
       rangeStart: 48,
       rangeEnd: 48,
     });
+  });
+
+  it('table mode: consecutive digits with getSongAfterMutation (store) append two chords (TASK-4.2 persistence)', () => {
+    useSongStore.getState().loadSong(makeSongEmptyFirstMeasure());
+    const onSelectionChange = vi.fn();
+    const buildCtx = (): EditorKeyboardContext =>
+      baseCtx({
+        song: useSongStore.getState().song,
+        onChordEdit: useSongStore.getState().editChord,
+        onSelectionChange,
+        getSongAfterMutation: () => useSongStore.getState().song,
+      });
+
+    handleEditorKeydown(keydown('1'), buildCtx());
+    handleEditorKeydown(keydown('2'), buildCtx());
+
+    const chords = useSongStore.getState().song.measures[0]?.chords ?? [];
+    expect(chords.length).toBe(2);
+    expect(chords.map((c) => c.scaleDegree).sort((a, b) => a - b)).toEqual([1, 2]);
+
+    useSongStore.getState().loadSong(buildDefaultSong());
   });
 
   it('table mode: after note digit append, onSelectionChange receives collapsed range at next beat', () => {
