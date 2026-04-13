@@ -70,6 +70,14 @@ export function AppRoutes() {
           }
         />
         <Route
+          path="/editor/:projectId"
+          element={
+            <RequireAuth>
+              <EditorLayout />
+            </RequireAuth>
+          }
+        />
+        <Route
           path="/editor"
           element={
             <RequireAuth>

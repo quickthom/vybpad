@@ -21,7 +21,7 @@ export function useProjects() {
     setErrorMessage(null);
     try {
       const { projects: rows } = await projectsApi.list();
-      setProjects(rows);
+      setProjects(Array.isArray(rows) ? rows : []);
       setStatus('ready');
     } catch (e) {
       const msg = getApiErrorMessage(e);
