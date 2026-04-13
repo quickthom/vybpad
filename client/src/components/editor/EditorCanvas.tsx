@@ -158,6 +158,13 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
     textDurationArmedRef.current = false;
   }, [entryMode]);
 
+  // After route load the focused element may still be a toolbar `<input>` (e.g. tempo). Grid digit
+  // entry is suppressed while `document.activeElement` is editable — focus the canvas once mounted
+  // so `handleEditorKeydown` receives 1–7 unless the user deliberately focuses another control (TASK-4.2).
+  useEffect(() => {
+    canvasRef.current?.focus({ preventScroll: true });
+  }, []);
+
   useKeyboard({
     song,
     viewport,
