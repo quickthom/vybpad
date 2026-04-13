@@ -10,6 +10,7 @@ import { drawGridBackground } from '../../engine/renderer/gridBackground';
 import type { EditorCanvasHit } from '../../engine/renderer/hitTest';
 import { hitTestEditorCanvas } from '../../engine/renderer/hitTest';
 import { absoluteTickToViewportX, getMeasureStartTicks, horizontalPxToTicks, horizontalTicksToPx } from '../../engine/renderer/layout';
+import { drawGuideOverlay } from '../../engine/renderer/guideOverlay';
 import { computeNoteBlockRect, drawNoteBlocks } from '../../engine/renderer/noteBlocks';
 import { getMeterAtMeasure, measureLengthInTicks } from '../../engine/renderer/tickUtils';
 import {
@@ -120,6 +121,7 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
     selection,
     playbackTick,
     colorScheme,
+    showGuides,
     activeVoice,
     entryMode,
     onChordEdit,
@@ -212,6 +214,9 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
     drawGridBackground(ctx, song, viewport, h);
     drawChordBlocks(ctx, song, viewport, theoryEngine, { colorScheme });
     drawNoteBlocks(ctx, song, viewport, { colorScheme });
+    if (showGuides) {
+      drawGuideOverlay(ctx, song, viewport, colorScheme);
+    }
 
     const strokeRect = (x: number, y: number, rw: number, rh: number, stroke: string, fill?: string) => {
       ctx.save();
@@ -275,7 +280,7 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
       ctx.stroke();
       ctx.restore();
     }
-  }, [song, viewport, selection, hoverHit, playbackTick, colorScheme]);
+  }, [song, viewport, selection, hoverHit, playbackTick, colorScheme, showGuides]);
 
   useEffect(() => {
     paint();
