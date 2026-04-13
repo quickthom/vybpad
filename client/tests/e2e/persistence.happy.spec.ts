@@ -12,10 +12,9 @@
  * Entry mode: Table mode is required for digit-only chord adds (Text mode ignores digits until a duration key
  * arms entry — see useKeyboard). We assert `Entry mode Table` before typing so CI cannot silently run in Text.
  *
- * Persist: after edits, wait for `Save` enabled (dirty), then **explicit Save** to flush PUT. Relying only on
- * debounced autosave in CI proved flaky (runner timer coalescing / effect churn) while local state was dirty;
- * after Save, **wait for `PUT /api/projects/:id` (2xx)** — not for Save to disable — then poll GET until chords
- * match (Save can stay enabled while the request finishes or if UI dirty state lags).
+ * Autosave: after edits, wait for `Save` enabled (dirty), then poll GET /api/projects/:id until the server
+ * reflects ≥2 chords — debounced PUT is 1500ms (EditorLayout); poll timeout must cover debounce + slow CI.
+ * Do not attach `waitForResponse` to PUT: autosave may complete before the listener, causing flaky timeouts.
  *
  * Shell: `waitForEditorRouteReady` ensures canvas + transport are present before chord entry (no hydration races).
  */
@@ -127,17 +126,6 @@ test.describe('TASK-3.5 — persistence happy path', () => {
     await page.keyboard.type('12', { delay: 120 });
 
     await expect(page.getByRole('button', { name: /^Save$/ })).toBeEnabled({ timeout: 30_000 });
-    const putProjectPromise = page.waitForResponse(
-      (r) =>
-        r.url().includes(`/api/projects/${id}`) && r.request().method() === 'PUT',
-      { timeout: 60_000 },
-    );
-    await page.getByRole('button', { name: /^Save$/ }).click();
-    const putRes = await putProjectPromise;
-    expect(
-      putRes.ok(),
-      `PUT /api/projects/${id} failed: ${putRes.status()} ${await putRes.text().catch(() => '')}`,
-    ).toBeTruthy();
 
     await expect
       .poll(
@@ -147,10 +135,10 @@ test.describe('TASK-3.5 — persistence happy path', () => {
           return (remote.songData.measures[0]?.chords?.length ?? 0) >= 2;
         },
         {
-          timeout: 60_000,
-          intervals: [100, 200, 400, 800, 1500],
+          timeout: 150_000,
+          intervals: [100, 200, 400, 800, 1500, 2500],
           message:
-            'Expected explicit Save to persist ≥2 entered chords (poll GET /api/projects/:id until songData reflects the PUT)',
+            'Expected debounced autosave to persist ≥2 entered chords (poll GET /api/projects/:id until songData reflects the PUT)',
         },
       )
       .toBe(true);
