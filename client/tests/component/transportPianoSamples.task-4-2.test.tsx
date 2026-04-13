@@ -6,7 +6,8 @@
  * Criterion 4: Transport loading UX and aria-live semantics are present
  *   happy: While samples load, toolbar shows piano-oriented loading copy + polite live region;
  *           when ready, a polite live region announces readiness (UX_GUIDELINES § toolbar / piano samples).
- *   error: SAMPLE_LOAD_FAILED shows role=alert with mapped copy (no raw stack strings)
+ *   error: SAMPLE_LOAD_FAILED shows mapped copy in transport (no raw stack strings); assertive
+ *           announcement is ToastHost in full app (single role=alert — UX §9 / §5.7)
  *   edges: —
  *
  * Tests DOM behavior of TransportControls — public props match INTERFACES transport + init fields.
@@ -67,13 +68,12 @@ describe('Transport — TASK 4.2 — piano sample loading UX + aria-live', () =>
   });
 
   describe('error handling', () => {
-    it('exposes SAMPLE_LOAD_FAILED via role=alert with user-safe copy (no raw engine strings)', () => {
+    it('exposes SAMPLE_LOAD_FAILED with user-safe copy in transport (no raw engine strings)', () => {
       renderTransport('error', 'SAMPLE_LOAD_FAILED');
 
-      const alert = screen.getByRole('alert');
-      expect(alert).toBeVisible();
-      expect(alert.textContent).toMatch(/sample|connection|try again/i);
-      expect(alert.textContent).not.toMatch(/undefined|TypeError|at\s+\w+\s+\(/i);
+      const toolbar = screen.getByRole('toolbar', { name: 'Transport' });
+      expect(toolbar).toHaveTextContent(/sample|connection|try again/i);
+      expect(toolbar.textContent).not.toMatch(/undefined|TypeError|at\s+\w+\s+\(/i);
     });
   });
 });
