@@ -72,9 +72,6 @@ test.describe('TASK-4.1 — playback init (user gesture; not sample-load throttl
     const displayName = `E2E Spam ${suffix}`;
     const projectName = `E2E Spam Project ${suffix}`;
 
-    const pageErrors: Error[] = [];
-    const consoleErrors: string[] = [];
-
     await page.goto('/register');
     await page.locator('#register-email').fill(email);
     await page.locator('#register-display-name').fill(displayName);
@@ -87,8 +84,10 @@ test.describe('TASK-4.1 — playback init (user gesture; not sample-load throttl
 
     await waitForEditorRouteReady(page);
 
-    // Only assert on errors after the editor is up — anonymous session bootstrap may 401 `/api/auth/refresh`
-    // (expected) and the browser logs that as a console error.
+    // Attach after editor is ready — avoids expected 401 console noise from
+    // POST /api/auth/refresh during anonymous session bootstrap (TASK-4.2 CI).
+    const pageErrors: Error[] = [];
+    const consoleErrors: string[] = [];
     page.on('pageerror', (err) => {
       pageErrors.push(err);
     });

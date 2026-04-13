@@ -102,6 +102,11 @@ test.describe('TASK-4.2 — piano sample loading (E2E)', () => {
       await route.continue();
     });
 
+    await registerAndOpenEditor(page);
+
+    // Attach after editor shell is ready so we do not count Chrome's DevTools-style
+    // "Failed to load resource … 401" for POST /api/auth/refresh on earlier navigations
+    // (expected when no session cookie yet — PAT-029 bootstrap noise).
     const pageErrors: Error[] = [];
     const consoleErrors: string[] = [];
     page.on('pageerror', (err) => {
@@ -112,8 +117,6 @@ test.describe('TASK-4.2 — piano sample loading (E2E)', () => {
         consoleErrors.push(msg.text());
       }
     });
-
-    await registerAndOpenEditor(page);
 
     const transport = getTransportToolbar(page);
     const playBtn = getTransportPlayButton(transport);
