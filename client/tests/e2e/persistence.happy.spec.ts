@@ -12,9 +12,10 @@
  * Entry mode: Table mode is required for digit-only chord adds (Text mode ignores digits until a duration key
  * arms entry — see useKeyboard). We assert `Entry mode Table` before typing so CI cannot silently run in Text.
  *
- * Persist: after edits, `Save` is enabled (dirty). **Click Save** and wait for a successful PUT to
- * `/api/projects/:id`, then assert GET shows both scale degrees 1 and 2. Manual save avoids flaky reliance
- * on debounced autosave timing in CI while still exercising the same API contract as autosave PUTs.
+ * Persist: after edits, debounced autosave (1500ms) issues PUT `/api/projects/:id`. Register
+ * `waitForResponse` **immediately after** the last keystroke so the debounced PUT is not missed; do not
+ * rely on a manual Save click — autosave may complete first and clear `isDirty`, so a late click can no-op.
+ * Assert PUT ok, then GET shows both scale degrees 1 and 2.
  * Table-mode caret advance can place the second chord in `measures[1]` while the first remains in
  * `measures[0]`; anchoring only on `measures[0].chords.length` is wrong for INTERFACES `SongData`.
  *
@@ -107,7 +108,7 @@ function songDataHasChordScaleDegrees1And2(songData: {
 test.describe('TASK-3.5 — persistence happy path', () => {
   test.describe.configure({ mode: 'serial', timeout: 180_000 });
 
-  test('register → create project → edit chords → save → refresh → re-login → list and editor load persisted song', async ({
+  test('register → create project → edit chords → autosave PUT → refresh → re-login → list and editor load persisted song', async ({
     page,
     request,
   }) => {
@@ -144,17 +145,15 @@ test.describe('TASK-3.5 — persistence happy path', () => {
     // Slower typing avoids coalescing both digits before the first chord mutation on slow CI workers.
     await page.keyboard.type('12', { delay: 120 });
 
+    // Register before debounced autosave (~1500ms) can fire — otherwise we miss the PUT.
+    const autosavePutPromise = page.waitForResponse((response) => {
+      const req = response.request();
+      return req.method() === 'PUT' && req.url().includes(`/api/projects/${id}`);
+    }, { timeout: 90_000 });
     await expect(page.getByRole('button', { name: /^Save$/ })).toBeEnabled({ timeout: 30_000 });
-    const savePutPromise = page.waitForResponse(
-      (response) =>
-        response.request().method() === 'PUT' &&
-        response.url().includes(`/api/projects/${id}`) &&
-        response.ok(),
-      { timeout: 60_000 },
-    );
-    await page.getByRole('button', { name: /^Save$/ }).click();
-    await savePutPromise;
-    await expect(page.getByRole('button', { name: /^Save$/ })).toBeDisabled({ timeout: 60_000 });
+    const autosavePut = await autosavePutPromise;
+    expect(autosavePut.ok(), await autosavePut.text()).toBeTruthy();
+    await expect(page.getByRole('button', { name: /^Save$/ })).toBeDisabled({ timeout: 30_000 });
 
     let token = (await loginApi(request, email, password)).accessToken;
     let remote = await fetchProject(request, token, id);
