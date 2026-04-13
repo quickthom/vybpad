@@ -10,6 +10,7 @@ import {
   PlaybackError,
   playbackError,
 } from './playbackErrors';
+import { disposePianoSamples, ensurePianoSamplesLoaded } from './pianoSampleLoader';
 
 const TPQN = TICKS_PER_QUARTER;
 
@@ -70,8 +71,10 @@ export function createPlaybackEngine(): AudioEngine {
         const transport = Tone.getTransport();
         transport.PPQ = TPQN;
 
-        // INTERFACES: initialize() loads context + piano samples. Sample buffers attach in a later
-        // scheduling task; transport PPQ matches shared TPQN (48) for tick-aligned UI.
+        // INTERFACES: initialize() loads Tone context + lazy piano SoundFont (smplr); second init
+        // reuses module-level buffers via ensurePianoSamplesLoaded + CacheStorage.
+        await ensurePianoSamplesLoaded();
+
         ready = true;
       })();
 
@@ -80,6 +83,7 @@ export function createPlaybackEngine(): AudioEngine {
       } catch (err) {
         initPromise = null;
         ready = false;
+        disposePianoSamples();
         if (err instanceof PlaybackError) {
           throw err;
         }
@@ -188,6 +192,7 @@ export function createPlaybackEngine(): AudioEngine {
       stopCursorLoop();
       playing = false;
       tickListeners.clear();
+      disposePianoSamples();
       ready = false;
       initPromise = null;
       try {
