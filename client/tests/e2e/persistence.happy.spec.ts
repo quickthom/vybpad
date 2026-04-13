@@ -94,7 +94,7 @@ test.describe('TASK-3.5 — persistence happy path', () => {
           return (remote.songData.measures[0]?.chords?.length ?? 0) >= 1;
         },
         {
-          timeout: 120_000,
+          timeout: 150_000,
           intervals: [250, 500, 1000, 2000],
           message:
             'Expected debounced autosave to persist ≥1 chord (poll GET until server reflects PUT)',

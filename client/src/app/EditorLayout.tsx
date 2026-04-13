@@ -245,8 +245,10 @@ export function EditorLayout() {
     }
     autosaveTimerRef.current = setTimeout(() => {
       autosaveTimerRef.current = null;
+      // Use ref (not `runProjectSave` closure) so this effect does not re-run when only the
+      // callback identity changes — otherwise the cleanup can clear the timer and autosave never fires (TASK-3.5 E2E).
       // Return promise so Vitest fake timers (`runAllTimersAsync`) await the PUT + store update.
-      return runProjectSave('auto');
+      return runProjectSaveRef.current('auto');
     }, AUTOSAVE_DEBOUNCE_MS);
     return () => {
       if (autosaveTimerRef.current) {
@@ -254,7 +256,8 @@ export function EditorLayout() {
         autosaveTimerRef.current = null;
       }
     };
-  }, [song, isDirty, projectId, loadStatus, runProjectSave]);
+    // `runProjectSave` is invoked via `runProjectSaveRef` so this effect does not depend on callback identity.
+  }, [song, isDirty, projectId, loadStatus]);
 
   async function handleSave() {
     if (!projectId || saveBusy || loadStatus !== 'ready') return;

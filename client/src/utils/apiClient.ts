@@ -140,7 +140,7 @@ async function parseErrorResponse(response: Response): Promise<never> {
 async function requestJson<T>(
   path: string,
   init: RequestInit,
-  options: { attachBearer: boolean; retryOn401: boolean },
+  options: { attachBearer: boolean; retryOn401: boolean; timeoutMs?: number },
 ): Promise<T> {
   const url = `${getBaseUrl()}${path}`;
   const headers = new Headers(init.headers);
@@ -162,7 +162,14 @@ async function requestJson<T>(
         h.delete('Authorization');
       }
     }
-    return fetch(url, { ...init, headers: h, credentials: 'include' });
+    const timeoutMs = options.timeoutMs;
+    const timeoutSignal =
+      timeoutMs != null && timeoutMs > 0 ? AbortSignal.timeout(timeoutMs) : undefined;
+    const signal =
+      init.signal && timeoutSignal
+        ? AbortSignal.any([init.signal, timeoutSignal])
+        : (init.signal ?? timeoutSignal);
+    return fetch(url, { ...init, headers: h, credentials: 'include', ...(signal ? { signal } : {}) });
   };
 
   let response = await exec(null);
@@ -267,7 +274,8 @@ export const projectsApi = {
     return requestJson<ProjectResponse>(
       `/api/projects/${encodeURIComponent(id)}`,
       { method: 'PUT', body: JSON.stringify(data) },
-      { attachBearer: true, retryOn401: true },
+      // Hung PUTs would otherwise leave autosave pending until the browser gives up; CI benefits from a bounded wait + PAT-001 transport retry.
+      { attachBearer: true, retryOn401: true, timeoutMs: 90_000 },
     );
   },
 
