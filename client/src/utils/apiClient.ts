@@ -137,6 +137,28 @@ async function parseErrorResponse(response: Response): Promise<never> {
   throwApiError(toTypedApiError(response.status, body));
 }
 
+async function fetchWithOptionalTimeout(url: string, init: RequestInit, timeoutMs?: number): Promise<Response> {
+  if (timeoutMs == null || timeoutMs <= 0) {
+    return fetch(url, init);
+  }
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => {
+    controller.abort(new Error('REQUEST_TIMEOUT'));
+  }, timeoutMs);
+
+  const forwardAbort = () => {
+    controller.abort();
+  };
+  init.signal?.addEventListener('abort', forwardAbort, { once: true });
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timeoutId);
+    init.signal?.removeEventListener('abort', forwardAbort);
+  }
+}
+
 async function requestJson<T>(
   path: string,
   init: RequestInit,
@@ -162,14 +184,7 @@ async function requestJson<T>(
         h.delete('Authorization');
       }
     }
-    const timeoutMs = options.timeoutMs;
-    const timeoutSignal =
-      timeoutMs != null && timeoutMs > 0 ? AbortSignal.timeout(timeoutMs) : undefined;
-    const signal =
-      init.signal && timeoutSignal
-        ? AbortSignal.any([init.signal, timeoutSignal])
-        : (init.signal ?? timeoutSignal);
-    return fetch(url, { ...init, headers: h, credentials: 'include', ...(signal ? { signal } : {}) });
+    return fetchWithOptionalTimeout(url, { ...init, headers: h, credentials: 'include' }, options.timeoutMs);
   };
 
   let response = await exec(null);

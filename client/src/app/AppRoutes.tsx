@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 
 import { LoginForm } from '../components/auth/LoginForm';
 import { RegisterForm } from '../components/auth/RegisterForm';
@@ -12,9 +12,14 @@ import { EditorLayout } from './EditorLayout';
  * Run cookie refresh before routing so `RequireAuth` does not redirect to `/login` on full reload
  * while the access token is still being restored. Without this gate, `/editor/:id` reload briefly
  * sees `isAuthenticated === false` and swaps the URL before refresh completes.
+ *
+ * After a successful refresh, only redirect from public entry routes (`/`, `/login`, `/register`).
+ * Do not steal focus from deep links such as `/editor/:id` after a hard reload.
  */
 function AuthBootstrap({ children }: { children: ReactNode }) {
   const [sessionReady, setSessionReady] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     let cancelled = false;
@@ -25,6 +30,10 @@ function AuthBootstrap({ children }: { children: ReactNode }) {
       }
       try {
         await useAuthStore.getState().refreshToken();
+        if (cancelled) return;
+        if (location.pathname === '/' || location.pathname === '/login' || location.pathname === '/register') {
+          navigate('/projects', { replace: true });
+        }
       } catch {
         /* no valid refresh cookie */
       }
@@ -33,7 +42,7 @@ function AuthBootstrap({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [location.pathname, navigate]);
 
   if (!sessionReady) {
     return (
