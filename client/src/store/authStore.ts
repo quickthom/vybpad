@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 
 import { authApi } from '../utils/apiClient';
-
 import type { AuthStore } from './authStore.types';
 
 export const useAuthStore = create<AuthStore>((set) => ({
@@ -9,14 +8,26 @@ export const useAuthStore = create<AuthStore>((set) => ({
   accessToken: null,
   isAuthenticated: false,
 
-  login: async (email, password) => {
-    const { user, accessToken } = await authApi.login({ email, password });
-    set({ user, accessToken, isAuthenticated: true });
+  login: async (email: string, password: string) => {
+    const res = await authApi.login({ email, password });
+    set({
+      user: res.user,
+      accessToken: res.accessToken,
+      isAuthenticated: true,
+    });
   },
 
-  register: async (email, password, displayName) => {
-    const { user, accessToken } = await authApi.register({ email, password, displayName });
-    set({ user, accessToken, isAuthenticated: true });
+  register: async (email: string, password: string, displayName: string) => {
+    const res = await authApi.register({
+      email,
+      password,
+      displayName: displayName.trim(),
+    });
+    set({
+      user: res.user,
+      accessToken: res.accessToken,
+      isAuthenticated: true,
+    });
   },
 
   logout: async () => {
