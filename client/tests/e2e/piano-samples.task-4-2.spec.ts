@@ -144,9 +144,8 @@ test.describe('TASK-4.2 — piano sample loading (E2E)', () => {
     const transport = getTransportToolbar(page);
     await getTransportPlayButton(transport).click();
 
-    // Scope to transport: ToastHost also uses role="alert" for errors (strict mode duplicate otherwise).
-    const transportError = transport.getByRole('alert');
-    await expect(transportError).toBeVisible({ timeout: 45_000 });
-    await expect(transportError).toContainText(/sample|connection|try again|audio/i);
+    // Single role=alert for this path: ToastHost (Transport inline copy is visual only).
+    await expect(page.getByRole('alert')).toBeVisible({ timeout: 45_000 });
+    await expect(page.getByRole('alert')).toContainText(/sample|connection|try again|audio/i);
   });
 });
