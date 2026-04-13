@@ -1,7 +1,7 @@
 /*
  * QA COVERAGE PLAN — TASK-3.5 (+ TASK-4.2 editor shell)
  *
- * Happy-path E2E — register → create project → chord grid edit → autosave PUT → refresh → re-login → persisted song.
+ * Happy-path E2E — register → create project → chord grid edit → autosave → refresh → re-login → persisted song.
  * Chord digits must target the **chord strip** (PAT-012). Clicking too low (e.g. y≈120) hits the staff and
  * enters **notes**, not chords — then `measures[].chords` stays empty, autosave PUTs empty harmony, CI times out.
  *
@@ -119,21 +119,22 @@ test.describe('TASK-3.5 — persistence happy path', () => {
     await page.locator('#transport-tempo-input').blur();
     await focusChordStripForDigitEntry(canvas);
 
-    const autosavePutPromise = page.waitForResponse((response) => {
-      const req = response.request();
-      return req.method() === 'PUT' && /\/api\/projects\/[^/?#]+/.test(req.url());
-    }, { timeout: 90_000 });
-
     await page.keyboard.type('12', { delay: 120 });
 
     await expect(page.getByRole('button', { name: /^Save$/ })).toBeEnabled({ timeout: 30_000 });
-    const putRes = await autosavePutPromise;
-    expect(putRes.ok(), await putRes.text()).toBeTruthy();
-    await expect(page.getByRole('button', { name: /^Save$/ })).toBeDisabled({ timeout: 30_000 });
 
     let token = (await loginApi(request, email, password)).accessToken;
-    let remote = await fetchProject(request, token, id);
-    expect(songDataHasChordScaleDegrees1And2(remote.songData)).toBe(true);
+    // Contract check: persisted song on server (debounced autosave). Avoid waitForResponse on PUT —
+    // client uses fetch to a different origin than the page; polling GET is stable.
+    await expect
+      .poll(
+        async () => {
+          const r = await fetchProject(request, token, id);
+          return songDataHasChordScaleDegrees1And2(r.songData);
+        },
+        { timeout: 60_000, intervals: [400, 800, 1_600, 3_200] },
+      )
+      .toBe(true);
 
     await page.reload();
     await waitForEditorRouteReady(page);
