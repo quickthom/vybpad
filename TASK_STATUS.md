@@ -2,7 +2,7 @@
 
 > Single source of truth for build state. Owned by the Project Manager. See PAT-025 for update protocol.
 
-**`develop` (verify with `git fetch origin`):** Tip `3c44a95` (follows `ebc7fe5` process-doc commit + state recording). **Rebase gate:** PR #35 / #36 rebased onto `3c44a95` (2026-04-14). **Merge order (user priority):** **PR #35 must merge to `develop` before any active execution on PR #36** (review/remediation/integration on #36 parked until #35 lands). Sync: `git fetch origin && npm install` — https://github.com/quickthom/vybpad.
+**`develop`:** Authoritative tip: `git fetch origin && git rev-parse origin/develop`. Recent commits include **`ebc7fe5`** (process roles + PAT-025 `TASK_STATUS` migration, 2026-04-14). **Rebase gate:** keep PR #35 / #36 rebased onto **`origin/develop`**. **Merge order (user priority):** **PR #35 must merge to `develop` before any active execution on PR #36** (review/remediation/integration on #36 parked until #35 lands). Sync: `git fetch origin && npm install` — https://github.com/quickthom/vybpad.
 **Worktree hygiene:** Phase 3/4 worktrees under `/home/thom/py/vYbpad-worktrees/`. Retire after merge (PAT-017). If `gh pr merge` could not delete remote branches, remove worktree then `git push origin --delete <branch>`.
 
 ---
