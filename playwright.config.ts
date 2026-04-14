@@ -1,11 +1,9 @@
 import { existsSync, readFileSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { defineConfig, devices } from '@playwright/test';
 import { config as loadRootEnv } from 'dotenv';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 /**
  * Load repo-root `.env` into `process.env` before Playwright spawns `webServer` children
@@ -15,8 +13,6 @@ import { fileURLToPath } from 'node:url';
 const repoRoot = dirname(fileURLToPath(import.meta.url));
 loadRootEnv({ path: join(repoRoot, '.env'), quiet: true });
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-
 /**
  * Populate `process.env` from repo-root `.env` before webServer children spawn.
  * Playwright does not load `.env` automatically; without this, the API process may miss
@@ -24,7 +20,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
  * Does not override variables already set in the environment (CI, shell).
  */
 function loadRootEnvFile(): void {
-  const envPath = resolve(__dirname, '.env');
+  const envPath = resolve(repoRoot, '.env');
   if (!existsSync(envPath)) return;
   const text = readFileSync(envPath, 'utf8');
   for (let raw of text.split('\n')) {
