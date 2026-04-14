@@ -1,12 +1,13 @@
-import type { ProjectResponse, SongData } from '@vybpad/shared';
+import type { ProjectResponse, SongData, Track, TrackRole } from '@vybpad/shared';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import { TransportControls } from '../components/controls/TransportControls';
+import { MixerPanel } from '../components/panels/MixerPanel';
 import { MeasureBar } from '../components/MeasureBar';
 import { EditorCanvas } from '../components/editor/EditorCanvas';
 import { EntryModeToggle } from '../components/editor/EntryModeToggle';
-import { formatTransportBeat, getPlaybackInitErrorMessage } from '../engine/audio';
+import { formatTransportBeat, getPlaybackEngine, getPlaybackInitErrorMessage } from '../engine/audio';
 import { useAuthStore } from '../store/authStore';
 import { syncPlaybackEngineWithSong, usePlaybackStore } from '../store/playbackStore';
 import { buildDefaultSong, useSongStore } from '../store/songStore';
@@ -52,6 +53,7 @@ export function EditorLayout() {
   const addMeasures = useSongStore((s) => s.addMeasures);
   const deleteMeasures = useSongStore((s) => s.deleteMeasures);
   const updateMetadata = useSongStore((s) => s.updateMetadata);
+  const updateBandConfig = useSongStore((s) => s.updateBandConfig);
 
   const playbackTick = usePlaybackStore((s) => s.currentTick);
   const isPlaying = usePlaybackStore((s) => s.isPlaying);
@@ -97,11 +99,28 @@ export function EditorLayout() {
   const activeVoice = useUIStore((s) => s.activeVoice);
   const showGuides = useUIStore((s) => s.showGuides);
   const colorScheme = useUIStore((s) => s.colorScheme);
+  const activePanels = useUIStore((s) => s.activePanels);
+  const togglePanel = useUIStore((s) => s.togglePanel);
+  const mixerOpen = activePanels.has('mixer');
 
   const [selectedMeasures, setSelectedMeasures] = useState<[number, number] | null>(null);
 
   const getSongAfterMutation = useCallback(() => useSongStore.getState().song, []);
   const getSelectionAfterMutation = useCallback(() => useUIStore.getState().selection, []);
+
+  const handleTrackChange = useCallback(
+    (role: TrackRole, changes: Partial<Track>) => {
+      // Runtime merge is by role (songStore); partial patches are valid — assert for `Partial<BandConfig>` typing.
+      updateBandConfig({ tracks: [{ role, ...changes } as Track] });
+      const engine = getPlaybackEngine();
+      if (!engine.isReady()) return;
+      const t = useSongStore.getState().song.bandConfig.tracks.find((tr) => tr.role === role);
+      if (!t) return;
+      engine.setTrackVolume(role, t.volume);
+      engine.setTrackMute(role, t.mute);
+    },
+    [updateBandConfig],
+  );
 
   useEffect(() => {
     syncPlaybackEngineWithSong();
@@ -358,6 +377,15 @@ export function EditorLayout() {
           <EntryModeToggle mode={entryMode} onToggle={toggleEntryMode} />
           <button
             type="button"
+            onClick={() => togglePanel('mixer')}
+            aria-expanded={mixerOpen}
+            aria-controls={mixerOpen ? 'vybpad-panel-mixer' : undefined}
+            className="inline-flex h-10 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-4 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
+          >
+            Mixer
+          </button>
+          <button
+            type="button"
             onClick={() => void handleLogout()}
             className="inline-flex h-10 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-4 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
           >
@@ -381,49 +409,61 @@ export function EditorLayout() {
           updateMetadata({ tempo: n });
         }}
       />
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-        <main
-          className="min-h-0 flex-1 overflow-x-auto p-4"
-          aria-busy={projectId ? loadStatus === 'loading' : false}
-        >
-          {projectId && loadStatus === 'loading' ? (
-            <div className="flex min-h-[240px] items-center justify-center text-sm text-[var(--color-text-secondary,#4B5563)]">
-              Loading project…
-            </div>
-          ) : (
-            <EditorCanvas
-              song={song}
-              viewport={viewport}
-              selection={selection}
-              playbackTick={playbackTick}
-              activeVoice={activeVoice}
-              entryMode={entryMode}
-              showGuides={showGuides}
-              colorScheme={colorScheme}
-              onChordEdit={editChord}
-              onNoteEdit={editNote}
-              onSelectionChange={setSelection}
-              onViewportChange={setViewport}
-              getSongAfterMutation={getSongAfterMutation}
-              getSelectionAfterMutation={getSelectionAfterMutation}
-              onToggleEntryMode={toggleEntryMode}
-            />
-          )}
-        </main>
-        <MeasureBar
-          measureCount={song.measures.length}
-          selectedMeasures={selectedMeasures}
-          measuresPerLine={viewport.measureCount}
-          onSelectMeasure={(index) => setSelectedMeasures([index, index])}
-          onSelectRange={(start, end) => setSelectedMeasures([start, end])}
-          onAddMeasures={(count) => addMeasures(song.measures.length, count)}
-          onDeleteMeasures={(start, end) => {
-            const len = song.measures.length;
-            const removing = end - start + 1;
-            if (len - removing < 1) return;
-            deleteMeasures(start, end);
-          }}
-        />
+      <div className="flex min-h-0 min-w-0 flex-1 flex-row">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+          <main
+            className="min-h-0 flex-1 overflow-x-auto p-4"
+            aria-busy={projectId ? loadStatus === 'loading' : false}
+          >
+            {projectId && loadStatus === 'loading' ? (
+              <div className="flex min-h-[240px] items-center justify-center text-sm text-[var(--color-text-secondary,#4B5563)]">
+                Loading project…
+              </div>
+            ) : (
+              <EditorCanvas
+                song={song}
+                viewport={viewport}
+                selection={selection}
+                playbackTick={playbackTick}
+                activeVoice={activeVoice}
+                entryMode={entryMode}
+                showGuides={showGuides}
+                colorScheme={colorScheme}
+                onChordEdit={editChord}
+                onNoteEdit={editNote}
+                onSelectionChange={setSelection}
+                onViewportChange={setViewport}
+                getSongAfterMutation={getSongAfterMutation}
+                getSelectionAfterMutation={getSelectionAfterMutation}
+                onToggleEntryMode={toggleEntryMode}
+              />
+            )}
+          </main>
+          <MeasureBar
+            measureCount={song.measures.length}
+            selectedMeasures={selectedMeasures}
+            measuresPerLine={viewport.measureCount}
+            onSelectMeasure={(index) => setSelectedMeasures([index, index])}
+            onSelectRange={(start, end) => setSelectedMeasures([start, end])}
+            onAddMeasures={(count) => addMeasures(song.measures.length, count)}
+            onDeleteMeasures={(start, end) => {
+              const len = song.measures.length;
+              const removing = end - start + 1;
+              if (len - removing < 1) return;
+              deleteMeasures(start, end);
+            }}
+          />
+        </div>
+        {mixerOpen ? (
+          <aside
+            id="vybpad-panel-mixer"
+            className="flex w-[288px] shrink-0 flex-col border-l border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)]"
+            role="complementary"
+            aria-label="Mixer"
+          >
+            <MixerPanel bandConfig={song.bandConfig} onTrackChange={handleTrackChange} />
+          </aside>
+        ) : null}
       </div>
     </div>
   );
