@@ -1,7 +1,8 @@
 import type { ProjectResponse, SongData, Track, TrackRole } from '@vybpad/shared';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
+import { KeyScaleChangeDialog } from '../components/common/KeyScaleChangeDialog';
 import { LoopBar } from '../components/controls/LoopBar';
 import { TransportControls } from '../components/controls/TransportControls';
 import { MixerPanel } from '../components/panels/MixerPanel';
@@ -105,6 +106,18 @@ export function EditorLayout() {
   const mixerOpen = activePanels.has('mixer');
 
   const [selectedMeasures, setSelectedMeasures] = useState<[number, number] | null>(null);
+  const [keyScaleDialogOpen, setKeyScaleDialogOpen] = useState(false);
+  const keyScaleTriggerRef = useRef<HTMLButtonElement>(null);
+
+  const keyScaleTargetMeasure = useMemo(() => {
+    if (selectedMeasures) {
+      return Math.min(selectedMeasures[0], selectedMeasures[1]);
+    }
+    if (selection?.measureIndex != null) {
+      return selection.measureIndex;
+    }
+    return 0;
+  }, [selectedMeasures, selection]);
 
   const getSongAfterMutation = useCallback(() => useSongStore.getState().song, []);
   const getSelectionAfterMutation = useCallback(() => useUIStore.getState().selection, []);
@@ -386,6 +399,14 @@ export function EditorLayout() {
             Mixer
           </button>
           <button
+            ref={keyScaleTriggerRef}
+            type="button"
+            onClick={() => setKeyScaleDialogOpen(true)}
+            className="inline-flex min-h-11 items-center justify-center rounded-md px-3 text-sm font-medium text-[var(--color-primary,#4F46E5)] outline-none transition hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
+          >
+            Key / scale
+          </button>
+          <button
             type="button"
             onClick={() => void handleLogout()}
             className="inline-flex h-10 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-4 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
@@ -411,6 +432,14 @@ export function EditorLayout() {
         }}
       />
       <LoopBar />
+      <KeyScaleChangeDialog
+        open={keyScaleDialogOpen}
+        measureIndex={keyScaleTargetMeasure}
+        onClose={() => {
+          setKeyScaleDialogOpen(false);
+          queueMicrotask(() => keyScaleTriggerRef.current?.focus());
+        }}
+      />
       <div className="flex min-h-0 min-w-0 flex-1 flex-row">
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
           <main
