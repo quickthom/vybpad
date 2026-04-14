@@ -88,6 +88,7 @@ function hitNoteTopmost(x: number, y: number, song: SongData, viewport: Viewport
           measureIndex: mi,
           note,
           isRest: note.isRest,
+          voiceIndex: v,
         });
         if (pointInBlockRect(x, y, rect)) {
           return { kind: 'note', measureIndex: mi, voiceIndex: v, note };

@@ -291,6 +291,7 @@ describe('hit testing (TASK-2.6) — note voice overlap Z-order', () => {
       measureIndex: 0,
       note: n3,
       isRest: false,
+      voiceIndex: 3,
     });
     const p = centerOf(rect);
 

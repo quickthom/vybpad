@@ -26,6 +26,8 @@ export interface EditorKeyboardContext {
   viewport: Viewport;
   selection: Selection | null;
   activeVoice: 0 | 1 | 2 | 3;
+  /** TASK-5.7 — Ctrl/Cmd+Digit1–4 switches active melody voice. */
+  setActiveVoice: (v: 0 | 1 | 2 | 3) => void;
   entryMode: 'table' | 'text';
   currentDurationTicks: number;
   setCurrentDurationTicks: (n: number) => void;
@@ -95,6 +97,18 @@ export function handleEditorKeydown(e: KeyboardEvent, ctx: EditorKeyboardContext
   if (e.defaultPrevented) return;
   if (isEditableKeyboardTarget(document.activeElement)) return;
   if (isEditableKeyboardTarget(e.target)) return;
+
+  // TASK-5.7 — melody voice (use e.code so Shift+digit does not map to punctuation on some layouts).
+  if ((e.ctrlKey || e.metaKey) && !e.altKey) {
+    const code = e.code;
+    if (code === 'Digit1' || code === 'Digit2' || code === 'Digit3' || code === 'Digit4') {
+      e.preventDefault();
+      const digit = Number(code.replace('Digit', ''));
+      ctx.setActiveVoice((digit - 1) as 0 | 1 | 2 | 3);
+      return;
+    }
+  }
+
   if (e.ctrlKey || e.metaKey || e.altKey) return;
   const selection = pickSelection(ctx);
 
