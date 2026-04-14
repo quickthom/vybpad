@@ -169,7 +169,7 @@ export const usePlaybackStore = create<PlaybackStore>()(
       getPlaybackEngine().stop();
       set((draft) => {
         draft.isPlaying = false;
-        draft.currentTick = 0;
+        draft.currentTick = null;
       });
     },
 
