@@ -40,7 +40,7 @@ export function TransportControls({
       aria-label="Transport"
       aria-busy={initStatus === 'initializing' ? true : undefined}
       data-audio-ready={initStatus === 'ready' ? 'true' : 'false'}
-      className="flex min-h-[48px] flex-wrap items-center gap-2 border-b border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)] px-4 py-2"
+      className="flex min-h-12 flex-wrap items-center gap-2 border-b border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)] px-4"
     >
       <div className="flex items-center gap-2" role="group" aria-label="Playback">
         {isPlaying ? (
@@ -133,7 +133,10 @@ export function TransportControls({
       )}
 
       {initErrorCode ? (
-        <p className="max-w-md text-sm text-[var(--color-destructive,#DC2626)]">
+        <p
+          role="alert"
+          className="max-w-md text-sm text-[var(--color-destructive,#DC2626)]"
+        >
           {getPlaybackInitErrorMessage(initErrorCode)}
         </p>
       ) : null}

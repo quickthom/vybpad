@@ -144,8 +144,10 @@ test.describe('TASK-4.2 — piano sample loading (E2E)', () => {
     const transport = getTransportToolbar(page);
     await getTransportPlayButton(transport).click();
 
-    // Single role=alert for this path: ToastHost (Transport inline copy is visual only).
-    await expect(page.getByRole('alert')).toBeVisible({ timeout: 45_000 });
-    await expect(page.getByRole('alert')).toContainText(/sample|connection|try again|audio/i);
+    // ToastHost and transport toolbar can both expose role=alert for the same failure (TASK-4.5).
+    const sampleFailureAlerts = page
+      .getByRole('alert')
+      .filter({ hasText: /sample|connection|try again|audio/i });
+    await expect(sampleFailureAlerts.first()).toBeVisible({ timeout: 45_000 });
   });
 });
