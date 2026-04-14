@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import { LoopBar } from '../components/controls/LoopBar';
+import { TempoMeterAtMeasureDialog } from '../components/controls/TempoMeterAtMeasureDialog';
 import { TransportControls } from '../components/controls/TransportControls';
 import { MixerPanel } from '../components/panels/MixerPanel';
 import { MeasureBar } from '../components/MeasureBar';
@@ -53,6 +54,7 @@ export function EditorLayout() {
   const editNote = useSongStore((s) => s.editNote);
   const addMeasures = useSongStore((s) => s.addMeasures);
   const deleteMeasures = useSongStore((s) => s.deleteMeasures);
+  const setMeasureChanges = useSongStore((s) => s.setMeasureChanges);
   const updateMetadata = useSongStore((s) => s.updateMetadata);
   const updateBandConfig = useSongStore((s) => s.updateBandConfig);
 
@@ -105,6 +107,7 @@ export function EditorLayout() {
   const mixerOpen = activePanels.has('mixer');
 
   const [selectedMeasures, setSelectedMeasures] = useState<[number, number] | null>(null);
+  const [tempoMeterDialogOpen, setTempoMeterDialogOpen] = useState(false);
 
   const getSongAfterMutation = useCallback(() => useSongStore.getState().song, []);
   const getSelectionAfterMutation = useCallback(() => useUIStore.getState().selection, []);
@@ -454,6 +457,7 @@ export function EditorLayout() {
               if (len - removing < 1) return;
               deleteMeasures(start, end);
             }}
+            onEditTempoMeter={() => setTempoMeterDialogOpen(true)}
           />
         </div>
         {mixerOpen ? (
@@ -467,6 +471,16 @@ export function EditorLayout() {
           </aside>
         ) : null}
       </div>
+      <TempoMeterAtMeasureDialog
+        open={tempoMeterDialogOpen}
+        measureIndex={selectedMeasures?.[0] ?? 0}
+        song={song}
+        onDismiss={() => setTempoMeterDialogOpen(false)}
+        onApply={(changes) => {
+          const idx = selectedMeasures?.[0] ?? 0;
+          setMeasureChanges(idx, changes);
+        }}
+      />
     </div>
   );
 }

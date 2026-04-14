@@ -21,6 +21,8 @@ export interface MeasureBarProps {
   onSelectRange: (start: number, end: number) => void;
   onAddMeasures: (count: number) => void;
   onDeleteMeasures: (start: number, end: number) => void;
+  /** TASK-5.6: open tempo/meter dialog for the current measure selection (start of range). */
+  onEditTempoMeter?: () => void;
 }
 
 function chunkMeasureIndices(measureCount: number, perLine: number): number[][] {
@@ -51,6 +53,7 @@ export function MeasureBar({
   onSelectRange,
   onAddMeasures,
   onDeleteMeasures,
+  onEditTempoMeter,
 }: MeasureBarProps) {
   const anchorRef = useRef(0);
   const dragStartRef = useRef<number | null>(null);
@@ -170,6 +173,18 @@ export function MeasureBar({
         ))}
       </div>
       <div className="flex shrink-0 items-center gap-2 border-l border-[var(--color-border,#E5E7EB)] px-2">
+        {onEditTempoMeter ? (
+          <button
+            type="button"
+            data-testid="vybpad-measure-tempo-meter"
+            className={[secondaryButtonClass, selectedMeasures === null ? disabledButtonClass : ''].join(' ')}
+            disabled={selectedMeasures === null}
+            title={selectedMeasures === null ? 'Select a measure first' : 'Tempo and time signature at selected measure'}
+            onClick={() => onEditTempoMeter()}
+          >
+            Tempo / meter
+          </button>
+        ) : null}
         <button type="button" className={secondaryButtonClass} onClick={() => onAddMeasures(1)}>
           Add
         </button>

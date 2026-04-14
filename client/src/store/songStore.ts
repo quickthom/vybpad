@@ -22,6 +22,8 @@ import type {
   SongMetadata,
 } from '@vybpad/shared';
 
+import { mergeMeasureChanges } from '../utils/measureChangeValidation';
+
 /** PAT-009: match Hookpad — cap undo history length. */
 const UNDO_LIMIT = 20;
 
@@ -225,7 +227,13 @@ export const useSongStore = create<SongStoreState>()(
         const measure = draft.song.measures[measureIndex];
         if (!measure) return;
         pushUndoSnapshot(draft);
-        measure.changes = { ...measure.changes, ...changes };
+        const merged = mergeMeasureChanges(measure.changes, changes);
+        const empty =
+          merged.key === undefined &&
+          merged.scale === undefined &&
+          merged.tempo === undefined &&
+          merged.meter === undefined;
+        measure.changes = empty ? undefined : merged;
         afterMutation(draft);
       });
     },

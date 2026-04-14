@@ -2,6 +2,7 @@ import type { SongData, TrackRole } from '@vybpad/shared';
 import { TICKS_PER_QUARTER } from '@vybpad/shared';
 import * as Tone from 'tone';
 
+import { getTempoAtMeasure, measureIndexFromAbsoluteTick } from '../renderer/tickUtils';
 import { theoryEngine } from '../theory/theoryEngine';
 import { useToastStore } from '../../store/toastStore';
 import type { AudioEngine } from './audioEngineTypes';
@@ -111,7 +112,12 @@ export function createPlaybackEngine(): AudioEngine {
   function schedulePlaybackFromSong(song: SongData): void {
     clearScheduledPlayback();
     mixer = syncMixerFromBand(song);
-    Tone.getTransport().bpm.value = song.metadata.tempo;
+    // INTERFACES: `song.metadata.tempo` is the initial BPM; measure-level `changes.tempo` overrides from
+    // that measure forward (inheritance via getTempoAtMeasure). Tone has a single transport BPM — we set it
+    // from the effective tempo at the current transport tick so playback matches the scheduler tick map.
+    const tickNow = Tone.getTransport().ticks;
+    const mi = measureIndexFromAbsoluteTick(song, tickNow);
+    Tone.getTransport().bpm.value = getTempoAtMeasure(song, mi);
 
     const flat = buildScheduledPlayEvents(song, theoryEngine);
     if (flat.length === 0) {
@@ -202,7 +208,9 @@ export function createPlaybackEngine(): AudioEngine {
         return;
       }
       if (songRef) {
-        Tone.getTransport().bpm.value = songRef.metadata.tempo;
+        const tickNow = Tone.getTransport().ticks;
+        const mi = measureIndexFromAbsoluteTick(songRef, tickNow);
+        Tone.getTransport().bpm.value = getTempoAtMeasure(songRef, mi);
       }
       playing = true;
       Tone.getTransport().start();
@@ -236,6 +244,10 @@ export function createPlaybackEngine(): AudioEngine {
         return;
       }
       const clamped = Math.max(0, tick);
+      if (songRef) {
+        const mi = measureIndexFromAbsoluteTick(songRef, clamped);
+        Tone.getTransport().bpm.value = getTempoAtMeasure(songRef, mi);
+      }
       Tone.getTransport().ticks = clamped;
       notifyTicks(clamped);
     },
