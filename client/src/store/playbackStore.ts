@@ -35,6 +35,8 @@ export interface PlaybackStore {
   rewind: () => void;
   seekTo: (tick: number) => void;
   setLoop: (start: number, end: number) => void;
+  /** Disables loop playback and clears engine loop mode. INTERFACES.md update pending (TASK-4.8). */
+  clearLoop: () => void;
 }
 
 let initChain: Promise<void> | null = null;
@@ -58,6 +60,17 @@ function syncEngineFromSong(): void {
     return;
   }
   engine.loadSong(useSongStore.getState().song);
+}
+
+/** PAT-004: loop bounds are integer ticks; musically invalid ranges are rejected (store unchanged). */
+function isValidLoopRange(start: number, end: number): boolean {
+  if (!Number.isFinite(start) || !Number.isFinite(end)) {
+    return false;
+  }
+  if (!Number.isInteger(start) || !Number.isInteger(end)) {
+    return false;
+  }
+  return end > start;
 }
 
 export const usePlaybackStore = create<PlaybackStore>()(
@@ -189,6 +202,9 @@ export const usePlaybackStore = create<PlaybackStore>()(
     },
 
     setLoop: (start: number, end: number) => {
+      if (!isValidLoopRange(start, end)) {
+        return;
+      }
       set((draft) => {
         draft.isLooping = true;
         draft.loopStart = start;
@@ -196,6 +212,15 @@ export const usePlaybackStore = create<PlaybackStore>()(
       });
       if (getPlaybackEngine().isReady()) {
         getPlaybackEngine().setLoop(true, start, end);
+      }
+    },
+
+    clearLoop: () => {
+      set((draft) => {
+        draft.isLooping = false;
+      });
+      if (getPlaybackEngine().isReady()) {
+        getPlaybackEngine().setLoop(false);
       }
     },
   })),
