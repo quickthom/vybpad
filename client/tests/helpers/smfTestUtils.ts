@@ -240,3 +240,127 @@ export function tracksWithNoteData(midi: Uint8Array): number[] {
   });
   return idx;
 }
+
+/** FF 01 (text) meta event with absolute tick (delta accumulation). */
+export interface Ff01TextEvent {
+  absTick: number;
+  text: string;
+}
+
+function decodeMidiTextBytes(raw: Uint8Array): string {
+  let s = '';
+  for (let i = 0; i < raw.length; i += 1) {
+    s += String.fromCharCode(raw[i]!);
+  }
+  return s;
+}
+
+/**
+ * Collects SMF meta text events (type 0x01) from one MTrk payload.
+ * Mirrors delta-time handling used for note parsing.
+ */
+export function ff01EventsFromTrack(trackData: Uint8Array): Ff01TextEvent[] {
+  const out: Ff01TextEvent[] = [];
+  let pos = 0;
+  let absTick = 0;
+  let runningStatus = 0;
+
+  while (pos < trackData.length) {
+    const d = readVlq(trackData, pos);
+    pos = d.next;
+    absTick += d.value;
+
+    const peek = trackData[pos];
+    if (peek === undefined) break;
+
+    if (peek < 0x80) {
+      if (runningStatus === 0) {
+        throw new Error('SMF: data byte without running status');
+      }
+      const status = runningStatus;
+      const cmd = status & 0xf0;
+      if (cmd === 0x90) {
+        const note = peek;
+        const velocity = trackData[pos + 1];
+        if (velocity === undefined) break;
+        pos += 2;
+        continue;
+      }
+      if (cmd === 0x80) {
+        pos += 2;
+        continue;
+      }
+      throw new Error(`SMF: running status 0x${status.toString(16)} not handled`);
+    }
+
+    const status = peek;
+    pos += 1;
+
+    if (status === 0xff) {
+      runningStatus = 0;
+      const metaType = trackData[pos]!;
+      pos += 1;
+      const len = readVlq(trackData, pos);
+      const dataStart = len.next;
+      const dataLen = len.value;
+      if (metaType === 0x01) {
+        const raw = trackData.subarray(dataStart, dataStart + dataLen);
+        out.push({ absTick, text: decodeMidiTextBytes(raw) });
+      }
+      pos = dataStart + dataLen;
+      continue;
+    }
+
+    if (status === 0xf0) {
+      runningStatus = 0;
+      while (pos < trackData.length && trackData[pos] !== 0xf7) {
+        pos += 1;
+      }
+      pos += 1;
+      continue;
+    }
+
+    const cmd = status & 0xf0;
+
+    if (cmd >= 0x80 && cmd <= 0xe0) {
+      runningStatus = status;
+    }
+
+    if (cmd === 0x90) {
+      pos += 2;
+      continue;
+    }
+    if (cmd === 0x80) {
+      pos += 2;
+      continue;
+    }
+    if (cmd === 0xa0 || cmd === 0xb0) {
+      pos += 2;
+      continue;
+    }
+    if (cmd === 0xc0 || cmd === 0xd0) {
+      pos += 1;
+      continue;
+    }
+    if (cmd === 0xe0) {
+      pos += 2;
+      continue;
+    }
+
+    throw new Error(`SMF: unhandled status 0x${status.toString(16)}`);
+  }
+
+  return out;
+}
+
+/** Every FF 01 text meta in the file, with track index (0 = first MTrk after header). */
+export function ff01EventsInFile(midi: Uint8Array): Array<Ff01TextEvent & { trackIndex: number }> {
+  const payloads = listMTrkPayloads(midi);
+  const out: Array<Ff01TextEvent & { trackIndex: number }> = [];
+  payloads.forEach((pl, trackIndex) => {
+    for (const ev of ff01EventsFromTrack(pl)) {
+      out.push({ ...ev, trackIndex });
+    }
+  });
+  return out;
+}

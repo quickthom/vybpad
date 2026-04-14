@@ -1,7 +1,13 @@
 import type { SongData, TrackRole } from '@vybpad/shared';
 
 import { buildScheduledPlayEvents, type ScheduledPlayEvent } from '@/engine/audio/songScheduler';
-import { getMeterAtMeasure, getTempoAtMeasure } from '@/engine/renderer/tickUtils';
+import {
+  getKeyAtMeasure,
+  getMeasureStartTicks,
+  getMeterAtMeasure,
+  getScaleAtMeasure,
+  getTempoAtMeasure,
+} from '@/engine/renderer/tickUtils';
 import { theoryEngine } from '@/engine/theory/theoryEngine';
 
 import MidiWriter from 'midi-writer-js';
@@ -115,6 +121,53 @@ function addProgramChangePiano(track: InstanceType<typeof MidiWriter.Track>, cha
   );
 }
 
+/**
+ * FF 01 text meta at each chord onset. Deltas are cumulative so events align with PAT-004 ×10 + pad,
+ * matching {@link internalTickToMidiTick} used for notes.
+ */
+function buildChordNamesTrack(song: SongData): InstanceType<typeof MidiWriter.Track> {
+  const track = new MidiWriter.Track();
+  track.addTrackName('Chord names');
+
+  const measureStarts = getMeasureStartTicks(song);
+  const marks: { midiTick: number; text: string }[] = [];
+
+  for (let mi = 0; mi < song.measures.length; mi += 1) {
+    const measure = song.measures[mi];
+    if (!measure) continue;
+    const key = getKeyAtMeasure(song, mi);
+    const scale = getScaleAtMeasure(song, mi);
+    const start = measureStarts[mi] ?? 0;
+    for (const chord of measure.chords) {
+      const absInternal = start + chord.beat;
+      const midiTick = internalTickToMidiTick(absInternal);
+      marks.push({
+        midiTick,
+        text: theoryEngine.toChordName(chord, key, scale),
+      });
+    }
+  }
+
+  marks.sort((a, b) => {
+    if (a.midiTick !== b.midiTick) return a.midiTick - b.midiTick;
+    return a.text.localeCompare(b.text);
+  });
+
+  let prevTick = 0;
+  for (const m of marks) {
+    const delta = m.midiTick - prevTick;
+    track.addEvent(
+      new MidiWriter.TextEvent({
+        text: m.text,
+        delta,
+      }),
+    );
+    prevTick = m.midiTick;
+  }
+
+  return track;
+}
+
 function buildWriterFromParts(
   song: SongData,
   parts: {
@@ -146,7 +199,9 @@ function buildWriterFromParts(
     bass.addEvent(ev);
   }
 
-  return new MidiWriter.Writer([conductor, melody, harmony, bass], WRITER_OPTS);
+  const chordNames = buildChordNamesTrack(song);
+
+  return new MidiWriter.Writer([conductor, melody, harmony, bass, chordNames], WRITER_OPTS);
 }
 
 function partitionScheduled(song: SongData): {
