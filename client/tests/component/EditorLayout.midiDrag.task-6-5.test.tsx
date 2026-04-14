@@ -67,6 +67,43 @@ const DRAGGING_MIDI_TOAST = 'Dragging MIDI…';
  */
 const MIDI_DRAG_NAME = /drag midi file to desktop daw/i;
 
+/**
+ * jsdom does not expose `DataTransfer` globally; `useMidiDragExport` only needs `effectAllowed`,
+ * `items.add`, and readable `files` after add (see Builder `midiDragExport.task-6-5.test.tsx`).
+ */
+function createStubDataTransfer(): {
+  dataTransfer: {
+    effectAllowed: string;
+    files: FileList;
+    items: { add: (f: File) => void };
+  };
+  getFiles: () => File[];
+} {
+  const bucket: File[] = [];
+  const list = {
+    length: 0,
+    item: (index: number) => bucket[index] ?? null,
+    [Symbol.iterator]: function* fileIterator() {
+      for (const f of bucket) yield f;
+    },
+  } as FileList;
+  return {
+    getFiles: () => [...bucket],
+    dataTransfer: {
+      effectAllowed: 'uninitialized',
+      get files(): FileList {
+        list.length = bucket.length;
+        return list;
+      },
+      items: {
+        add: (f: File) => {
+          bucket.push(f);
+        },
+      },
+    },
+  };
+}
+
 function renderEditorWithToast(): ReturnType<typeof render> {
   return render(
     <BrowserRouter>
@@ -98,15 +135,16 @@ describe('TASK-6.5 — MIDI drag export (INTERFACES § MidiExporter.createDragBl
       const expectedMime = exporter.createDragBlob(song).type.toLowerCase();
 
       const dragControl = screen.getByRole('button', { name: MIDI_DRAG_NAME });
-      const dt = new DataTransfer();
-      fireEvent.dragStart(dragControl, { dataTransfer: dt });
+      const { dataTransfer: dt, getFiles } = createStubDataTransfer();
+      fireEvent.dragStart(dragControl, { dataTransfer: dt as unknown as DataTransfer });
 
       expect(dt.effectAllowed === 'copy' || dt.effectAllowed === 'all' || dt.effectAllowed === 'copyMove').toBe(
         true,
       );
 
-      expect(dt.files.length).toBeGreaterThanOrEqual(1);
-      const file = dt.files.item(0);
+      const files = getFiles();
+      expect(files.length).toBeGreaterThanOrEqual(1);
+      const file = files[0]!;
       expect(file).toBeTruthy();
       expect(file!.type.toLowerCase()).toBe(expectedMime);
 
@@ -133,7 +171,8 @@ describe('TASK-6.5 — UX §370–373 drag feedback (cursor, toast, live region)
     it('shows toast "Dragging MIDI…" on dragstart using polite live region (role=status, aria-live=polite)', () => {
       renderEditorWithToast();
       const dragControl = screen.getByRole('button', { name: MIDI_DRAG_NAME });
-      fireEvent.dragStart(dragControl, { dataTransfer: new DataTransfer() });
+      const { dataTransfer: dt } = createStubDataTransfer();
+      fireEvent.dragStart(dragControl, { dataTransfer: dt as unknown as DataTransfer });
 
       const toast = screen.getByRole('status');
       expect(toast).toHaveAttribute('aria-live', 'polite');
@@ -154,9 +193,9 @@ describe('TASK-6.5 — no regression to song store or unrelated editor chrome', 
       const before = JSON.stringify(useSongStore.getState().song);
 
       const dragControl = screen.getByRole('button', { name: MIDI_DRAG_NAME });
-      const dt = new DataTransfer();
-      fireEvent.dragStart(dragControl, { dataTransfer: dt });
-      fireEvent.dragEnd(dragControl, { dataTransfer: dt });
+      const { dataTransfer: dt } = createStubDataTransfer();
+      fireEvent.dragStart(dragControl, { dataTransfer: dt as unknown as DataTransfer });
+      fireEvent.dragEnd(dragControl, { dataTransfer: dt as unknown as DataTransfer });
 
       const after = JSON.stringify(useSongStore.getState().song);
       expect(after).toBe(before);
@@ -165,9 +204,9 @@ describe('TASK-6.5 — no regression to song store or unrelated editor chrome', 
     it('MeasureBar Add still increases measure count after MIDI drag sequence', () => {
       renderEditorWithToast();
       const dragControl = screen.getByRole('button', { name: MIDI_DRAG_NAME });
-      const dt = new DataTransfer();
-      fireEvent.dragStart(dragControl, { dataTransfer: dt });
-      fireEvent.dragEnd(dragControl, { dataTransfer: dt });
+      const { dataTransfer: dt } = createStubDataTransfer();
+      fireEvent.dragStart(dragControl, { dataTransfer: dt as unknown as DataTransfer });
+      fireEvent.dragEnd(dragControl, { dataTransfer: dt as unknown as DataTransfer });
 
       const before = useSongStore.getState().song.measures.length;
       const regions = screen.getAllByRole('region', { name: 'Measures' });
