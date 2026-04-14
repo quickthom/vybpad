@@ -6,6 +6,7 @@ import {
   buildDefaultNotePayload,
   buildDiatonicChordPayload,
   clampDurationToMeasure,
+  cycleSecondaryChordEdit,
   DURATION_KEYS,
   entryEndsAtOrPastMeasureEnd,
   findNoteIdByPlacement,
@@ -17,8 +18,10 @@ import {
   resolveMeasureIndexForKeyboardDigit,
   shouldAllowChordDigitEntry,
   shouldUseNoteEntry,
+  tableInsertBeatFromSelection,
   tableModeAdvanceRange,
 } from '../components/editor/editorKeyboardLogic';
+import { getKeyAtMeasure, getScaleAtMeasure } from '../engine/renderer/tickUtils';
 
 /** PAT-004 — re-export for unit tests (alias of DURATION_KEYS). */
 export const DURATION_KEY_TICKS: Record<string, number> = DURATION_KEYS;
@@ -71,22 +74,80 @@ function pickSelection(ctx: EditorKeyboardContext): Selection | null {
   return ctx.selection;
 }
 
-/** Collapsed range in table mode acts as a caret beat for the next insertion (TASK-2.9). */
-function tableInsertBeatFromSelection(
-  selection: Selection | null,
-  song: SongData,
-  measureIndex: number,
-  kind: 'chord' | 'note',
-  voice: 0 | 1 | 2 | 3,
-): number | null {
-  if (
-    selection?.type === 'range' &&
-    selection.rangeStart === selection.rangeEnd &&
-    selection.measureIndex === measureIndex
-  ) {
-    return Math.round(selection.rangeStart ?? 0);
+/**
+ * Diatonic chord digit path shared with the left-panel chord palette (TASK-5.1).
+ * Mutates `textDurationArmedRef` on text-mode paths the same way digit keys do.
+ * @returns true if a chord edit was applied (keyboard layer should `preventDefault`).
+ */
+export function applyChordScaleDegreeFromEditor(ctx: EditorKeyboardContext, degree: ScaleDegree): boolean {
+  const selection = pickSelection(ctx);
+  if (selection?.type === 'range') {
+    const isCollapsedCaret = selection.rangeStart === selection.rangeEnd && ctx.entryMode === 'table';
+    if (!isCollapsedCaret) return false;
   }
-  return nextAppendBeat(song, measureIndex, kind, voice);
+
+  if (ctx.entryMode === 'text' && !ctx.textDurationArmedRef.current) return false;
+
+  const measureIndex = resolveMeasureIndexForKeyboardDigit(
+    selection,
+    ctx.viewport,
+    pickSong(ctx),
+    ctx.keyboardTargetMeasureRef,
+  );
+
+  const noteEntry = shouldUseNoteEntry(selection);
+  const chordDigitsOk = shouldAllowChordDigitEntry(ctx.entryMode) && !noteEntry;
+  if (!chordDigitsOk) return false;
+
+  if (ctx.entryMode === 'text') {
+    if (selection?.type === 'chord' && selection.eventIds?.[0]) {
+      const id = selection.eventIds[0];
+      const ch = ctx.song.measures[selection.measureIndex]?.chords.find((c) => c.id === id);
+      if (!ch) return false;
+      ctx.textDurationArmedRef.current = false;
+      const durClamped = clampDurationToMeasure(ctx.song, selection.measureIndex, ch.beat, ctx.currentDurationTicks);
+      const p = buildDiatonicChordPayload(ctx.song, selection.measureIndex, degree, ch.beat, durClamped);
+      ctx.onChordEdit(selection.measureIndex, {
+        type: 'update',
+        chordId: id,
+        changes: {
+          scaleDegree: p.scaleDegree,
+          quality: p.quality,
+          seventh: p.seventh,
+          suspension: p.suspension,
+          addition: p.addition,
+          inversion: p.inversion,
+          borrowed: p.borrowed,
+          secondary: p.secondary,
+          duration: durClamped,
+        },
+      });
+      return true;
+    }
+    const nb = tableInsertBeatFromSelection(selection, ctx.song, measureIndex, 'chord', ctx.activeVoice);
+    if (nb == null) return false;
+    ctx.textDurationArmedRef.current = false;
+    const durClamped = clampDurationToMeasure(ctx.song, measureIndex, nb, ctx.currentDurationTicks);
+    const payload = buildDiatonicChordPayload(ctx.song, measureIndex, degree, nb, durClamped);
+    ctx.onChordEdit(measureIndex, { type: 'add', chord: payload });
+    return true;
+  }
+
+  const songForChord = pickSong(ctx);
+  const nb = tableInsertBeatFromSelection(selection, songForChord, measureIndex, 'chord', ctx.activeVoice);
+  if (nb == null) return false;
+  const durClamped = clampDurationToMeasure(songForChord, measureIndex, nb, ctx.currentDurationTicks);
+  const payload = buildDiatonicChordPayload(songForChord, measureIndex, degree, nb, durClamped);
+  ctx.onChordEdit(measureIndex, { type: 'add', chord: payload });
+
+  const songAfter = pickSong(ctx);
+  if (entryEndsAtOrPastMeasureEnd(songAfter, measureIndex, nb, durClamped) && measureIndex + 1 < songAfter.measures.length) {
+    ctx.keyboardTargetMeasureRef.current = measureIndex + 1;
+    ctx.onSelectionChange(null);
+  } else {
+    ctx.onSelectionChange(tableModeAdvanceRange(songAfter, measureIndex, nb, durClamped));
+  }
+  return true;
 }
 
 /**
@@ -131,6 +192,23 @@ export function handleEditorKeydown(e: KeyboardEvent, ctx: EditorKeyboardContext
   if (key === 'Tab' && toggleEntryMode && !isEditableKeyboardTarget(e.target ?? null)) {
     e.preventDefault();
     toggleEntryMode();
+    return;
+  }
+
+  // TASK-5.3 — cycle V/x · viio/x · IV/x applied slots (see getSecondaryCycleSequence); same as palette "Cycle".
+  if (key === 'd' || key === 'D') {
+    const sel = pickSelection(ctx);
+    const chordId = sel?.type === 'chord' ? sel.eventIds?.[0] : undefined;
+    if (!chordId || sel?.type !== 'chord') return;
+    const song = pickSong(ctx);
+    const ch = song.measures[sel.measureIndex]?.chords.find((c) => c.id === chordId);
+    if (!ch) return;
+    e.preventDefault();
+    const homeKey = getKeyAtMeasure(song, sel.measureIndex);
+    const homeScale = getScaleAtMeasure(song, sel.measureIndex);
+    const changes = cycleSecondaryChordEdit(ch, homeKey, homeScale);
+    if (Object.keys(changes).length === 0) return;
+    ctx.onChordEdit(sel.measureIndex, { type: 'update', chordId, changes });
     return;
   }
 
@@ -265,62 +343,8 @@ export function handleEditorKeydown(e: KeyboardEvent, ctx: EditorKeyboardContext
     }
 
     if (chordDigitsOk) {
-      if (ctx.entryMode === 'text') {
-        if (selection?.type === 'chord' && selection.eventIds?.[0]) {
-          const id = selection.eventIds[0];
-          const ch = ctx.song.measures[selection.measureIndex]?.chords.find((c) => c.id === id);
-          if (!ch) return;
-          e.preventDefault();
-          ctx.textDurationArmedRef.current = false;
-          const durClamped = clampDurationToMeasure(ctx.song, selection.measureIndex, ch.beat, ctx.currentDurationTicks);
-          const p = buildDiatonicChordPayload(ctx.song, selection.measureIndex, degree, ch.beat, durClamped);
-          ctx.onChordEdit(selection.measureIndex, {
-            type: 'update',
-            chordId: id,
-            changes: {
-              scaleDegree: p.scaleDegree,
-              quality: p.quality,
-              seventh: p.seventh,
-              suspension: p.suspension,
-              addition: p.addition,
-              inversion: p.inversion,
-              borrowed: p.borrowed,
-              secondary: p.secondary,
-              duration: durClamped,
-            },
-          });
-          return;
-        }
-        const nb = tableInsertBeatFromSelection(selection, ctx.song, measureIndex, 'chord', ctx.activeVoice);
-        if (nb == null) return;
-        e.preventDefault();
-        ctx.textDurationArmedRef.current = false;
-        const durClamped = clampDurationToMeasure(ctx.song, measureIndex, nb, ctx.currentDurationTicks);
-        const payload = buildDiatonicChordPayload(ctx.song, measureIndex, degree, nb, durClamped);
-        ctx.onChordEdit(measureIndex, { type: 'add', chord: payload });
-        return;
-      }
-
-      // Use the authoritative store snapshot when available so append-beat math matches the last mutation
-      // (TASK-3.5 / TASK-4.2 persistence E2E: consecutive digits must not depend on a stale `ctx.song` closure).
-      const songForChord = pickSong(ctx);
-      const nb = tableInsertBeatFromSelection(selection, songForChord, measureIndex, 'chord', ctx.activeVoice);
-      if (nb == null) return;
-      e.preventDefault();
-      const durClamped = clampDurationToMeasure(songForChord, measureIndex, nb, ctx.currentDurationTicks);
-      const payload = buildDiatonicChordPayload(songForChord, measureIndex, degree, nb, durClamped);
-      ctx.onChordEdit(measureIndex, { type: 'add', chord: payload });
-
-      const songAfter = pickSong(ctx);
-      // Table mode always advances a collapsed range caret (TASK-2.9). Do not select the new chord here:
-      // with `getSongAfterMutation` wired, selecting `{ type: 'chord' }` made the next digit follow a
-      // different code path than the caret path and could miss the second append under rapid input / CI.
-      if (entryEndsAtOrPastMeasureEnd(songAfter, measureIndex, nb, durClamped) && measureIndex + 1 < songAfter.measures.length) {
-        ctx.keyboardTargetMeasureRef.current = measureIndex + 1;
-        ctx.onSelectionChange(null);
-      } else {
-        ctx.onSelectionChange(tableModeAdvanceRange(songAfter, measureIndex, nb, durClamped));
-      }
+      const did = applyChordScaleDegreeFromEditor(ctx, degree);
+      if (did) e.preventDefault();
     }
   }
 }
