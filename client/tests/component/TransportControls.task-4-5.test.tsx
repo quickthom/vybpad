@@ -24,7 +24,12 @@
  *
  * Criterion 5: callbacks — play/pause/stop/rewind when controls enabled
  *   happy: each button invokes matching callback
- *   error: disabled controls do not invoke callbacks
+ *   error: disabled controls do not invoke callbacks (play while initializing; stop/rewind/pause while locked)
+ *
+ * Criterion 6 (ROADMAP 4.5 + UX_GUIDELINES §5.8): play/pause/stop/rewind/tempo affordances + live regions
+ *   happy: initializing copy; aria-busy; polite live regions for position + loading; aria-pressed on pause
+ *
+ * Criterion 7: PlaybackInitErrorCode — user copy via getPlaybackInitErrorMessage on role=alert (UX error pattern)
  */
 
 import type { ComponentProps } from 'react';
@@ -33,6 +38,8 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
 import { TransportControls } from '@/components/controls/TransportControls';
+import { getPlaybackInitErrorMessage } from '@/engine/audio';
+import type { PlaybackInitErrorCode } from '@/store/playbackStore';
 
 const BPM_MIN = 20;
 const BPM_MAX = 300;
@@ -119,6 +126,45 @@ describe('TransportControls — TASK-4.5 — TransportControlsProps surface', ()
       toolbar = screen.getByRole('toolbar', { name: 'Transport' });
       expect(toolbar).toHaveAttribute('data-audio-ready', 'true');
     });
+
+    it('exposes tempo as a spinbutton with min/max matching INTERFACES song BPM bounds (20–300)', () => {
+      renderTransport({ tempo: 120 });
+      const input = screen.getByRole('spinbutton', { name: /tempo/i });
+      expect(input).toHaveAttribute('min', String(BPM_MIN));
+      expect(input).toHaveAttribute('max', String(BPM_MAX));
+    });
+  });
+});
+
+describe('TransportControls — TASK-4.5 — UX / accessibility (toolbar, live regions, busy)', () => {
+  it('sets aria-busy on the toolbar while initStatus is initializing', () => {
+    renderTransport({ initStatus: 'initializing' });
+    const toolbar = screen.getByRole('toolbar', { name: 'Transport' });
+    expect(toolbar).toHaveAttribute('aria-busy', 'true');
+  });
+
+  it('does not set aria-busy on the toolbar when initStatus is ready', () => {
+    renderTransport({ initStatus: 'ready' });
+    const toolbar = screen.getByRole('toolbar', { name: 'Transport' });
+    expect(toolbar).not.toHaveAttribute('aria-busy', 'true');
+  });
+
+  it('places the visible currentBeat inside an aria-live="polite" region', () => {
+    renderTransport({ currentBeat: '7:3' });
+    const beat = screen.getByText('7:3');
+    expect(beat.closest('[aria-live="polite"]')).not.toBeNull();
+  });
+
+  it('announces sample loading in a polite live region while initializing', () => {
+    renderTransport({ initStatus: 'initializing' });
+    const loading = screen.getByText(/loading piano samples/i);
+    expect(loading.closest('[aria-live="polite"]')).not.toBeNull();
+  });
+
+  it('uses Pause with aria-pressed when isPlaying and ready', () => {
+    renderTransport({ isPlaying: true, initStatus: 'ready' });
+    const pause = screen.getByRole('button', { name: /pause playback/i });
+    expect(pause).toHaveAttribute('aria-pressed', 'true');
   });
 });
 
@@ -147,20 +193,37 @@ describe('TransportControls — TASK-4.5 — init lifecycle (PAT-026)', () => {
       expect(screen.getByRole('button', { name: /stop playback/i })).toBeDisabled();
       expect(screen.getByRole('button', { name: /rewind/i })).toBeDisabled();
     });
+
+    it('disables Stop and Rewind while initStatus is error until the engine recovers to ready', () => {
+      renderTransport({ initStatus: 'error', initErrorCode: 'ENGINE_INIT_FAILED' });
+      expect(screen.getByRole('button', { name: /stop playback/i })).toBeDisabled();
+      expect(screen.getByRole('button', { name: /rewind/i })).toBeDisabled();
+    });
+  });
+
+  describe('ROADMAP 4.5 — transport affordances', () => {
+    it('shows Starting… on the play control while initStatus is initializing', () => {
+      renderTransport({ initStatus: 'initializing' });
+      expect(within(playbackGroup()).getByRole('button', { name: 'Start audio and play' })).toHaveTextContent(
+        /starting/i,
+      );
+    });
   });
 });
 
-describe('TransportControls — TASK-4.5 — init error affordance', () => {
-  describe('happy path', () => {
-    it('shows a non-empty role=alert message when initErrorCode is set (with error-init context)', () => {
-      renderTransport({
-        initStatus: 'error',
-        initErrorCode: 'AUDIO_CONTEXT_BLOCKED',
-      });
-      const toolbar = screen.getByRole('toolbar', { name: 'Transport' });
-      const alert = within(toolbar).getByRole('alert');
-      expect(alert.textContent?.trim().length).toBeGreaterThan(0);
+describe('TransportControls — TASK-4.5 — init error affordance (PlaybackInitErrorCode)', () => {
+  it.each<[PlaybackInitErrorCode]>([
+    ['AUDIO_CONTEXT_BLOCKED'],
+    ['SAMPLE_LOAD_FAILED'],
+    ['ENGINE_INIT_FAILED'],
+  ])('maps initErrorCode %s to role=alert copy from getPlaybackInitErrorMessage', (code) => {
+    renderTransport({
+      initStatus: 'error',
+      initErrorCode: code,
     });
+    const toolbar = screen.getByRole('toolbar', { name: 'Transport' });
+    const alert = within(toolbar).getByRole('alert');
+    expect(alert).toHaveTextContent(getPlaybackInitErrorMessage(code));
   });
 });
 
@@ -244,6 +307,33 @@ describe('TransportControls — TASK-4.5 — transport callbacks', () => {
       expect(play).toBeDisabled();
       await user.click(play);
       expect(onPlay).not.toHaveBeenCalled();
+    });
+
+    it('does not invoke onStop when Stop is disabled while initStatus is locked', async () => {
+      const user = userEvent.setup();
+      const { onStop } = renderTransport({ initStatus: 'locked' });
+      const stop = screen.getByRole('button', { name: /stop playback/i });
+      expect(stop).toBeDisabled();
+      await user.click(stop);
+      expect(onStop).not.toHaveBeenCalled();
+    });
+
+    it('does not invoke onRewind when Rewind is disabled while initStatus is locked', async () => {
+      const user = userEvent.setup();
+      const { onRewind } = renderTransport({ initStatus: 'locked' });
+      const rewind = screen.getByRole('button', { name: /rewind/i });
+      expect(rewind).toBeDisabled();
+      await user.click(rewind);
+      expect(onRewind).not.toHaveBeenCalled();
+    });
+
+    it('does not invoke onPause when Pause is disabled while playing but transport is locked', async () => {
+      const user = userEvent.setup();
+      const { onPause } = renderTransport({ initStatus: 'locked', isPlaying: true });
+      const pause = screen.getByRole('button', { name: /pause playback/i });
+      expect(pause).toBeDisabled();
+      await user.click(pause);
+      expect(onPause).not.toHaveBeenCalled();
     });
   });
 });
