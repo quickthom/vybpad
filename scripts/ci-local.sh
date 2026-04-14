@@ -18,9 +18,10 @@ echo "    $DATABASE_URL"
 echo "==> npm ci"
 npm ci
 echo "==> prisma generate"
-npx prisma generate --schema=prisma/schema.prisma
+# Use only the workspace-installed CLI (plain `npx prisma` may download Prisma 7 and break this schema).
+npx --no-install prisma generate --schema=prisma/schema.prisma
 echo "==> prisma db push"
-npx prisma db push --schema=prisma/schema.prisma
+npx --no-install prisma db push --schema=prisma/schema.prisma
 echo "==> npm run build"
 npm run build
 echo "==> npm run lint"
