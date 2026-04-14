@@ -87,14 +87,16 @@ describe('TASK-6.4 MidiExportControls — export affordance and MidiExporter wir
       await user.click(screen.getByTestId('vybpad-midi-export-download'));
       const expectedFull = midiExporter.exportSong(song);
       const blob1 = createUrl.mock.calls[0]?.[0] as Blob;
-      expect(new Uint8Array(await blob1.arrayBuffer())).toEqual(expectedFull);
+      const buf1 = await new Response(blob1).arrayBuffer();
+      expect(new Uint8Array(buf1)).toEqual(expectedFull);
 
       createUrl.mockClear();
       await user.selectOptions(screen.getByLabelText('MIDI export format'), 'melody');
       await user.click(screen.getByTestId('vybpad-midi-export-download'));
       const expectedMelody = midiExporter.exportMelodyOnly(song, 0);
       const blob2 = createUrl.mock.calls[0]?.[0] as Blob;
-      expect(new Uint8Array(await blob2.arrayBuffer())).toEqual(expectedMelody);
+      const buf2 = await new Response(blob2).arrayBuffer();
+      expect(new Uint8Array(buf2)).toEqual(expectedMelody);
     });
 
     it('sets a .mid filename on the download anchor when download runs', async () => {
