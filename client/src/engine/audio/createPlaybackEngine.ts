@@ -10,6 +10,7 @@ import {
   PlaybackError,
   playbackError,
 } from './playbackErrors';
+import { assertValidHarmonyVoicingSong } from './harmonyVoicing';
 import { disposePianoSamples, ensurePianoSamplesLoaded } from './pianoSampleLoader';
 
 const TPQN = TICKS_PER_QUARTER;
@@ -102,6 +103,8 @@ export function createPlaybackEngine(): AudioEngine {
       if (!ready) {
         return;
       }
+      // Harmony voicing dry-run (TASK 4.3) — validates chord→MIDI path before scheduler wiring (4.4).
+      assertValidHarmonyVoicingSong(song);
       Tone.getTransport().bpm.value = song.metadata.tempo;
     },
 

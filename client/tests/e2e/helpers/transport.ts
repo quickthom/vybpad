@@ -2,29 +2,29 @@ import type { Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
 /**
- * Transport root for E2E: same node as `TransportControls` — `role="toolbar"` plus
- * `data-audio-ready` mirroring `initStatus` (INTERFACES / TASK-4.1). Use this pair instead of
- * `getByRole(..., { name })` so we do not depend on accessible-name resolution during cold hydration
- * (CI was seeing toolbar `count() === 0` while the element was present).
+ * E2E transport — INTERFACES `PlaybackStore.initStatus` via toolbar `data-audio-ready` / `aria-busy`.
+ * Toolbar and primary play/pause use `data-testid` (TASK-4.3) for stable queries during heavy canvas load.
  */
+
 export function getTransportToolbar(page: Page): Locator {
-  return page.locator('[role="toolbar"][data-audio-ready]');
+  return page.getByTestId('vybpad-transport-toolbar');
 }
 
-/**
- * Primary Play / "start audio" control. Uses anchored patterns so we do not match substring
- * "play" inside "Stop **play**back" or "Pause **play**back" (Playwright strict mode).
- */
+/** @deprecated Prefer {@link getTransportToolbar}; kept for older spec naming */
+export const transportToolbar = getTransportToolbar;
+
 export function getTransportPlayButton(transport: Locator): Locator {
-  return transport.getByRole('button', { name: /^(Play|Start audio and play)$/ });
+  return transport.getByTestId('vybpad-transport-play');
 }
 
-/** Visible while `isPlaying` after init — `getTransportPlayButton` does not match this. */
+/** @deprecated Prefer {@link getTransportPlayButton} */
+export const transportPlayButton = getTransportPlayButton;
+
 export function getTransportPauseButton(transport: Locator): Locator {
-  return transport.getByRole('button', { name: 'Pause playback' });
+  return transport.getByTestId('vybpad-transport-pause');
 }
 
-/** Default timeout for sample load + audio init on cold CI runners + throttled sample routes (ms). */
+/** Default timeout for sample load + audio init on cold GitHub runners + throttled sample routes (ms). */
 const DEFAULT_PLAYBACK_READY_TIMEOUT_MS = 90_000;
 
 /** First paint / hydration can exceed 15s default on slow GitHub runners. */
@@ -73,6 +73,9 @@ export async function expectTransportPlaybackReady(
     .toBe(true);
 }
 
+/** Legacy name — same as {@link expectTransportPlaybackReady} (TASK-4.3 hardening). */
+export const expectTransportAudioReady = expectTransportPlaybackReady;
+
 /**
  * `EditorLayout` calls `play()` after a successful first `initializeAudio()` from the Play control,
  * so the primary button becomes Pause — do not assert `getTransportPlayButton` after ready.
@@ -111,4 +114,27 @@ export async function expectTransportPlaybackNotReady(transport: Locator): Promi
       },
     )
     .toBe(true);
+}
+
+export const expectTransportAudioNotReady = expectTransportPlaybackNotReady;
+
+/**
+ * Click Play, optionally observe sample-loading UI, then wait until the toolbar reports ready.
+ * Copy matches TransportControls (piano SoundFont load).
+ */
+export async function clickTransportPlayAndAwaitReady(
+  transport: Locator,
+  options?: { timeout?: number; initializingHintTimeoutMs?: number },
+): Promise<void> {
+  const timeout = options?.timeout ?? DEFAULT_PLAYBACK_READY_TIMEOUT_MS;
+  const hintMs = options?.initializingHintTimeoutMs ?? 3_000;
+
+  await getTransportPlayButton(transport).click();
+
+  const initializingUi = transport.getByText('Loading piano samples…');
+  await initializingUi.waitFor({ state: 'visible', timeout: hintMs }).catch(() => {
+    /* transition can be too fast to observe */
+  });
+
+  await expectTransportPlaybackReady(transport, { timeout });
 }

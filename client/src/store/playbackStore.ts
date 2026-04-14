@@ -104,6 +104,10 @@ export const usePlaybackStore = create<PlaybackStore>()(
             const engine = getPlaybackEngine();
             await engine.initialize();
             ensureTickSubscription(set);
+            // Let React commit `initializing` before sync loadSong (voicing dry-run can block the main thread on large scores).
+            await new Promise<void>((resolve) => {
+              queueMicrotask(resolve);
+            });
             syncEngineFromSong();
             set((draft) => {
               draft.initStatus = 'ready';
