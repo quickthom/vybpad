@@ -121,6 +121,23 @@ describe('KeyScaleChangeDialog (TASK-5.5)', () => {
     expect(screen.getByRole('combobox', { name: 'Scale / mode' })).toHaveValue('minor');
   });
 
+  it('Apply persists relative key change (C major → A relative) as A minor on measure 0 and metadata', async () => {
+    const user = userEvent.setup();
+    render(<KeyScaleChangeDialog open measureIndex={0} onClose={vi.fn()} />);
+
+    const dlg = screen.getByRole('dialog', { name: 'Key and scale' });
+    const keyFieldset = dlg.querySelectorAll('fieldset')[0];
+    await user.click(within(keyFieldset as HTMLElement).getByRole('radio', { name: 'Relative' }));
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Key' }), 'A');
+    await user.click(screen.getByRole('button', { name: 'Apply' }));
+
+    const song = useSongStore.getState().song;
+    expect(song.measures[0].changes?.key).toBe('A');
+    expect(song.measures[0].changes?.scale).toBe('minor');
+    expect(song.metadata.key).toBe('A');
+    expect(song.metadata.scale).toBe('minor');
+  });
+
   it('relative scale + minor from C major moves tonic to A (relative minor)', async () => {
     const user = userEvent.setup();
     render(<KeyScaleChangeDialog open measureIndex={1} onClose={vi.fn()} />);
