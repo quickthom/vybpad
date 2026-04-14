@@ -177,7 +177,11 @@ export function MeasureBar({
           <button
             type="button"
             data-testid="vybpad-measure-tempo-meter"
-            className={[secondaryButtonClass, selectedMeasures === null ? disabledButtonClass : ''].join(' ')}
+            className={[
+              secondaryButtonClass,
+              'min-h-11 min-w-[44px]',
+              selectedMeasures === null ? disabledButtonClass : '',
+            ].join(' ')}
             disabled={selectedMeasures === null}
             title={selectedMeasures === null ? 'Select a measure first' : 'Tempo and time signature at selected measure'}
             onClick={() => onEditTempoMeter()}

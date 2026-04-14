@@ -163,6 +163,7 @@ export function drawGuideOverlay(
           measureIndex: m,
           note,
           isRest: false,
+          voiceIndex: v,
         });
 
         const baseFill = noteBlockFillColor(note, key, scale, colorScheme);

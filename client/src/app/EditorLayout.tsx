@@ -1,5 +1,5 @@
-import type { ProjectResponse, SongData, Track, TrackRole } from '@vybpad/shared';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import type { ChordEvent, ProjectResponse, SongData, Track, TrackRole } from '@vybpad/shared';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import { LoopBar } from '../components/controls/LoopBar';
@@ -8,6 +8,15 @@ import { TransportControls } from '../components/controls/TransportControls';
 import { MixerPanel } from '../components/panels/MixerPanel';
 import { MeasureBar } from '../components/MeasureBar';
 import { EditorCanvas } from '../components/editor/EditorCanvas';
+import {
+  clearSecondaryChordEdit,
+  cycleSecondaryChordEdit,
+  resolveTargetMeasureIndex,
+} from '../components/editor/editorKeyboardLogic';
+import { ChordPalette, SecondaryChordInspector } from '../components/panels/ChordPalette';
+import { getKeyAtMeasure, getScaleAtMeasure } from '../engine/renderer/tickUtils';
+import { theoryEngine } from '../engine/theory';
+import { applyChordScaleDegreeFromEditor, type EditorKeyboardContext } from '../hooks/useKeyboard';
 import { EntryModeToggle } from '../components/editor/EntryModeToggle';
 import { formatTransportBeat, getPlaybackEngine, getPlaybackInitErrorMessage } from '../engine/audio';
 import { useAuthStore } from '../store/authStore';
@@ -100,6 +109,7 @@ export function EditorLayout() {
   const entryMode = useUIStore((s) => s.entryMode);
   const toggleEntryMode = useUIStore((s) => s.toggleEntryMode);
   const activeVoice = useUIStore((s) => s.activeVoice);
+  const setActiveVoice = useUIStore((s) => s.setActiveVoice);
   const showGuides = useUIStore((s) => s.showGuides);
   const colorScheme = useUIStore((s) => s.colorScheme);
   const activePanels = useUIStore((s) => s.activePanels);
@@ -108,9 +118,61 @@ export function EditorLayout() {
 
   const [selectedMeasures, setSelectedMeasures] = useState<[number, number] | null>(null);
   const [tempoMeterDialogOpen, setTempoMeterDialogOpen] = useState(false);
+  /** Shared with `EditorCanvas` keyboard + chord palette (TASK-5.1). */
+  const keyboardTargetMeasureRef = useRef<number | null>(null);
+  const textDurationArmedRef = useRef(false);
+  const [currentDurationTicks, setCurrentDurationTicks] = useState(48);
+  const [chordPaletteExpanded, setChordPaletteExpanded] = useState(true);
 
   const getSongAfterMutation = useCallback(() => useSongStore.getState().song, []);
   const getSelectionAfterMutation = useCallback(() => useUIStore.getState().selection, []);
+
+  const paletteMeasureIndex = useMemo(
+    () => resolveTargetMeasureIndex(selection, viewport, song),
+    [selection, viewport, song],
+  );
+  const paletteKey = getKeyAtMeasure(song, paletteMeasureIndex);
+  const paletteScale = getScaleAtMeasure(song, paletteMeasureIndex);
+
+  const handleChordPaletteSelect = useCallback(
+    (chord: Omit<ChordEvent, 'id' | 'beat' | 'duration'>) => {
+      const ctx: EditorKeyboardContext = {
+        song,
+        viewport,
+        selection,
+        activeVoice,
+        setActiveVoice,
+        entryMode,
+        currentDurationTicks,
+        setCurrentDurationTicks,
+        keyboardTargetMeasureRef,
+        textDurationArmedRef,
+        getSongAfterMutation,
+        getSelectionAfterMutation,
+        onToggleEntryMode: toggleEntryMode,
+        onChordEdit: editChord,
+        onNoteEdit: editNote,
+        onSelectionChange: setSelection,
+      };
+      applyChordScaleDegreeFromEditor(ctx, chord.scaleDegree);
+    },
+    [
+      song,
+      viewport,
+      selection,
+      activeVoice,
+      setActiveVoice,
+      entryMode,
+      currentDurationTicks,
+      setCurrentDurationTicks,
+      getSongAfterMutation,
+      getSelectionAfterMutation,
+      toggleEntryMode,
+      editChord,
+      editNote,
+      setSelection,
+    ],
+  );
 
   const handleTrackChange = useCallback(
     (role: TrackRole, changes: Partial<Track>) => {
@@ -328,6 +390,20 @@ export function EditorLayout() {
 
   const currentBeatDisplay = formatTransportBeat(song, playbackTick ?? 0);
 
+  const selectedChordId = selection?.type === 'chord' ? selection.eventIds?.[0] : undefined;
+  const selectedChord =
+    selectedChordId != null && selection?.type === 'chord'
+      ? song.measures[selection.measureIndex]?.chords.find((c) => c.id === selectedChordId) ?? null
+      : null;
+
+  const chordTheoryScale =
+    selectedChord != null && selection?.type === 'chord'
+      ? getScaleAtMeasure(song, selection.measureIndex)
+      : paletteScale;
+
+  const selectedChordRoman =
+    selectedChord != null ? theoryEngine.toRomanNumeral(selectedChord, chordTheoryScale) : '';
+
   async function handleTransportPlay() {
     if (usePlaybackStore.getState().initStatus === 'ready') {
       playbackPlay();
@@ -379,6 +455,22 @@ export function EditorLayout() {
             Projects
           </button>
           <EntryModeToggle mode={entryMode} onToggle={toggleEntryMode} />
+          <span
+            className="inline-flex h-8 shrink-0 items-center rounded-md border border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface-muted,#F9FAFB)] px-2 text-[12px] font-medium text-[var(--color-text-secondary,#4B5563)]"
+            title="Active melody voice (Ctrl+1–4)"
+            aria-live="polite"
+          >
+            Voice {activeVoice + 1}
+          </span>
+          <button
+            type="button"
+            onClick={() => setChordPaletteExpanded((o) => !o)}
+            aria-expanded={chordPaletteExpanded}
+            aria-controls="vybpad-panel-chords"
+            className="inline-flex h-10 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-4 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
+          >
+            Chords
+          </button>
           <button
             type="button"
             onClick={() => togglePanel('mixer')}
@@ -415,6 +507,65 @@ export function EditorLayout() {
       />
       <LoopBar />
       <div className="flex min-h-0 min-w-0 flex-1 flex-row">
+        <aside
+          id="vybpad-panel-chords"
+          className={
+            chordPaletteExpanded
+              ? 'flex w-[288px] min-w-[240px] max-w-[400px] shrink-0 flex-col border-r border-[var(--color-border,#E5E7EB)] bg-[var(--color-app-bg,#F3F4F6)]'
+              : 'flex w-12 shrink-0 flex-col items-center border-r border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)] py-3'
+          }
+          role="complementary"
+          aria-label="Chord palette panel"
+        >
+          {chordPaletteExpanded ? (
+            <>
+              <ChordPalette
+                currentKey={paletteKey}
+                currentScale={paletteScale}
+                mode="diatonic"
+                onChordSelect={handleChordPaletteSelect}
+              />
+              <SecondaryChordInspector
+                chord={selectedChord}
+                romanLabel={selectedChordRoman}
+                onCycle={() => {
+                  if (selection?.type !== 'chord' || !selection.eventIds?.[0]) return;
+                  const id = selection.eventIds[0];
+                  const ch = song.measures[selection.measureIndex]?.chords.find((c) => c.id === id);
+                  if (!ch) return;
+                  const k = getKeyAtMeasure(song, selection.measureIndex);
+                  const sc = getScaleAtMeasure(song, selection.measureIndex);
+                  const changes = cycleSecondaryChordEdit(ch, k, sc);
+                  if (Object.keys(changes).length === 0) return;
+                  editChord(selection.measureIndex, { type: 'update', chordId: id, changes });
+                }}
+                onClear={() => {
+                  if (selection?.type !== 'chord' || !selection.eventIds?.[0]) return;
+                  const id = selection.eventIds[0];
+                  const ch = song.measures[selection.measureIndex]?.chords.find((c) => c.id === id);
+                  if (!ch) return;
+                  const k = getKeyAtMeasure(song, selection.measureIndex);
+                  const sc = getScaleAtMeasure(song, selection.measureIndex);
+                  const changes = clearSecondaryChordEdit(ch, k, sc);
+                  if (Object.keys(changes).length === 0) return;
+                  editChord(selection.measureIndex, { type: 'update', chordId: id, changes });
+                }}
+              />
+            </>
+          ) : (
+            <button
+              type="button"
+              title="Expand chord palette"
+              aria-label="Expand chord palette"
+              aria-expanded={false}
+              aria-controls="vybpad-panel-chords"
+              onClick={() => setChordPaletteExpanded(true)}
+              className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] text-lg font-semibold leading-none text-[var(--color-text-primary,#111827)] outline-none transition hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
+            >
+              ›
+            </button>
+          )}
+        </aside>
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
           <main
             className="min-h-0 flex-1 overflow-x-auto p-4"
@@ -441,6 +592,12 @@ export function EditorLayout() {
                 getSongAfterMutation={getSongAfterMutation}
                 getSelectionAfterMutation={getSelectionAfterMutation}
                 onToggleEntryMode={toggleEntryMode}
+                keyboardPlumbing={{
+                  keyboardTargetMeasureRef,
+                  textDurationArmedRef,
+                  currentDurationTicks,
+                  setCurrentDurationTicks,
+                }}
               />
             )}
           </main>

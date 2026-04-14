@@ -14,7 +14,7 @@
 
 ## Open escalations
 
-- *None.* (Last resolved: INTERFACES.md `clearLoop` / `setLoop` validation — TASK-4.8, 2026-04-14; see resolution below.)
+- *None.* (Last resolved: INTERFACES.md `MeasureBarProps.onEditTempoMeter?` — TASK-5.6, 2026-04-14; see resolution below.)
 
 ---
 
@@ -26,6 +26,16 @@ GitHub Actions minutes exhausted. Automatic push/pull_request triggers removed f
 ---
 
 ## Resolved escalations (this session)
+
+**ESCALATION RESOLUTION**
+Task ID: TASK-5.6 (PR #47)
+Escalated by: Reviewer (via PM_STATE note)
+Decision: `MeasureBarProps.onEditTempoMeter?: () => void` addition is **approved**. Non-breaking optional callback; follows the established `getSelectionAfterMutation?` optional-escape-hatch pattern exactly. PR branch is correct as-is — no rework on this point.
+Rationale: Optional prop; zero existing consumers need to provide it. Enables tempo/meter dialog trigger from MeasureBar without coupling the store invocation into the component directly. Structurally identical to prior approved patterns.
+Documents updated: `INTERFACES.md` (commit `726d8c9` on `develop`).
+Action for PM: (1) Unblock PR #47 on this point — the INTERFACES.md issue is resolved. (2) Remaining #47 Reviewer items (integer BPM validation, modal a11y) are implementation fixes the Builder must address. (3) PR #45 transposition mode fix is an implementation issue — Builder remediates, no Architect action required.
+
+---
 
 **ESCALATION RESOLUTION**
 Task ID: TASK-4.8 (PR #41)

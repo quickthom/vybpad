@@ -199,6 +199,13 @@ export interface NoteBlockRect {
   height: number;
 }
 
+/** TASK-5.7 — subtle vertical stagger per melody voice so four lanes stay distinguishable (PAT-010 fills unchanged). */
+export const VOICE_LANE_Y_OFFSET_PX = 1.75;
+
+export function voiceLaneOffsetY(voice: 0 | 1 | 2 | 3): number {
+  return voice * VOICE_LANE_Y_OFFSET_PX;
+}
+
 export interface ComputeNoteBlockRectParams {
   song: SongData;
   viewport: Viewport;
@@ -206,6 +213,8 @@ export interface ComputeNoteBlockRectParams {
   note: NoteEvent;
   /** When true, vertical position follows {@link REST_VERTICAL_ANCHOR} instead of pitch. */
   isRest: boolean;
+  /** Melody voice 0–3; offsets Y within the row (TASK-5.7). Defaults to 0. */
+  voiceIndex?: 0 | 1 | 2 | 3;
 }
 
 /**
@@ -213,11 +222,12 @@ export interface ComputeNoteBlockRectParams {
  */
 export function computeNoteBlockRect(params: ComputeNoteBlockRectParams): NoteBlockRect {
   const { song, viewport, measureIndex, note, isRest } = params;
+  const voice = params.voiceIndex ?? 0;
   const absTick = absoluteTickFromMeasurePosition(song, measureIndex, note.beat);
   const x = absoluteTickToViewportX(absTick, viewport, song);
   const w = note.duration * pixelsPerTick(viewport.zoom);
   const rowTop = isRest ? restTopY(viewport.scrollY) : noteRowYFromNoteEvent(note, viewport.scrollY);
-  const y = rowTop + NOTE_BLOCK_VERTICAL_INSET;
+  const y = rowTop + NOTE_BLOCK_VERTICAL_INSET + voiceLaneOffsetY(voice);
   const height = NOTE_HEIGHT - 2 * NOTE_BLOCK_VERTICAL_INSET;
   return { x, y, width: w, height };
 }
@@ -351,6 +361,7 @@ export function drawNoteBlocks(
           measureIndex: m,
           note,
           isRest: note.isRest,
+          voiceIndex: v,
         });
         if (note.isRest) {
           fillRestHatch(ctx, rect.x, rect.y, rect.width, rect.height);

@@ -1,8 +1,18 @@
 import type { ChordEditAction, NoteEditAction, ScaleDegree, Selection, SongData, Viewport } from '@vybpad/shared';
-import { useCallback, useEffect, useRef, useState, type ReactElement } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type Dispatch,
+  type MutableRefObject,
+  type ReactElement,
+  type SetStateAction,
+} from 'react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
 
 import { useKeyboard } from '../../hooks/useKeyboard';
+import { useUIStore } from '../../store/uiStore';
 import { theoryEngine } from '../../engine/theory';
 import { CHORD_AREA_HEIGHT, MEASURE_HEADER_HEIGHT, NOTE_HEIGHT, SELECTION_COLOR } from '../../engine/renderer/constants';
 import { drawPlaybackCursor } from '../../engine/renderer/drawPlaybackCursor';
@@ -24,6 +34,14 @@ import {
   viewportYToStaffRelativeY,
 } from './pointerMath';
 
+/** Shared keyboard state for `EditorCanvas` + shell chord palette (TASK-5.1). */
+export interface EditorKeyboardPlumbing {
+  keyboardTargetMeasureRef: MutableRefObject<number | null>;
+  textDurationArmedRef: MutableRefObject<boolean>;
+  currentDurationTicks: number;
+  setCurrentDurationTicks: Dispatch<SetStateAction<number>>;
+}
+
 /** INTERFACES.md — EditorCanvas props (shared types from `@vybpad/shared`). */
 export interface EditorCanvasProps {
   song: SongData;
@@ -41,6 +59,8 @@ export interface EditorCanvasProps {
   getSongAfterMutation?: () => SongData;
   getSelectionAfterMutation?: () => Selection | null;
   onToggleEntryMode?: () => void;
+  /** When set, chord palette + canvas share duration + cross-measure digit targeting refs. */
+  keyboardPlumbing?: EditorKeyboardPlumbing;
 }
 
 const SELECTION_STROKE = 'rgba(37, 99, 235, 0.8)';
@@ -132,14 +152,21 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
     getSongAfterMutation,
     getSelectionAfterMutation,
     onToggleEntryMode,
+    keyboardPlumbing,
   } = props;
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const sessionRef = useRef<DragSession | null>(null);
-  const keyboardTargetMeasureRef = useRef<number | null>(null);
-  const textDurationArmedRef = useRef(false);
+  const internalKeyboardTargetMeasureRef = useRef<number | null>(null);
+  const internalTextDurationArmedRef = useRef(false);
+  const [internalDurationTicks, setInternalDurationTicks] = useState(48);
 
-  const [currentDurationTicks, setCurrentDurationTicks] = useState(48);
+  const keyboardTargetMeasureRef = keyboardPlumbing?.keyboardTargetMeasureRef ?? internalKeyboardTargetMeasureRef;
+  const textDurationArmedRef = keyboardPlumbing?.textDurationArmedRef ?? internalTextDurationArmedRef;
+  const currentDurationTicks = keyboardPlumbing?.currentDurationTicks ?? internalDurationTicks;
+  const setCurrentDurationTicks = keyboardPlumbing?.setCurrentDurationTicks ?? setInternalDurationTicks;
+
+  const setActiveVoice = useUIStore((s) => s.setActiveVoice);
 
   const [hoverHit, setHoverHit] = useState<EditorCanvasHit | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -170,6 +197,7 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
     viewport,
     selection,
     activeVoice,
+    setActiveVoice,
     entryMode,
     currentDurationTicks,
     setCurrentDurationTicks,
@@ -197,6 +225,7 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
         measureIndex: hit.measureIndex,
         note: hit.note,
         isRest: hit.note.isRest,
+        voiceIndex: hit.voiceIndex,
       });
       const right = r.x + r.width;
       const strip = trailingResizeStripWidthPx(r.width);
@@ -254,6 +283,7 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
           measureIndex: hit.measureIndex,
           note: hit.note,
           isRest: hit.note.isRest,
+          voiceIndex: hit.voiceIndex,
         });
         strokeRect(r.x, r.y, r.width, r.height, isSelection ? SELECTION_STROKE : HOVER_STROKE, isSelection ? SELECTION_COLOR : undefined);
       }
@@ -534,7 +564,7 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
       role="application"
       tabIndex={0}
       className={`${cursorClass} outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2`}
-      aria-label="Song editor — digits 1–7, duration h j k l ; , Delete, arrow keys to navigate"
+      aria-label="Song editor — digits 1–7, duration h j k l ; , Delete, arrow keys to navigate, Ctrl+1–4 melody voice"
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}

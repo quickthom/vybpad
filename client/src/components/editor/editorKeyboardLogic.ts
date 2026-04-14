@@ -1,4 +1,4 @@
-import type { ChordEvent, Measure, NoteEvent, ScaleDegree, Selection, SongData, Viewport } from '@vybpad/shared';
+import type { ChordEvent, Measure, NoteEvent, NoteName, ScaleDegree, ScaleType, Selection, SongData, Viewport } from '@vybpad/shared';
 
 import { chordAreaTopY, noteStaffTopY, viewportXToAbsoluteTick } from '../../engine/renderer/layout';
 import {
@@ -8,10 +8,59 @@ import {
   measureLengthInTicks,
 } from '../../engine/renderer/tickUtils';
 import { theoryEngine } from '../../engine/theory';
+import {
+  chordEventFieldsForSecondary,
+  chordRootPitchClassFromEvent,
+  diatonicChordFieldsFromRootPitchClass,
+  getSecondaryCycleSequence,
+} from '../../engine/theory/secondaryChords';
+
+/**
+ * INTERFACES.md `ChordEvent` field order: seventh → suspension → addition.
+ * TASK-5.4: one `e` key press advances one step; seventh types first (document union order), then sus, then add — mutually exclusive rows so `ChordEvent` stays coherent.
+ */
+const EMBELLISHMENT_CYCLE: ReadonlyArray<
+  Pick<ChordEvent, 'seventh' | 'suspension' | 'addition'>
+> = [
+  { seventh: 'none', suspension: 'none', addition: 'none' },
+  { seventh: 'maj7', suspension: 'none', addition: 'none' },
+  { seventh: 'min7', suspension: 'none', addition: 'none' },
+  { seventh: 'dom7', suspension: 'none', addition: 'none' },
+  { seventh: 'dim7', suspension: 'none', addition: 'none' },
+  { seventh: 'min7b5', suspension: 'none', addition: 'none' },
+  { seventh: 'none', suspension: 'sus2', addition: 'none' },
+  { seventh: 'none', suspension: 'sus4', addition: 'none' },
+  { seventh: 'none', suspension: 'none', addition: 'add9' },
+  { seventh: 'none', suspension: 'none', addition: 'add11' },
+  { seventh: 'none', suspension: 'none', addition: 'add13' },
+];
+
+/** Next inversion for `i` (TASK-5.4); inversion 3 only when `seventh !== 'none'` per INTERFACES.md. */
+export function nextCycledInversion(chord: ChordEvent): 0 | 1 | 2 | 3 {
+  const hasSeventh = chord.seventh !== 'none';
+  const max: 2 | 3 = hasSeventh ? 3 : 2;
+  let inv = chord.inversion;
+  if (inv > max) inv = max;
+  if (inv === max) return 0;
+  return (inv + 1) as 0 | 1 | 2 | 3;
+}
+
+/**
+ * Next seventh/sus/add triple for `e` (TASK-5.4). Unknown combinations map like index 0 for advance → first embellished step.
+ */
+export function nextCycledEmbellishment(chord: ChordEvent): Pick<ChordEvent, 'seventh' | 'suspension' | 'addition'> {
+  const idx = EMBELLISHMENT_CYCLE.findIndex(
+    (s) => s.seventh === chord.seventh && s.suspension === chord.suspension && s.addition === chord.addition,
+  );
+  const i = idx >= 0 ? idx : 0;
+  const nextIdx = (i + 1) % EMBELLISHMENT_CYCLE.length;
+  return EMBELLISHMENT_CYCLE[nextIdx];
+}
 
 /**
  * PAT-004 durations. Primary row: h j k l ; (TASK-2.8 / UX).
  * q w e r t are accepted as aliases so existing shortcuts/tests remain valid.
+ * TASK-5.4: `e` on a **single selected chord** cycles embellishments instead (see handleEditorKeydown).
  */
 export const DURATION_KEYS: Record<string, number> = {
   h: 192,
@@ -168,6 +217,74 @@ export function shouldAllowChordDigitEntry(_entryMode: 'table' | 'text'): boolea
   return true;
 }
 
+/** Collapsed range in table mode acts as a caret beat for the next insertion (TASK-2.9). */
+export function tableInsertBeatFromSelection(
+  selection: Selection | null,
+  song: SongData,
+  measureIndex: number,
+  kind: 'chord' | 'note',
+  voice: 0 | 1 | 2 | 3,
+): number | null {
+  if (
+    selection?.type === 'range' &&
+    selection.rangeStart === selection.rangeEnd &&
+    selection.measureIndex === measureIndex
+  ) {
+    return Math.round(selection.rangeStart ?? 0);
+  }
+  return nextAppendBeat(song, measureIndex, kind, voice);
+}
+
+
+/** TASK-5.3 — Remove applied chord metadata; spell the same root as diatonic in the home key. */
+export function clearSecondaryChordEdit(
+  chord: ChordEvent,
+  homeKey: NoteName,
+  homeScale: ScaleType,
+): Partial<ChordEvent> {
+  if (chord.secondary == null) {
+    return {};
+  }
+  const rootPc = chordRootPitchClassFromEvent(chord, homeKey, homeScale);
+  const d = diatonicChordFieldsFromRootPitchClass(rootPc, homeKey, homeScale);
+  return {
+    ...d,
+    suspension: 'none',
+    addition: 'none',
+    inversion: 0,
+    borrowed: null,
+    secondary: null,
+  };
+}
+
+/**
+ * TASK-5.3 — One step of the secondary applied-chord cycle (`d` key). See {@link getSecondaryCycleSequence}
+ * for ordering. From diatonic (no secondary): applies the first legal slot; from the last slot: clears
+ * `secondary` and restores diatonic spelling for the current root pitch class.
+ */
+export function cycleSecondaryChordEdit(
+  chord: ChordEvent,
+  homeKey: NoteName,
+  homeScale: ScaleType,
+): Partial<ChordEvent> {
+  const seq = getSecondaryCycleSequence(homeScale);
+  if (seq.length === 0) {
+    return {};
+  }
+
+  if (chord.secondary == null) {
+    return { ...chordEventFieldsForSecondary(seq[0]) };
+  }
+
+  const idx = seq.findIndex((s) => s.function === chord.secondary!.function && s.target === chord.secondary!.target);
+  if (idx < 0) {
+    return clearSecondaryChordEdit(chord, homeKey, homeScale);
+  }
+  if (idx >= seq.length - 1) {
+    return clearSecondaryChordEdit(chord, homeKey, homeScale);
+  }
+  return { ...chordEventFieldsForSecondary(seq[idx + 1]) };
+}
 
 export function buildDiatonicChordPayload(
   song: SongData,

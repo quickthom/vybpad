@@ -517,6 +517,7 @@ interface MeasureBarProps {
   onSelectRange: (start: number, end: number) => void;
   onAddMeasures: (count: number) => void;
   onDeleteMeasures: (start: number, end: number) => void;
+  onEditTempoMeter?: () => void;  // opens tempo/meter dialog for selected measure range; optional — omit where TASK-5.6 not wired
 }
 ```
 

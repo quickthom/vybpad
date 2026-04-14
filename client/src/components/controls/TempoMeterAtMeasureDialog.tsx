@@ -1,5 +1,5 @@
 import type { MeasureChanges, SongData, TimeSignature } from '@vybpad/shared';
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 
 import { getMeterAtMeasure, getTempoAtMeasure } from '../../engine/renderer/tickUtils';
 import { useToastStore } from '../../store/toastStore';
@@ -16,8 +16,16 @@ export interface TempoMeterAtMeasureDialogProps {
 
 const DENOM_OPTIONS = [1, 2, 4, 8, 16, 32] as const;
 
+function getTabbableIn(container: HTMLElement): HTMLElement[] {
+  return Array.from(
+    container.querySelectorAll<HTMLElement>(
+      'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled])',
+    ),
+  );
+}
+
 /**
- * TASK-5.6: measure-level tempo + meter (INTERFACES `MeasureChanges`); UX §5.8 ghost/modal pattern.
+ * TASK-5.6: measure-level tempo + meter (INTERFACES `MeasureChanges`); UX §5.6 modal (trap, Escape, focus restore).
  */
 export function TempoMeterAtMeasureDialog({
   open,
@@ -27,6 +35,9 @@ export function TempoMeterAtMeasureDialog({
   onApply,
 }: TempoMeterAtMeasureDialogProps) {
   const titleId = useId();
+  const panelRef = useRef<HTMLDivElement>(null);
+  const onDismissRef = useRef(onDismiss);
+  onDismissRef.current = onDismiss;
   const showErrorToast = useToastStore((s) => s.showError);
   const [tempoStr, setTempoStr] = useState('');
   const [numStr, setNumStr] = useState('4');
@@ -43,6 +54,48 @@ export function TempoMeterAtMeasureDialog({
     setInlineError(null);
   }, [open, measureIndex, song]);
 
+  useLayoutEffect(() => {
+    if (!open) return;
+    const previousActive = document.activeElement as HTMLElement | null;
+
+    requestAnimationFrame(() => {
+      const bpm = document.getElementById('vybpad-tempo-meter-bpm');
+      if (bpm instanceof HTMLElement) {
+        bpm.focus();
+      }
+    });
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        onDismissRef.current();
+        return;
+      }
+      if (e.key !== 'Tab' || !panelRef.current) return;
+      const focusables = getTabbableIn(panelRef.current);
+      if (focusables.length === 0) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      const active = document.activeElement;
+      if (!e.shiftKey && active === last) {
+        e.preventDefault();
+        first.focus();
+      } else if (e.shiftKey && active === first) {
+        e.preventDefault();
+        last.focus();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown, true);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown, true);
+      if (previousActive && typeof previousActive.focus === 'function' && document.body.contains(previousActive)) {
+        previousActive.focus();
+      }
+    };
+  }, [open]);
+
   if (!open) {
     return null;
   }
@@ -53,11 +106,18 @@ export function TempoMeterAtMeasureDialog({
     e.preventDefault();
     setInlineError(null);
 
-    const tempoRounded = Math.round(Number(tempoStr));
-    if (!isValidTempo(tempoRounded)) {
-      const msg = 'Tempo must be a whole number between 20 and 300 BPM.';
-      setInlineError(msg);
-      showErrorToast(msg);
+    const trimmed = tempoStr.trim();
+    const tempoMsg = 'Tempo must be a whole number between 20 and 300 BPM.';
+    // Reject decimals, scientific notation, and non-digits — do not round (INTERFACES: integer BPM 20–300).
+    if (trimmed === '' || !/^\d+$/.test(trimmed)) {
+      setInlineError(tempoMsg);
+      showErrorToast(tempoMsg);
+      return;
+    }
+    const tempoParsed = Number.parseInt(trimmed, 10);
+    if (!isValidTempo(tempoParsed)) {
+      setInlineError(tempoMsg);
+      showErrorToast(tempoMsg);
       return;
     }
 
@@ -72,29 +132,42 @@ export function TempoMeterAtMeasureDialog({
       return;
     }
 
-    onApply({ tempo: tempoRounded, meter });
+    onApply({ tempo: tempoParsed, meter });
     onDismiss();
   }
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(17,24,39,0.5)] p-4"
       role="presentation"
       onClick={(ev) => {
         if (ev.target === ev.currentTarget) onDismiss();
       }}
     >
       <div
+        ref={panelRef}
         data-testid="vybpad-tempo-meter-dialog"
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="w-full max-w-md rounded-lg border border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)] p-6 shadow-lg"
+        className="relative w-full min-w-[min(400px,100%)] max-w-[min(560px,calc(100vw-32px))] rounded-xl border border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)] p-6 shadow-lg"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 id={titleId} className="text-lg font-semibold text-[var(--color-text-primary,#111827)]">
-          Tempo &amp; meter — measure {displayMeasure}
-        </h2>
+        <div className="flex items-start justify-between gap-3 pr-10">
+          <h2 id={titleId} className="text-lg font-semibold text-[var(--color-text-primary,#111827)]">
+            Tempo &amp; meter — measure {displayMeasure}
+          </h2>
+          <button
+            type="button"
+            aria-label="Close"
+            className="absolute right-4 top-4 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[var(--color-text-secondary,#4B5563)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
+            onClick={onDismiss}
+          >
+            <span aria-hidden="true" className="text-xl leading-none">
+              ×
+            </span>
+          </button>
+        </div>
         <p className="mt-1 text-sm text-[var(--color-text-secondary,#4B5563)]">
           Sets a change at the start of this measure. Later measures inherit until another change.
           Song metadata remains the defaults for new measures and export.
