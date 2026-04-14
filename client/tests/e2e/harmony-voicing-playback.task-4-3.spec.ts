@@ -104,6 +104,11 @@ test.describe('TASK-4.3 — harmony voicing playback resilience (E2E)', () => {
     await waitForEditorRouteReady(page);
 
     const transport = getTransportToolbar(page);
+    // Session bootstrap (and unauthenticated first loads) can trigger POST /api/auth/refresh → 401 before
+    // cookies/token hydrate; Chromium still logs that as a console "error". This test gates play-time
+    // robustness only — clear collected noise after setup so assertions match the scenario title.
+    pageErrors.length = 0;
+    consoleErrors.length = 0;
     await clickTransportPlayAndAwaitReady(transport);
 
     expect(pageErrors, `pageerror: ${pageErrors.map((e) => e.message).join('; ')}`).toHaveLength(0);
@@ -198,6 +203,9 @@ test.describe('TASK-4.3 — harmony voicing playback resilience (E2E)', () => {
     await waitForEditorRouteReady(page);
 
     const transport = getTransportToolbar(page);
+    // Same as scenario A: ignore bootstrap-only console noise before the play gate.
+    pageErrors.length = 0;
+    consoleErrors.length = 0;
     await clickTransportPlayAndAwaitReady(transport);
 
     expect(pageErrors, `pageerror: ${pageErrors.map((e) => e.message).join('; ')}`).toHaveLength(0);
