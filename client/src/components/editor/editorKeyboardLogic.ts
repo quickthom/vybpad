@@ -1,8 +1,14 @@
-import type { ChordEvent, Measure, NoteEvent, ScaleDegree, Selection, SongData, Viewport } from '@vybpad/shared';
+import type { ChordEvent, Measure, NoteEvent, NoteName, ScaleDegree, ScaleType, Selection, SongData, Viewport } from '@vybpad/shared';
 
 import { chordAreaTopY, noteStaffTopY, viewportXToAbsoluteTick } from '../../engine/renderer/layout';
 import { getMeterAtMeasure, getScaleAtMeasure, getMeasureStartTicks, measureLengthInTicks } from '../../engine/renderer/tickUtils';
 import { theoryEngine } from '../../engine/theory';
+import {
+  chordEventFieldsForSecondary,
+  chordRootPitchClassFromEvent,
+  diatonicChordFieldsFromRootPitchClass,
+  getSecondaryCycleSequence,
+} from '../../engine/theory/secondaryChords';
 
 /**
  * PAT-004 durations. Primary row: h j k l ; (TASK-2.8 / UX).
@@ -194,6 +200,56 @@ export function tableInsertBeatFromSelection(
   return nextAppendBeat(song, measureIndex, kind, voice);
 }
 
+
+/** TASK-5.3 — Remove applied chord metadata; spell the same root as diatonic in the home key. */
+export function clearSecondaryChordEdit(
+  chord: ChordEvent,
+  homeKey: NoteName,
+  homeScale: ScaleType,
+): Partial<ChordEvent> {
+  if (chord.secondary == null) {
+    return {};
+  }
+  const rootPc = chordRootPitchClassFromEvent(chord, homeKey, homeScale);
+  const d = diatonicChordFieldsFromRootPitchClass(rootPc, homeKey, homeScale);
+  return {
+    ...d,
+    suspension: 'none',
+    addition: 'none',
+    inversion: 0,
+    borrowed: null,
+    secondary: null,
+  };
+}
+
+/**
+ * TASK-5.3 — One step of the secondary applied-chord cycle (`d` key). See {@link getSecondaryCycleSequence}
+ * for ordering. From diatonic (no secondary): applies the first legal slot; from the last slot: clears
+ * `secondary` and restores diatonic spelling for the current root pitch class.
+ */
+export function cycleSecondaryChordEdit(
+  chord: ChordEvent,
+  homeKey: NoteName,
+  homeScale: ScaleType,
+): Partial<ChordEvent> {
+  const seq = getSecondaryCycleSequence(homeScale);
+  if (seq.length === 0) {
+    return {};
+  }
+
+  if (chord.secondary == null) {
+    return { ...chordEventFieldsForSecondary(seq[0]) };
+  }
+
+  const idx = seq.findIndex((s) => s.function === chord.secondary!.function && s.target === chord.secondary!.target);
+  if (idx < 0) {
+    return clearSecondaryChordEdit(chord, homeKey, homeScale);
+  }
+  if (idx >= seq.length - 1) {
+    return clearSecondaryChordEdit(chord, homeKey, homeScale);
+  }
+  return { ...chordEventFieldsForSecondary(seq[idx + 1]) };
+}
 
 export function buildDiatonicChordPayload(
   song: SongData,

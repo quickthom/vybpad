@@ -7,7 +7,7 @@ import type {
   SecondaryChord,
   SecondaryFunction,
 } from '@vybpad/shared';
-import { chordToMidiNotes, getDiatonicQuality } from './chords';
+import { chordToMidiNotes, getDiatonicQuality, getDiatonicSeventh } from './chords';
 import { noteNameToMidiBase } from './noteNames';
 import { scaleDegreeToMidi } from './scaleDegreeToMidi';
 import { getScaleIntervals } from './scales';
@@ -200,4 +200,72 @@ function arraysEqual(a: readonly number[], b: readonly number[]): boolean {
     }
   }
   return true;
+}
+
+/** Root pitch class (0–11) for `chord`, matching playback / canvas spelling (secondary + borrowed aware). */
+export function chordRootPitchClassFromEvent(chord: ChordEvent, key: NoteName, scale: ScaleType): number {
+  if (chord.secondary) {
+    const { targetKey, targetScale } = resolveSecondaryTarget(chord.secondary, key, scale);
+    const raw = scaleDegreeToMidi(chord.scaleDegree, 0, 0, targetKey, targetScale, 4);
+    return ((raw % 12) + 12) % 12;
+  }
+  const modeForRoot = chord.borrowed ?? scale;
+  const raw = scaleDegreeToMidi(chord.scaleDegree, 0, 0, key, modeForRoot, 4);
+  return ((raw % 12) + 12) % 12;
+}
+
+/**
+ * TASK-5.3 — Legal applied-chord slots in stable cycle order for the home scale:
+ * same enumeration as {@link getAvailableSecondaryChords}: functions **V → viio → IV**, and within each
+ * function scale-degree targets **1 → 7**, omitting entries filtered by 1A.5 (illegal V-of-diminished
+ * targets, pitch-identical diatonic aliases). The `d` key advances one step; after the last slot, the
+ * next step clears to a diatonic chord at the same root pitch class.
+ */
+export function getSecondaryCycleSequence(scale: ScaleType): SecondaryChord[] {
+  return getAvailableSecondaryChords(scale).map(({ function: fn, target }) => ({ function: fn, target }));
+}
+
+/** Build stored `ChordEvent` fields for an applied chord (degrees are in the tonicized key per 1A.5). */
+export function chordEventFieldsForSecondary(
+  sec: SecondaryChord,
+): Pick<
+  ChordEvent,
+  'scaleDegree' | 'quality' | 'seventh' | 'suspension' | 'addition' | 'inversion' | 'borrowed' | 'secondary'
+> {
+  const sd = secondaryRootDegree(sec.function);
+  const q = secondaryFunctionChordQuality(sec.function);
+  return {
+    scaleDegree: sd,
+    quality: q,
+    seventh: 'none',
+    suspension: 'none',
+    addition: 'none',
+    inversion: 0,
+    borrowed: null,
+    secondary: sec,
+  };
+}
+
+/** Map a root pitch class to the diatonic chord in the home key/scale (used when clearing secondary). */
+export function diatonicChordFieldsFromRootPitchClass(
+  rootPc: number,
+  key: NoteName,
+  scale: ScaleType,
+): Pick<ChordEvent, 'scaleDegree' | 'quality' | 'seventh'> {
+  const tonicPc = noteNameToMidiBase(key) % 12;
+  const intervals = getScaleIntervals(scale);
+  const want = ((rootPc % 12) + 12) % 12;
+  for (let d = 1; d <= 7; d++) {
+    const pc = (tonicPc + intervals[d - 1]) % 12;
+    const n = ((pc % 12) + 12) % 12;
+    if (n === want) {
+      const degree = d as ScaleDegree;
+      return {
+        scaleDegree: degree,
+        quality: getDiatonicQuality(degree, scale),
+        seventh: getDiatonicSeventh(degree, scale),
+      };
+    }
+  }
+  return { scaleDegree: 1, quality: 'major', seventh: 'none' };
 }

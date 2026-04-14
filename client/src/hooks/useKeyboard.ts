@@ -6,6 +6,7 @@ import {
   buildDefaultNotePayload,
   buildDiatonicChordPayload,
   clampDurationToMeasure,
+  cycleSecondaryChordEdit,
   DURATION_KEYS,
   entryEndsAtOrPastMeasureEnd,
   findNoteIdByPlacement,
@@ -17,6 +18,7 @@ import {
   tableInsertBeatFromSelection,
   tableModeAdvanceRange,
 } from '../components/editor/editorKeyboardLogic';
+import { getKeyAtMeasure, getScaleAtMeasure } from '../engine/renderer/tickUtils';
 
 /** PAT-004 — re-export for unit tests (alias of DURATION_KEYS). */
 export const DURATION_KEY_TICKS: Record<string, number> = DURATION_KEYS;
@@ -187,6 +189,23 @@ export function handleEditorKeydown(e: KeyboardEvent, ctx: EditorKeyboardContext
   if (key === 'Tab' && toggleEntryMode && !isEditableKeyboardTarget(e.target ?? null)) {
     e.preventDefault();
     toggleEntryMode();
+    return;
+  }
+
+  // TASK-5.3 — cycle V/x · viio/x · IV/x applied slots (see getSecondaryCycleSequence); same as palette "Cycle".
+  if (key === 'd' || key === 'D') {
+    const sel = pickSelection(ctx);
+    const chordId = sel?.type === 'chord' ? sel.eventIds?.[0] : undefined;
+    if (!chordId || sel?.type !== 'chord') return;
+    const song = pickSong(ctx);
+    const ch = song.measures[sel.measureIndex]?.chords.find((c) => c.id === chordId);
+    if (!ch) return;
+    e.preventDefault();
+    const homeKey = getKeyAtMeasure(song, sel.measureIndex);
+    const homeScale = getScaleAtMeasure(song, sel.measureIndex);
+    const changes = cycleSecondaryChordEdit(ch, homeKey, homeScale);
+    if (Object.keys(changes).length === 0) return;
+    ctx.onChordEdit(sel.measureIndex, { type: 'update', chordId, changes });
     return;
   }
 

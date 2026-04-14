@@ -7,9 +7,14 @@ import { TransportControls } from '../components/controls/TransportControls';
 import { MixerPanel } from '../components/panels/MixerPanel';
 import { MeasureBar } from '../components/MeasureBar';
 import { EditorCanvas } from '../components/editor/EditorCanvas';
-import { resolveTargetMeasureIndex } from '../components/editor/editorKeyboardLogic';
-import { ChordPalette } from '../components/panels/ChordPalette';
+import {
+  clearSecondaryChordEdit,
+  cycleSecondaryChordEdit,
+  resolveTargetMeasureIndex,
+} from '../components/editor/editorKeyboardLogic';
+import { ChordPalette, SecondaryChordInspector } from '../components/panels/ChordPalette';
 import { getKeyAtMeasure, getScaleAtMeasure } from '../engine/renderer/tickUtils';
+import { theoryEngine } from '../engine/theory';
 import { applyChordScaleDegreeFromEditor, type EditorKeyboardContext } from '../hooks/useKeyboard';
 import { EntryModeToggle } from '../components/editor/EntryModeToggle';
 import { formatTransportBeat, getPlaybackEngine, getPlaybackInitErrorMessage } from '../engine/audio';
@@ -378,6 +383,20 @@ export function EditorLayout() {
 
   const currentBeatDisplay = formatTransportBeat(song, playbackTick ?? 0);
 
+  const selectedChordId = selection?.type === 'chord' ? selection.eventIds?.[0] : undefined;
+  const selectedChord =
+    selectedChordId != null && selection?.type === 'chord'
+      ? song.measures[selection.measureIndex]?.chords.find((c) => c.id === selectedChordId) ?? null
+      : null;
+
+  const chordTheoryScale =
+    selectedChord != null && selection?.type === 'chord'
+      ? getScaleAtMeasure(song, selection.measureIndex)
+      : paletteScale;
+
+  const selectedChordRoman =
+    selectedChord != null ? theoryEngine.toRomanNumeral(selectedChord, chordTheoryScale) : '';
+
   async function handleTransportPlay() {
     if (usePlaybackStore.getState().initStatus === 'ready') {
       playbackPlay();
@@ -485,12 +504,40 @@ export function EditorLayout() {
           aria-label="Chord palette panel"
         >
           {chordPaletteExpanded ? (
-            <ChordPalette
-              currentKey={paletteKey}
-              currentScale={paletteScale}
-              mode="diatonic"
-              onChordSelect={handleChordPaletteSelect}
-            />
+            <>
+              <ChordPalette
+                currentKey={paletteKey}
+                currentScale={paletteScale}
+                mode="diatonic"
+                onChordSelect={handleChordPaletteSelect}
+              />
+              <SecondaryChordInspector
+                chord={selectedChord}
+                romanLabel={selectedChordRoman}
+                onCycle={() => {
+                  if (selection?.type !== 'chord' || !selection.eventIds?.[0]) return;
+                  const id = selection.eventIds[0];
+                  const ch = song.measures[selection.measureIndex]?.chords.find((c) => c.id === id);
+                  if (!ch) return;
+                  const k = getKeyAtMeasure(song, selection.measureIndex);
+                  const sc = getScaleAtMeasure(song, selection.measureIndex);
+                  const changes = cycleSecondaryChordEdit(ch, k, sc);
+                  if (Object.keys(changes).length === 0) return;
+                  editChord(selection.measureIndex, { type: 'update', chordId: id, changes });
+                }}
+                onClear={() => {
+                  if (selection?.type !== 'chord' || !selection.eventIds?.[0]) return;
+                  const id = selection.eventIds[0];
+                  const ch = song.measures[selection.measureIndex]?.chords.find((c) => c.id === id);
+                  if (!ch) return;
+                  const k = getKeyAtMeasure(song, selection.measureIndex);
+                  const sc = getScaleAtMeasure(song, selection.measureIndex);
+                  const changes = clearSecondaryChordEdit(ch, k, sc);
+                  if (Object.keys(changes).length === 0) return;
+                  editChord(selection.measureIndex, { type: 'update', chordId: id, changes });
+                }}
+              />
+            </>
           ) : (
             <button
               type="button"
