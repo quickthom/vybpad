@@ -12,6 +12,8 @@ import {
   isEditableKeyboardTarget,
   navigateSelection,
   nextAppendBeat,
+  nextCycledEmbellishment,
+  nextCycledInversion,
   resolveMeasureIndexForKeyboardDigit,
   shouldAllowChordDigitEntry,
   shouldUseNoteEntry,
@@ -154,6 +156,39 @@ export function handleEditorKeydown(e: KeyboardEvent, ctx: EditorKeyboardContext
       if (voice != null) ctx.onNoteEdit(sel.measureIndex, voice, { type: 'delete', noteId: id });
     }
     ctx.onSelectionChange(null);
+    return;
+  }
+
+  /** TASK-5.4 / UX §8: `i` = cycle inversion; `e` = cycle embellishments (seventh → sus → add per INTERFACES.md) on one chord only. */
+  const keyNorm = key.length === 1 ? key.toLowerCase() : '';
+  if (
+    selection?.type === 'chord' &&
+    Array.isArray(selection.eventIds) &&
+    selection.eventIds.length === 1 &&
+    (keyNorm === 'i' || keyNorm === 'e')
+  ) {
+    const chordId = selection.eventIds[0];
+    const measureIndex = selection.measureIndex;
+    const song = pickSong(ctx);
+    const chord = song.measures[measureIndex]?.chords.find((c) => c.id === chordId);
+    if (chord) {
+      e.preventDefault();
+      if (keyNorm === 'i') {
+        const nextInv = nextCycledInversion(chord);
+        if (nextInv !== chord.inversion) {
+          ctx.onChordEdit(measureIndex, { type: 'update', chordId, changes: { inversion: nextInv } });
+        }
+      } else {
+        const nextEm = nextCycledEmbellishment(chord);
+        if (
+          nextEm.seventh !== chord.seventh ||
+          nextEm.suspension !== chord.suspension ||
+          nextEm.addition !== chord.addition
+        ) {
+          ctx.onChordEdit(measureIndex, { type: 'update', chordId, changes: nextEm });
+        }
+      }
+    }
     return;
   }
 
