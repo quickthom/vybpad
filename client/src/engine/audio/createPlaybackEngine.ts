@@ -2,7 +2,11 @@ import type { SongData, TrackRole } from '@vybpad/shared';
 import { TICKS_PER_QUARTER } from '@vybpad/shared';
 import * as Tone from 'tone';
 
-import { getTempoAtMeasure, measureIndexFromAbsoluteTick } from '../renderer/tickUtils';
+import {
+  getMeasureStartTransportTimes,
+  getTempoAtMeasure,
+  measureIndexFromAbsoluteTick,
+} from '../renderer/tickUtils';
 import { theoryEngine } from '../theory/theoryEngine';
 import { useToastStore } from '../../store/toastStore';
 import type { AudioEngine } from './audioEngineTypes';
@@ -78,6 +82,14 @@ export function createPlaybackEngine(): AudioEngine {
     } catch {
       /* best-effort */
     }
+    try {
+      const bpmParam = Tone.getTransport().bpm;
+      if (typeof bpmParam.cancelScheduledValues === 'function') {
+        bpmParam.cancelScheduledValues(0);
+      }
+    } catch {
+      /* best-effort */
+    }
     for (const p of scheduledParts) {
       try {
         p.stop(0);
@@ -87,6 +99,30 @@ export function createPlaybackEngine(): AudioEngine {
       }
     }
     scheduledParts.length = 0;
+  }
+
+  /**
+   * Piecewise-constant BPM at each measure start (Transport seconds) so `getTimeOfTick` / tick
+   * scheduling match inherited `getTempoAtMeasure` values. Tone exposes one BPM signal; stepped
+   * automation is the supported way to approximate a tempo map (TASK-5.8).
+   */
+  function applyTransportTempoMap(song: SongData): void {
+    const tb = Tone.getTransport().bpm;
+    if (typeof tb.setValueAtTime !== 'function') {
+      const tickNow = Tone.getTransport().ticks;
+      const mi = measureIndexFromAbsoluteTick(song, tickNow);
+      tb.value = getTempoAtMeasure(song, mi);
+      return;
+    }
+    const n = song.measures.length;
+    const times = getMeasureStartTransportTimes(song);
+    if (n === 0) {
+      tb.setValueAtTime(getTempoAtMeasure(song, 0), 0);
+      return;
+    }
+    for (let i = 0; i < n; i += 1) {
+      tb.setValueAtTime(getTempoAtMeasure(song, i), times[i] ?? 0);
+    }
   }
 
   function playScheduledEvent(time: number, ev: ScheduledPlayEvent): void {
@@ -112,12 +148,7 @@ export function createPlaybackEngine(): AudioEngine {
   function schedulePlaybackFromSong(song: SongData): void {
     clearScheduledPlayback();
     mixer = syncMixerFromBand(song);
-    // INTERFACES: `song.metadata.tempo` is the initial BPM; measure-level `changes.tempo` overrides from
-    // that measure forward (inheritance via getTempoAtMeasure). Tone has a single transport BPM — we set it
-    // from the effective tempo at the current transport tick so playback matches the scheduler tick map.
-    const tickNow = Tone.getTransport().ticks;
-    const mi = measureIndexFromAbsoluteTick(song, tickNow);
-    Tone.getTransport().bpm.value = getTempoAtMeasure(song, mi);
+    applyTransportTempoMap(song);
 
     const flat = buildScheduledPlayEvents(song, theoryEngine);
     if (flat.length === 0) {
@@ -208,9 +239,7 @@ export function createPlaybackEngine(): AudioEngine {
         return;
       }
       if (songRef) {
-        const tickNow = Tone.getTransport().ticks;
-        const mi = measureIndexFromAbsoluteTick(songRef, tickNow);
-        Tone.getTransport().bpm.value = getTempoAtMeasure(songRef, mi);
+        applyTransportTempoMap(songRef);
       }
       playing = true;
       Tone.getTransport().start();
@@ -244,10 +273,6 @@ export function createPlaybackEngine(): AudioEngine {
         return;
       }
       const clamped = Math.max(0, tick);
-      if (songRef) {
-        const mi = measureIndexFromAbsoluteTick(songRef, clamped);
-        Tone.getTransport().bpm.value = getTempoAtMeasure(songRef, mi);
-      }
       Tone.getTransport().ticks = clamped;
       notifyTicks(clamped);
     },
