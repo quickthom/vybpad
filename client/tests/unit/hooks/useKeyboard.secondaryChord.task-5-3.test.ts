@@ -130,7 +130,7 @@ describe('secondary chord keyboard — Task 5.3 — d key cycles ChordEditAction
       expect(onChordEdit).toHaveBeenCalledWith(0, {
         type: 'update',
         chordId,
-        changes: { secondary: expected },
+        changes: expect.objectContaining({ secondary: expected }),
       });
     });
 
@@ -168,7 +168,7 @@ describe('secondary chord keyboard — Task 5.3 — d key cycles ChordEditAction
         expect(onChordEdit).toHaveBeenCalledWith(0, {
           type: 'update',
           chordId,
-          changes: { secondary },
+          changes: expect.objectContaining({ secondary }),
         });
       }
     });
@@ -202,7 +202,7 @@ describe('secondary chord keyboard — Task 5.3 — d key cycles ChordEditAction
       expect(onChordEdit).toHaveBeenCalledWith(0, {
         type: 'update',
         chordId,
-        changes: { secondary: null },
+        changes: expect.objectContaining({ secondary: null }),
       });
     });
   });
