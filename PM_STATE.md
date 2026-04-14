@@ -1,10 +1,10 @@
 # PM STATE — vYbpad
 
-> PM continuity handoff — **not** a duplicate of `TASK_STATUS.md`. Updated **2026-04-14** — Phase 4 playback **closed**; #42/#43 merged; F-07 design review + state committed locally (push with `develop`).
+> PM continuity handoff — **not** a duplicate of `TASK_STATUS.md`. Updated **2026-04-14** — Phase 4 playback **closed**; #42/#43 merged; F-07 + `TASK_STATUS` on **`origin/develop`** @ **`4f05b1f`**.
 
 **Authoritative build state:** `TASK_STATUS.md` at repo root.
 
-**Authoritative git tip:** `git fetch origin && git rev-parse origin/develop` → post-integration includes **`1fe1984`** (#43) + F-07 / `TASK_STATUS` commit when pushed.
+**Authoritative git tip:** `git fetch origin && git rev-parse origin/develop` → **`4f05b1f`** — F-07 milestone doc + TASK_STATUS/PM_STATE + eslint nested-worktree ignore.
 
 **Remote:** https://github.com/quickthom/vybpad — `origin`, default branch **`develop`**.
 
