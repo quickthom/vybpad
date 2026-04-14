@@ -18,9 +18,25 @@ const { toneStart } = vi.hoisted(() => ({
   toneStart: vi.fn<[], Promise<void>>(),
 }));
 
+vi.mock('smplr', () => ({
+  __esModule: true,
+  CacheStorage: class {
+    constructor(_bucket: string) {
+      void _bucket;
+    }
+  },
+  SplendidGrandPiano: class {
+    load = Promise.resolve();
+    disconnect(): void {}
+  },
+}));
+
 vi.mock('tone', () => ({
   __esModule: true,
   start: () => toneStart(),
+  getContext: () => ({
+    rawContext: {} as AudioContext,
+  }),
   getTransport: () => ({
     PPQ: 48,
     bpm: { value: 120 },
