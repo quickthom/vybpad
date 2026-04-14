@@ -1,7 +1,12 @@
 import type { ChordEvent, Measure, NoteEvent, NoteName, ScaleDegree, ScaleType, Selection, SongData, Viewport } from '@vybpad/shared';
 
 import { chordAreaTopY, noteStaffTopY, viewportXToAbsoluteTick } from '../../engine/renderer/layout';
-import { getMeterAtMeasure, getScaleAtMeasure, getMeasureStartTicks, measureLengthInTicks } from '../../engine/renderer/tickUtils';
+import {
+  getMeterAtMeasure,
+  getScaleAtMeasure,
+  measureIndexFromAbsoluteTick,
+  measureLengthInTicks,
+} from '../../engine/renderer/tickUtils';
 import { theoryEngine } from '../../engine/theory';
 import {
   chordEventFieldsForSecondary,
@@ -91,20 +96,7 @@ export function resolveTargetMeasureIndex(selection: Selection | null, viewport:
   return Math.max(0, Math.min(raw, n - 1));
 }
 
-/**
- * Map an absolute tick (song timeline) to the measure that contains or follows its downbeat.
- * Used when translating pointer X to a chord-strip insert target (TASK-4.2).
- */
-export function measureIndexFromAbsoluteTick(song: SongData, absoluteTick: number): number {
-  const starts = getMeasureStartTicks(song);
-  const n = song.measures.length;
-  if (n === 0) return 0;
-  let idx = 0;
-  for (let i = 0; i < n; i++) {
-    if ((starts[i] ?? 0) <= absoluteTick) idx = i;
-  }
-  return idx;
-}
+export { measureIndexFromAbsoluteTick } from '../../engine/renderer/tickUtils';
 
 /** TASK-2.9 table mode: caret advances as a collapsed range at the next beat (PAT-004 tick math). */
 export function tableModeAdvanceRange(
