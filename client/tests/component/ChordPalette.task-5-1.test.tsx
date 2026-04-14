@@ -39,10 +39,12 @@ describe('ChordPalette — TASK-5.1', () => {
     expect(payload.seventh).toBe(theoryEngine.getDiatonicSeventh(5, 'major'));
   });
 
-  it('shows placeholder for non-diatonic modes', () => {
+  it('renders borrowed palette with scale selector and borrowable degree slots (TASK-5.2)', () => {
     render(
       <ChordPalette currentKey="C" currentScale="major" mode="borrowed" onChordSelect={vi.fn()} />,
     );
-    expect(screen.getByText(/borrowed chords — coming later/i)).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: /chord palette/i })).toBeInTheDocument();
+    expect(screen.getByTestId('chord-palette-borrowed-scale')).toBeInTheDocument();
+    expect(screen.getByTestId('chord-palette-borrowed-degree-4')).toBeInTheDocument();
   });
 });
