@@ -1,1 +1,45 @@
 @import 'tailwindcss';
+
+/* UX_GUIDELINES §5.5 — mixer range (thumb + hover border). */
+@layer components {
+  .vybpad-mixer-range {
+    -webkit-appearance: none;
+    appearance: none;
+    border-radius: 9999px;
+  }
+  .vybpad-mixer-range:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--color-focus-ring, #4f46e5);
+    border-radius: 9999px;
+  }
+  .vybpad-mixer-range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    margin-top: -5px;
+    border-radius: 9999px;
+    background: var(--color-surface, #fff);
+    border: 2px solid var(--color-border-strong, #d1d5db);
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.05);
+  }
+  .group:hover .vybpad-mixer-range::-webkit-slider-thumb {
+    border-color: var(--color-primary, #4f46e5);
+  }
+  .vybpad-mixer-range::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 9999px;
+    background: var(--color-surface, #fff);
+    border: 2px solid var(--color-border-strong, #d1d5db);
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.05);
+  }
+  .group:hover .vybpad-mixer-range::-moz-range-thumb {
+    border-color: var(--color-primary, #4f46e5);
+  }
+  .vybpad-mixer-range::-moz-range-track {
+    height: 6px;
+    border-radius: 9999px;
+    background: transparent;
+  }
+}
