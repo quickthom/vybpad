@@ -586,6 +586,10 @@ interface PlaybackStore {
   rewind: () => void;
   seekTo: (tick: number) => void;
   setLoop: (start: number, end: number) => void;
+  // Constraints: start and end must be finite integers; end > start required.
+  // Calls with non-integer, non-finite, or end ≤ start values are silently ignored (store unchanged).
+  clearLoop: () => void;
+  // Sets isLooping = false; calls engine.setLoop(false). No-op if engine not ready.
   initializeAudio: () => Promise<void>; // must be invoked from a user gesture; idempotent
   clearInitError: () => void;
 }
