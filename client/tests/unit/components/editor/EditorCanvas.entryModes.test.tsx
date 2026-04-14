@@ -181,6 +181,7 @@ function baseCtx(overrides: Partial<EditorKeyboardContext> = {}): EditorKeyboard
     viewport: DEFAULT_VIEWPORT,
     selection: null,
     activeVoice: 0,
+    setActiveVoice: vi.fn(),
     entryMode: 'table',
     currentDurationTicks: 48,
     setCurrentDurationTicks: vi.fn(),

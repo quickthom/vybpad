@@ -12,6 +12,7 @@ import {
 import type { PointerEvent as ReactPointerEvent } from 'react';
 
 import { useKeyboard } from '../../hooks/useKeyboard';
+import { useUIStore } from '../../store/uiStore';
 import { theoryEngine } from '../../engine/theory';
 import { CHORD_AREA_HEIGHT, MEASURE_HEADER_HEIGHT, NOTE_HEIGHT, SELECTION_COLOR } from '../../engine/renderer/constants';
 import { drawPlaybackCursor } from '../../engine/renderer/drawPlaybackCursor';
@@ -165,6 +166,8 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
   const currentDurationTicks = keyboardPlumbing?.currentDurationTicks ?? internalDurationTicks;
   const setCurrentDurationTicks = keyboardPlumbing?.setCurrentDurationTicks ?? setInternalDurationTicks;
 
+  const setActiveVoice = useUIStore((s) => s.setActiveVoice);
+
   const [hoverHit, setHoverHit] = useState<EditorCanvasHit | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [, forceRedraw] = useState(0);
@@ -194,6 +197,7 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
     viewport,
     selection,
     activeVoice,
+    setActiveVoice,
     entryMode,
     currentDurationTicks,
     setCurrentDurationTicks,
@@ -221,6 +225,7 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
         measureIndex: hit.measureIndex,
         note: hit.note,
         isRest: hit.note.isRest,
+        voiceIndex: hit.voiceIndex,
       });
       const right = r.x + r.width;
       const strip = trailingResizeStripWidthPx(r.width);
@@ -278,6 +283,7 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
           measureIndex: hit.measureIndex,
           note: hit.note,
           isRest: hit.note.isRest,
+          voiceIndex: hit.voiceIndex,
         });
         strokeRect(r.x, r.y, r.width, r.height, isSelection ? SELECTION_STROKE : HOVER_STROKE, isSelection ? SELECTION_COLOR : undefined);
       }
@@ -558,7 +564,7 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
       role="application"
       tabIndex={0}
       className={`${cursorClass} outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2`}
-      aria-label="Song editor — digits 1–7, duration h j k l ; , Delete, arrow keys to navigate"
+      aria-label="Song editor — digits 1–7, duration h j k l ; , Delete, arrow keys to navigate, Ctrl+1–4 melody voice"
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}

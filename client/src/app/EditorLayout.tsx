@@ -448,6 +448,13 @@ export function EditorLayout() {
             Projects
           </button>
           <EntryModeToggle mode={entryMode} onToggle={toggleEntryMode} />
+          <span
+            className="inline-flex h-8 shrink-0 items-center rounded-md border border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface-muted,#F9FAFB)] px-2 text-[12px] font-medium text-[var(--color-text-secondary,#4B5563)]"
+            title="Active melody voice (Ctrl+1–4)"
+            aria-live="polite"
+          >
+            Voice {activeVoice + 1}
+          </span>
           <button
             type="button"
             onClick={() => setChordPaletteExpanded((o) => !o)}

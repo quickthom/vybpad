@@ -19,6 +19,7 @@ describe('handleEditorKeydown — editable focus guard (TASK-4.2)', () => {
       viewport: { startMeasure: 0, measureCount: 8, scrollY: 0, zoom: 1 },
       selection: rangeCaret,
       activeVoice: 0,
+      setActiveVoice: vi.fn(),
       entryMode: 'table',
       currentDurationTicks: 48,
       setCurrentDurationTicks: vi.fn(),
