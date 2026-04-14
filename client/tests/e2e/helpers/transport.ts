@@ -24,6 +24,19 @@ export function getTransportPauseButton(transport: Locator): Locator {
   return transport.getByTestId('vybpad-transport-pause');
 }
 
+/**
+ * INTERFACES `TransportControls.currentBeat` — `measure:beat` readout (TASK-4.10 E2E).
+ * Use {@link getTransportCurrentBeatText} for the visible digits (excludes sr-only label).
+ */
+export function getTransportCurrentBeatReadout(transport: Locator): Locator {
+  return transport.getByTestId('vybpad-transport-current-beat');
+}
+
+/** Visible `M:B` text only (`span[aria-hidden="true"]` inside the readout). */
+export function getTransportCurrentBeatText(transport: Locator): Locator {
+  return getTransportCurrentBeatReadout(transport).locator('span[aria-hidden="true"]');
+}
+
 /** Default timeout for sample load + audio init on cold GitHub runners + throttled sample routes (ms). */
 const DEFAULT_PLAYBACK_READY_TIMEOUT_MS = 90_000;
 
