@@ -2,6 +2,7 @@ import type { ProjectResponse, SongData, Track, TrackRole } from '@vybpad/shared
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
+import { LoopBar } from '../components/controls/LoopBar';
 import { TransportControls } from '../components/controls/TransportControls';
 import { MixerPanel } from '../components/panels/MixerPanel';
 import { MeasureBar } from '../components/MeasureBar';
@@ -409,6 +410,7 @@ export function EditorLayout() {
           updateMetadata({ tempo: n });
         }}
       />
+      <LoopBar />
       <div className="flex min-h-0 min-w-0 flex-1 flex-row">
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
           <main
