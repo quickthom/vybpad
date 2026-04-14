@@ -141,7 +141,7 @@ export function TempoMeterAtMeasureDialog({
       className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(17,24,39,0.5)] p-4"
       role="presentation"
       onClick={(ev) => {
-        if (ev.target === ev.currentTarget) onDismiss();
+        if (ev.target === ev.currentTarget) onDismissRef.current();
       }}
     >
       <div
