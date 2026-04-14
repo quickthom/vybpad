@@ -176,6 +176,24 @@ export function shouldAllowChordDigitEntry(_entryMode: 'table' | 'text'): boolea
   return true;
 }
 
+/** Collapsed range in table mode acts as a caret beat for the next insertion (TASK-2.9). */
+export function tableInsertBeatFromSelection(
+  selection: Selection | null,
+  song: SongData,
+  measureIndex: number,
+  kind: 'chord' | 'note',
+  voice: 0 | 1 | 2 | 3,
+): number | null {
+  if (
+    selection?.type === 'range' &&
+    selection.rangeStart === selection.rangeEnd &&
+    selection.measureIndex === measureIndex
+  ) {
+    return Math.round(selection.rangeStart ?? 0);
+  }
+  return nextAppendBeat(song, measureIndex, kind, voice);
+}
+
 
 export function buildDiatonicChordPayload(
   song: SongData,
