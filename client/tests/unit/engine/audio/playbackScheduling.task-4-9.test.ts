@@ -39,9 +39,22 @@ const { toneStart, transport, capturedParts, resetSchedulingMocks, MockPart } = 
     dispose = vi.fn().mockReturnThis();
   }
 
+  const bpmState = { value: 120 };
+
   const transport = {
     PPQ: 48,
-    bpm: { value: 120 },
+    bpm: {
+      get value() {
+        return bpmState.value;
+      },
+      set value(v: number) {
+        bpmState.value = v;
+      },
+      setValueAtTime: vi.fn((v: number) => {
+        bpmState.value = v;
+      }),
+      cancelScheduledValues: vi.fn(),
+    },
     ticks: 0,
     loop: false,
     loopStart: 0,
@@ -55,7 +68,11 @@ const { toneStart, transport, capturedParts, resetSchedulingMocks, MockPart } = 
   function resetSchedulingMocks(): void {
     capturedParts.length = 0;
     transport.PPQ = 48;
-    transport.bpm.value = 120;
+    bpmState.value = 120;
+    transport.bpm.setValueAtTime = vi.fn((v: number) => {
+      bpmState.value = v;
+    });
+    transport.bpm.cancelScheduledValues = vi.fn();
     transport.ticks = 0;
     transport.loop = false;
     transport.loopStart = 0;

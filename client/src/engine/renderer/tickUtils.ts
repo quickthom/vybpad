@@ -92,6 +92,27 @@ export function getMeasureStartTicks(song: SongData): number[] {
 }
 
 /**
+ * Cumulative wall-clock seconds from song start to each measure boundary on the Transport timeline,
+ * using inherited BPM per measure (TASK-5.8). Index `i` is the start of measure `i`; index `length-1`
+ * is the end of the last measure. Used with Transport BPM `setValueAtTime` so tick-indexed Part
+ * events align with mid-song tempo changes despite a single global BPM parameter on the clock.
+ */
+export function getMeasureStartTransportTimes(song: SongData): number[] {
+  const tickStarts = getMeasureStartTicks(song);
+  const n = song.measures.length;
+  const times = new Array<number>(n + 1);
+  let acc = 0;
+  times[0] = 0;
+  for (let i = 0; i < n; i += 1) {
+    const lenTicks = (tickStarts[i + 1] ?? 0) - (tickStarts[i] ?? 0);
+    const bpm = getTempoAtMeasure(song, i);
+    acc += (lenTicks / TPQN) * (60 / bpm);
+    times[i + 1] = acc;
+  }
+  return times;
+}
+
+/**
  * Map an absolute tick (song timeline) to the measure index that contains that tick's downbeat region.
  * Used for transport BPM sync and pointer hit-testing (TASK-5.6 / TASK-4.2).
  */
