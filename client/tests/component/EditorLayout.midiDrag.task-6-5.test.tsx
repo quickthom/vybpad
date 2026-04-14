@@ -17,7 +17,7 @@
  *   happy: unrelated header control (e.g. Chords toggle) still responds after drag sequence
  */
 
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -25,7 +25,7 @@ import { EditorLayout } from '@/app/EditorLayout';
 import { ToastHost } from '@/components/common/ToastHost';
 import { createMidiExporter } from '@/engine/midi';
 import { buildDefaultSong, useSongStore } from '@/store/songStore';
-import { useToastStore } from '@/store/toastStore';
+import { resetToastDedupeForTests, useToastStore } from '@/store/toastStore';
 import { resetPlaybackStoreForTests } from '@/store/playbackStore';
 
 /** Minimal Canvas 2D mock so `EditorCanvas` mounts under jsdom. */
@@ -71,6 +71,16 @@ const MIDI_DRAG_NAME = /drag midi file to desktop daw/i;
  * jsdom does not expose `DataTransfer` globally; `useMidiDragExport` only needs `effectAllowed`,
  * `items.add`, and readable `files` after add (see Builder `midiDragExport.task-6-5.test.tsx`).
  */
+async function uint8FromFile(f: File): Promise<Uint8Array> {
+  const buf = await new Promise<ArrayBuffer>((resolve, reject) => {
+    const fr = new FileReader();
+    fr.onload = () => resolve(fr.result as ArrayBuffer);
+    fr.onerror = () => reject(fr.error);
+    fr.readAsArrayBuffer(f);
+  });
+  return new Uint8Array(buf);
+}
+
 function createStubDataTransfer(): {
   dataTransfer: {
     effectAllowed: string;
@@ -123,6 +133,7 @@ afterEach(() => {
 describe('TASK-6.5 — MIDI drag export (INTERFACES § MidiExporter.createDragBlob)', () => {
   beforeEach(() => {
     stubCanvas2d();
+    resetToastDedupeForTests();
     useSongStore.getState().loadSong(buildDefaultSong());
   });
 
@@ -148,7 +159,7 @@ describe('TASK-6.5 — MIDI drag export (INTERFACES § MidiExporter.createDragBl
       expect(file).toBeTruthy();
       expect(file!.type.toLowerCase()).toBe(expectedMime);
 
-      const got = new Uint8Array(await file!.arrayBuffer());
+      const got = await uint8FromFile(file!);
       expect(got).toEqual(expectedBytes);
       expect(expectedMime).toMatch(/midi/);
     });
@@ -158,6 +169,7 @@ describe('TASK-6.5 — MIDI drag export (INTERFACES § MidiExporter.createDragBl
 describe('TASK-6.5 — UX §370–373 drag feedback (cursor, toast, live region)', () => {
   beforeEach(() => {
     stubCanvas2d();
+    resetToastDedupeForTests();
     useSongStore.getState().loadSong(buildDefaultSong());
   });
 
@@ -168,15 +180,19 @@ describe('TASK-6.5 — UX §370–373 drag feedback (cursor, toast, live region)
       expect(dragControl.className).toMatch(/cursor-copy/);
     });
 
-    it('shows toast "Dragging MIDI…" on dragstart using polite live region (role=status, aria-live=polite)', () => {
+    it('shows toast "Dragging MIDI…" on dragstart using polite live region (role=status, aria-live=polite)', async () => {
       renderEditorWithToast();
       const dragControl = screen.getByRole('button', { name: MIDI_DRAG_NAME });
       const { dataTransfer: dt } = createStubDataTransfer();
       fireEvent.dragStart(dragControl, { dataTransfer: dt as unknown as DataTransfer });
 
-      const toast = screen.getByRole('status');
+      await waitFor(() => {
+        expect(useToastStore.getState().message).toBe(DRAGGING_MIDI_TOAST);
+      });
+      const live = screen.getByText(DRAGGING_MIDI_TOAST);
+      const toast = live.closest('[role="status"]');
+      expect(toast).toBeTruthy();
       expect(toast).toHaveAttribute('aria-live', 'polite');
-      expect(within(toast).getByText(DRAGGING_MIDI_TOAST)).toBeTruthy();
     });
   });
 });
@@ -184,6 +200,7 @@ describe('TASK-6.5 — UX §370–373 drag feedback (cursor, toast, live region)
 describe('TASK-6.5 — no regression to song store or unrelated editor chrome', () => {
   beforeEach(() => {
     stubCanvas2d();
+    resetToastDedupeForTests();
     useSongStore.getState().loadSong(buildDefaultSong());
   });
 
