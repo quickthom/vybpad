@@ -2,6 +2,7 @@ import type { SongData, TrackRole } from '@vybpad/shared';
 import { TICKS_PER_QUARTER } from '@vybpad/shared';
 import * as Tone from 'tone';
 
+import { theoryEngine } from '../theory/theoryEngine';
 import { useToastStore } from '../../store/toastStore';
 import type { AudioEngine } from './audioEngineTypes';
 import {
@@ -11,9 +12,25 @@ import {
   playbackError,
 } from './playbackErrors';
 import { assertValidHarmonyVoicingSong } from './harmonyVoicing';
-import { disposePianoSamples, ensurePianoSamplesLoaded } from './pianoSampleLoader';
+import { disposePianoSamples, ensurePianoSamplesLoaded, getPianoInstrument } from './pianoSampleLoader';
+import { buildScheduledPlayEvents, type ScheduledPlayEvent } from './songScheduler';
 
 const TPQN = TICKS_PER_QUARTER;
+
+type MixerChannel = { volume: number; mute: boolean };
+type MixerState = Partial<Record<TrackRole, MixerChannel>>;
+
+function clampVolume(v: number): number {
+  return Math.max(0, Math.min(1, v));
+}
+
+function syncMixerFromBand(song: SongData): MixerState {
+  const mixer: MixerState = {};
+  for (const t of song.bandConfig.tracks) {
+    mixer[t.role] = { volume: clampVolume(t.volume), mute: t.mute };
+  }
+  return mixer;
+}
 
 /**
  * Creates the Tone.js-backed playback engine. The module imports Tone.js (no `AudioContext.resume`
@@ -25,6 +42,10 @@ export function createPlaybackEngine(): AudioEngine {
   let ready = false;
 
   let songRef: SongData | null = null;
+  /** Live per-track gain/mute; updated from {@link loadSong} and transport controls (PAT-026). */
+  let mixer: MixerState = {};
+  const scheduledParts: Tone.Part[] = [];
+
   let playing = false;
   let rafId: number | null = null;
 
@@ -48,6 +69,65 @@ export function createPlaybackEngine(): AudioEngine {
     const tick = Tone.getTransport().ticks;
     notifyTicks(tick);
     rafId = requestAnimationFrame(runCursorLoop);
+  }
+
+  function clearScheduledPlayback(): void {
+    try {
+      Tone.getTransport().cancel();
+    } catch {
+      /* best-effort */
+    }
+    for (const p of scheduledParts) {
+      try {
+        p.stop(0);
+        p.dispose();
+      } catch {
+        /* best-effort */
+      }
+    }
+    scheduledParts.length = 0;
+  }
+
+  function playScheduledEvent(time: number, ev: ScheduledPlayEvent): void {
+    const ch = mixer[ev.role];
+    const vol = ch ? (ch.mute ? 0 : ch.volume) : 1;
+    if (vol <= 0) {
+      return;
+    }
+    const piano = getPianoInstrument();
+    if (!piano) {
+      return;
+    }
+    const durSec = Tone.Time(`${ev.durationTicks}i`).toSeconds();
+    const vel = Math.max(1, Math.min(127, Math.round(ev.velocity * vol)));
+    piano.start({
+      note: ev.midi,
+      time,
+      duration: durSec,
+      velocity: vel,
+    });
+  }
+
+  function schedulePlaybackFromSong(song: SongData): void {
+    clearScheduledPlayback();
+    mixer = syncMixerFromBand(song);
+    Tone.getTransport().bpm.value = song.metadata.tempo;
+
+    const flat = buildScheduledPlayEvents(song, theoryEngine);
+    if (flat.length === 0) {
+      return;
+    }
+
+    const partEvents = flat.map((ev) => ({
+      time: `${ev.tick}i`,
+      ...ev,
+    }));
+
+    const part = new Tone.Part((time, ev: ScheduledPlayEvent) => {
+      playScheduledEvent(time, ev);
+    }, partEvents);
+    part.start(0);
+    scheduledParts.push(part);
   }
 
   return {
@@ -77,6 +157,15 @@ export function createPlaybackEngine(): AudioEngine {
         await ensurePianoSamplesLoaded();
 
         ready = true;
+
+        if (songRef) {
+          try {
+            assertValidHarmonyVoicingSong(songRef);
+            schedulePlaybackFromSong(songRef);
+          } catch {
+            /* song ref present but invalid — leave unscheduled until next loadSong */
+          }
+        }
       })();
 
       try {
@@ -84,6 +173,7 @@ export function createPlaybackEngine(): AudioEngine {
       } catch (err) {
         initPromise = null;
         ready = false;
+        clearScheduledPlayback();
         disposePianoSamples();
         if (err instanceof PlaybackError) {
           throw err;
@@ -99,13 +189,12 @@ export function createPlaybackEngine(): AudioEngine {
     },
 
     loadSong(song: SongData): void {
+      assertValidHarmonyVoicingSong(song);
       songRef = song;
       if (!ready) {
         return;
       }
-      // Harmony voicing dry-run (TASK 4.3) — validates chord→MIDI path before scheduler wiring (4.4).
-      assertValidHarmonyVoicingSong(song);
-      Tone.getTransport().bpm.value = song.metadata.tempo;
+      schedulePlaybackFromSong(song);
     },
 
     play(): void {
@@ -173,15 +262,23 @@ export function createPlaybackEngine(): AudioEngine {
     },
 
     setTrackVolume(role: TrackRole, volume: number): void {
-      void role;
-      void volume;
-      /* Instrument graph — scheduled with TASK scheduling work */
+      if (!mixer[role]) {
+        mixer[role] = { volume: 1, mute: false };
+      }
+      const ch = mixer[role];
+      if (ch) {
+        ch.volume = clampVolume(volume);
+      }
     },
 
     setTrackMute(role: TrackRole, mute: boolean): void {
-      void role;
-      void mute;
-      /* Instrument graph — scheduled with TASK scheduling work */
+      if (!mixer[role]) {
+        mixer[role] = { volume: 1, mute: false };
+      }
+      const ch = mixer[role];
+      if (ch) {
+        ch.mute = mute;
+      }
     },
 
     onTick(callback: (tick: number) => void): () => void {
@@ -195,6 +292,8 @@ export function createPlaybackEngine(): AudioEngine {
       stopCursorLoop();
       playing = false;
       tickListeners.clear();
+      clearScheduledPlayback();
+      mixer = {};
       disposePianoSamples();
       ready = false;
       initPromise = null;

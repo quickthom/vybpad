@@ -49,6 +49,25 @@ vi.mock('tone', () => ({
     loopStart: 0,
     loopEnd: 0,
   }),
+  Part: vi.fn(function Part(this: {
+    start: ReturnType<typeof vi.fn>;
+    stop: ReturnType<typeof vi.fn>;
+    dispose: ReturnType<typeof vi.fn>;
+  }) {
+    this.start = vi.fn(() => this);
+    this.stop = vi.fn(() => this);
+    this.dispose = vi.fn(() => this);
+    return this;
+  }),
+  Time: vi.fn((val: string | number) => ({
+    toSeconds: () => {
+      if (typeof val === 'string' && /^\d+i$/i.test(val.trim())) {
+        const ticks = parseInt(val, 10);
+        return (ticks / 48) * (60 / 120);
+      }
+      return typeof val === 'number' ? val : 0;
+    },
+  })),
 }));
 
 function polyfillRaf(): void {
