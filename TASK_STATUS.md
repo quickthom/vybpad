@@ -2,7 +2,7 @@
 
 > Single source of truth for build state. Owned by the Project Manager. See PAT-025 for update protocol.
 
-**`develop`:** Authoritative tip: `git fetch origin && git rev-parse origin/develop`. Current tip **`1fe1984`** (TASK-4.9 #42 + TASK-4.10 #43 merged). **PAT-027 (TASK-4.3):** Formal QA `tests-written` STATUS_UPDATE treated as **optional audit trail only** — closed 2026-04-14; **no blocking follow-up.** Sync: `git fetch origin && npm install` — https://github.com/quickthom/vybpad.
+**`develop`:** Authoritative tip: `git fetch origin && git rev-parse origin/develop`. Current tip **`6b1feb3`** (TASK-4.9/4.10 + F-07 milestone doc + PM state). **PAT-027 (TASK-4.3):** Formal QA `tests-written` STATUS_UPDATE treated as **optional audit trail only** — closed 2026-04-14; **no blocking follow-up.** Sync: `git fetch origin && npm install` — https://github.com/quickthom/vybpad.
 **Worktree hygiene:** Phase 3/4 worktrees under `/home/thom/py/vYbpad-worktrees/`. Retire after merge (PAT-017). If `gh pr merge` could not delete remote branches, remove worktree then `git push origin --delete <branch>`.
 
 **Merge-order gate (Phase 4.5–4.7):** **Complete** — merged in order **#38** → **#39** → **#40** (squash onto `develop`).
