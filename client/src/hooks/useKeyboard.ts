@@ -1,4 +1,12 @@
-import type { ChordEditAction, NoteEditAction, ScaleDegree, Selection, SongData, Viewport } from '@vybpad/shared';
+import type {
+  ChordEditAction,
+  ChordEvent,
+  NoteEditAction,
+  ScaleDegree,
+  Selection,
+  SongData,
+  Viewport,
+} from '@vybpad/shared';
 import type { MutableRefObject } from 'react';
 import { useEffect, useRef } from 'react';
 
@@ -139,6 +147,84 @@ export function applyChordScaleDegreeFromEditor(ctx: EditorKeyboardContext, degr
   if (nb == null) return false;
   const durClamped = clampDurationToMeasure(songForChord, measureIndex, nb, ctx.currentDurationTicks);
   const payload = buildDiatonicChordPayload(songForChord, measureIndex, degree, nb, durClamped);
+  ctx.onChordEdit(measureIndex, { type: 'add', chord: payload });
+
+  const songAfter = pickSong(ctx);
+  if (entryEndsAtOrPastMeasureEnd(songAfter, measureIndex, nb, durClamped) && measureIndex + 1 < songAfter.measures.length) {
+    ctx.keyboardTargetMeasureRef.current = measureIndex + 1;
+    ctx.onSelectionChange(null);
+  } else {
+    ctx.onSelectionChange(tableModeAdvanceRange(songAfter, measureIndex, nb, durClamped));
+  }
+  return true;
+}
+
+/**
+ * TASK-5.2 — Chord palette path for diatonic **or** borrowed payloads: same placement rules as
+ * {@link applyChordScaleDegreeFromEditor}, but chord theory fields come from the palette (`borrowed`,
+ * quality, seventh, etc.) instead of {@link buildDiatonicChordPayload}.
+ */
+export function applyChordPalettePayloadFromEditor(
+  ctx: EditorKeyboardContext,
+  fields: Omit<ChordEvent, 'id' | 'beat' | 'duration'>,
+): boolean {
+  const selection = pickSelection(ctx);
+  if (selection?.type === 'range') {
+    const isCollapsedCaret = selection.rangeStart === selection.rangeEnd && ctx.entryMode === 'table';
+    if (!isCollapsedCaret) return false;
+  }
+
+  if (ctx.entryMode === 'text' && !ctx.textDurationArmedRef.current) return false;
+
+  const measureIndex = resolveMeasureIndexForKeyboardDigit(
+    selection,
+    ctx.viewport,
+    pickSong(ctx),
+    ctx.keyboardTargetMeasureRef,
+  );
+
+  const noteEntry = shouldUseNoteEntry(selection);
+  const chordDigitsOk = shouldAllowChordDigitEntry(ctx.entryMode) && !noteEntry;
+  if (!chordDigitsOk) return false;
+
+  if (ctx.entryMode === 'text') {
+    if (selection?.type === 'chord' && selection.eventIds?.[0]) {
+      const id = selection.eventIds[0];
+      const ch = ctx.song.measures[selection.measureIndex]?.chords.find((c) => c.id === id);
+      if (!ch) return false;
+      ctx.textDurationArmedRef.current = false;
+      const durClamped = clampDurationToMeasure(ctx.song, selection.measureIndex, ch.beat, ctx.currentDurationTicks);
+      ctx.onChordEdit(selection.measureIndex, {
+        type: 'update',
+        chordId: id,
+        changes: {
+          scaleDegree: fields.scaleDegree,
+          quality: fields.quality,
+          seventh: fields.seventh,
+          suspension: fields.suspension,
+          addition: fields.addition,
+          inversion: fields.inversion,
+          borrowed: fields.borrowed,
+          secondary: fields.secondary,
+          duration: durClamped,
+        },
+      });
+      return true;
+    }
+    const nb = tableInsertBeatFromSelection(selection, ctx.song, measureIndex, 'chord', ctx.activeVoice);
+    if (nb == null) return false;
+    ctx.textDurationArmedRef.current = false;
+    const durClamped = clampDurationToMeasure(ctx.song, measureIndex, nb, ctx.currentDurationTicks);
+    const payload: Omit<ChordEvent, 'id'> = { ...fields, beat: nb, duration: durClamped };
+    ctx.onChordEdit(measureIndex, { type: 'add', chord: payload });
+    return true;
+  }
+
+  const songForChord = pickSong(ctx);
+  const nb = tableInsertBeatFromSelection(selection, songForChord, measureIndex, 'chord', ctx.activeVoice);
+  if (nb == null) return false;
+  const durClamped = clampDurationToMeasure(songForChord, measureIndex, nb, ctx.currentDurationTicks);
+  const payload: Omit<ChordEvent, 'id'> = { ...fields, beat: nb, duration: durClamped };
   ctx.onChordEdit(measureIndex, { type: 'add', chord: payload });
 
   const songAfter = pickSong(ctx);

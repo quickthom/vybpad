@@ -17,7 +17,7 @@ import {
 import { ChordPalette, SecondaryChordInspector } from '../components/panels/ChordPalette';
 import { getKeyAtMeasure, getScaleAtMeasure } from '../engine/renderer/tickUtils';
 import { theoryEngine } from '../engine/theory';
-import { applyChordScaleDegreeFromEditor, type EditorKeyboardContext } from '../hooks/useKeyboard';
+import { applyChordPalettePayloadFromEditor, type EditorKeyboardContext } from '../hooks/useKeyboard';
 import { EntryModeToggle } from '../components/editor/EntryModeToggle';
 import { formatTransportBeat, getPlaybackEngine, getPlaybackInitErrorMessage } from '../engine/audio';
 import { useAuthStore } from '../store/authStore';
@@ -136,6 +136,9 @@ export function EditorLayout() {
     }
     return 0;
   }, [selectedMeasures, selection]);
+  const [chordPaletteMode, setChordPaletteMode] = useState<'diatonic' | 'borrowed' | 'secondary' | 'search'>(
+    'diatonic',
+  );
 
   const getSongAfterMutation = useCallback(() => useSongStore.getState().song, []);
   const getSelectionAfterMutation = useCallback(() => useUIStore.getState().selection, []);
@@ -167,7 +170,7 @@ export function EditorLayout() {
         onNoteEdit: editNote,
         onSelectionChange: setSelection,
       };
-      applyChordScaleDegreeFromEditor(ctx, chord.scaleDegree);
+      applyChordPalettePayloadFromEditor(ctx, chord);
     },
     [
       song,
@@ -547,13 +550,47 @@ export function EditorLayout() {
           aria-label="Chord palette panel"
         >
           {chordPaletteExpanded ? (
-            <>
-              <ChordPalette
-                currentKey={paletteKey}
-                currentScale={paletteScale}
-                mode="diatonic"
-                onChordSelect={handleChordPaletteSelect}
-              />
+            <div className="flex min-h-0 flex-1 flex-col">
+              <div
+                className="flex shrink-0 flex-col gap-2 border-b border-[var(--color-border,#E5E7EB)] px-4 pt-3 pb-2"
+                role="group"
+                aria-label="Chord palette mode"
+              >
+                <div className="flex gap-1 rounded-lg bg-[var(--color-surface-muted,#F9FAFB)] p-1">
+                  <button
+                    type="button"
+                    aria-pressed={chordPaletteMode === 'diatonic'}
+                    onClick={() => setChordPaletteMode('diatonic')}
+                    className={
+                      chordPaletteMode === 'diatonic'
+                        ? 'inline-flex min-h-11 flex-1 items-center justify-center rounded-md bg-[var(--color-surface,#FFFFFF)] px-3 text-sm font-medium text-[var(--color-text-primary,#111827)] shadow-sm outline-none transition focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2'
+                        : 'inline-flex min-h-11 flex-1 items-center justify-center rounded-md px-3 text-sm font-medium text-[var(--color-text-secondary,#4B5563)] outline-none transition hover:bg-[var(--color-surface,#FFFFFF)]/60 focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2'
+                    }
+                  >
+                    Diatonic
+                  </button>
+                  <button
+                    type="button"
+                    aria-pressed={chordPaletteMode === 'borrowed'}
+                    onClick={() => setChordPaletteMode('borrowed')}
+                    className={
+                      chordPaletteMode === 'borrowed'
+                        ? 'inline-flex min-h-11 flex-1 items-center justify-center rounded-md bg-[var(--color-surface,#FFFFFF)] px-3 text-sm font-medium text-[var(--color-text-primary,#111827)] shadow-sm outline-none transition focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2'
+                        : 'inline-flex min-h-11 flex-1 items-center justify-center rounded-md px-3 text-sm font-medium text-[var(--color-text-secondary,#4B5563)] outline-none transition hover:bg-[var(--color-surface,#FFFFFF)]/60 focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2'
+                    }
+                  >
+                    Borrowed
+                  </button>
+                </div>
+              </div>
+              <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+                <ChordPalette
+                  currentKey={paletteKey}
+                  currentScale={paletteScale}
+                  mode={chordPaletteMode}
+                  onChordSelect={handleChordPaletteSelect}
+                />
+              </div>
               <SecondaryChordInspector
                 chord={selectedChord}
                 romanLabel={selectedChordRoman}
@@ -580,7 +617,7 @@ export function EditorLayout() {
                   editChord(selection.measureIndex, { type: 'update', chordId: id, changes });
                 }}
               />
-            </>
+            </div>
           ) : (
             <button
               type="button"
