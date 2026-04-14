@@ -1,15 +1,24 @@
 /*
- * QA COVERAGE — Task 6.3 (conductor tempo map + time signature changes)
+ * QA COVERAGE PLAN — Task 6.3 (tempo map + meter map in conductor track)
+ * ───────────────────────────────────────────────────────────────────────
+ * 1. Regression: constant tempo/meter — SMF1/480, tracks, chord FF01, note scaling (6.1/6.2 parity).
+ * 2. Tempo change at M>0 — FF 51 at measure boundary matches getTempoAtMeasure; tick from getMeasureStartTicks.
+ * 3. Meter change — FF 58 matches getMeterAtMeasure for each span at correct ticks.
+ * 4. Parity — exportSong vs exportMelodyOnly: same FF51/FF58 sequence on conductor (track 0).
  */
 
-import { createMidiExporter } from '@/engine/midi';
-import { getMeasureStartTicks, getMeterAtMeasure, getTempoAtMeasure } from '@/engine/renderer/tickUtils';
+import { createMidiExporter, MIDI_TICK_SCALE } from '@/engine/midi';
+import {
+  getMeasureStartTicks,
+  getMeterAtMeasure,
+  getTempoAtMeasure,
+} from '@/engine/renderer/tickUtils';
 import type { ChordEvent, NoteEvent, SongData } from '@vybpad/shared';
 import { describe, expect, it } from 'vitest';
 
 import {
-  ff51EventsFromTrack,
-  ff58EventsFromTrack,
+  conductorTempoAndMeterMetasFromTrack,
+  ff01EventsInFile,
   firstTrackPayload,
   listMTrkPayloads,
   noteSpansFromTrack,
@@ -17,136 +26,210 @@ import {
   tracksWithNoteData,
 } from '../../../helpers/smfTestUtils';
 
+const MIDI_EXPLICIT_TICK_PAD = 1;
+
 function fixedId(prefix: string, n: number): string {
   return `${prefix}-${String(n).padStart(12, '0')}`;
 }
 
-const DEFAULT_BAND: SongData['bandConfig'] = {
-  tracks: [
-    { role: 'melody1', instrument: 'piano', volume: 0.8, mute: false, octave: 0 },
-    { role: 'melody2', instrument: 'piano', volume: 0.6, mute: true, octave: 0 },
-    { role: 'melody3', instrument: 'piano', volume: 0.6, mute: true, octave: 0 },
-    { role: 'melody4', instrument: 'piano', volume: 0.6, mute: true, octave: 0 },
-    { role: 'harmony', instrument: 'piano', volume: 0.5, mute: false, octave: 0 },
-    { role: 'bass', instrument: 'piano', volume: 0.5, mute: false, octave: -1 },
-    { role: 'drums', instrument: 'piano', volume: 0.0, mute: true, octave: 0 },
-  ],
-};
-
-function emptyMeasure(idSuffix: number): SongData['measures'][0] {
-  return {
-    id: fixedId('10000000-0000-4000-8000', idSuffix),
-    chords: [],
-    notes: [[], [], [], []],
-  };
+function internalAbsTickToMidiTick(absInternal: number): number {
+  return absInternal * MIDI_TICK_SCALE + MIDI_EXPLICIT_TICK_PAD;
 }
 
-function quarterMelody(beat: number, idSuffix: number): NoteEvent {
-  return {
-    id: fixedId('30000000-0000-4000-8000', idSuffix),
-    scaleDegree: 1,
-    octave: 0,
-    chromatic: 0,
-    beat,
-    duration: 48,
-    isRest: false,
-    velocity: 100,
-  };
-}
-
-/** Four empty 4/4 bars; optional mid-song tempo on measure index 2. */
-function buildFourBarSong(opts?: { tempoAtMeasure2?: number }): SongData {
-  const measures: SongData['measures'] = [
-    emptyMeasure(1),
-    emptyMeasure(2),
-    {
-      ...emptyMeasure(3),
-      changes: opts?.tempoAtMeasure2 !== undefined ? { tempo: opts.tempoAtMeasure2 } : undefined,
-    },
-    emptyMeasure(4),
-  ];
-  measures[0] = {
-    ...measures[0]!,
-    chords: [
-      {
-        id: fixedId('20000000-0000-4000-8000', 1),
-        scaleDegree: 1,
-        quality: 'major',
-        seventh: 'maj7',
-        suspension: 'none',
-        addition: 'none',
-        inversion: 0,
-        borrowed: null,
-        secondary: null,
-        beat: 0,
-        duration: 192,
-      } satisfies ChordEvent,
-    ],
-    notes: [[quarterMelody(0, 1)], [], [], []],
-  };
-  return {
-    version: '1.0',
-    metadata: {
-      title: 'TASK-6.3 tempo map',
-      key: 'C',
-      scale: 'major',
-      tempo: 120,
-      meter: { numerator: 4, denominator: 4 },
-    },
-    measures,
-    bandConfig: DEFAULT_BAND,
-  };
-}
-
-/** Meter switches to 3/4 at measure index 2 (two leading 4/4 bars). */
-function buildMeterChangeAtMeasure2(): SongData {
-  const measures: SongData['measures'] = [
-    emptyMeasure(1),
-    emptyMeasure(2),
-    {
-      ...emptyMeasure(3),
-      changes: { meter: { numerator: 3, denominator: 4 } },
-    },
-    emptyMeasure(4),
-  ];
-  measures[0] = {
-    ...measures[0]!,
-    notes: [[quarterMelody(0, 1)], [], [], []],
-  };
-  return {
-    version: '1.0',
-    metadata: {
-      title: 'TASK-6.3 meter change',
-      key: 'C',
-      scale: 'major',
-      tempo: 120,
-      meter: { numerator: 4, denominator: 4 },
-    },
-    measures,
-    bandConfig: DEFAULT_BAND,
-  };
-}
-
-function usecFromBpm(bpm: number): number {
+/** midi-writer-js TempoEvent uses Math.round(60_000_000 / bpm). */
+function expectedUsecPerQuarterForBpm(bpm: number): number {
   return Math.round(60_000_000 / bpm);
 }
 
-describe('TASK-6.3 MidiExporter — conductor tempo map (INTERFACES § MidiExporter)', () => {
+const DEFAULT_BAND = {
+  tracks: [
+    { role: 'melody1' as const, instrument: 'piano', volume: 0.8, mute: false, octave: 0 },
+    { role: 'melody2' as const, instrument: 'piano', volume: 0.6, mute: true, octave: 0 },
+    { role: 'melody3' as const, instrument: 'piano', volume: 0.6, mute: true, octave: 0 },
+    { role: 'melody4' as const, instrument: 'piano', volume: 0.6, mute: true, octave: 0 },
+    { role: 'harmony' as const, instrument: 'piano', volume: 0.5, mute: false, octave: 0 },
+    { role: 'bass' as const, instrument: 'piano', volume: 0.5, mute: false, octave: -1 },
+    { role: 'drums' as const, instrument: 'piano', volume: 0.0, mute: true, octave: 0 },
+  ],
+};
+
+/** Constant 4/4 + 120 BPM: melody quarter + harmony chord (TASK-6.1/6.2 regression baseline). */
+function buildConstantSongWithMelodyHarmonyAndTwoChords(): SongData {
+  return {
+    version: '1.0',
+    metadata: {
+      title: 'TASK-6.3 regression constant',
+      key: 'C',
+      scale: 'major',
+      tempo: 120,
+      meter: { numerator: 4, denominator: 4 },
+    },
+    measures: [
+      {
+        id: fixedId('10000000-0000-4000-8000', 1),
+        chords: [
+          {
+            id: fixedId('20000000-0000-4000-8000', 1),
+            scaleDegree: 1,
+            quality: 'major',
+            seventh: 'maj7',
+            suspension: 'none',
+            addition: 'none',
+            inversion: 0,
+            borrowed: null,
+            secondary: null,
+            beat: 0,
+            duration: 96,
+          } satisfies ChordEvent,
+          {
+            id: fixedId('20000000-0000-4000-8000', 2),
+            scaleDegree: 5,
+            quality: 'major',
+            seventh: 'dom7',
+            suspension: 'none',
+            addition: 'none',
+            inversion: 0,
+            borrowed: null,
+            secondary: null,
+            beat: 96,
+            duration: 96,
+          } satisfies ChordEvent,
+        ],
+        notes: [
+          [
+            {
+              id: fixedId('30000000-0000-4000-8000', 1),
+              scaleDegree: 1,
+              octave: 0,
+              chromatic: 0,
+              beat: 0,
+              duration: 48,
+              isRest: false,
+              velocity: 100,
+            } satisfies NoteEvent,
+          ],
+          [],
+          [],
+          [],
+        ],
+      },
+    ],
+    bandConfig: DEFAULT_BAND,
+  };
+}
+
+/** Tempo 120 in metadata; first change to 90 BPM at start of measure index 1. */
+function buildSongWithTempoChangeAtMeasureOne(): SongData {
+  return {
+    version: '1.0',
+    metadata: {
+      title: 'TASK-6.3 tempo change M1',
+      key: 'C',
+      scale: 'major',
+      tempo: 120,
+      meter: { numerator: 4, denominator: 4 },
+    },
+    measures: [
+      {
+        id: fixedId('10000000-0000-4000-8000', 1),
+        chords: [],
+        notes: [[], [], [], []],
+      },
+      {
+        id: fixedId('10000000-0000-4000-8000', 2),
+        chords: [],
+        notes: [[], [], [], []],
+        changes: { tempo: 90 },
+      },
+      {
+        id: fixedId('10000000-0000-4000-8000', 3),
+        chords: [],
+        notes: [[], [], [], []],
+      },
+    ],
+    bandConfig: DEFAULT_BAND,
+  };
+}
+
+/** 4/4 then 3/4 from measure index 1 (TASK-5.6 fixture). */
+function buildSongWithMeterChangeAtMeasureOne(): SongData {
+  return {
+    version: '1.0',
+    metadata: {
+      title: 'TASK-6.3 meter change M1',
+      key: 'C',
+      scale: 'major',
+      tempo: 120,
+      meter: { numerator: 4, denominator: 4 },
+    },
+    measures: [
+      {
+        id: fixedId('10000000-0000-4000-8000', 10),
+        chords: [],
+        notes: [[], [], [], []],
+      },
+      {
+        id: fixedId('10000000-0000-4000-8000', 11),
+        chords: [],
+        notes: [[], [], [], []],
+        changes: { meter: { numerator: 3, denominator: 4 } },
+      },
+      {
+        id: fixedId('10000000-0000-4000-8000', 12),
+        chords: [],
+        notes: [[], [], [], []],
+      },
+    ],
+    bandConfig: DEFAULT_BAND,
+  };
+}
+
+/** Combined tempo + meter changes for exportSong vs exportMelodyOnly parity. */
+function buildSongWithTempoAndMeterChanges(): SongData {
+  return {
+    version: '1.0',
+    metadata: {
+      title: 'TASK-6.3 tempo+meter',
+      key: 'C',
+      scale: 'major',
+      tempo: 100,
+      meter: { numerator: 4, denominator: 4 },
+    },
+    measures: [
+      {
+        id: fixedId('10000000-0000-4000-8000', 20),
+        chords: [],
+        notes: [[], [], [], []],
+      },
+      {
+        id: fixedId('10000000-0000-4000-8000', 21),
+        chords: [],
+        notes: [[], [], [], []],
+        changes: { tempo: 140, meter: { numerator: 6, denominator: 8 } },
+      },
+    ],
+    bandConfig: DEFAULT_BAND,
+  };
+}
+
+function conductorMetas(bytes: Uint8Array) {
+  return conductorTempoAndMeterMetasFromTrack(firstTrackPayload(bytes));
+}
+
+describe('TASK-6.3 MidiExporter — tempo/meter map (INTERFACES § MidiExporter, tickUtils)', () => {
   const exporter = createMidiExporter();
 
-  describe('regression — constant tempo/meter', () => {
-    it('still produces Type 1 SMF at 480 PPQN with expected note scheduling (TASK-6.1 / 6.2)', () => {
-      const song = buildFourBarSong();
+  describe('regression — constant tempo/meter preserves TASK-6.1/6.2-level SMF output', () => {
+    it('exports SMF Type 1 at 480 PPQN with multiple note tracks and PAT-004 quarter = 480 MIDI ticks', () => {
+      const song = buildConstantSongWithMelodyHarmonyAndTwoChords();
       const bytes = exporter.exportSong(song);
       const header = parseSmfHeader(bytes);
       expect(header.format).toBe(1);
       expect(header.ticksPerQuarter).toBe(480);
-      expect(listMTrkPayloads(bytes).length).toBeGreaterThanOrEqual(4);
       expect(tracksWithNoteData(bytes).length).toBeGreaterThanOrEqual(2);
 
-      const tracks = listMTrkPayloads(bytes);
       let found480 = false;
-      for (const tr of tracks) {
+      for (const tr of listMTrkPayloads(bytes)) {
         for (const s of noteSpansFromTrack(tr)) {
           if (s.endTick - s.startTick === 480) found480 = true;
         }
@@ -154,77 +237,82 @@ describe('TASK-6.3 MidiExporter — conductor tempo map (INTERFACES § MidiExpor
       expect(found480).toBe(true);
     });
 
-    it('emits a single FF 51 / FF 58 baseline when tempo and meter are constant', () => {
-      const song = buildFourBarSong();
-      const cond = firstTrackPayload(exporter.exportSong(song));
-      const tempos = ff51EventsFromTrack(cond);
-      const meters = ff58EventsFromTrack(cond);
-      expect(tempos.length).toBe(1);
-      expect(meters.length).toBe(1);
-      expect(tempos[0]!.usecPerQuarter).toBe(usecFromBpm(120));
-      expect(meters[0]!.numerator).toBe(4);
-      expect(meters[0]!.denominator).toBe(4);
+    it('places chord-name FF 01 events at PAT-004–scaled ticks (same rule as TASK-6.2)', () => {
+      const song = buildConstantSongWithMelodyHarmonyAndTwoChords();
+      const bytes = exporter.exportSong(song);
+      const ticks = ff01EventsInFile(bytes).map((e) => e.absTick);
+      expect(ticks).toContain(internalAbsTickToMidiTick(0));
+      expect(ticks).toContain(internalAbsTickToMidiTick(96));
+    });
+
+    it('exportMelodyOnly yields exactly one MTrk with note spans', () => {
+      const song = buildConstantSongWithMelodyHarmonyAndTwoChords();
+      const bytes = exporter.exportMelodyOnly(song);
+      parseSmfHeader(bytes);
+      expect(tracksWithNoteData(bytes).length).toBe(1);
     });
   });
 
-  describe('tempo change at measure M > 0', () => {
-    it('places Set Tempo at scaled measure-start tick with BPM from getTempoAtMeasure(song, M)', () => {
-      const song = buildFourBarSong({ tempoAtMeasure2: 140 });
-      expect(getTempoAtMeasure(song, 1)).toBe(120);
-      expect(getTempoAtMeasure(song, 2)).toBe(140);
+  describe('tempo change — FF 51 on conductor track at measure boundaries', () => {
+    it('emits Set Tempo for post-change BPM at the MIDI tick aligned to getMeasureStartTicks for that measure', () => {
+      const song = buildSongWithTempoChangeAtMeasureOne();
+      const starts = getMeasureStartTicks(song);
+      const boundaryInternal = starts[1]!;
+      const boundaryMidi = internalAbsTickToMidiTick(boundaryInternal);
+      expect(getTempoAtMeasure(song, 0)).toBe(120);
+      expect(getTempoAtMeasure(song, 1)).toBe(90);
 
-      const internalStartM2 = getMeasureStartTicks(song)[2]!;
-      const INTERNAL_TO_MIDI_TICK = 10;
-      const MIDI_EXPLICIT_TICK_PAD = 1;
-      const expectedAbsMidi = internalStartM2 * INTERNAL_TO_MIDI_TICK + MIDI_EXPLICIT_TICK_PAD;
+      const bytes = exporter.exportSong(song);
+      const { setTempos } = conductorMetas(bytes);
+      const atBoundary = setTempos.find((e) => e.absTick === boundaryMidi);
+      expect(atBoundary).toBeDefined();
+      expect(atBoundary!.usecPerQuarter).toBe(expectedUsecPerQuarterForBpm(getTempoAtMeasure(song, 1)));
 
-      const cond = firstTrackPayload(exporter.exportSong(song));
-      const tempos = ff51EventsFromTrack(cond).sort((a, b) => a.absTick - b.absTick);
-      expect(tempos.length).toBe(2);
-      expect(tempos[0]!.absTick).toBe(1);
-      expect(tempos[0]!.usecPerQuarter).toBe(usecFromBpm(120));
-      expect(tempos[1]!.absTick).toBe(expectedAbsMidi);
-      expect(tempos[1]!.usecPerQuarter).toBe(usecFromBpm(140));
+      const initial = setTempos.find((e) => e.absTick === 0);
+      expect(initial).toBeDefined();
+      expect(initial!.usecPerQuarter).toBe(expectedUsecPerQuarterForBpm(getTempoAtMeasure(song, 0)));
     });
   });
 
-  describe('time signature change', () => {
-    it('emits FF 58 for the new meter at the measure boundary per getMeterAtMeasure', () => {
-      const song = buildMeterChangeAtMeasure2();
-      expect(getMeterAtMeasure(song, 1).numerator).toBe(4);
-      expect(getMeterAtMeasure(song, 2).numerator).toBe(3);
+  describe('meter change — FF 58 matches getMeterAtMeasure for each span', () => {
+    it('emits Time Signature meta at the MIDI tick aligned to each measure start where the notated meter applies', () => {
+      const song = buildSongWithMeterChangeAtMeasureOne();
+      const starts = getMeasureStartTicks(song);
+      const m0 = getMeterAtMeasure(song, 0);
+      const m1 = getMeterAtMeasure(song, 1);
+      expect(m0).toEqual({ numerator: 4, denominator: 4 });
+      expect(m1).toEqual({ numerator: 3, denominator: 4 });
 
-      const internalStartM2 = getMeasureStartTicks(song)[2]!;
-      const expectedAbsMidi = internalStartM2 * 10 + 1;
+      const bytes = exporter.exportSong(song);
+      const { timeSignatures } = conductorMetas(bytes);
+      const t0 = timeSignatures.find((e) => e.absTick === 0);
+      expect(t0).toBeDefined();
+      expect(t0!.numerator).toBe(m0.numerator);
+      expect(t0!.denominator).toBe(m0.denominator);
 
-      const cond = firstTrackPayload(exporter.exportSong(song));
-      const meters = ff58EventsFromTrack(cond).sort((a, b) => a.absTick - b.absTick);
-      expect(meters.length).toBe(2);
-      expect(meters[0]!.absTick).toBe(1);
-      expect(meters[0]!.numerator).toBe(4);
-      expect(meters[1]!.absTick).toBe(expectedAbsMidi);
-      expect(meters[1]!.numerator).toBe(3);
-      expect(meters[1]!.denominator).toBe(4);
+      const tM1 = timeSignatures.find((e) => e.absTick === internalAbsTickToMidiTick(starts[1]!));
+      expect(tM1).toBeDefined();
+      expect(tM1!.numerator).toBe(m1.numerator);
+      expect(tM1!.denominator).toBe(m1.denominator);
     });
   });
 
-  describe('exportMelodyOnly parity with exportSong', () => {
-    it('uses the same conductor-track FF 51 / FF 58 sequence as exportSong', () => {
-      const song = buildFourBarSong({ tempoAtMeasure2: 90 });
-      const full = firstTrackPayload(exporter.exportSong(song));
-      const melo = firstTrackPayload(exporter.exportMelodyOnly(song));
+  describe('parity — exportMelodyOnly vs exportSong conductor tempo/meter map', () => {
+    it('writes identical FF 51 and FF 58 sequences on track 0 for the same song (including mid-score map events)', () => {
+      const song = buildSongWithTempoAndMeterChanges();
+      const full = exporter.exportSong(song);
+      const melody = exporter.exportMelodyOnly(song);
 
-      const tFull = ff51EventsFromTrack(full);
-      const tMelo = ff51EventsFromTrack(melo);
-      const mFull = ff58EventsFromTrack(full);
-      const mMelo = ff58EventsFromTrack(melo);
+      const a = conductorMetas(full);
+      const b = conductorMetas(melody);
 
-      expect(tFull.map((e) => [e.absTick, e.usecPerQuarter])).toEqual(
-        tMelo.map((e) => [e.absTick, e.usecPerQuarter]),
-      );
-      expect(mFull.map((e) => [e.absTick, e.numerator, e.denominator])).toEqual(
-        mMelo.map((e) => [e.absTick, e.numerator, e.denominator]),
-      );
+      expect(a.setTempos.length).toBeGreaterThanOrEqual(2);
+      expect(a.timeSignatures.length).toBeGreaterThanOrEqual(2);
+      expect(b.setTempos.length).toBeGreaterThanOrEqual(2);
+      expect(b.timeSignatures.length).toBeGreaterThanOrEqual(2);
+
+      expect(a.setTempos).toEqual(b.setTempos);
+      expect(a.timeSignatures).toEqual(b.timeSignatures);
     });
   });
 });

@@ -576,3 +576,14 @@ export function ff58EventsFromTrack(trackData: Uint8Array): Ff58TimeSignatureEve
 export function firstTrackPayload(bytes: Uint8Array): Uint8Array {
   return listMTrkPayloads(bytes)[0]!;
 }
+
+/** FF 51 + FF 58 metas from one MTrk payload (composed from single-kind parsers). */
+export function conductorTempoAndMeterMetasFromTrack(trackData: Uint8Array): {
+  setTempos: Ff51TempoEvent[];
+  timeSignatures: Ff58TimeSignatureEvent[];
+} {
+  return {
+    setTempos: ff51EventsFromTrack(trackData),
+    timeSignatures: ff58EventsFromTrack(trackData),
+  };
+}
