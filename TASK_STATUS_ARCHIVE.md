@@ -73,28 +73,45 @@
 
 ---
 
-## Phase 4 session log migration — 2026-04-14
+## Phase 3 — Persistence Layer (Client)
 
-Migrated from `TASK_STATUS.md` (retired per PAT-025 single-section format).
+**Goal:** User can save and load projects. **Status:** TASK-3.0–3.5 merged 2026-04-13; Phase 3 milestone complete.
 
-2026-04-13 TASK-4.2 ci-remediation active PR:#35 lane:Builder+QA (E2E 401 console errors; Actions run 24353007958)
-2026-04-13 TASK-4.2 ci-failure PR:#35 Actions:24354157756 (E2E strict mode duplicate role=alert; not infra)
-2026-04-13 TASK-4.2 remediation-pushed PR:#35 branch:phase-4/piano-sample-loading (single toast alert; E2E Scenario D; commit b3348e7 on worktree — verify on origin CI)
-2026-04-13 TASK-4.2 ci-failure PR:#35 Actions:24354792596 (E2E persistence.happy autosave ≥2 chords — app/tests; not infra)
-2026-04-13 TASK-4.2 remediation-pushed PR:#35 commits:e9425ff,9af5c18 (persistence E2E + canvas focus) await-next-CI
-2026-04-13 TASK-4.2 ci-failure PR:#35 Actions:24355475894 head:9af5c18 (E2E persistence.happy poll ≥2 chords — app/autosave; not infra)
-2026-04-13 TASK-4.2 pm-spawn Builder+QA PR:#35 lane:ci-remediation-round-2
-2026-04-13 TASK-4.2 remediation-pushed PR:#35 commits:d8e6c84,3bdedd5 (EditorLayout bootstrap; persistence E2E Table mode) CI:24356446158-in-progress
-2026-04-13 TASK-4.2 ci-failure PR:#35 Actions:24356446158 head:3bdedd5 (E2E persistence.happy poll ≥2 chords — app/tests; not infra)
-2026-04-13 TASK-4.2 ci-failure PR:#35 Actions:24358370117 head:c141228 (same E2E failure after commits through c141228)
-2026-04-13 TASK-4.2 pm-brief remediation-r3 PR:#35 lane:Builder+QA persistence E2E
-2026-04-13 TASK-4.2 remediation-pushed PR:#35 commits:1565698,57c4f23 (E2E degrees 1+2; POST bootstrap GET dedupe)
-2026-04-13 TASK-4.2 ci-failure PR:#35 Actions:24359135236 head:57c4f23 (tsc EditorCanvasProps getSelectionAfterMutation)
-2026-04-13 TASK-4.2 remediation-pushed PR:#35 commit:0e150d9 (INTERFACES EditorCanvasProps + doc) CI:24359238228
-2026-04-13 TASK-4.2 ci-failure PR:#35 Actions:24359238228 head:0e150d9 (E2E persistence.happy poll scale degrees 1+2 — app/tests)
-2026-04-13 TASK-4.2 blocking-flag PR:#35 INTERFACES.md edited commit:0e150d9 — Architect review
-2026-04-13 TASK-4.2 pm-brief remediation-r4 PR:#35 lane:Builder+QA persistence E2E
-2026-04-13 TASK-4.2 remediation-pushed PR:#35 commits:355c5fe,49b5183,3e73691 (E2E PUT wait strategies)
-2026-04-13 TASK-4.2 ci-failure PR:#35 Actions:24359972279 head:355c5fe (GET before PUT completed)
-2026-04-13 TASK-4.2 ci-failure PR:#35 Actions:24360173331 head:49b5183 (putReq.response() null)
-2026-04-13 TASK-4.2 ci-failure PR:#35 Actions:24360363016 head:3e73691 (waitForResponse 90s no matching PUT body)
+| Task | Role | Branch | Status | PR | Depends | Notes |
+|---|---|---|---|---|---|---|
+| 3.0 | Builder | — | merged | #24 | None | Tech debt / comments |
+| 3.1 | Builder | — | merged | #25 | 1B.5, 0.2 | Auth store + login/register |
+| 3.2 | Builder | — | merged | #29 | 1B.5, 0.2 | Project list UI |
+| 3.3 | Builder | — | merged | #30 | 2.1, 1B.3, 3.1 | Save/load editor ↔ API |
+| 3.4 | Builder | — | merged | #31 | 3.3 | Squashed to develop 2026-04-13 |
+| 3.5 | QA | — | merged | #32 | 3.1–3.4, 2.7–2.10 | Integrator merged to develop (`eab2ba3`) |
+| F-02a | Documenter | — | merged | #28 | — | README + CHANGELOG + ENVIRONMENTS stub |
+| F-02b | DevOps | — | merged | #27 | — | ENVIRONMENTS.md PAT-026 |
+| F-05 | Designer | — | merged | #26 | — | Phase 2 design review + UX v1.1 |
+| F-06 | Designer | — | merged | — | Phase 3 milestone | UX v1.2 + `MILESTONE-F06-DESIGN-REVIEW.md` on `develop` |
+
+**Milestone:** User registers, logs in, creates a project, edits it, sees it auto-save, refreshes, logs in again, finds work intact.
+
+---
+
+## Phase 4 — Audio Playback
+
+**Goal:** Press play, hear piano chords + melody, see cursor move. **Status:** **Milestone complete** — TASK-4.1–4.10 merged; **`MILESTONE-F07-DESIGN-REVIEW.md`** (F-07) on `develop`. **Merge gate:** local CI (`docs/CI_LOCAL.md` / `./scripts/ci-local.sh`).
+
+| Task | Role | Branch | Status | PR | Depends | Notes |
+|---|---|---|---|---|---|---|
+| 4.1 | Builder + QA | — | merged | #34 | 0.2 | merged to develop (`ead7d21`) |
+| 4.2 | Builder + QA | — | merged | #35 | 4.1 | Squashed to develop (`ec67e7f`) |
+| 4.3 | Builder + QA | — | merged | #36 | 1A.3 | Squash merge to develop **`805d485`** (`c9cafca` on PR); pre-merge CI [24375973177](https://github.com/quickthom/vybpad/actions/runs/24375973177) PASS |
+| 4.4 | Builder + QA | — | merged | #37 | 4.1,4.2,4.3,1A.2 | Squash merge to develop **`11d6326`** (`fccef4f` PR head); worktree `task-4-4-song-scheduler` **removed** |
+| 4.5 | Builder + QA | — | merged | [#38](https://github.com/quickthom/vybpad/pull/38) | 0.2 | Squash on **`53f87ac`**. Worktree `task-4-5-transport-controls-ui` — remove after housekeeping (PAT-017) |
+| 4.6 | Builder + QA | — | merged | [#39](https://github.com/quickthom/vybpad/pull/39) | 2.2,4.4 | Squash on **`8a46e47`**. Worktree `task-4-6-playback-cursor` — remove when convenient (PAT-017) |
+| 4.7 | Builder + QA | — | merged | [#40](https://github.com/quickthom/vybpad/pull/40) | 4.4,0.2 | Squash on **`3ae289e`**. Worktree `task-4-7-mixer-panel` — remove when convenient (PAT-017) |
+| 4.8 | Builder + QA | — | merged | [#41](https://github.com/quickthom/vybpad/pull/41) | 4.4,4.6 | Squash **`e7bcf96`**; INTERFACES follow-up **done** on `develop` (`319070e`). Worktree `task-4-8-loop-bar` — remove when convenient (PAT-017) |
+| 4.9 | QA | — | merged | [#42](https://github.com/quickthom/vybpad/pull/42) | 4.3,4.4 | Squash on **`d290360`**; QA worktrees **removed** (PAT-017) |
+| 4.10 | QA | — | merged | [#43](https://github.com/quickthom/vybpad/pull/43) | 4.6 | Squash on **`1fe1984`**; E2E transport readout |
+| F-07 | Designer | — | merged | — | Phase 4 milestone | `MILESTONE-F07-DESIGN-REVIEW.md` on `develop` |
+
+**Milestone:** User enters chords and melody, presses play, hears piano chords + melody in sync, cursor tracks position, mixer adjusts volume, loop region works.
+
+---

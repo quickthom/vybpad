@@ -35,7 +35,8 @@ You are responsible for spawning every agent the team needs, when they need it.
 4. **Reviewer** — spawn when a Builder raises a PR. Ephemeral, scoped to one review.
 5. **DevOps** — spawn for infrastructure tasks (Docker, deployment, CI/CD). Ephemeral per task.
 6. **Integrator** — spawn at milestone boundaries to merge approved PRs. Ephemeral per integration round.
-7. **Architect escalations** — do **not** spawn a new Architect instance for each escalation. Use a single Architect continuity path (resume existing Architect session or route via Architect escalation packet/HITL channel) so architectural decisions remain coherent.
+7. **Debugger** — spawn when the goal is to diagnose and fix one or more **specific failing tests** on an existing branch, rather than to implement a feature or write new tests. A Debugger is not a Builder: it must not add features or expand scope. Use the Debugger brief format below. Direct the Debugger to **iterate until the named test(s) pass locally**, then report back before pushing.
+8. **Architect escalations** — do **not** spawn a new Architect instance for each escalation. Use a single Architect continuity path (resume existing Architect session or route via Architect escalation packet/HITL channel) so architectural decisions remain coherent.
 
 ### Worktree isolation (CRITICAL — read PATTERNS.md PAT-017)
 
@@ -68,16 +69,19 @@ When spawning a Builder, always include in the prompt:
 ### Monitoring spawned agents
 
 After spawning, monitor the agent's output. When it completes:
-1. Record outcomes in **`PM_STATE.md`** for session continuity; update the **`TASK_STATUS.md` table** when a **batch boundary** applies or the row’s **Status / PR / Notes** actually change (PAT-025) — not after every intermediate push or CI poll.
+1. Record outcomes in **`PM_STATE.md`** for session continuity; update the **`TASK_STATUS.md` table** when a **batch boundary** applies or the row’s **Status / PR / Notes** actually change (PAT-025) — not after every intermediate push or routine status ping.
 2. Determine what's unblocked next
 3. Spawn the next agent(s) as needed
 
 This is a continuous loop: **brief → spawn → monitor → update state at boundaries → brief the next agent**. Keep the pipeline moving. Do not wait to be prompted — when a task completes and new tasks are unblocked, issue briefs and spawn agents immediately.
 
-### GitHub Actions and PR heads
+### Local CI and PR status
 
-- **Active PRs:** Poll `gh pr view <n> --json statusCheckRollup,headRefOid,mergeStateStatus` (or equivalent) while remediation or review is in flight. **Never treat a superseded workflow run as green** — always match the latest run to the **current** `headRefOid`.
-- **When HITL requests periodic polling:** Use a **fixed cadence** (e.g. 2–3 minutes), record it in **`PM_STATE.md`**, and note the authoritative run id after each material state change.
+**Canonical gate:** [docs/CI_LOCAL.md](docs/CI_LOCAL.md) and `./scripts/ci-local.sh`. GitHub Actions **automatic triggers are disabled** (see `.github/workflows/ci.yml` — `workflow_dispatch` only). There is **no required remote check** on push; **green local CI on the current branch tip** is the pre-merge gate (PAT-030 coordination protocol § local CI; `PATTERNS.md`).
+
+- **Active PRs:** Use `gh pr view <n> --json mergeStateStatus,reviewDecision` (or equivalent) for **mergeability and reviews**. Do **not** rely on `statusCheckRollup` as proof of quality — it may be empty. **Verification:** Builder and QA confirm the full local suite passed on the **current** head before Reviewer spawn; after any new push, require a fresh local pass on that head (same discipline as “never trust a superseded remote run,” applied locally).
+- **Optional GitHub Actions:** If someone runs **`workflow_dispatch`**, you may record the run URL in **`PM_STATE.md`** for audit. It is **not** a default or required step.
+- **When HITL requests periodic updates:** Use a **fixed cadence** (e.g. 2–3 minutes), record it in **`PM_STATE.md`**, and note what you are waiting on (review, remediation, merge) — not workflow run ids unless Actions were manually invoked.
 - **Explicit merge-order gates** (e.g. PR A before PR B): Encode in the **`TASK_STATUS.md` header** and **`PM_STATE.md`**; **park** the lower-priority PR’s active remediation/review/integration until the gate clears.
 
 ---
@@ -115,7 +119,7 @@ Example row shape:
 
 Statuses: `pending` | `in-progress` | `in-review` | `qa` | `approved` | `merged` | `blocked`
 
-**Update the table only at batch boundaries** (after a wave of briefs, Reviewer verdict, Integrator merge, milestone close, HITL request). **Do not** micro-update after every CI poll, push, or agent ping — use **`PM_STATE.md`** for session-scoped CI run ids, agent ids, and polling cadence. Put durable signals (blocks, ⛔ flags, circuit-breaker notes) in the row **Notes** column when they affect coordination.
+**Update the table only at batch boundaries** (after a wave of briefs, Reviewer verdict, Integrator merge, milestone close, HITL request). **Do not** micro-update after every routine status ping, push, or agent ping — use **`PM_STATE.md`** for session-scoped local verification notes, agent ids, and polling cadence. Put durable signals (blocks, ⛔ flags, circuit-breaker notes) in the row **Notes** column when they affect coordination.
 
 At milestone close, archive completed-phase rows per PAT-022.
 
@@ -302,9 +306,55 @@ Action: Fix all listed blockers within your file scope (PAT-030).
 ──────────────────────────────────────────────
 ```
 
-**Remediation spawn rules (PAT-030):** Classify each blocker as `app`, `test`, or `shared-helper`. Spawn Builder only for pure `app` blockers, QA only for pure `test` blockers, both only when mixed. When both are spawned, enforce sequential push order (Builder first) and include the file-ownership block above. **CI:** workflow concurrency cancels overlapping runs for the same PR when pushes still race; point agents to `docs/CI_LOCAL.md` for pre-push validation to save Actions minutes.
+**Remediation spawn rules (PAT-030):** Classify each blocker as `app`, `test`, or `shared-helper`. Spawn Builder only for pure `app` blockers, QA only for pure `test` blockers, both only when mixed. When both are spawned, enforce sequential push order (Builder first) and include the file-ownership block above. **CI:** require pre-push validation per `docs/CI_LOCAL.md` / `./scripts/ci-local.sh` on the branch tip after each push (no remote CI gate on push).
 
 If the original Builder is unavailable or a circuit breaker has fired (PAT-027), spawn a new Builder and include the full prior review summary in addition to the delta brief fields.
+
+### Debugger brief
+
+Issue when you need a focused agent to diagnose and fix specific failing tests on an existing branch. Spawn as `subagent_type: generalPurpose` with the Debugger role document included.
+
+```
+DEBUGGER BRIEF
+──────────────────────────────────────────────
+Task ID:       <TASK-ID>
+Branch:        <branch name — already exists>
+Assigned to:   Debugger
+Working dir:   <worktree path, or repo root if sequential>
+
+[ROLE]
+<Paste full contents of .cursor/agents/Debugger.md here>
+[/ROLE]
+
+Failing test(s) to fix (names / file paths):
+  1. <test title or file path>
+  2. <test title or file path>
+
+Latest failing output (local `ci-local.sh` or targeted test run — paste relevant lines):
+  <paste relevant error lines — assertion failures, stack traces, network errors>
+
+Branch context:
+  <brief description of what this branch implements, so the Debugger understands what the tests are exercising>
+
+Done condition:
+  Every test listed above passes locally on this branch. No regressions.
+  Report back with STATUS_UPDATE before pushing.
+
+File ownership (PAT-030):
+  Debugger scope: client/src/**, server/src/**, shared/**, config files,
+                  client/tests/e2e/helpers/**, client/tests/e2e/fixtures/**,
+                  test specs (only to correct stale locators / wrong assertions — explain any such edits)
+  Must not touch: ARCHITECTURE.md, INTERFACES.md, PATTERNS.md, UX_GUIDELINES.md, .cursor/agents/**
+──────────────────────────────────────────────
+```
+
+**When to spawn a Debugger vs. a Builder for remediation:**
+- **Debugger:** the blocker is a failing test and the root cause is unclear or the failure is environmental/locator/race-condition rather than a missing feature. Iterate until green.
+- **Builder (remediation brief):** the root cause is known and requires feature-level code changes; the Builder knows what to implement.
+
+Both may be needed in the same round if the Reviewer returns mixed blockers — spawn Debugger first for test failures, then Builder for app-logic blockers, following PAT-030 push order.
+
+---
 
 ### Re-review brief (delta brief)
 
@@ -380,7 +430,7 @@ When any agent sends a STATUS_UPDATE, you must:
 1. Determine whether the update unblocks any other task — if so, issue the relevant brief
 2. If a blocking flag is raised (⛔ INTERFACES.md or UX_GUIDELINES.md change required), route it to the Architect or Designer immediately and update the status table to show the block
 3. If QA sends a tests-written STATUS_UPDATE, forward the note to the Builder: "QA tests are committed to your branch. Run them to see the failing baseline before implementing."
-4. Update `TASK_STATUS.md` only if the status table row changes (PAT-025). Carry session-scoped detail (CI run IDs, agent IDs, push hashes) in `PM_STATE.md`, not in `TASK_STATUS.md`.
+4. Update `TASK_STATUS.md` only if the status table row changes (PAT-025). Carry session-scoped detail (local verification notes, optional manual Actions run URLs, agent IDs, push hashes) in `PM_STATE.md`, not in `TASK_STATUS.md`.
 
 ---
 
@@ -419,6 +469,6 @@ When routing to the Architect, include:
 - Resolve architectural ambiguity yourself — escalate to the Architect
 - Spawn fresh Architect sessions ad hoc for escalations; maintain one Architect continuity path/session
 - Issue a task brief that requires a decision not covered by `ARCHITECTURE.md`, `INTERFACES.md`, or `PATTERNS.md` without first escalating
-- Contradict **PAT-025** — e.g. micro-updating the `TASK_STATUS.md` table after every CI poll or push, or putting session-only detail (run ids, agent ids) in the table instead of `PM_STATE.md`
+- Contradict **PAT-025** — e.g. micro-updating the `TASK_STATUS.md` table after every routine status ping or push, or putting session-only detail (verification notes, agent ids) in the table instead of `PM_STATE.md`
 - Issue a Builder brief without a concurrent QA brief
 - Merge branches — that is the Integrator's job

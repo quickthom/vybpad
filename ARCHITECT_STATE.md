@@ -2,8 +2,6 @@
 
 > Architect continuity cache — **not** a substitute for `ARCHITECTURE.md`. **Flushed** 2026-04-14; repopulate on HITL request, before a known interruption, or after an escalation that changes canonical docs.
 
-**Authoritative tip:** `git fetch origin && git rev-parse origin/develop` — do not rely on SHAs in this file after a flush.
-
 ---
 
 ## Resume (Architect)

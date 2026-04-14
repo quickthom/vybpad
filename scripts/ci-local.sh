@@ -27,8 +27,8 @@ echo "==> npm run lint"
 npm run lint
 echo "==> npm test"
 npm test
-echo "==> playwright install chromium"
-npx playwright install chromium --with-deps
+#echo "==> playwright install chromium"
+#npx playwright install chromium --with-deps
 echo "==> npm run test:e2e"
 npm run test:e2e
 echo "==> ci-local: OK"

@@ -402,13 +402,13 @@ Update the status table at these batch boundaries only:
 - After milestone close (collapse phase to archive one-liner per PAT-022)
 - On HITL request
 
-**Do not** update the table after every CI poll, agent status update, or intermediate push. Carry that detail in `PM_STATE.md` while a session is active; it will be discarded when the session closes.
+**Do not** update the table after every routine status ping, agent status update, or intermediate push. Carry that detail in `PM_STATE.md` while a session is active; it will be discarded when the session closes.
 
 Significant transitions (escalation resolved, circuit breaker triggered, phase complete) go in the Notes column of the relevant task row, not in a separate log.
 
 ### PM_STATE.md and ARCHITECT_STATE.md
 
-Update on HITL request, before a known interruption, or at milestone close. Do not update after routine events. `PM_STATE.md` is the correct place for active-session narrative — worktree state, CI run IDs, pending agent IDs. That context is session-scoped and does not belong in `TASK_STATUS.md`.
+Update on HITL request, before a known interruption, or at milestone close. Do not update after routine events. `PM_STATE.md` is the correct place for active-session narrative — worktree state, local verification notes (and optional manual `workflow_dispatch` run URLs), pending agent IDs. That context is session-scoped and does not belong in `TASK_STATUS.md`.
 
 ---
 
@@ -522,8 +522,8 @@ Every remediation or re-review handoff must include:
 1. **PM classifies each blocker** before issuing remediation briefs. Each blocker is tagged as `app` (Builder owns fix), `test` (QA owns fix), or `shared-helper` (Builder owns fix, QA reviews).
 2. **Builder pushes first.** When both roles have work, Builder commits and pushes, then signals `REMEDIATION_PUSH` to PM. QA then rebases onto the Builder's push before committing their changes.
 3. **No parallel pushes.** Only one role pushes to the PR branch at a time. PM enforces sequencing via the remediation brief ordering.
-4. **CI workflow concurrency:** `.github/workflows/ci.yml` uses `concurrency.group: ${{ github.workflow }}-${{ github.ref }}` with `cancel-in-progress: true`. For pull requests, `github.ref` is `refs/pull/<n>/merge`, so only one run per PR is in flight; newer pushes cancel the previous run. Prefer a single push after QA rebases (steps 2–3) to conserve Actions minutes; validate locally when possible ([docs/CI_LOCAL.md](docs/CI_LOCAL.md)).
-5. **Builder remediation — targeted E2E first:** While iterating on an E2E failure, the Builder runs **only** the failing spec (or `playwright -g`) locally until green — **not** the full E2E suite on every attempt. CI still runs the full pipeline on push. Before signaling the PM that remediation is ready, the previously failing test(s) must have passed locally at least once ([docs/CI_LOCAL.md](docs/CI_LOCAL.md) — targeted E2E).
+4. **Local CI is the gate:** GitHub Actions is disabled. There is no remote CI run on push. Before signaling review-ready, the full local suite must pass (`./scripts/ci-local.sh` or the command sequence in [docs/CI_LOCAL.md](docs/CI_LOCAL.md)). A single push after QA rebases (steps 2–3) is preferred to keep the push count low; validate locally before pushing.
+5. **Builder remediation — targeted E2E first:** While iterating on an E2E failure, the Builder runs **only** the failing spec (or `playwright -g`) locally until green — **not** the full E2E suite on every attempt. Before signaling the PM that remediation is ready, the previously failing test(s) must have passed locally at least once, then the full suite run once ([docs/CI_LOCAL.md](docs/CI_LOCAL.md) — targeted E2E).
 6. **QA may not modify shared E2E helpers** (`helpers/**`, `fixtures/**`) during remediation. If a helper change is needed to fix a test, QA reports the required change to PM, who includes it in the Builder's remediation brief. This prevents the most common source of overlapping edits.
 7. **Builder must not delete or rewrite QA test assertions.** If a test is genuinely wrong (not just failing due to a code bug), Builder reports to PM, who routes to QA.
 

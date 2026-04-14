@@ -1,6 +1,6 @@
-# Local CI parity
+# Local CI
 
-Run the same steps as [.github/workflows/ci.yml](../.github/workflows/ci.yml) **before pushing** when GitHub Actions minutes are limited or you want faster feedback.
+**Tests are run locally.** GitHub Actions is disabled to conserve minutes. Every agent and contributor must run the full local suite and confirm it passes before signalling a PR as review-ready. There is no remote CI gate — local execution is the gate.
 
 ## Prerequisites
 
@@ -18,9 +18,38 @@ Run the same steps as [.github/workflows/ci.yml](../.github/workflows/ci.yml) **
 
   If you use another Postgres (e.g. Docker Compose defaults), set `DATABASE_URL` accordingly and ensure the DB exists before `prisma db push`.
 
+## Worktree setup (agents working in a git worktree)
+
+Each git worktree is an **independent directory** — it does not inherit the parent clone's `.env`. Before running any tests from a worktree you must:
+
+1. **Create a `.env` in the worktree root** (it is gitignored; you must create it yourself):
+
+   ```bash
+   cp .env.example .env
+   ```
+
+   Then set values. For local E2E against a local Postgres the CI-aligned defaults below work without modification — just paste them into `.env`:
+
+   ```bash
+   DATABASE_URL=postgresql://postgres:postgres@localhost:5432/vybpad_ci
+   JWT_SECRET=ci-jwt-secret-must-be-at-least-32-characters-long
+   JWT_REFRESH_SECRET=ci-refresh-secret-must-be-at-least-32-characters-long
+   CORS_ORIGIN=http://127.0.0.1:5173
+   VITE_API_URL=http://127.0.0.1:3001
+   NODE_ENV=development
+   ```
+
+2. **Run `npm install`** from the worktree root (worktrees do not share `node_modules`).
+
+3. **Apply the schema:** `npx prisma db push --schema=prisma/schema.prisma`
+
+4. **Install Playwright browsers:** `npx playwright install chromium`
+
+These four steps replace the `.env`-based setup that the main clone already has. Skip any you have already done in this worktree session.
+
 ## Environment (match CI job `env`)
 
-Exports below mirror the workflow. Override any as needed.
+Standard defaults. Override any as needed.
 
 | Variable | CI-aligned default |
 |----------|-------------------|
@@ -32,9 +61,9 @@ Exports below mirror the workflow. Override any as needed.
 | `NODE_ENV` | `development` |
 | `CI` | `true` |
 
-Repository secrets `CI_JWT_SECRET` / `CI_JWT_REFRESH_SECRET` are not available locally; the literals above match the workflow fallbacks.
+The literals above are non-production CI-only placeholders (min 32 chars). Do not use them in production.
 
-## Command sequence (same order as CI)
+## Command sequence
 
 From the repository root:
 
@@ -53,7 +82,7 @@ Or run the scripted version: `./scripts/ci-local.sh` (see [scripts/ci-local.sh](
 
 ## Targeted E2E (remediation / fast loop)
 
-Use this when fixing a **single failing** Playwright test so you do not run the entire suite on every edit (CI still runs the full pipeline on push).
+Use this when fixing a **single failing** Playwright test so you do not run the entire suite on every edit.
 
 ```bash
 # One file
@@ -63,7 +92,7 @@ npm run test:e2e -- client/tests/e2e/persistence.happy.spec.ts
 npm run test:e2e -- -g "persistence happy"
 ```
 
-Same env and prerequisites as the full sequence above. Prefer targeted runs during remediation; run the **full** `npm run test:e2e` locally (or `./scripts/ci-local.sh`) once before you consider the fix ready if you want parity with CI before pushing.
+Same env and prerequisites as the full sequence above. Prefer targeted runs during remediation; run the **full** `npm run test:e2e` locally (or `./scripts/ci-local.sh`) once before you consider a fix ready — this is the definitive pass/fail signal.
 
 ## End-to-end and PAT-029
 
@@ -71,13 +100,3 @@ E2E uses Playwright’s **dual `webServer`** setup: the suite waits for **both**
 
 `npm run e2e:devstack` is a convenience to run API + Vite in one terminal for manual debugging; the **CI-equivalent** path is `npm run test:e2e` with defaults so Playwright starts the stack.
 
-## Verifying GitHub Actions concurrency (manual)
-
-After [.github/workflows/ci.yml](../.github/workflows/ci.yml) `concurrency` + `cancel-in-progress` is enabled:
-
-1. Open or use a PR branch.
-2. Push commit **A** and note the Actions run in the PR checks.
-3. Before that run finishes, push commit **B** on the same branch.
-4. In the Actions tab, the run for **A** should show **Cancelled** (superseded), and the latest run for **B** should proceed.
-
-This confirms overlapping long suites are not left running for the same PR when pushes land in quick succession.

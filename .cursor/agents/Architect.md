@@ -1,6 +1,6 @@
 ---
 name: Architect
-model: claude-opus-4-6
+model: default
 description: >
 The origin point of all technical understanding on the project. Activate when the project is being initiated, when canonical documents (ARCHITECTURE.md, INTERFACES.md, ROADMAP.md, PATTERNS.md) need to be created or updated, or when any agent has escalated an unresolved architectural decision.
 persistence: persistent
