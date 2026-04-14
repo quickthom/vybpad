@@ -4,10 +4,14 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import { LoopBar } from '../components/controls/LoopBar';
 import { TransportControls } from '../components/controls/TransportControls';
+import { clearSecondaryChordEdit, cycleSecondaryChordEdit } from '../components/editor/editorKeyboardLogic';
+import { ChordPalette, SecondaryChordInspector } from '../components/panels/ChordPalette';
 import { MixerPanel } from '../components/panels/MixerPanel';
 import { MeasureBar } from '../components/MeasureBar';
 import { EditorCanvas } from '../components/editor/EditorCanvas';
 import { EntryModeToggle } from '../components/editor/EntryModeToggle';
+import { theoryEngine } from '../engine/theory';
+import { getKeyAtMeasure, getScaleAtMeasure } from '../engine/renderer/tickUtils';
 import { formatTransportBeat, getPlaybackEngine, getPlaybackInitErrorMessage } from '../engine/audio';
 import { useAuthStore } from '../store/authStore';
 import { syncPlaybackEngineWithSong, usePlaybackStore } from '../store/playbackStore';
@@ -325,6 +329,30 @@ export function EditorLayout() {
 
   const currentBeatDisplay = formatTransportBeat(song, playbackTick ?? 0);
 
+  const paletteMeasureIndex = (() => {
+    if (selection?.measureIndex != null) return selection.measureIndex;
+    const n = song.measures.length;
+    if (n === 0) return 0;
+    return Math.max(0, Math.min(viewport.startMeasure, n - 1));
+  })();
+
+  const paletteKey = getKeyAtMeasure(song, paletteMeasureIndex);
+  const paletteScale = getScaleAtMeasure(song, paletteMeasureIndex);
+
+  const selectedChordId = selection?.type === 'chord' ? selection.eventIds?.[0] : undefined;
+  const selectedChord =
+    selectedChordId != null && selection?.type === 'chord'
+      ? song.measures[selection.measureIndex]?.chords.find((c) => c.id === selectedChordId) ?? null
+      : null;
+
+  const chordTheoryScale =
+    selectedChord != null && selection?.type === 'chord'
+      ? getScaleAtMeasure(song, selection.measureIndex)
+      : paletteScale;
+
+  const selectedChordRoman =
+    selectedChord != null ? theoryEngine.toRomanNumeral(selectedChord, chordTheoryScale) : '';
+
   async function handleTransportPlay() {
     if (usePlaybackStore.getState().initStatus === 'ready') {
       playbackPlay();
@@ -412,6 +440,46 @@ export function EditorLayout() {
       />
       <LoopBar />
       <div className="flex min-h-0 min-w-0 flex-1 flex-row">
+        <aside
+          className="flex w-[288px] shrink-0 flex-col border-r border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)]"
+          role="complementary"
+          aria-label="Chord palette"
+        >
+          <ChordPalette
+            currentKey={paletteKey}
+            currentScale={paletteScale}
+            mode="secondary"
+            onChordSelect={() => {
+              /* TASK-5.3: palette pick list lands with 5.1; keyboard + inspector drive edits today. */
+            }}
+          />
+          <SecondaryChordInspector
+            chord={selectedChord}
+            romanLabel={selectedChordRoman}
+            onCycle={() => {
+              if (selection?.type !== 'chord' || !selection.eventIds?.[0]) return;
+              const id = selection.eventIds[0];
+              const ch = song.measures[selection.measureIndex]?.chords.find((c) => c.id === id);
+              if (!ch) return;
+              const k = getKeyAtMeasure(song, selection.measureIndex);
+              const sc = getScaleAtMeasure(song, selection.measureIndex);
+              const changes = cycleSecondaryChordEdit(ch, k, sc);
+              if (Object.keys(changes).length === 0) return;
+              editChord(selection.measureIndex, { type: 'update', chordId: id, changes });
+            }}
+            onClear={() => {
+              if (selection?.type !== 'chord' || !selection.eventIds?.[0]) return;
+              const id = selection.eventIds[0];
+              const ch = song.measures[selection.measureIndex]?.chords.find((c) => c.id === id);
+              if (!ch) return;
+              const k = getKeyAtMeasure(song, selection.measureIndex);
+              const sc = getScaleAtMeasure(song, selection.measureIndex);
+              const changes = clearSecondaryChordEdit(ch, k, sc);
+              if (Object.keys(changes).length === 0) return;
+              editChord(selection.measureIndex, { type: 'update', chordId: id, changes });
+            }}
+          />
+        </aside>
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
           <main
             className="min-h-0 flex-1 overflow-x-auto p-4"
