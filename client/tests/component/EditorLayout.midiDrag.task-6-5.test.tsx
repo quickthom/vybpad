@@ -7,7 +7,7 @@
  *   error: N/A (export always produces bytes)
  *   edges: N/A beyond contract parity
  *
- * Criterion 2: Feedback per UX §5.10 / drag affordances (UX_GUIDELINES §370–373) where testable
+ * Criterion 2: Feedback per UX_GUIDELINES drag affordances (§370–373) where testable
  *   happy: copy cursor (cursor-copy) on MIDI drag affordance; toast "Dragging MIDI…"; non-error toast uses polite live region
  *   error: N/A
  *   edges: N/A
@@ -63,10 +63,9 @@ function stubCanvas2d(): void {
 const DRAGGING_MIDI_TOAST = 'Dragging MIDI…';
 
 /**
- * Stable accessible name for the MIDI drag affordance (toolbar).
- * Builder: expose a focusable control with this exact name (e.g. aria-label on draggable button).
+ * Matches `MidiDragExportControl` aria-label (toolbar / transport — TASK-6.5).
  */
-const MIDI_DRAG_NAME = 'Drag MIDI to DAW';
+const MIDI_DRAG_NAME = /drag midi file to desktop daw/i;
 
 function renderEditorWithToast(): ReturnType<typeof render> {
   return render(
