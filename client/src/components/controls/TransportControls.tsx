@@ -133,7 +133,10 @@ export function TransportControls({
       )}
 
       {initErrorCode ? (
-        <p className="max-w-md text-sm text-[var(--color-destructive,#DC2626)]">
+        <p
+          role="alert"
+          className="max-w-md text-sm text-[var(--color-destructive,#DC2626)]"
+        >
           {getPlaybackInitErrorMessage(initErrorCode)}
         </p>
       ) : null}
