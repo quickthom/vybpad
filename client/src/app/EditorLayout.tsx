@@ -107,6 +107,7 @@ export function EditorLayout() {
   const entryMode = useUIStore((s) => s.entryMode);
   const toggleEntryMode = useUIStore((s) => s.toggleEntryMode);
   const activeVoice = useUIStore((s) => s.activeVoice);
+  const setActiveVoice = useUIStore((s) => s.setActiveVoice);
   const showGuides = useUIStore((s) => s.showGuides);
   const colorScheme = useUIStore((s) => s.colorScheme);
   const activePanels = useUIStore((s) => s.activePanels);
@@ -137,6 +138,7 @@ export function EditorLayout() {
         viewport,
         selection,
         activeVoice,
+        setActiveVoice,
         entryMode,
         currentDurationTicks,
         setCurrentDurationTicks,
@@ -156,6 +158,7 @@ export function EditorLayout() {
       viewport,
       selection,
       activeVoice,
+      setActiveVoice,
       entryMode,
       currentDurationTicks,
       getSongAfterMutation,

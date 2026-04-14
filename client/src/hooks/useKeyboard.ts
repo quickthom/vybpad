@@ -12,7 +12,6 @@ import {
   findNoteIdByPlacement,
   isEditableKeyboardTarget,
   navigateSelection,
-  nextAppendBeat,
   nextCycledEmbellishment,
   nextCycledInversion,
   resolveMeasureIndexForKeyboardDigit,
