@@ -1,6 +1,7 @@
 import type { NoteName, ScaleType } from '@vybpad/shared';
 import { useEffect, useRef, useState } from 'react';
 
+import { applyKeyChange, applyScaleChange } from '@/engine/theory/keyScaleTranspose';
 import { getKeyAtMeasure, getScaleAtMeasure } from '@/engine/renderer/tickUtils';
 import { useSongStore } from '@/store/songStore';
 
@@ -22,8 +23,10 @@ export function KeyScaleChangeDialog({ open, onClose, measureIndex }: KeyScaleCh
   const setMeasureChanges = useSongStore((s) => s.setMeasureChanges);
   const updateMetadata = useSongStore((s) => s.updateMetadata);
 
-  const [key, setKey] = useState<NoteName>('C');
-  const [scale, setScale] = useState<ScaleType>('major');
+  const [{ key, scale }, setKeyScale] = useState<{ key: NoteName; scale: ScaleType }>({
+    key: 'C',
+    scale: 'major',
+  });
 
   const dialogRef = useRef<HTMLDialogElement>(null);
 
@@ -32,8 +35,10 @@ export function KeyScaleChangeDialog({ open, onClose, measureIndex }: KeyScaleCh
     if (!open) return;
     const song = useSongStore.getState().song;
     const mi = Math.max(0, Math.min(measureIndex, song.measures.length - 1));
-    setKey(getKeyAtMeasure(song, mi));
-    setScale(getScaleAtMeasure(song, mi));
+    setKeyScale({
+      key: getKeyAtMeasure(song, mi),
+      scale: getScaleAtMeasure(song, mi),
+    });
   }, [open, measureIndex]);
 
   useEffect(() => {
@@ -95,8 +100,12 @@ export function KeyScaleChangeDialog({ open, onClose, measureIndex }: KeyScaleCh
         <KeyScaleSelector
           currentKey={key}
           currentScale={scale}
-          onKeyChange={(nextKey) => setKey(nextKey)}
-          onScaleChange={(nextScale) => setScale(nextScale)}
+          onKeyChange={(nextKey, keyTp) =>
+            setKeyScale((prev) => applyKeyChange(prev.key, prev.scale, nextKey, keyTp))
+          }
+          onScaleChange={(nextScale, scaleTp) =>
+            setKeyScale((prev) => applyScaleChange(prev.key, prev.scale, nextScale, scaleTp))
+          }
         />
 
         <div className="mt-2 flex justify-end gap-3">

@@ -108,6 +108,32 @@ describe('KeyScaleChangeDialog (TASK-5.5)', () => {
     expect(song.measures[0].changes?.scale).toBe('dorian');
   });
 
+  it('relative key + tonic A from C major yields A minor before Apply', async () => {
+    const user = userEvent.setup();
+    render(<KeyScaleChangeDialog open measureIndex={0} onClose={vi.fn()} />);
+
+    const dlg = screen.getByRole('dialog', { name: 'Key and scale' });
+    const keyFieldset = dlg.querySelectorAll('fieldset')[0];
+    await user.click(within(keyFieldset as HTMLElement).getByRole('radio', { name: 'Relative' }));
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Key' }), 'A');
+
+    expect(screen.getByRole('combobox', { name: 'Key' })).toHaveValue('A');
+    expect(screen.getByRole('combobox', { name: 'Scale / mode' })).toHaveValue('minor');
+  });
+
+  it('relative scale + minor from C major moves tonic to A (relative minor)', async () => {
+    const user = userEvent.setup();
+    render(<KeyScaleChangeDialog open measureIndex={1} onClose={vi.fn()} />);
+
+    const dlg = screen.getByRole('dialog', { name: 'Key and scale' });
+    const scaleFieldset = dlg.querySelectorAll('fieldset')[1];
+    await user.click(within(scaleFieldset as HTMLElement).getByRole('radio', { name: 'Relative' }));
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Scale / mode' }), 'minor');
+
+    expect(screen.getByRole('combobox', { name: 'Key' })).toHaveValue('A');
+    expect(screen.getByRole('combobox', { name: 'Scale / mode' })).toHaveValue('minor');
+  });
+
   it('has dialog role and labelled title for WCAG modal pattern', () => {
     render(<KeyScaleChangeDialog open measureIndex={0} onClose={vi.fn()} />);
     const dlg = screen.getByRole('dialog', { name: 'Key and scale' });
