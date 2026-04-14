@@ -23,7 +23,10 @@ export function ChordPalette(props: ChordPaletteProps): ReactElement {
 
   if (mode !== 'diatonic') {
     return (
-      <div className="flex h-full min-h-0 w-full min-w-0 flex-col bg-[var(--color-surface,#FFFFFF)] px-4 py-3">
+      <div
+        data-testid="chord-palette-root"
+        className="flex h-full min-h-0 w-72 min-w-[288px] flex-col bg-[var(--color-surface,#FFFFFF)] px-4 py-3"
+      >
         <h3 className="text-base font-semibold text-[var(--color-text-primary,#111827)]">Chord palette</h3>
         <p className="mt-3 text-sm text-[var(--color-text-secondary,#4B5563)]">
           {mode === 'borrowed' && 'Borrowed chords — coming later.'}
@@ -35,7 +38,12 @@ export function ChordPalette(props: ChordPaletteProps): ReactElement {
   }
 
   return (
-    <div className="flex h-full min-h-0 w-full min-w-0 flex-col bg-[var(--color-surface,#FFFFFF)] px-4 py-3">
+    <div
+      data-testid="chord-palette-root"
+      role="region"
+      aria-label="Chord palette"
+      className="flex h-full min-h-0 w-72 min-w-[288px] flex-col bg-[var(--color-surface,#FFFFFF)] px-4 py-3"
+    >
       <h3 className="text-base font-semibold tracking-tight text-[var(--color-text-primary,#111827)]">Chord palette</h3>
       <p className="mt-1 text-xs text-[var(--color-text-muted,#9CA3AF)]">
         {currentKey} · {currentScale} · diatonic
@@ -63,6 +71,8 @@ export function ChordPalette(props: ChordPaletteProps): ReactElement {
             <button
               key={deg}
               type="button"
+              data-testid={`chord-palette-degree-${deg}`}
+              tabIndex={0}
               className="flex min-h-[44px] flex-col items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] px-2 py-2 text-center outline-none transition hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
               style={{
                 backgroundImage: `linear-gradient(${fill}CC, ${fill}CC), linear-gradient(var(--color-surface,#FFFFFF), var(--color-surface,#FFFFFF))`,
