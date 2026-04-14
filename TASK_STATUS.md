@@ -2,8 +2,10 @@
 
 > Single source of truth for build state. Owned by the Project Manager. See PAT-025 for update protocol.
 
-**`develop`:** Authoritative tip: `git fetch origin && git rev-parse origin/develop`. Recent commits include **`ebc7fe5`** (process roles + PAT-025 `TASK_STATUS` migration, 2026-04-14). **Rebase gate:** keep PR #35 / #36 rebased onto **`origin/develop`**. **Merge order (user priority):** **PR #35 must merge to `develop` before any active execution on PR #36** (review/remediation/integration on #36 parked until #35 lands). Sync: `git fetch origin && npm install` — https://github.com/quickthom/vybpad.
+**`develop`:** Authoritative tip: `git fetch origin && git rev-parse origin/develop`. Current tip **`1fe1984`** (TASK-4.9 #42 + TASK-4.10 #43 merged). **PAT-027 (TASK-4.3):** Formal QA `tests-written` STATUS_UPDATE treated as **optional audit trail only** — closed 2026-04-14; **no blocking follow-up.** Sync: `git fetch origin && npm install` — https://github.com/quickthom/vybpad.
 **Worktree hygiene:** Phase 3/4 worktrees under `/home/thom/py/vYbpad-worktrees/`. Retire after merge (PAT-017). If `gh pr merge` could not delete remote branches, remove worktree then `git push origin --delete <branch>`.
+
+**Merge-order gate (Phase 4.5–4.7):** **Complete** — merged in order **#38** → **#39** → **#40** (squash onto `develop`).
 
 ---
 
@@ -36,27 +38,30 @@ Phases 0 (7/7), 1A (7/7), 1B (6/6), Phase 2 (15/15) — see `TASK_STATUS_ARCHIVE
 
 ## Phase 4 — Audio Playback
 
-**Goal:** Press play, hear piano chords + melody, see cursor move. **Status:** Wave 2 — **#35-first:** PR #35 head **`7af4055`**; **CI** [run `24368811569`](https://github.com/quickthom/vybpad/actions/runs/24368811569) **FAIL** — E2E `persistence.happy` (GET poll 90s, no chord degrees **1+2** on server). Prior pushes: **`27d138e`** empty chord-strip caret; **`467b538`** QA poll; **`7af4055`** canvas focus on mount + unit tests — **still red**. **Next:** Builder/QA continue remediation. **⛔** **`INTERFACES.md`** — **Architect** if merge requires. **#36 parked.**
+**Goal:** Press play, hear piano chords + melody, see cursor move. **Status:** **Milestone complete** — TASK-4.1–4.10 merged; **`MILESTONE-F07-DESIGN-REVIEW.md`** (F-07) on `develop`. **Merge gate:** local CI (`docs/CI_LOCAL.md` / `./scripts/ci-local.sh`).
 
 | Task | Role | Branch | Status | PR | Depends | Notes |
 |---|---|---|---|---|---|---|
 | 4.1 | Builder + QA | — | merged | #34 | 0.2 | merged to develop (`ead7d21`) |
-| 4.2 | Builder + QA | phase-4/piano-sample-loading | in-progress (CI remediation) | #35 | 4.1 | Head **`7af4055`**; **CI** [run `24368811569`](https://github.com/quickthom/vybpad/actions/runs/24368811569) **FAIL** E2E; **⛔ `INTERFACES.md`**; **#36 parked** |
-| 4.3 | Builder + QA | phase-4/harmony-voicing-engine | parked (blocked on #35) | #36 | 1A.3 | **Gate:** no active remediation/review/integration until **PR #35 merged**; passive CI/branch status only — worktree `task-4-3-harmony-voicing` |
-| 4.4 | Builder + QA | — | pending | — | 4.1,4.2,4.3,1A.2 | scheduler + Tone.Part |
-| 4.5 | Builder + QA | — | pending | — | 0.2 | transport UI |
-| 4.6 | Builder + QA | — | pending | — | 2.2,4.4 | playback cursor |
-| 4.7 | Builder + QA | — | pending | — | 4.4,0.2 | mixer panel |
-| 4.8 | Builder + QA | — | pending | — | 4.4,4.6 | loop bar |
-| 4.9 | QA | — | pending | — | 4.3,4.4 | mocked Tone scheduling tests |
-| 4.10 | QA | — | pending | — | 4.6 | Playwright playback E2E expansion |
+| 4.2 | Builder + QA | — | merged | #35 | 4.1 | Squashed to develop (`ec67e7f`) |
+| 4.3 | Builder + QA | — | merged | #36 | 1A.3 | Squash merge to develop **`805d485`** (`c9cafca` on PR); pre-merge CI [24375973177](https://github.com/quickthom/vybpad/actions/runs/24375973177) PASS |
+| 4.4 | Builder + QA | — | merged | #37 | 4.1,4.2,4.3,1A.2 | Squash merge to develop **`11d6326`** (`fccef4f` PR head); worktree `task-4-4-song-scheduler` **removed** |
+| 4.5 | Builder + QA | — | merged | [#38](https://github.com/quickthom/vybpad/pull/38) | 0.2 | Squash on **`53f87ac`**. Worktree `task-4-5-transport-controls-ui` — remove after housekeeping (PAT-017) |
+| 4.6 | Builder + QA | — | merged | [#39](https://github.com/quickthom/vybpad/pull/39) | 2.2,4.4 | Squash on **`8a46e47`**. Worktree `task-4-6-playback-cursor` — remove when convenient (PAT-017) |
+| 4.7 | Builder + QA | — | merged | [#40](https://github.com/quickthom/vybpad/pull/40) | 4.4,0.2 | Squash on **`3ae289e`**. Worktree `task-4-7-mixer-panel` — remove when convenient (PAT-017) |
+| 4.8 | Builder + QA | — | merged | [#41](https://github.com/quickthom/vybpad/pull/41) | 4.4,4.6 | Squash **`e7bcf96`**; INTERFACES follow-up **done** on `develop` (`319070e`). Worktree `task-4-8-loop-bar` — remove when convenient (PAT-017) |
+| 4.9 | QA | — | merged | [#42](https://github.com/quickthom/vybpad/pull/42) | 4.3,4.4 | Squash on **`d290360`**; QA worktrees **removed** (PAT-017) |
+| 4.10 | QA | — | merged | [#43](https://github.com/quickthom/vybpad/pull/43) | 4.6 | Squash on **`1fe1984`**; E2E transport readout |
+| F-07 | Designer | — | merged | — | Phase 4 milestone | `MILESTONE-F07-DESIGN-REVIEW.md` on `develop` |
+
+**Milestone:** User enters chords and melody, presses play, hears piano chords + melody in sync, cursor tracks position, mixer adjusts volume, loop region works.
 
 ---
 
 ## Phases 5–8
 
-**Phase 5 (and later):** User authorized full Phase 5 scope — decompose from `ROADMAP.md` into this table **after** Phase 4 playback milestone closes (PR #35 + remaining 4.x per dependencies). Not yet added as rows.
+**Phase 5 (and later):** User authorized full Phase 5 scope — **decompose from `ROADMAP.md` into this table** when PM opens Phase 5 wave (Phase 4 playback milestone **closed**).
 
 ---
 
-> **PAT-025:** Active-session narrative (CI run ids, remediation rounds) belongs in **`PM_STATE.md`**, not in an event log here. The Phase 4 lines that previously lived in an append-only log were migrated to **`TASK_STATUS_ARCHIVE.md`** (2026-04-14).
+> **PAT-025:** Active-session narrative (local verification notes, remediation rounds) belongs in **`PM_STATE.md`**, not in an event log here. The Phase 4 lines that previously lived in an append-only log were migrated to **`TASK_STATUS_ARCHIVE.md`** (2026-04-14).

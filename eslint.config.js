@@ -17,6 +17,8 @@ export default tseslint.config(
   {
     ignores: [
       '**/node_modules/**',
+      '**/.worktrees/**',
+      '**/.archive-ignore/**',
       '**/dist/**',
       '**/build/**',
       'package-lock.json',
