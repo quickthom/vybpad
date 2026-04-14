@@ -115,3 +115,24 @@
 **Milestone:** User enters chords and melody, presses play, hears piano chords + melody in sync, cursor tracks position, mixer adjusts volume, loop region works.
 
 ---
+
+## Phase 5 — Advanced Music Features
+
+**Goal:** Borrowed/secondary chords, embellishments, key/scale/tempo/meter changes, multi-voice, playback adaptation. **Status:** complete — archived from `TASK_STATUS.md` **2026-04-14** (`develop` @ `56e9a7e` before Phase 6).
+
+| Task | Role | PR | Notes |
+|---|---|---|---|
+| 5.1 | Builder | [#48](https://github.com/quickthom/vybpad/pull/48) | Chord palette UI |
+| 5.2 | Builder | [#50](https://github.com/quickthom/vybpad/pull/50) | Borrowed chord UI |
+| 5.3 | Builder | [#49](https://github.com/quickthom/vybpad/pull/49) | Secondary chord UI |
+| 5.4 | Builder | [#44](https://github.com/quickthom/vybpad/pull/44) | Inversion / embellishment cycling |
+| 5.5 | Builder | [#45](https://github.com/quickthom/vybpad/pull/45) | Key/scale change dialog |
+| 5.6 | Builder | [#47](https://github.com/quickthom/vybpad/pull/47) | Tempo + meter change |
+| 5.7 | Builder | [#46](https://github.com/quickthom/vybpad/pull/46) | Multiple voice support |
+| 5.8 | Builder | [#51](https://github.com/quickthom/vybpad/pull/51) | Playback adaptation |
+| 5.9 | QA | [#52](https://github.com/quickthom/vybpad/pull/52) | Advanced feature tests |
+| F-08 | Designer | — | `MILESTONE-F08-DESIGN-REVIEW.md` @ `56e9a7e` |
+
+**Milestone:** User can use parallel minor borrow, V/V, key/scale changes, tempo/meter changes, multiple voices, and hear correct playback.
+
+---

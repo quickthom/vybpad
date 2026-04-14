@@ -1,10 +1,10 @@
 # PM STATE — vYbpad
 
-> PM continuity handoff — **not** a duplicate of `TASK_STATUS.md`. Updated **2026-04-14** — Phase 4 playback **closed**; #42/#43 merged; F-07 + status on **`origin/develop`**.
+> PM continuity handoff — **not** a duplicate of `TASK_STATUS.md`. Updated **2026-04-14** (continuation) — **6.3** Reviewer spawn **×3** failed (host API limit); no Integrator until review exists.
 
 **Authoritative build state:** `TASK_STATUS.md` at repo root.
 
-**Authoritative git tip:** `git fetch origin && git rev-parse origin/develop` 
+**Authoritative git tip:** `23b068c` (`origin/develop`, 2026-04-14) — TASK-6.1 (#53) + TASK-6.2 (#54) merged.
 
 **Remote:** https://github.com/quickthom/vybpad — `origin`, default branch **`develop`**.
 
@@ -12,29 +12,56 @@
 
 ## Architect → PM — local CI (standing)
 
-Pre-merge gate = **green local suite** on the current PR head (`docs/CI_LOCAL.md`, `./scripts/ci-local.sh`). Automatic Actions on push are **off**; `statusCheckRollup` may be empty.
+Pre-merge gate = **green local suite** on the current PR head (`docs/CI_LOCAL.md`, `./scripts/ci-local.sh`). Automatic Actions on push are **off**.
 
 ---
 
-## Phase 4 — wave 4.5–4.7 — **integrated** (2026-04-14)
+## Phase 6 — active (2026-04-14)
 
-Merged to `develop` in order (squash). **GitHub Actions are not used** as a merge gate; **local CI** on PR head + Reviewer.
+**Architect directive:** Proceed through end of Phase 6; escalate only on genuine gaps in `ARCHITECTURE.md` / `INTERFACES.md` / `PATTERNS.md`.
 
-**INTERFACES.md (TASK-4.8):** Resolved on **`develop`** — `PlaybackStore.clearLoop`, `setLoop` constraints documented; no open Architect escalations.
+### Spawn / agent outcomes (2026-04-14 session)
 
-## TASK-4.9 / TASK-4.10 — **integrated** (2026-04-14)
+| Agent | Task | Result |
+|--------|------|--------|
+| Reviewer ×3 | 6.3 / PR #55 | **Failed:** `Task` error *API usage limit reached* / Composer 2 fallback — **no verdict** (sessions: prior ×2 + continuation **2026-04-14**) |
+| Builder | 6.4 | **Done:** PR [#57](https://github.com/quickthom/vybpad/pull/57) `phase-6/export-ui` — `MidiExportControls`, download + format select; agent id `300fd31c-c5f9-4692-9116-d72da64a5d70` |
+| QA | 6.4 | **Done:** tests on `phase-6/export-ui-qa` (e.g. `4b1b241`); merge into implementation noted by QA; Builder branch absorbed tests per Builder report |
+| Builder | 6.5 | **Done:** PR [#56](https://github.com/quickthom/vybpad/pull/56) `phase-6/drag-drop-midi` — `MidiDragExportControl`, `useMidiDragExport`, `TransportControls.endContent`; agent id `51e3dae5-3e54-4aaf-99f0-18937dd501f0` |
+| QA | 6.5 | **Done:** `EditorLayout.midiDrag.task-6-5.test.tsx` + toast dedupe test helper; merged into implementation branch per QA; agent id `5c45a4bc-dd3b-4d87-93d1-43e39e64773c` |
 
-| PR | Task | Squash on `develop` |
-|----|------|---------------------|
-| [#42](https://github.com/quickthom/vybpad/pull/42) | TASK-4.9 mocked Tone scheduling tests | `d290360` |
-| [#43](https://github.com/quickthom/vybpad/pull/43) | TASK-4.10 playback E2E | `1fe1984` |
+**Worktrees created (PAT-017):** `/home/thom/py/vybpad-worktrees/export-ui`, `export-ui-qa`, `drag-drop-midi`, `drag-drop-midi-qa` (from `origin/develop`).
 
-**Worktrees** `task-4-9-playback-scheduling-mocked-tone` and `task-4-10-playback-e2e-expansion`: **removed** (PAT-017).
+### TASK-6.3 — PR [#55](https://github.com/quickthom/vybpad/pull/55) (`phase-6/tempo-map-track` @ **a984035**)
 
-**Local CI:** `./scripts/ci-local.sh` **PASS** after adding `**/.worktrees/**` and `**/.archive-ignore/**` to `eslint.config.js` ignores (nested worktrees under repo root no longer break `eslint .`).
+- QA/Builder handshake and green `ci-local` on tip were already reported **before** this session.
+- **Reviewer (continuation 2026-04-14):** Third `Task` spawn with full **REVIEWER BRIEF** (ROADMAP 6.3 tempo map, `ARCHITECTURE.md`, `INTERFACES.md` `MidiExporter`/tempo tracks, `PATTERNS.md`, QA tests, PR checklist) — **failed again** (*API usage limit reached*). **Do not spin** further subagent retries in-session; **Architect session / HITL** re-prompt when limits clear, or **manual review** as PAT-027 gate.
+- **Integrator:** **Not** spawned — no APPROVED verdict.
+- On **APPROVED** (future): spawn **Integrator** for **#55** first, then **#56** / **#57** with rebase/conflict plan.
 
-**F-07:** `MILESTONE-F07-DESIGN-REVIEW.md` committed on `develop` with `TASK_STATUS.md` / `PM_STATE.md` updates (Phase 4 milestone complete).
+### TASK-6.4 / 6.5 — open PRs
 
-**Next:** PM decomposes **Phase 5** from `ROADMAP.md` into `TASK_STATUS.md` when opening the next wave.
+| PR | Branch | Notes |
+|----|--------|--------|
+| [#57](https://github.com/quickthom/vybpad/pull/57) | `phase-6/export-ui` | Builder: full CI green except E2E may need ports 3001/5173 free — verify before merge. |
+| [#56](https://github.com/quickthom/vybpad/pull/56) | `phase-6/drag-drop-midi` | Touches `TransportControls` / `EditorLayout` — expect overlap with #57. |
+
+**Merge-order recommendation:** Land **#55** → rebase **#56** and **#57** onto new `develop` (or sequence merges with conflict resolution). Do **not** hold #56/#57 for Reviewer on #55 for *streaming* per PAT-027, but **Integrator** should still apply exporter ordering (#55 before UI) to keep MIDI output consistent for validation.
+
+### TASK-6.6 / 6.7 — still blocked
+
+Blocked until **6.1–6.3** merged to `develop` (per ROADMAP / TASK_STATUS). After #55 merges, brief **6.6** (StudioOne import validation) and **6.7** (MIDI generation unit tests) per ROADMAP.
+
+**Architect escalation:** none (coordination-only block on Reviewer spawn).
 
 ---
+
+## Phase 5 — closed
+
+Archived to **`TASK_STATUS_ARCHIVE.md`** (Phase 5 section) **2026-04-14**.
+
+---
+
+## Archived
+
+Prior spawn tables superseded by Phase 6 entries above.
