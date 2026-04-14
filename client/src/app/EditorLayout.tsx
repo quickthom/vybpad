@@ -4,6 +4,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import { KeyScaleChangeDialog } from '../components/common/KeyScaleChangeDialog';
 import { LoopBar } from '../components/controls/LoopBar';
+import { MidiExportControls } from '../components/controls/MidiExportControls';
 import { TempoMeterAtMeasureDialog } from '../components/controls/TempoMeterAtMeasureDialog';
 import { TransportControls } from '../components/controls/TransportControls';
 import { MixerPanel } from '../components/panels/MixerPanel';
@@ -478,6 +479,8 @@ export function EditorLayout() {
           >
             Voice {activeVoice + 1}
           </span>
+          {/* TASK-6.4: MIDI download uses shared midiExporter; lives in header to avoid overlapping TransportControls (TASK-6.5 may extend editor chrome). */}
+          <MidiExportControls song={song} activeVoice={activeVoice} projectName={projectName} />
           <button
             type="button"
             onClick={() => setChordPaletteExpanded((o) => !o)}

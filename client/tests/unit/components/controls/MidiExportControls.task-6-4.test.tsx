@@ -22,6 +22,23 @@ import { MidiExportControls } from '@/components/controls/MidiExportControls';
 import { midiExporter } from '@/engine/midi';
 import { buildDefaultSong } from '@/store/songStore';
 
+/** jsdom Blob may omit or partially implement `arrayBuffer()`; FileReader is reliable. */
+async function blobToUint8(b: Blob): Promise<Uint8Array> {
+  if (typeof b.arrayBuffer === 'function') {
+    try {
+      return new Uint8Array(await b.arrayBuffer());
+    } catch {
+      /* fall through */
+    }
+  }
+  return await new Promise((resolve, reject) => {
+    const fr = new FileReader();
+    fr.onload = () => resolve(new Uint8Array(fr.result as ArrayBuffer));
+    fr.onerror = () => reject(fr.error);
+    fr.readAsArrayBuffer(b);
+  });
+}
+
 describe('TASK-6.4 MidiExportControls — export affordance and MidiExporter wiring (INTERFACES § MidiExporter)', () => {
   let user: ReturnType<typeof userEvent.setup>;
 
@@ -79,24 +96,27 @@ describe('TASK-6.4 MidiExportControls — export affordance and MidiExporter wir
 
     it('passes the same bytes to URL.createObjectURL as midiExporter returns for the selected mode', async () => {
       const song = buildDefaultSong();
-      const createUrl = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:tracked');
+      const blobsFromDownload: Blob[] = [];
+      vi.spyOn(URL, 'createObjectURL').mockImplementation((b: Blob) => {
+        blobsFromDownload.push(b);
+        return `blob:mock-${blobsFromDownload.length}`;
+      });
+      const exportSong = vi.spyOn(midiExporter, 'exportSong');
+      const exportMelodyOnly = vi.spyOn(midiExporter, 'exportMelodyOnly');
 
       render(<MidiExportControls song={song} activeVoice={0} projectName={null} />);
 
       await user.selectOptions(screen.getByLabelText('MIDI export format'), 'full');
       await user.click(screen.getByTestId('vybpad-midi-export-download'));
-      const expectedFull = midiExporter.exportSong(song);
-      const blob1 = createUrl.mock.calls[0]?.[0] as Blob;
-      const buf1 = await new Response(blob1).arrayBuffer();
-      expect(new Uint8Array(buf1)).toEqual(expectedFull);
+      const bytesFull = exportSong.mock.results[0]?.value as Uint8Array;
+      const blob1 = blobsFromDownload.at(-1) as Blob;
+      expect(await blobToUint8(blob1)).toEqual(bytesFull);
 
-      createUrl.mockClear();
       await user.selectOptions(screen.getByLabelText('MIDI export format'), 'melody');
       await user.click(screen.getByTestId('vybpad-midi-export-download'));
-      const expectedMelody = midiExporter.exportMelodyOnly(song, 0);
-      const blob2 = createUrl.mock.calls[0]?.[0] as Blob;
-      const buf2 = await new Response(blob2).arrayBuffer();
-      expect(new Uint8Array(buf2)).toEqual(expectedMelody);
+      const bytesMelody = exportMelodyOnly.mock.results[0]?.value as Uint8Array;
+      const blob2 = blobsFromDownload.at(-1) as Blob;
+      expect(await blobToUint8(blob2)).toEqual(bytesMelody);
     });
 
     it('sets a .mid filename on the download anchor when download runs', async () => {
