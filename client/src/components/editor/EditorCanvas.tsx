@@ -5,11 +5,12 @@ import type { PointerEvent as ReactPointerEvent } from 'react';
 import { useKeyboard } from '../../hooks/useKeyboard';
 import { theoryEngine } from '../../engine/theory';
 import { CHORD_AREA_HEIGHT, MEASURE_HEADER_HEIGHT, NOTE_HEIGHT, SELECTION_COLOR } from '../../engine/renderer/constants';
+import { drawPlaybackCursor } from '../../engine/renderer/drawPlaybackCursor';
 import { drawChordBlocks, layoutChordBlock } from '../../engine/renderer/chordBlocks';
 import { drawGridBackground } from '../../engine/renderer/gridBackground';
 import type { EditorCanvasHit } from '../../engine/renderer/hitTest';
 import { hitTestEditorCanvas } from '../../engine/renderer/hitTest';
-import { absoluteTickToViewportX, getMeasureStartTicks, horizontalPxToTicks, horizontalTicksToPx } from '../../engine/renderer/layout';
+import { getMeasureStartTicks, horizontalPxToTicks, horizontalTicksToPx } from '../../engine/renderer/layout';
 import { drawGuideOverlay } from '../../engine/renderer/guideOverlay';
 import { computeNoteBlockRect, drawNoteBlocks } from '../../engine/renderer/noteBlocks';
 import { getMeterAtMeasure, measureLengthInTicks } from '../../engine/renderer/tickUtils';
@@ -44,7 +45,6 @@ export interface EditorCanvasProps {
 
 const SELECTION_STROKE = 'rgba(37, 99, 235, 0.8)';
 const HOVER_STROKE = 'rgba(59, 130, 246, 0.7)';
-const PLAYBACK_CURSOR_COLOR = '#EF4444';
 
 const STAFF_DIATONIC_ROWS = 28;
 
@@ -282,17 +282,7 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
       }
     }
 
-    if (playbackTick != null) {
-      const x = absoluteTickToViewportX(playbackTick, viewport, song);
-      ctx.save();
-      ctx.strokeStyle = PLAYBACK_CURSOR_COLOR;
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(Math.round(x) + 0.5, 0);
-      ctx.lineTo(Math.round(x) + 0.5, h);
-      ctx.stroke();
-      ctx.restore();
-    }
+    drawPlaybackCursor(ctx, song, viewport, playbackTick, h);
   }, [song, viewport, selection, hoverHit, playbackTick, colorScheme, showGuides]);
 
   useEffect(() => {

@@ -8,4 +8,5 @@ export * from './colorMaps';
 export * from './chordBlocks';
 export * from './noteBlocks';
 export * from './guideOverlay';
+export * from './drawPlaybackCursor';
 export * from './hitTest';
