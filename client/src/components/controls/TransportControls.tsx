@@ -88,6 +88,7 @@ export function TransportControls({
       </div>
 
       <div
+        data-testid="vybpad-transport-current-beat"
         className="flex min-h-[40px] min-w-[120px] items-center text-sm tabular-nums text-[var(--color-text-primary,#111827)]"
         aria-live="polite"
       >
