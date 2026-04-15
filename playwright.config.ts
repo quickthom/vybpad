@@ -89,20 +89,24 @@ export default defineConfig({
   use: {
     baseURL,
     ...devices['Desktop Chrome'],
-    viewport: { width: 1280, height: 720 },
+    /** UX §4 / docs/E2E_EDITOR.md — minimum 1024×768; 800px height matches `visual` project. */
+    viewport: { width: 1280, height: 800 },
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
     trace: 'on-first-retry',
   },
   /**
    * TASK-8.3 — `visual` holds screenshot baselines (`toHaveScreenshot`); keep serial to limit GPU load.
-   * PAT-030 — ports still come from `PLAYWRIGHT_BASE_URL` / root `.env`; only viewport differs (UX §4 ≥1024×768).
+   * PAT-030 — ports from `PLAYWRIGHT_BASE_URL` / root `.env`. Both projects use 1280×800 (UX §4 / E2E_EDITOR ≥1024×768).
    */
   projects: [
     {
       name: 'chromium',
       testIgnore: '**/*.visual.spec.ts',
-      use: { ...devices['Desktop Chrome'] },
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 1280, height: 800 },
+      },
     },
     {
       name: 'visual',
@@ -110,6 +114,7 @@ export default defineConfig({
       fullyParallel: false,
       use: {
         ...devices['Desktop Chrome'],
+        /** UX_GUIDELINES §4 — minimum layout width 1024px; 1280×800 is the agreed visual baseline. */
         viewport: { width: 1280, height: 800 },
       },
     },
@@ -119,7 +124,7 @@ export default defineConfig({
     : [
         {
           name: 'api',
-          command: 'npm run dev --workspace=@vybpad/server',
+          command: 'npm run dev:e2e --workspace=@vybpad/server',
           url: apiHealthUrl,
           reuseExistingServer: !process.env.CI,
           timeout: 180_000,
