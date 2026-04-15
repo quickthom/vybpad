@@ -91,8 +91,8 @@ export function planTieNote(song: SongData, selection: Selection | null): NoteBa
   const ids = selection.eventIds;
 
   if (ids.length >= 2) {
-    const idA = ids[0]!;
-    const idB = ids[1]!;
+    const idA = ids[0];
+    const idB = ids[1];
     const voiceA = findVoiceForNote(song, measureIndex, idA);
     if (voiceA == null) return null;
     const lane = song.measures[measureIndex]?.notes[voiceA];
@@ -116,7 +116,7 @@ export function planTieNote(song: SongData, selection: Selection | null): NoteBa
     return null;
   }
 
-  const noteId = ids[0]!;
+  const noteId = ids[0];
   const voice = findVoiceForNote(song, measureIndex, noteId);
   if (voice == null) return null;
   const lane = song.measures[measureIndex]?.notes[voice];
