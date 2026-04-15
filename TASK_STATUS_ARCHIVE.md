@@ -154,3 +154,25 @@
 **Milestone:** User exports `.mid` from transport (download + drag); integration tests cover exporter contracts; StudioOne checklist awaits HITL where PreSonus host is available.
 
 ---
+
+## Phase 7 — Keyboard Shortcuts & Polish
+
+**Goal:** Shortcut parity, settings + piano panels, E2E coverage, UI polish, min width. **Archived from `TASK_STATUS.md` 2026-04-15.** `develop` @ milestone tip after TASK-7.8 merge (**PR #72**).
+
+| Task | Role | PR | Notes |
+|---|---|---|---|
+| 7.0 | Builder | — | **Optional** phase-start cleanup — not executed (tech debt follow-up) |
+| 7.1 | Builder | [#64](https://github.com/quickthom/vybpad/pull/64) | PAT-027 shortcut manager |
+| 7.2 | Builder | [#65](https://github.com/quickthom/vybpad/pull/65) | Duration keys |
+| 7.3 | Builder | [#66](https://github.com/quickthom/vybpad/pull/66) | Split/tie/triplet |
+| 7.4 | Builder | [#67](https://github.com/quickthom/vybpad/pull/67) | Clipboard JSON |
+| 7.5 | Builder | [#68](https://github.com/quickthom/vybpad/pull/68) | Nav + transport shortcuts |
+| 7.6 | Builder | [#70](https://github.com/quickthom/vybpad/pull/70) | Settings panel; Reviewer remediation `6eae0fb` |
+| 7.7 | Builder | [#69](https://github.com/quickthom/vybpad/pull/69) | Piano panel; integration merge `b884158` with 7.6 |
+| 7.8 | Designer + Builder | [#72](https://github.com/quickthom/vybpad/pull/72) | UI polish; `UX_GUIDELINES` v1.4 (Designer) |
+| 7.9 | — | — | **Satisfied without separate PR:** `EditorViewportGate`, `useMinViewport1024`, E2E `viewport-min-width.f07.spec.ts` (UX §4) |
+| 7.10 | QA | [#71](https://github.com/quickthom/vybpad/pull/71) | Playwright shortcut E2E; Reviewer R2 triplet waiter fix |
+
+**Milestone:** Shortcuts + clipboard + panels + polish + shortcut E2E on `develop`; viewport gate pre-existing.
+
+---
