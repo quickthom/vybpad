@@ -72,19 +72,18 @@ export function MidiExportControls({ song, activeVoice, projectName }: MidiExpor
   }, [mode, song, activeVoice, projectName]);
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="flex flex-wrap items-center gap-2 lg:flex-nowrap">
       <label
         htmlFor={selectId}
-        className="text-sm font-medium text-[var(--color-text-secondary,#4B5563)]"
+        className="shrink-0 text-sm font-medium text-[var(--color-text-secondary,#4B5563)]"
       >
-        Export
+        Format
       </label>
       <select
         id={selectId}
         value={mode}
         onChange={(e) => setMode(e.target.value as MidiExportMode)}
-        className="h-10 min-h-11 min-w-[10rem] rounded-lg border border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)] px-2 text-sm text-[var(--color-text-primary,#111827)] outline-none focus:border-[var(--color-primary,#4F46E5)] focus:ring-1 focus:ring-[var(--color-primary,#4F46E5)]"
-        aria-label="MIDI export format"
+        className="h-10 min-h-11 min-w-0 max-w-full shrink rounded-lg border border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)] px-2 text-sm text-[var(--color-text-primary,#111827)] outline-none focus:border-[var(--color-primary,#4F46E5)] focus:ring-1 focus:ring-[var(--color-primary,#4F46E5)] sm:min-w-[10rem]"
       >
         <option value="full">Full song (Type 1)</option>
         <option value="melody">Melody only</option>

@@ -135,7 +135,7 @@ export function ChordPalette(props: ChordPaletteProps): ReactElement {
         data-testid="chord-palette-root"
         role="region"
         aria-label="Chord palette"
-        className="flex h-full min-h-0 w-72 min-w-[288px] flex-col bg-[var(--color-surface,#FFFFFF)] px-4 py-3"
+        className="flex h-full min-h-0 w-full min-w-0 max-w-full flex-col bg-[var(--color-surface,#FFFFFF)] px-4 py-3"
       >
         <h3 className="text-base font-semibold tracking-tight text-[var(--color-text-primary,#111827)]">Chord palette</h3>
         <p className="mt-1 text-xs text-[var(--color-text-muted,#9CA3AF)]">
@@ -231,7 +231,7 @@ export function ChordPalette(props: ChordPaletteProps): ReactElement {
     return (
       <div
         data-testid="chord-palette-root"
-        className="flex h-full min-h-0 w-72 min-w-[288px] flex-col bg-[var(--color-surface,#FFFFFF)] px-4 py-3"
+        className="flex h-full min-h-0 w-full min-w-0 max-w-full flex-col bg-[var(--color-surface,#FFFFFF)] px-4 py-3"
       >
         <h3 className="text-base font-semibold text-[var(--color-text-primary,#111827)]">Chord palette</h3>
         <p className="mt-3 text-sm text-[var(--color-text-secondary,#4B5563)]">
@@ -247,7 +247,7 @@ export function ChordPalette(props: ChordPaletteProps): ReactElement {
       data-testid="chord-palette-root"
       role="region"
       aria-label="Chord palette"
-      className="flex h-full min-h-0 w-72 min-w-[288px] flex-col bg-[var(--color-surface,#FFFFFF)] px-4 py-3"
+      className="flex h-full min-h-0 w-full min-w-0 max-w-full flex-col bg-[var(--color-surface,#FFFFFF)] px-4 py-3"
     >
       <h3 className="text-base font-semibold tracking-tight text-[var(--color-text-primary,#111827)]">Chord palette</h3>
       <p className="mt-1 text-xs text-[var(--color-text-muted,#9CA3AF)]">
