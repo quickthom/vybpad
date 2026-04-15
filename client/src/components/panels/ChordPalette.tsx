@@ -2,8 +2,7 @@ import type { ChordEvent, NoteName, ScaleDegree, ScaleType } from '@vybpad/share
 import type { ReactElement } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 
-import { getBorrowedChords } from '../../engine/theory/borrowedChords';
-import { theoryEngine } from '../../engine/theory';
+import { getBorrowedChords, theoryEngine } from '../../engine/theory';
 import { pat010DiatonicHex } from '../../engine/renderer/colorMaps';
 
 /** INTERFACES.md — ChordPaletteProps */
