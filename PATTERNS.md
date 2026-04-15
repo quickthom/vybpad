@@ -310,7 +310,7 @@ Builders may implement the chromatic row positioning as: `baseY + (chromatic * N
 
 ## PAT-019: System Package Installation
 
-Agents may install system packages when needed for the task. Use the **non-interactive** installer appropriate to the host OS (no prompts; no TTY for passwords). Do not use interactive `sudo` flows that require a password in unattended sessions. **OS-specific examples** (Arch AUR helper, apt flags, etc.) live in [ENVIRONMENTS.md](ENVIRONMENTS.md).
+Use non-interactive package installation; see ENVIRONMENTS.md for OS-specific commands. See [ENVIRONMENTS.md](ENVIRONMENTS.md) for OS-specific commands.
 
 ---
 
@@ -333,82 +333,11 @@ Examples:
 
 The Integrator's squash-merge message must also follow this format, using the primary task ID. If a squash covers multiple tasks, list them: `feat(TASK-2.4, TASK-2.5): add chord and note block renderers`.
 
-A pre-commit hook (commitlint or equivalent) is authorized — DevOps may add one at the PM's discretion.
+A pre-commit hook (commitlint or equivalent) is authorized.
 
 ---
 
-## PAT-021: Pre-Flight Interface Check
-
-Before issuing each task brief, the PM must verify that every function, prop, type, and store method the Builder will need already exists in INTERFACES.md. If any are missing, escalate to the Architect **before** the Builder starts.
-
-This shifts interface drift from reactive (caught in review) to proactive (caught in planning). The two unplanned INTERFACES.md modifications during Phase 2 (TASK-2.9, TASK-2.11) would have been avoided by this check.
-
----
-
-## PAT-022: State File Archiving
-
-At each milestone boundary, the PM moves completed-phase detail out of `TASK_STATUS.md` into `TASK_STATUS_ARCHIVE.md`. The active file retains only:
-- The current phase's full task table
-- A one-line summary per completed phase with a pointer to the archive
-
-```markdown
-## Completed Phases
-- Phase 0 (7/7), Phase 1A (7/7), Phase 1B (6/6), Phase 2 (15/15) — see TASK_STATUS_ARCHIVE.md
-```
-
-Same treatment applies to `PM_STATE.md`: retrospective content that has been actioned moves to an archive section or file.
-
----
-
-## PAT-023: Tech Debt Cleanup
-
-At the start of each new phase, the PM creates a dedicated cleanup task to resolve carried-over follow-ups before new feature work begins. Follow-ups are collected from:
-- Reviewer comments marked as non-blocking
-- Stale code comments referencing resolved escalations
-- Accumulated minor drift items
-
-The cleanup task is assigned to a Builder and reviewed like any other task. It does not block feature work but should be merged early in the phase.
-
----
-
-## PAT-024: Expanded Spark Eligibility (Temporary)
-
-**Status:** Active while Codex-Spark is $0.00/token. When pricing changes, the Architect will reassess. Fallback: revert to boilerplate-only (the original Codex-Spark.md policy).
-
-**Policy:** Spark eligibility is expanded from boilerplate-only to **any self-contained subtask whose interface is fully specified** in the task brief or INTERFACES.md. Both Builders and QA agents may invoke Spark via the `invoke-spark` skill.
-
-**Rationale:** At zero cost and ~1,200 tokens/second throughput, the cost/quality tradeoff that justified limiting Spark to boilerplate no longer applies. The only real cost is review time on the receiving agent, and the hard discard rule bounds that cost.
-
-**Rules:**
-- The "never" list is unchanged: no auth, no security, no cross-service logic, no project-wide-state-dependent code.
-- One Spark attempt per subtask. No parallel runs on the same subtask.
-- **Hard discard rule:** If the reviewing agent spends more than a few minutes making structural corrections to Spark output, discard it and write from scratch. Spark's value is speed — heavy surgery is slower than a clean rewrite.
-- All Spark use must be disclosed in the PR per the `invoke-spark` skill (Step 4).
-
----
-
-## PAT-025: State File Update Frequency
-
-State files (`TASK_STATUS.md`, `PM_STATE.md`, `ARCHITECT_STATE.md`) exist for **recovery from interruptions**, not real-time tracking. Interruptions are predictable — the HITL signals in advance. Write state files at batch boundaries and on HITL request, not after every event.
-
-### TASK_STATUS.md
-
-Single-section format: one status table per phase, plus a brief header block for tip/sync info. No event log.
-
-Update the status table at these batch boundaries only:
-- After issuing a wave of briefs (update Status column to `in-progress`)
-- After a Reviewer verdict (update Status to `blocked` or `approved`)
-- After an Integrator merge (update Status to `merged`, clear Branch)
-- After milestone close (collapse phase to archive one-liner per PAT-022)
-- On HITL request
-
-**Do not** update the table after every routine status ping, agent status update, or intermediate push. Carry that detail in `PM_STATE.md` while a session is active; it will be discarded when the session closes.
-
-Significant transitions (escalation resolved, circuit breaker triggered, phase complete) go in the Notes column of the relevant task row, not in a separate log.
-
-### PM_STATE.md and ARCHITECT_STATE.md
-
-Update on HITL request, before a known interruption, or at milestone close. Do not update after routine events. `PM_STATE.md` is the correct place for active-session narrative — worktree state, local verification notes (and optional manual `workflow_dispatch` run URLs), pending agent IDs. That context is session-scoped and does not belong in `TASK_STATUS.md`.
+## PAT-021 - 025: DELETED.
 
 ---
 
@@ -428,116 +357,6 @@ For Phase 4 playback work, use this canonical store-level audio initialization c
 
 ---
 
-## PAT-027: Streaming Review/Remediation Orchestration
-
-**The delivery pipeline operates per-PR as a streaming system.** Each PR moves through its own lifecycle independently: `Builder/QA → Reviewer → Remediation → Re-review → Approved`. No "wait for all PRs in wave" barrier. Only integration remains batched at milestone/wave boundaries.
-
-### Ownership continuity
-
-Default to same owners for speed and context retention:
-
-| Role | Default owner | Fallback |
-|---|---|---|
-| Remediation | Original Builder for the task branch | PM must include prior review summary and delta in new Builder brief |
-| QA support during remediation | Original QA (when blocker scope impacts tests) | PM must include prior test coverage plan in new QA brief |
-| Re-review | Same Reviewer who issued the blockers | PM must include prior review summary and delta changes in new Reviewer brief |
-
-### Context-degradation circuit breakers
-
-Continuity is revoked for a PR when **any** trigger fires:
-
-1. Same blocker (or equivalent defect) appears in two consecutive review rounds.
-2. Blocker count does not decrease after one remediation cycle.
-3. Reviewer feedback becomes contradictory across rounds.
-4. Two blocked re-review rounds on one PR (hard cap).
-
-When triggered:
-- Rotate **Reviewer first** if issue appears to be feedback consistency.
-- Rotate **Builder first** if issue appears to be implementation quality.
-- Optionally run one tie-breaker second review for contentious cases.
-
-### QA/Builder handshake gate
-
-A PR is not review-ready until all of the following are true:
-1. QA has sent `tests-written` status on the same branch.
-2. Builder has run QA baseline (failing before implementation), then rerun with implementation (passing).
-3. Builder pre-flight checklist confirms: QA tests pass, existing suite passes, self-review checklist complete.
-
-PM must enforce this gate before spawning a Reviewer.
-
-### Delta brief (re-round handoffs)
-
-Every remediation or re-review handoff must include:
-- Task ID and PR link.
-- Prior blocker list (verbatim or concise normalized form).
-- What changed since last round.
-- What remains open.
-- Explicit "do not re-litigate" list for resolved items.
+## PAT-027 - 030: DELETED.
 
 ---
-
-## PAT-028: Upstream Change Protection
-
-**Builders must never revert commits they did not author.** A feature branch may contain commits from other roles — QA test commits, upstream merges from `develop`, or Architect-owned document updates. These are not the Builder's to modify.
-
-**Problem this prevents:** An Architect (or PM, or other privileged role) merges a process or doc change to `develop`. A Builder branches from `develop` and the change appears in their PR diff. A Reviewer flags it as out-of-scope. The Builder reverts it. The Architect's decision is silently destroyed.
-
-**Rules:**
-
-| Role | Rule |
-|---|---|
-| Builder | Never revert, undo, or drop commits you did not author. If a Reviewer flags changes you didn't make, report to the PM — do not act on the feedback yourself. |
-| Reviewer | Do not flag upstream changes as irrelevant or instruct the Builder to revert them. Skip Architect-owned files (`ARCHITECTURE.md`, `INTERFACES.md`, `PATTERNS.md`, `UX_GUIDELINES.md`, `.cursor/agents/*.md`) and QA-authored test commits when reviewing a Builder's PR. If an upstream change appears genuinely wrong, route to the PM for the responsible role. |
-| PM | If a Reviewer reports a concern about an upstream change, route to the role that authored it. Never instruct a Builder to revert another role's work. |
-
----
-
-## PAT-029: Playwright E2E Dev Stack Readiness
-
-**Problem:** A single `webServer.url` that only probes the Vite port lets Playwright start while the Fastify API is still booting. Registration and project creation then race the API → flaky `toHaveURL`, autosave `waitForResponse`, and API contract checks.
-
-**Rule:** In `playwright.config.ts`, use **two** `webServer` entries (or `PLAYWRIGHT_SKIP_WEBSERVER` with both processes already up): one waits on `GET /api/health` at `PLAYWRIGHT_API_URL` (default `http://127.0.0.1:3001`), one waits on the Vite dev URL (`PLAYWRIGHT_BASE_URL`, default `http://127.0.0.1:5173`). Do not rely on `concurrently` alone as the readiness gate.
-
-**Manual dev:** `npm run e2e:devstack` remains valid for developers who prefer one shell; set `PLAYWRIGHT_SKIP_WEBSERVER=1` when those servers are already running.
-
----
-
-## PAT-030: Remediation File Ownership (Builder vs QA)
-
-**Problem:** When both Builder and QA are spawned concurrently for a remediation round, both agents may edit the same files — shared E2E helpers, test fixtures, or even the same test specs — producing merge conflicts, duplicated fixes, or silently overwritten work. The event log shows repeated stalls, replacements, and multi-round churn on PR #35 and #36 where this overlap occurred.
-
-**Rule:** During remediation rounds, **Builder and QA have exclusive file scopes.** Neither role may edit files owned by the other without explicit PM coordination.
-
-### Ownership table
-
-| File scope | Owner during remediation | Examples |
-|---|---|---|
-| Application source code | Builder | `client/src/**`, `server/src/**`, `shared/**`, config files (`playwright.config.ts`, `vite.config.ts`, etc.) |
-| Test specs and assertions | QA | `**/tests/**/*.test.ts`, `**/tests/**/*.spec.ts` |
-| Shared E2E helpers and fixtures | **Builder** (single writer) | `client/tests/e2e/helpers/**`, `client/tests/e2e/fixtures/**` |
-| Type stubs / mocks used only by tests | QA | `**/tests/**/__mocks__/**`, test-local type overrides |
-
-### Coordination protocol
-
-1. **PM classifies each blocker** before issuing remediation briefs. Each blocker is tagged as `app` (Builder owns fix), `test` (QA owns fix), or `shared-helper` (Builder owns fix, QA reviews).
-2. **Builder pushes first.** When both roles have work, Builder commits and pushes, then signals `REMEDIATION_PUSH` to PM. QA then rebases onto the Builder's push before committing their changes.
-3. **No parallel pushes.** Only one role pushes to the PR branch at a time. PM enforces sequencing via the remediation brief ordering.
-4. **Local CI is the gate:** GitHub Actions is disabled. There is no remote CI run on push. Before signaling review-ready, the full local suite must pass (`./scripts/ci-local.sh` or the command sequence in [docs/CI_LOCAL.md](docs/CI_LOCAL.md)). A single push after QA rebases (steps 2–3) is preferred to keep the push count low; validate locally before pushing.
-5. **Builder remediation — targeted E2E first:** While iterating on an E2E failure, the Builder runs **only** the failing spec (or `playwright -g`) locally until green — **not** the full E2E suite on every attempt. Before signaling the PM that remediation is ready, the previously failing test(s) must have passed locally at least once, then the full suite run once ([docs/CI_LOCAL.md](docs/CI_LOCAL.md) — targeted E2E).
-6. **QA may not modify shared E2E helpers** (`helpers/**`, `fixtures/**`) during remediation. If a helper change is needed to fix a test, QA reports the required change to PM, who includes it in the Builder's remediation brief. This prevents the most common source of overlapping edits.
-7. **Builder must not delete or rewrite QA test assertions.** If a test is genuinely wrong (not just failing due to a code bug), Builder reports to PM, who routes to QA.
-
-### PM remediation brief additions
-
-When issuing concurrent Builder + QA remediation briefs, include:
-
-```
-File ownership (PAT-030):
-  Builder scope: <list of files/directories Builder may edit>
-  QA scope:      <list of files/directories QA may edit>
-  Push order:    Builder first → QA rebases → QA pushes
-```
-
-### Fallback
-
-If a remediation round only has `app`-class blockers, spawn **Builder only** (no concurrent QA). If only `test`-class blockers, spawn **QA only**. Concurrent spawns are only needed when both classes are present.

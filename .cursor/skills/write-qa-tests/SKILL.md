@@ -19,7 +19,7 @@ Before writing a single test, read and understand:
 2. **`INTERFACES.md`** — your tests must verify against these contracts, not against implementation internals.
 3. **`ARCHITECTURE.md`** — use the agreed test framework, directory structure, and naming conventions. Do not invent a new pattern.
 
-If an acceptance criterion is untestable as written (vague, subjective, or ambiguous), **flag it to the PM immediately** — do not skip it silently and do not invent an interpretation. Write:
+If an acceptance criterion is untestable as written (vague, subjective, or ambiguous), **flag it to the TL immediately** — do not skip it silently and do not invent an interpretation. Write:
 
 ```
 UNTESTABLE CRITERION FLAG
@@ -115,7 +115,7 @@ it('returns 400 with a ValidationError body when email field is missing', ...)
 
 ## Step 5 — Commit your tests to the right branch
 
-Check out the Builder's feature branch (`feature/<task-id>-<short-description>`). If it does not yet exist, notify the PM before proceeding — do not create it yourself.
+Check out the Builder's feature branch (`feature/<task-id>-<short-description>`). If it does not yet exist, notify the TL before proceeding — do not create it yourself.
 Write your tests in the correct test directory per `ARCHITECTURE.md`. Then run the tests to confirm they fail before committing. This is required — failing tests at commit time prove the tests are genuine verification, not post-hoc approval.
 
 Commit to the feature branch:
@@ -132,9 +132,9 @@ Do not raise a separate PR. Your tests ride in the Builder's PR.
 
 ---
 
-## Step 6 — Notify the PM
+## Step 6 — Notify the TL
 
-After committing, send a STATUS_UPDATE to the PM:
+After committing, send a STATUS_UPDATE to the TL:
 
 ```
 STATUS_UPDATE
@@ -155,7 +155,7 @@ Note to Builder: QA tests are live on qa/<task-id>. Your PR must pass these test
 Once the Builder raises their PR:
 
 1. Run your test suite against the Builder's branch.
-2. Report results to the PM and Reviewer:
+2. Report results to the TL and Reviewer:
 
 ```
 QA TEST REPORT
@@ -170,7 +170,7 @@ Failures:
 Verdict: PASS / FAIL
 ```
 
-If tests fail due to a bug in the feature (not a mistake in your test logic), flag it to the PM — do not patch the feature yourself:
+If tests fail due to a bug in the feature (not a mistake in your test logic), flag it to the TL — do not patch the feature yourself:
 
 ```
 BUG FLAG

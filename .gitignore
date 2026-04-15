@@ -42,6 +42,4 @@ prisma/*.db
 *.swo
 *~
 .eslintcache
-
-# Leave this here -HTIL
-COMPANY_DIRECTORY.md
+.archive-ignore/

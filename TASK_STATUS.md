@@ -13,7 +13,7 @@ Phases 0 (7/7), 1A (7/7), 1B (6/6), Phase 2 (15/15), Phase 3 (10/10), Phase 4 (1
 
 ## Phase 6 — MIDI Export & StudioOne Integration
 
-**Develop tip:** `23b068c` (`origin/develop`, 2026-04-14) — includes TASK-6.1 (#53) + TASK-6.2 (#54).
+**Develop tip:** `51251de` (`origin/develop`, 2026-04-14) — includes HITL coordination commit atop TASK-6.2 (#54).
 
 **Merge-order gates:** Merge **6.1** before **6.2** and **6.3** (they extend the same exporter). **6.4** / **6.5** branched from `develop` @ **6.2**; **merge #55 (6.3) before #56/#57** when possible, then **#56 ↔ #57** may conflict on `EditorLayout.tsx` / transport — Integrator sequences rebases. **6.6** / **6.7** (QA) start once **6.1–6.3** are merged (or as briefed).
 
@@ -23,9 +23,9 @@ Phases 0 (7/7), 1A (7/7), 1B (6/6), Phase 2 (15/15), Phase 3 (10/10), Phase 4 (1
 |---|---|---|---|---|---|---|
 | 6.1 | Builder + QA | phase-6/midi-file-generation | merged | [#53](https://github.com/quickthom/vybpad/pull/53) | 1A.2 ✓, 1A.3 ✓, 0.4 ✓ | Squash on `develop` **`abda90f`** |
 | 6.2 | Builder + QA | phase-6/chord-name-text-events | merged | [#54](https://github.com/quickthom/vybpad/pull/54) | 6.1 ✓, 1A.4 ✓ | Squash on `develop` **`23b068c`** |
-| 6.3 | Builder + QA | phase-6/tempo-map-track | in-review | [#55](https://github.com/quickthom/vybpad/pull/55) | 6.1 ✓, 6.2 ✓ | Head `a984035`; **Reviewer spawn failed** (host API limit, 2026-04-14 ×3) — **stop spinning**; Architect re-prompt or HITL review |
-| 6.4 | Builder + QA | phase-6/export-ui | in-review | [#57](https://github.com/quickthom/vybpad/pull/57) | 6.1 ✓, 0.2 ✓ | Builder reports green unit/lint/build; E2E may need ports free — confirm before merge |
-| 6.5 | Builder + QA | phase-6/drag-drop-midi | in-review | [#56](https://github.com/quickthom/vybpad/pull/56) | 6.1 ✓ | `TransportControls.endContent` + drag hook; may conflict with 6.4 on layout |
+| 6.3 | Builder + QA | phase-6/tempo-map-track | in-review | [#55](https://github.com/quickthom/vybpad/pull/55) | 6.1 ✓, 6.2 ✓ | Head `a984035`. **Rebase** onto `51251de` still **conflicts** (`smfTestUtils.ts`, `midiExporter.task-6-3.test.ts`). **Reviewer BLOCKED** (2026-04-14): incomplete **raise-PR** body / checklist — fix PR description + remediation; local `ci-local` evidence expected |
+| 6.4 | Builder + QA | phase-6/export-ui | approved | [#57](https://github.com/quickthom/vybpad/pull/57) | 6.1 ✓, 0.2 ✓ | Tip `770eb99` (up to date with `develop`); **`ci-local` PASS** (2026-04-14). **Reviewer APPROVED** (prior). **Integrator:** hold merge until **#55** lands unless Architect reprioritizes |
+| 6.5 | Builder + QA | phase-6/drag-drop-midi | in-review | [#56](https://github.com/quickthom/vybpad/pull/56) | 6.1 ✓ | Tip `05f0d6f` (up to date with `develop`); **`ci-local` PASS** (2026-04-14). **Reviewer BLOCKED** (prior): **INTERFACES.md** `TransportControlsProps.endContent` |
 | 6.6 | QA | — | blocked | — | 6.1–6.3 | StudioOne import validation |
 | 6.7 | QA | — | blocked | — | 6.1–6.3 | MIDI generation unit tests |
 
