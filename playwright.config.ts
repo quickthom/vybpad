@@ -89,12 +89,36 @@ export default defineConfig({
   use: {
     baseURL,
     ...devices['Desktop Chrome'],
-    viewport: { width: 1280, height: 720 },
+    /** UX §4 / docs/E2E_EDITOR.md — minimum 1024×768. */
+    viewport: { width: 1280, height: 768 },
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
     trace: 'on-first-retry',
   },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  /**
+   * TASK-8.4 — `visual` holds screenshot baselines (`toHaveScreenshot`); serial to limit GPU load.
+   * PAT-030 — ports from `PLAYWRIGHT_BASE_URL` / root `.env`. Viewport 1280×768 (UX §4 ≥1024×768).
+   */
+  projects: [
+    {
+      name: 'chromium',
+      testIgnore: '**/*.visual.spec.ts',
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 1280, height: 768 },
+      },
+    },
+    {
+      name: 'visual',
+      testMatch: '**/*.visual.spec.ts',
+      fullyParallel: false,
+      use: {
+        ...devices['Desktop Chrome'],
+        /** UX_GUIDELINES §4 — agreed visual baseline (≥ minimum 1024×768). */
+        viewport: { width: 1280, height: 768 },
+      },
+    },
+  ],
   webServer: process.env.PLAYWRIGHT_SKIP_WEBSERVER
     ? undefined
     : [
