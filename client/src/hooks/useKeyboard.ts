@@ -406,6 +406,8 @@ export function handleEditorKeydown(e: KeyboardEvent, ctx: EditorKeyboardContext
     return;
   }
 
+  // TASK-7.5: When the canvas has editor focus, `moveSelectionLeft`/`moveSelectionRight` are handled by PAT-027 first
+  // (same `navigateSelection` behavior). This path runs when the registry did not consume the event (e.g. no canvas focus).
   if (key === 'ArrowLeft' || key === 'ArrowRight') {
     const dir = key === 'ArrowLeft' ? -1 : 1;
     const next = navigateSelection(ctx.song, ctx.viewport, selection, ctx.activeVoice, dir, ctx.entryMode);

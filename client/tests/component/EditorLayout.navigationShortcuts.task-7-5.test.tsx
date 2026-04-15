@@ -15,8 +15,9 @@
  * - `scrollUp` decreases `scrollY` and `scrollDown` increases it (canvas pitch scroll convention).
  */
 
+import type { ProjectResponse, SongData } from '@vybpad/shared';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { BrowserRouter } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { EditorLayout } from '@/app/EditorLayout';
@@ -70,6 +71,19 @@ const TASK75_CHORDS = {
 
 const EXPECT_ZOOM_MIN = 0.25;
 const EXPECT_ZOOM_MAX = 4;
+
+const BOOTSTRAP_PROJECT_ID = '00000000-0000-4000-8000-000000000001';
+
+function projectPayloadForSong(song: SongData): ProjectResponse {
+  const now = new Date().toISOString();
+  return {
+    id: BOOTSTRAP_PROJECT_ID,
+    name: 'TASK-7.5',
+    songData: song,
+    createdAt: now,
+    updatedAt: now,
+  };
+}
 
 function polyfillRaf(): void {
   if (typeof globalThis.requestAnimationFrame !== 'function') {
@@ -137,7 +151,6 @@ describe('EditorLayout — TASK-7.5 — navigation + playback shortcuts (stores 
     resetPlaybackEngineForTests();
     resetPlaybackStoreForTests();
     baselineUi();
-    useSongStore.getState().loadSong(buildDefaultSong());
   });
 
   afterEach(() => {
@@ -145,11 +158,20 @@ describe('EditorLayout — TASK-7.5 — navigation + playback shortcuts (stores 
     resetPlaybackEngineForTests();
   });
 
-  async function focusSongCanvas(): Promise<HTMLElement> {
+  /**
+   * Mount `/editor/:projectId` with POST-bootstrap `location.state` so `EditorLayout` hydrates `songData`
+   * once and does not replace it with `buildDefaultSong()` from the no-project branch (TASK-3.2 / TASK-7.5).
+   */
+  async function focusSongCanvas(song: SongData = buildDefaultSong()): Promise<HTMLElement> {
+    const project = projectPayloadForSong(song);
     render(
-      <BrowserRouter>
-        <EditorLayout />
-      </BrowserRouter>,
+      <MemoryRouter
+        initialEntries={[{ pathname: `/editor/${BOOTSTRAP_PROJECT_ID}`, state: { project } }]}
+      >
+        <Routes>
+          <Route path="/editor/:projectId" element={<EditorLayout />} />
+        </Routes>
+      </MemoryRouter>,
     );
     const canvas = await screen.findByRole('application', { name: /Song editor/i });
     (canvas as HTMLElement).focus();
