@@ -14,10 +14,13 @@ import { EditorCanvas } from '../components/editor/EditorCanvas';
 import {
   clearSecondaryChordEdit,
   cycleSecondaryChordEdit,
+  isEditableKeyboardTarget,
   resolveTargetMeasureIndex,
 } from '../components/editor/editorKeyboardLogic';
 import { ChordPalette, SecondaryChordInspector } from '../components/panels/ChordPalette';
 import { getKeyAtMeasure, getScaleAtMeasure } from '../engine/renderer/tickUtils';
+import { createShortcutManager } from '../engine/keyboard/shortcutManager';
+import type { ShortcutContext } from '../engine/keyboard/shortcutTypes';
 import { theoryEngine } from '../engine/theory';
 import { applyChordPalettePayloadFromEditor, type EditorKeyboardContext } from '../hooks/useKeyboard';
 import { EntryModeToggle } from '../components/editor/EntryModeToggle';
@@ -42,6 +45,15 @@ const AUTOSAVE_DEBOUNCE_MS = 1500;
 /** Compare the song snapshot we PUT with current store state to detect edits during an in-flight save. */
 function songMatchesSentBaseline(sent: SongData, now: SongData): boolean {
   return JSON.stringify(sent) === JSON.stringify(now);
+}
+
+/** True when focus is on the grid canvas (role + aria contract from EditorCanvas). */
+function isSongEditorCanvasFocused(active: EventTarget | null): boolean {
+  return (
+    active instanceof HTMLCanvasElement &&
+    active.getAttribute('role') === 'application' &&
+    (active.getAttribute('aria-label')?.startsWith('Song editor') ?? false)
+  );
 }
 
 /** Passed from `ProjectListPage` after POST create so the editor can hydrate without a duplicate GET. */
@@ -143,6 +155,25 @@ export function EditorLayout() {
   const [chordPaletteMode, setChordPaletteMode] = useState<'diatonic' | 'borrowed' | 'secondary' | 'search'>(
     'diatonic',
   );
+
+  const shortcutManager = useMemo(
+    () =>
+      createShortcutManager({
+        onCommand: () => {
+          /* Future: map ShortcutCommandId to transport/zoom/clipboard; PAT-027 layer is keyed before grid handling. */
+        },
+      }),
+    [],
+  );
+
+  const getShortcutContext = useCallback((): ShortcutContext => {
+    return {
+      hasModalOpen: keyScaleDialogOpen || tempoMeterDialogOpen,
+      isTextEditing: isEditableKeyboardTarget(document.activeElement),
+      hasEditorFocus: isSongEditorCanvasFocused(document.activeElement),
+      isPlaying: usePlaybackStore.getState().isPlaying,
+    };
+  }, [keyScaleDialogOpen, tempoMeterDialogOpen]);
 
   const getSongAfterMutation = useCallback(() => useSongStore.getState().song, []);
   const getSelectionAfterMutation = useCallback(() => useUIStore.getState().selection, []);
@@ -687,6 +718,8 @@ export function EditorLayout() {
                   currentDurationTicks,
                   setCurrentDurationTicks,
                 }}
+                shortcutManager={shortcutManager}
+                getShortcutContext={getShortcutContext}
               />
             )}
           </main>

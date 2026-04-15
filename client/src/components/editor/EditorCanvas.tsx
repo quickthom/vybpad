@@ -11,6 +11,7 @@ import {
 } from 'react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
 
+import type { ShortcutContext, ShortcutManager } from '../../engine/keyboard/shortcutTypes';
 import { useKeyboard } from '../../hooks/useKeyboard';
 import { useUIStore } from '../../store/uiStore';
 import { theoryEngine } from '../../engine/theory';
@@ -62,6 +63,9 @@ export interface EditorCanvasProps {
   onToggleEntryMode?: () => void;
   /** When set, chord palette + canvas share duration + cross-measure digit targeting refs. */
   keyboardPlumbing?: EditorKeyboardPlumbing;
+  /** PAT-027 — shell supplies manager + live context (modal/focus gating). */
+  shortcutManager?: ShortcutManager | null;
+  getShortcutContext?: () => ShortcutContext;
 }
 
 const SELECTION_STROKE = 'rgba(37, 99, 235, 0.8)';
@@ -154,6 +158,8 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
     getSelectionAfterMutation,
     onToggleEntryMode,
     keyboardPlumbing,
+    shortcutManager,
+    getShortcutContext,
   } = props;
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -210,6 +216,8 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
     onChordEdit,
     onNoteEdit,
     onSelectionChange,
+    shortcutManager,
+    getShortcutContext,
   });
 
   const hitIsResizeEdge = useCallback(
