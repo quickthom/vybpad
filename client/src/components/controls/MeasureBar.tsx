@@ -28,10 +28,12 @@ export interface MeasureBarProps {
 }
 
 function chunkMeasureIndices(measureCount: number, perLine: number): number[][] {
+  // Non-positive perLine would stall the outer loop (i += 0) or walk backward; treat as 1 (TASK-8.0).
+  const stride = perLine > 0 ? perLine : 1;
   const rows: number[][] = [];
-  for (let i = 0; i < measureCount; i += perLine) {
+  for (let i = 0; i < measureCount; i += stride) {
     const row: number[] = [];
-    const limit = Math.min(i + perLine, measureCount);
+    const limit = Math.min(i + stride, measureCount);
     for (let j = i; j < limit; j++) row.push(j);
     rows.push(row);
   }

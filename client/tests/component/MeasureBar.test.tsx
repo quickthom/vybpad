@@ -125,6 +125,28 @@ describe('MeasureBar — MeasureBarProps contract (criterion 1)', () => {
   });
 });
 
+describe('TASK-8.0 — measuresPerLine non-positive chunking safety', () => {
+  it('renders all measure cells when measuresPerLine is 0 (same count as measuresPerLine 1 for small N)', () => {
+    const n = 4;
+    const baseline = render(<MeasureBar {...defaultProps({ measureCount: n, measuresPerLine: 1 })} />);
+    const baselineCount = baseline.queryAllByRole('button', { name: /^Measure \d+$/ }).length;
+    baseline.unmount();
+
+    render(<MeasureBar {...defaultProps({ measureCount: n, measuresPerLine: 0 })} />);
+    expect(screen.queryAllByRole('button', { name: /^Measure \d+$/ })).toHaveLength(baselineCount);
+  });
+
+  it('renders all measure cells when measuresPerLine is negative (same count as measuresPerLine 1)', () => {
+    const n = 4;
+    const baseline = render(<MeasureBar {...defaultProps({ measureCount: n, measuresPerLine: 1 })} />);
+    const baselineCount = baseline.queryAllByRole('button', { name: /^Measure \d+$/ }).length;
+    baseline.unmount();
+
+    render(<MeasureBar {...defaultProps({ measureCount: n, measuresPerLine: -2 })} />);
+    expect(screen.queryAllByRole('button', { name: /^Measure \d+$/ })).toHaveLength(baselineCount);
+  });
+});
+
 describe('MeasureBar — measure list rendering (criterion 2)', () => {
   describe('happy path', () => {
     it('renders measureCount cells labeled 1 through N', () => {
