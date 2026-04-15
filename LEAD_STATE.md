@@ -6,7 +6,7 @@
 
 ## Open escalations
 
-- *None.* (Last resolved: INTERFACES.md `MeasureBarProps.onEditTempoMeter?` — TASK-5.6, 2026-04-14)
+- *None.* (Last resolved: INTERFACES.md `TransportControlsProps.endContent` — TASK-6.5, 2026-04-15)
 
 ---
 
@@ -22,39 +22,21 @@
 
 ---
 
-## Session batch — 2026-04-14
+## Session batch — 2026-04-15 (Phase 6 unblock)
 
-### Rebase attempts (PAT-017 paths)
+### Completed
 
-| Branch | Worktree | Result |
-|--------|----------|--------|
-| `phase-6/export-ui` | `/home/thom/py/vybpad-worktrees/export-ui` | **Up to date** with `origin/develop` (already rebased) |
-| `phase-6/drag-drop-midi` | `/home/thom/py/vybpad-worktrees/drag-drop-midi` | **Up to date** |
-| `phase-6/tempo-map-track` | `/home/thom/py/vybpad-worktrees/tempo-map-track` | **CONFLICT** — same as prior session (`smfTestUtils.ts`, `midiExporter.task-6-3.test.ts`); **`git rebase --abort`** |
-
-### `ci-local.sh` (2026-04-14 continuation)
-
-| Worktree | Tip | Result |
-|----------|-----|--------|
-| `export-ui` | `770eb99` | **PASS** (~75s) |
-| `drag-drop-midi` | `05f0d6f` | **PASS** (~77s) |
-| `tempo-map-track` | — | Skipped (no successful rebase) |
-| `e2e-foundation` | — | Skipped (rebase not completed) |
-
-### Reviewer
-
-- **#55 / TASK-6.3:** **BLOCKED** — PR body / raise-pr checklist incomplete (ASSUMPTIONS, blocking flags, checked items). **Not** blocked on feature logic alone; rebase conflicts noted as **workflow** issue if linear history required.
-- **#56 / #57:** No new Reviewer spawn this batch — **#57** already **APPROVED**; **#56** still **BLOCKED** on **INTERFACES.md** (`endContent`) pending Tech Lead remediation.
+- **`develop`:** `623fa57` — `INTERFACES.md` documents optional `TransportControlsProps.endContent` (React slot for drag/export affordance).
+- **TASK-6.3 / #55:** Rebased `phase-6/tempo-map-track` → `c4c856e`; resolved `smfTestUtils.ts` / `midiExporter.task-6-3.test.ts` conflicts; added `conductorTempoAndMeterMetasFromTrack` wrapper; fixed baseline FF51/FF58 test ticks to match `internalTickToMidiTick(0)`; **`ci-local` PASS**; PR #55 body updated via `gh`.
+- **TASK-6.5 / #56:** Rebased `phase-6/drag-drop-midi` → `f74e974` on `develop`; PR #56 body updated (interfaces unblocked); Vitest PASS.
+- **TASK-6.4 / #57:** Rebased `phase-6/export-ui` → `c93ddd1`; **`ci-local` PASS**.
 
 ### Integration
 
-- **Not** performed. Merge-order gate: **#55** before **#57** / **#56** when integrating.
+- Branches **force-pushed** to `origin`. Merge order unchanged: **#55 → #57 → #56** (rebase #57/#56 after each merge if `EditorLayout` / transport conflicts).
+
+### Phase 6 — follow-ups
+
+**6.6 / 6.7** — still blocked on **6.1–6.3** merged to `develop` (per ROADMAP) until #55 lands.
 
 ---
-
-## Phase 6 — blocked follow-ups
-
-**6.6 / 6.7** — blocked until **6.1–6.3** merged to `develop` (per ROADMAP).
-
----
-
