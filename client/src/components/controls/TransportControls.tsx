@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+
 import { getPlaybackInitErrorMessage } from '../../engine/audio';
 import type { PlaybackInitErrorCode, PlaybackInitStatus } from '../../store/playbackStore';
 
@@ -15,6 +17,8 @@ export interface TransportControlsProps {
   onStop: () => void;
   onRewind: () => void;
   onTempoChange: (bpm: number) => void;
+  /** Optional trailing slot (e.g. MIDI drag-to-desktop); omit when unused. */
+  endContent?: ReactNode;
 }
 
 export function TransportControls({
@@ -28,6 +32,7 @@ export function TransportControls({
   onStop,
   onRewind,
   onTempoChange,
+  endContent,
 }: TransportControlsProps) {
   const playDisabled = initStatus === 'initializing';
   /** Pause / stop / rewind require a running engine (INTERFACES transport actions). */
@@ -140,6 +145,12 @@ export function TransportControls({
         >
           {getPlaybackInitErrorMessage(initErrorCode)}
         </p>
+      ) : null}
+
+      {endContent ? (
+        <div className="ml-auto flex shrink-0 items-center gap-2" role="group" aria-label="Export">
+          {endContent}
+        </div>
       ) : null}
     </div>
   );
