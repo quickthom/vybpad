@@ -1,6 +1,6 @@
 # INTERFACES — vYbpad
 
-> All shared API contracts, component prop signatures, data schemas, and inter-service boundaries. Only the Architect may modify this file.
+> All shared API contracts, component prop signatures, data schemas, and inter-service boundaries. Only the Tech Lead may modify this file.
 
 ---
 

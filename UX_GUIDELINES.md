@@ -356,7 +356,7 @@ Values align with **PAT-012**; this section is the UX authority for Builders (su
 **Autosave (debounced PUT)**
 
 - **Errors** MUST surface via toast (PAT-001); transport retries only where product rules allow (see `PATTERNS.md` / API client).
-- **Success** MAY omit a toast to avoid noise. If success is silent, Builders SHOULD still provide a lightweight cue that the milestone “user sees persistence” expectation is met — e.g. optional **caption** or **“Last saved”** timestamp in editor chrome, or success toast on first save after edit session. Purely silent autosave with no chrome is acceptable only if PM confirms.
+- **Success** MAY omit a toast to avoid noise. If success is silent, Builders SHOULD still provide a lightweight cue that the milestone “user sees persistence” expectation is met — e.g. optional **caption** or **“Last saved”** timestamp in editor chrome, or success toast on first save after edit session. Purely silent autosave with no chrome is acceptable only if TL confirms.
 
 **Empty states**
 

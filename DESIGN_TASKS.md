@@ -30,7 +30,7 @@
 
 | ID | Task | Source |
 | --- | --- | --- |
-| **D-05** | **Autosave feedback:** If product requires “sees it auto-save” as *visible* feedback (ROADMAP vs silent persist), add a non-toast affordance (e.g. last-saved line). **PM/product call** — optional if silent autosave stays acceptable. | F-06 P2 |
+| **D-05** | **Autosave feedback:** If product requires “sees it auto-save” as *visible* feedback (ROADMAP vs silent persist), add a non-toast affordance (e.g. last-saved line). **TL/product call** — optional if silent autosave stays acceptable. | F-06 P2 |
 | **D-06** | **Auth primary submit focus:** Align `LoginForm` / `RegisterForm` submit **`focus-visible`** with §5.1 **ring** pattern (currently outline vs 2px ring elsewhere). | F-06 |
 | **D-07** | **Project list empty state:** Strengthen §8 alignment when count is 0 (heading + primary CTA pattern vs minimal copy). | F-06 P3 |
 | **D-08** | **Loop bar — sighted discoverability:** Optional chip/badge when looping is active (beyond `sr-only` live region). | F-07 P2 |
@@ -47,7 +47,7 @@
 | --- | --- | --- |
 | **D-13** | **Centralize design tokens:** Add Tailwind v4 `@theme` or `:root` mapping for §1 tokens once; trim duplicated `#fallback` hex in class strings when safe. | Phase 2; F-06 |
 | **D-14** | **Header / toolbar structure:** When converging chrome, prefer a stable **48px** primary row per §5.8; keep title/metadata secondary if wrapping is required (Phase 2 noted header was not fixed-height). | Phase 2 |
-| **D-15** | **`UX_GUIDELINES.md` — loop row + playback:** If PM adopts F-07 P2/P3, add explicit §5.8 / §6 notes for loop row behavior and playback highlight (F-07 proposed v1.3 text). | F-07 |
+| **D-15** | **`UX_GUIDELINES.md` — loop row + playback:** If TL adopts F-07 P2/P3, add explicit §5.8 / §6 notes for loop row behavior and playback highlight (F-07 proposed v1.3 text). | F-07 |
 | **D-16** | **`UX_GUIDELINES.md` — dialogs:** Short §5.6 note on **native `<dialog>` vs custom overlay** (when to use which; focus-trap expectations). Cross-reference §8 for advanced chord shortcuts if helpful. | F-08 P3 |
 | **D-17** | **Reviewer checklist:** Confirm `DeleteProjectDialog` Escape/backdrop behavior is acceptable with native `<dialog>` (F-06 note — likely OK). | F-06 |
 
@@ -66,5 +66,5 @@
 
 1. **D-01** (viewport on editor/auth) — unblocks consistent §4 compliance and reduces bad mobile/cramped experiences.  
 2. **D-02**, **D-03**, **D-04** (touch targets + transport clarification) — closes recurring §9 findings.  
-3. **D-11**, **D-12**, **D-08**–**D-10** as PM prioritizes product polish.  
+3. **D-11**, **D-12**, **D-08**–**D-10** as TL prioritizes product polish.  
 4. **D-13**–**D-16** when scheduling a guidelines/token pass with Designer.

@@ -1,6 +1,6 @@
 # PATTERNS — vYbpad
 
-> Pre-authorized decisions. PM and Builders may apply these without escalating to the Architect. When using a pattern, note which one in your PR description.
+> Pre-authorized decisions. Builders may apply these without escalating to the Tech Lead (TL). When using a pattern, note which one in your PR description.
 
 ---
 
@@ -247,12 +247,12 @@ Each test file mirrors the source file it tests. Builders and QA may create test
 
 ## PAT-015: Git Workflow
 
-- `main` — production-ready code. Only the Integrator merges to main.
+- `main` — production-ready code. Only HITL merges to main.
 - `develop` — integration branch. Feature branches merge here via PR.
 - Feature branches: `phase-<phase-id>/<task-slug>` (e.g., `phase-1a/theory-engine`, `phase-4/piano-sample-loading`).
 - Hotfix branches: `fix/<task-id>-<slug>` (e.g., `fix/task-2-8-digit-key`). Use only for patches to `develop` outside normal phase flow.
 - One branch per task (per general rules). Branch from `develop`.
-- PRs require: description with task ID, ASSUMPTIONS block, self-review checklist, Spark disclosure if applicable.
+- PRs require: description with task ID, ASSUMPTIONS block, self-review checklist
 - Merges are squash-merge to `develop`, preserving a clean history.
 
 ---
@@ -265,7 +265,7 @@ All types defined in INTERFACES.md live in the `@vybpad/shared` package. Import 
 import type { SongData, ChordEvent, NoteEvent } from "@vybpad/shared";
 ```
 
-Never duplicate these types in client or server packages. If a type is needed in only one package, define it locally. If it crosses the boundary, it belongs in `@vybpad/shared` and must be added via an Architect escalation (since it modifies the shared interface).
+Never duplicate these types in client or server packages. If a type is needed in only one package, define it locally. If it crosses the boundary, it belongs in `@vybpad/shared` and must be added via TL escalation (since it modifies the shared interface).
 
 ---
 
@@ -273,9 +273,9 @@ Never duplicate these types in client or server packages. If a type is needed in
 
 **Multiple Builders must NEVER share a single working directory.** When two or more tasks run in parallel, each Builder must operate in an isolated git worktree.
 
-**Worktree setup (PM responsibility before spawning parallel Builders):**
+**Worktree setup (TL responsibility before spawning parallel Builders):**
 
-Use a dedicated directory **outside** the main clone for additional worktrees. Let `<REPO_ROOT>` be the path to the primary clone (PM/Integrator workspace, usually on `develop`) and `<WORKTREE_ROOT>` be a directory you choose for parallel worktrees (see [ENVIRONMENTS.md](ENVIRONMENTS.md) for operator conventions).
+Use a dedicated directory **outside** the main clone for additional worktrees. Let `<REPO_ROOT>` be the path to the primary clone (TL workspace, usually on `develop`) and `<WORKTREE_ROOT>` be a directory you choose for parallel worktrees (see [ENVIRONMENTS.md](ENVIRONMENTS.md) for operator conventions).
 
 ```bash
 mkdir -p <WORKTREE_ROOT>
@@ -286,7 +286,7 @@ git worktree add <WORKTREE_ROOT>/<task-slug> <branch-name>
 **Conventions:**
 - Worktree root: `<WORKTREE_ROOT>/` (one directory per operator machine; not committed)
 - Worktree per branch: `<WORKTREE_ROOT>/<task-slug>/`
-- The main worktree (`<REPO_ROOT>`) stays on `develop` and is used by the PM and Integrator only
+- The main worktree (`<REPO_ROOT>`) stays on `develop` and is used by the TL only
 - Each Builder's task brief must specify the `working_directory` for their worktree
 - After a task's PR is merged, clean up: `git worktree remove <WORKTREE_ROOT>/<task-slug>`
 
@@ -331,7 +331,7 @@ Examples:
 - `fix(TASK-2.8): correct digit-key input for scale degrees`
 - `test(TASK-2.14): add canvas renderer draw-call assertions`
 
-The Integrator's squash-merge message must also follow this format, using the primary task ID. If a squash covers multiple tasks, list them: `feat(TASK-2.4, TASK-2.5): add chord and note block renderers`.
+The TL's squash-merge message must also follow this format, using the primary task ID. If a squash covers multiple tasks, list them: `feat(TASK-2.4, TASK-2.5): add chord and note block renderers`.
 
 A pre-commit hook (commitlint or equivalent) is authorized.
 

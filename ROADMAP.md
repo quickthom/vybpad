@@ -46,7 +46,7 @@ Phase 8: Final QA & Deployment
 | 0.2 Client scaffold (Vite + React + TypeScript + Tailwind) | Builder | 0.1 | 0.3, 0.4 |
 | 0.3 Server scaffold (Fastify + TypeScript) | Builder | 0.1 | 0.2, 0.4 |
 | 0.4 Shared types package (`@vybpad/shared`) — all types from INTERFACES.md | Builder | 0.1 | 0.2, 0.3 |
-| 0.5 Docker Compose (PostgreSQL + dev servers) | DevOps | 0.2, 0.3 | — |
+| 0.5 Docker Compose (PostgreSQL + dev servers) | Tech Lead | 0.2, 0.3 | — |
 | 0.6 Prisma schema + initial migration | Builder | 0.3, 0.5 | — |
 | 0.7 Designer produces UX_GUIDELINES.md | Designer | — | all above |
 
@@ -221,10 +221,10 @@ Phase 8: Final QA & Deployment
 | 8.2 E2E test suite: full user workflow (register → create → compose → play → export) | QA | all above | 8.1 |
 | 8.3 Visual regression baseline (Playwright screenshots of key editor states) | QA | 8.2 | 8.4 |
 | 8.4 Accessibility audit (axe-core, keyboard-only navigation for non-canvas) | QA | 7.8 | 8.3 |
-| 8.5 Production Docker build (multi-stage, Nginx + Node + PG) | DevOps | 0.5 | 8.1–8.4 |
-| 8.6 HTTPS + reverse proxy configuration | DevOps | 8.5 | 8.1–8.4 |
+| 8.5 Production Docker build (multi-stage, Nginx + Node + PG) | Tech Lead | 0.5 | 8.1–8.4 |
+| 8.6 HTTPS + reverse proxy configuration | Tech Lead | 8.5 | 8.1–8.4 |
 | 8.7 Performance optimization (bundle splitting, lazy loading, sample caching) | Builder | 8.5 | 8.1–8.4 |
-| 8.8 Production deployment + smoke test | DevOps | 8.5, 8.6, 8.7 | — |
+| 8.8 Production deployment + smoke test | Tech Lead | 8.5, 8.6, 8.7 | — |
 | 8.9 HITL walkthrough + final acceptance | — | 8.8 | — |
 
 **Milestone:** App is live at a public HTTPS URL. All tests pass. HITL can walk through a full composition workflow with zero bugs in the happy path.

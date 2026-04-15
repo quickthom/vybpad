@@ -16,7 +16,7 @@ cd vybpad
 npm install
 ```
 
-## Environment (PAT-026)
+## Environment
 
 1. Copy the root template and keep it git-ignored:
 
@@ -28,7 +28,7 @@ npm install
 
 3. **`docker-compose.yml`** reads the root `.env` where configured; see [`ENVIRONMENTS.md`](ENVIRONMENTS.md) for variable purposes and defaults.
 
-4. Any new variable introduced in code must be reflected in **`.env.example` in the same PR** (PAT-026).
+4. Any new variable introduced in code must be reflected in **`.env.example` in the same PR**.
 
 ## Run with Docker Compose
 
@@ -71,7 +71,7 @@ You can also run `npm test` inside `client` for client-focused runs.
 
 E2E specs live under `client/tests/e2e/` and exercise the real Fastify API plus the Vite client (see `ARCHITECTURE.md` — Playwright). You need PostgreSQL reachable via `DATABASE_URL` (see `.env.example`), JWT secrets set, and no other process on ports **3001** (API) and **5173** (Vite).
 
-**Option A — let Playwright start the API and client** (default when `PLAYWRIGHT_SKIP_WEBSERVER` is unset): Playwright waits for **both** `GET /api/health` and the Vite dev server before running tests (see **PAT-029**).
+**Option A — let Playwright start the API and client** (default when `PLAYWRIGHT_SKIP_WEBSERVER` is unset): Playwright waits for **both** `GET /api/health` and the Vite dev server before running tests.
 
 ```bash
 # from repo root, after `cp .env.example .env` and `npx prisma db push --schema=prisma/schema.prisma`
@@ -98,7 +98,7 @@ CI runs `npm run test:e2e` with a PostgreSQL service and auto-starts the stack; 
 | [`INTERFACES.md`](INTERFACES.md)       | API contracts, shared types, and UI boundaries             |
 | [`ROADMAP.md`](ROADMAP.md)             | Phased delivery plan                                       |
 | [`CHANGELOG.md`](CHANGELOG.md)         | Delivered work by phase milestone                          |
-| [`ENVIRONMENTS.md`](ENVIRONMENTS.md)   | Environment variables, defaults, and PAT-026 secrets rules |
+| [`ENVIRONMENTS.md`](ENVIRONMENTS.md)   | Environment variables, defaults, and  secrets rules |
 | [`docs/CI_LOCAL.md`](docs/CI_LOCAL.md) | Local commands matching GitHub Actions (`ci.yml`) for pre-push checks |
 | [`UX_GUIDELINES.md`](UX_GUIDELINES.md) | UI/UX standards                                            |
 

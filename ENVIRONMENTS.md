@@ -2,7 +2,7 @@
 
 This document summarizes how environment variables are used across tiers (per **PATTERNS.md** PAT-013). It is not a substitute for `.env.example`, which remains the committed template for required keys and placeholders.
 
-The sections below expand this for **operators**: local development, Docker Compose, CI/CD expectations, and a production deployment sketch (per **ARCHITECTURE.md**). If anything here conflicts with PAT-013 or `ARCHITECTURE.md`, follow those sources and escalate to the Architect.
+The sections below expand this for **operators**: local development, Docker Compose, CI/CD expectations, and a production deployment sketch (per **ARCHITECTURE.md**). If anything here conflicts with PAT-013 or `ARCHITECTURE.md`, follow those sources and escalate to the TL.
 
 ## Rules (PAT-013)
 
@@ -30,7 +30,7 @@ When adding a new variable in application code, update **`.env.example` in the s
 
 Parallel Builders use **isolated git worktrees** (see `PATTERNS.md` PAT-017). Paths are **operator-specific**. Define:
 
-- **`<REPO_ROOT>`** — path to the primary clone where the PM and Integrator work (usually on `develop`).
+- **`<REPO_ROOT>`** — path to the primary clone where the TL works (usually on `develop`).
 - **`<WORKTREE_ROOT>`** — a directory **outside** that clone reserved for additional worktrees (not committed; choose any location on the machine).
 
 Example (adjust paths for your environment):
@@ -112,7 +112,7 @@ Run these before opening PRs.
 | `PLAYWRIGHT_API_URL`        | API origin for contract checks from tests                                          | `http://127.0.0.1:3001` |
 | `PLAYWRIGHT_SKIP_WEBSERVER` | If set, Playwright does not spawn the API + Vite dev servers (use your own stack, e.g. `npm run e2e:devstack`) | —                       |
 
-Requires the same **root** variables as local development (`DATABASE_URL`, `JWT_SECRET`, `JWT_REFRESH_SECRET`, etc.) when Playwright starts the stack. By default it launches **two** processes (Fastify + Vite) and waits for `/api/health` and the Vite origin (see **PAT-029**). See the root **README** “End-to-end (Playwright)” section for the full procedure.
+Requires the same **root** variables as local development (`DATABASE_URL`, `JWT_SECRET`, `JWT_REFRESH_SECRET`, etc.) when Playwright starts the stack. By default it launches **two** processes (Fastify + Vite) and waits for `/api/health` and the Vite origin. See the root **README** “End-to-end (Playwright)” section for the full procedure.
 
 ## Docker Compose (development)
 
@@ -173,7 +173,7 @@ Security and secrets:
 ## Manual actions required
 
 - **Developer:** copy `.env.example` to `.env` and fill values before running locally (PAT-013).
-- **DevOps / Architect:**
+- **Tech Lead:**
   - Configure staging/production hosts or platforms to inject the same variables the app expects (documented here and in `.env.example`).
   - Provision DNS and TLS certs for staging/production.
   - Provision a managed Postgres or prepare production-grade Postgres instance and backups.
@@ -187,4 +187,4 @@ Security and secrets:
 
 ---
 
-If anything in this document conflicts with `ARCHITECTURE.md`, follow `ARCHITECTURE.md` and escalate to the Architect for resolution.
+If anything in this document conflicts with `ARCHITECTURE.md`, follow `ARCHITECTURE.md` and escalate to the Tech Lead for resolution.
