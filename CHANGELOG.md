@@ -81,3 +81,19 @@ All notable changes to this project are described by **phase milestone** (see [`
 - **`MidiExporter` integration unit tests** ([PR #58](https://github.com/quickthom/vybpad/pull/58)).
 
 **TASK-6.6** (Studio One live validation) was completed using QA’s HITL protocol; it did not add merged application code.
+
+---
+
+## Phase 7 — Keyboard Shortcuts & Polish — 2026-04-15
+
+### Added
+
+- **Keyboard shortcut stack**: centralized shortcut handling with conflict resolution; note-duration keys; split, tie, and triplet operations; JSON clipboard copy/paste; and navigation shortcuts for zoom, scroll, selection, and playback.
+- **Settings panel** for editor preferences (entry mode, labels, colors, guide options, staff spacing, and related toggles).
+- **Piano keyboard** visualization panel (optional) aligned with theory and playback context.
+- **Playwright E2E coverage** for shortcut behavior, exercising the real API and client together.
+- **`UX_GUIDELINES.md` v1.4**, supporting the polish pass and consistent interaction patterns.
+
+### Changed
+
+- **UI polish**: hover states, transitions, tooltips, and spacing brought in line with the design system; responsive layout behavior continues to respect the minimum viewport width and related gates documented in `UX_GUIDELINES.md`.
