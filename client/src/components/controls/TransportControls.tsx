@@ -45,9 +45,9 @@ export function TransportControls({
       aria-label="Transport"
       aria-busy={initStatus === 'initializing' ? true : undefined}
       data-audio-ready={initStatus === 'ready' ? 'true' : 'false'}
-      className="flex min-h-12 flex-wrap items-center gap-2 border-b border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)] px-4"
+      className="flex min-h-12 min-w-0 flex-wrap items-center gap-2 border-b border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)] px-4 lg:flex-nowrap lg:overflow-x-auto"
     >
-      <div className="flex items-center gap-2" role="group" aria-label="Playback">
+      <div className="flex shrink-0 items-center gap-2" role="group" aria-label="Playback">
         {isPlaying ? (
           <button
             type="button"
@@ -94,14 +94,14 @@ export function TransportControls({
 
       <div
         data-testid="vybpad-transport-current-beat"
-        className="flex min-h-11 min-w-[120px] items-center text-sm tabular-nums text-[var(--color-text-primary,#111827)]"
+        className="flex min-h-11 min-w-[120px] shrink-0 items-center text-sm tabular-nums text-[var(--color-text-primary,#111827)]"
         aria-live="polite"
       >
         <span className="sr-only">Current position</span>
         <span aria-hidden="true">{currentBeat}</span>
       </div>
 
-      <label className="flex items-center gap-2 text-sm text-[var(--color-text-secondary,#4B5563)]">
+      <label className="flex shrink-0 items-center gap-2 text-sm text-[var(--color-text-secondary,#4B5563)]">
         <span id="transport-tempo-label">Tempo</span>
         <input
           id="transport-tempo-input"
@@ -149,7 +149,7 @@ export function TransportControls({
 
       {endContent ? (
         <div
-          className="ml-auto flex shrink-0 flex-wrap items-center gap-2"
+          className="ml-auto flex min-w-0 shrink-0 flex-nowrap items-center gap-2 overflow-x-auto"
           role="group"
           aria-label="MIDI export"
         >

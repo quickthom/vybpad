@@ -154,16 +154,15 @@ describe('ChordPalette — TASK-5.1 — left panel region, focusable controls, 2
       }
     });
 
-    it('applies the 288px default panel width token on the palette root', () => {
+    it('fills the resizable aside without duplicating fixed 288px min-width on the palette root (F10)', () => {
       render(<ChordPalette {...defaultChordPaletteProps()} />);
       const root = screen.getByTestId('chord-palette-root');
       const cls = root.getAttribute('class') ?? '';
-      const style = root.getAttribute('style') ?? '';
-      const token =
-        /\b(?:w-\[288px\]|w-72|min-w-\[288px\])\b/.test(cls) ||
-        /\b288px\b/.test(style) ||
-        root.classList.contains('w-72');
-      expect(token).toBe(true);
+      // §3 default width is applied by the shell (`aside`); inner root uses fluid `w-full min-w-0 max-w-full`.
+      expect(/\bw-full\b/.test(cls)).toBe(true);
+      expect(/\bmin-w-0\b/.test(cls)).toBe(true);
+      expect(/\bmax-w-full\b/.test(cls)).toBe(true);
+      expect(/\b(?:w-72|min-w-\[288px\])\b/.test(cls)).toBe(false);
     });
   });
 });

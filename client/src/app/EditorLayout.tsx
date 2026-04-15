@@ -4,6 +4,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import { EditorSettingsPanel } from '../components/panels/EditorSettingsPanel';
 import { KeyScaleChangeDialog } from '../components/common/KeyScaleChangeDialog';
+import { Tooltip } from '../components/common/Tooltip';
 import { LoopBar } from '../components/controls/LoopBar';
 import { MidiExportControls } from '../components/controls/MidiExportControls';
 import { TempoMeterAtMeasureDialog } from '../components/controls/TempoMeterAtMeasureDialog';
@@ -876,7 +877,7 @@ export function EditorLayout() {
 
   return (
     <div className="flex min-h-screen flex-col bg-[var(--color-app-bg,#F3F4F6)] text-[var(--color-text-primary,#111827)]">
-      <header className="flex min-h-[48px] flex-wrap items-start justify-between gap-3 border-b border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)] px-4 py-3">
+      <header className="flex min-h-[48px] min-w-0 flex-wrap items-start justify-between gap-3 border-b border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)] px-4 py-3 lg:flex-nowrap lg:overflow-x-auto">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">{headerTitle}</h1>
           {projectName ? (
@@ -897,7 +898,7 @@ export function EditorLayout() {
             Grid editor — click to select, drag to move, drag trailing edge to resize.
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex min-w-0 flex-wrap items-center gap-3 lg:flex-nowrap">
           {user ? (
             <span className="text-sm text-[var(--color-text-secondary,#4B5563)]">
               {user.displayName}
@@ -924,13 +925,15 @@ export function EditorLayout() {
             Projects
           </button>
           <EntryModeToggle mode={entryMode} onToggle={toggleEntryMode} />
-          <span
-            className="inline-flex h-8 shrink-0 items-center rounded-md border border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface-muted,#F9FAFB)] px-2 text-[12px] font-medium text-[var(--color-text-secondary,#4B5563)]"
-            title="Active melody voice (Ctrl+1–4)"
-            aria-live="polite"
-          >
-            Voice {activeVoice + 1}
-          </span>
+          <Tooltip label="Active melody voice (Ctrl+1–4)">
+            <span
+              tabIndex={0}
+              className="inline-flex h-8 shrink-0 cursor-default items-center rounded-md border border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface-muted,#F9FAFB)] px-2 text-[12px] font-medium text-[var(--color-text-secondary,#4B5563)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
+              aria-live="polite"
+            >
+              Voice {activeVoice + 1}
+            </span>
+          </Tooltip>
           <button
             type="button"
             onClick={() => setChordPaletteExpanded((o) => !o)}
@@ -1099,17 +1102,18 @@ export function EditorLayout() {
               />
             </div>
           ) : (
-            <button
-              type="button"
-              title="Expand chord palette"
-              aria-label="Expand chord palette"
-              aria-expanded={false}
-              aria-controls="vybpad-panel-chords"
-              onClick={() => setChordPaletteExpanded(true)}
-              className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] text-lg font-semibold leading-none text-[var(--color-text-primary,#111827)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
-            >
-              ›
-            </button>
+            <Tooltip label="Expand chord palette">
+              <button
+                type="button"
+                aria-label="Expand chord palette"
+                aria-expanded={false}
+                aria-controls="vybpad-panel-chords"
+                onClick={() => setChordPaletteExpanded(true)}
+                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] text-lg font-semibold leading-none text-[var(--color-text-primary,#111827)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
+              >
+                ›
+              </button>
+            </Tooltip>
           )}
         </aside>
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">

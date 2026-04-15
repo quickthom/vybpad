@@ -29,11 +29,11 @@ export function LoopBar() {
 
   return (
     <div
-      className="flex min-h-12 flex-wrap items-center gap-2 border-b border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)] px-4"
+      className="flex min-h-12 min-w-0 flex-wrap items-center gap-2 border-b border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)] px-4 lg:flex-nowrap lg:overflow-x-auto"
       role="group"
       aria-labelledby={`${groupId}-label`}
     >
-      <span id={`${groupId}-label`} className="flex flex-wrap items-center gap-2 text-sm font-medium text-[var(--color-text-primary,#111827)]">
+      <span id={`${groupId}-label`} className="flex shrink-0 flex-wrap items-center gap-2 text-sm font-medium text-[var(--color-text-primary,#111827)]">
         Loop
         {isLooping ? (
           <span
@@ -45,7 +45,7 @@ export function LoopBar() {
         ) : null}
       </span>
       <div className="mx-2 hidden h-6 w-px bg-[var(--color-border,#E5E7EB)] sm:block" aria-hidden />
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2 lg:flex-nowrap">
         <label className="flex items-center gap-1.5 text-sm text-[var(--color-text-secondary,#4B5563)]">
           <span className="whitespace-nowrap">Start (ticks)</span>
           <input

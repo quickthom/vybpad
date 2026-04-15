@@ -13,6 +13,8 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from 'react';
 
+import { Tooltip } from '../common/Tooltip';
+
 export interface MeasureBarProps {
   measureCount: number;
   selectedMeasures: [number, number] | null;
@@ -175,16 +177,23 @@ export function MeasureBar({
       </div>
       <div className="flex shrink-0 items-center gap-2 border-l border-[var(--color-border,#E5E7EB)] px-2">
         {onEditTempoMeter ? (
-          <button
-            type="button"
-            data-testid="vybpad-measure-tempo-meter"
-            className={[secondaryButtonClass, selectedMeasures === null ? disabledButtonClass : ''].join(' ')}
-            disabled={selectedMeasures === null}
-            title={selectedMeasures === null ? 'Select a measure first' : 'Tempo and time signature at selected measure'}
-            onClick={() => onEditTempoMeter()}
+          <Tooltip
+            label={
+              selectedMeasures === null
+                ? 'Select a measure first'
+                : 'Tempo and time signature at selected measure'
+            }
           >
-            Tempo / meter
-          </button>
+            <button
+              type="button"
+              data-testid="vybpad-measure-tempo-meter"
+              className={[secondaryButtonClass, selectedMeasures === null ? disabledButtonClass : ''].join(' ')}
+              disabled={selectedMeasures === null}
+              onClick={() => onEditTempoMeter()}
+            >
+              Tempo / meter
+            </button>
+          </Tooltip>
         ) : null}
         <button
           type="button"

@@ -59,7 +59,7 @@ describe('TASK-6.4 MidiExportControls — export affordance and MidiExporter wir
       const song = buildDefaultSong();
       render(<MidiExportControls song={song} activeVoice={0} projectName={null} />);
 
-      expect(screen.getByLabelText('MIDI export format')).toBeTruthy();
+      expect(screen.getByLabelText('Format')).toBeTruthy();
       expect(screen.getByTestId('vybpad-midi-export-download')).toBeTruthy();
     });
 
@@ -70,7 +70,7 @@ describe('TASK-6.4 MidiExportControls — export affordance and MidiExporter wir
 
       render(<MidiExportControls song={song} activeVoice={2} projectName="P" />);
 
-      await user.selectOptions(screen.getByLabelText('MIDI export format'), 'full');
+      await user.selectOptions(screen.getByLabelText('Format'), 'full');
       await user.click(screen.getByTestId('vybpad-midi-export-download'));
 
       expect(exportSong).toHaveBeenCalledTimes(1);
@@ -85,7 +85,7 @@ describe('TASK-6.4 MidiExportControls — export affordance and MidiExporter wir
 
       render(<MidiExportControls song={song} activeVoice={3} projectName={null} />);
 
-      await user.selectOptions(screen.getByLabelText('MIDI export format'), 'melody');
+      await user.selectOptions(screen.getByLabelText('Format'), 'melody');
       await user.click(screen.getByTestId('vybpad-midi-export-download'));
 
       expect(exportMelodyOnly).toHaveBeenCalledTimes(1);
@@ -105,13 +105,13 @@ describe('TASK-6.4 MidiExportControls — export affordance and MidiExporter wir
 
       render(<MidiExportControls song={song} activeVoice={0} projectName={null} />);
 
-      await user.selectOptions(screen.getByLabelText('MIDI export format'), 'full');
+      await user.selectOptions(screen.getByLabelText('Format'), 'full');
       await user.click(screen.getByTestId('vybpad-midi-export-download'));
       const bytesFull = exportSong.mock.results[0]?.value as Uint8Array;
       const blob1 = blobsFromDownload.at(-1) as Blob;
       expect(await blobToUint8(blob1)).toEqual(bytesFull);
 
-      await user.selectOptions(screen.getByLabelText('MIDI export format'), 'melody');
+      await user.selectOptions(screen.getByLabelText('Format'), 'melody');
       await user.click(screen.getByTestId('vybpad-midi-export-download'));
       const bytesMelody = exportMelodyOnly.mock.results[0]?.value as Uint8Array;
       const blob2 = blobsFromDownload.at(-1) as Blob;
@@ -132,7 +132,7 @@ describe('TASK-6.4 MidiExportControls — export affordance and MidiExporter wir
       });
 
       render(<MidiExportControls song={song} activeVoice={0} projectName={null} />);
-      await user.selectOptions(screen.getByLabelText('MIDI export format'), 'full');
+      await user.selectOptions(screen.getByLabelText('Format'), 'full');
       await user.click(screen.getByTestId('vybpad-midi-export-download'));
 
       expect(downloads.some((d) => d.toLowerCase().endsWith('.mid'))).toBe(true);
@@ -147,7 +147,7 @@ describe('TASK-6.4 MidiExportControls — export affordance and MidiExporter wir
       songB.metadata.title = 'Other';
 
       const { rerender } = render(<MidiExportControls song={songA} activeVoice={0} projectName={null} />);
-      await user.selectOptions(screen.getByLabelText('MIDI export format'), 'full');
+      await user.selectOptions(screen.getByLabelText('Format'), 'full');
       await user.click(screen.getByTestId('vybpad-midi-export-download'));
       expect(exportSong).toHaveBeenLastCalledWith(songA);
 
@@ -158,11 +158,11 @@ describe('TASK-6.4 MidiExportControls — export affordance and MidiExporter wir
   });
 
   describe('accessibility (controls)', () => {
-    it('exposes the format field as a combobox with MIDI export format labeling', () => {
+    it('exposes the format field as a combobox with Format labeling', () => {
       const song = buildDefaultSong();
       render(<MidiExportControls song={song} activeVoice={0} projectName={null} />);
 
-      expect(screen.getByRole('combobox', { name: /midi export format/i })).toBeTruthy();
+      expect(screen.getByRole('combobox', { name: /^format$/i })).toBeTruthy();
     });
 
     it('exposes the download control with an accessible name referencing MIDI or download', () => {
