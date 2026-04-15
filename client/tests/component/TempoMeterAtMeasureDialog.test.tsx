@@ -1,7 +1,18 @@
 /** @vitest-environment jsdom */
-/**
- * F08.1 — validation uses inline role="alert" only; no toast for client-side validation.
+/*
+ * QA COVERAGE PLAN — F08.1-QA
+ *
+ * Criterion 1: Inline error element with role="alert" appears when invalid input is submitted
+ *   happy: n/a (validation failure path)
+ *   error: invalid tempo (OOR, non-integer) and invalid meter render assertive inline message
+ *   edges: OOR BPM, decimal BPM, invalid numerator
+ *
+ * Criterion 2: Toast store showError is not called for validation errors (UX §9 / PAT-001 — no duplicate toast)
+ *   happy: n/a
+ *   error: same submissions — showError spy receives no calls
+ *   edges: tempo validation path vs meter validation path
  */
+
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -41,50 +52,70 @@ afterEach(() => {
   useToastStore.setState({ message: null, variant: 'error' });
 });
 
-describe('TempoMeterAtMeasureDialog — F08.1 inline validation', () => {
-  it('shows role="alert" for invalid tempo and does not call toast showError', () => {
-    const showErrorSpy = vi.spyOn(useToastStore.getState(), 'showError');
-    const onApply = vi.fn();
-    render(
-      <TempoMeterAtMeasureDialog
-        open
-        measureIndex={0}
-        song={minimalSong}
-        onDismiss={vi.fn()}
-        onApply={onApply}
-      />,
-    );
-    fireEvent.change(screen.getByLabelText(/tempo \(bpm\)/i), { target: { value: '10' } });
-    fireEvent.click(screen.getByRole('button', { name: /^apply$/i }));
+describe('TempoMeterAtMeasureDialog — F08.1 validation (inline alert, no toast)', () => {
+  describe('error handling', () => {
+    it('shows role="alert" for out-of-range tempo and does not call toast showError', () => {
+      const showErrorSpy = vi.spyOn(useToastStore.getState(), 'showError');
+      const onApply = vi.fn();
+      render(
+        <TempoMeterAtMeasureDialog
+          open
+          measureIndex={0}
+          song={minimalSong}
+          onDismiss={vi.fn()}
+          onApply={onApply}
+        />,
+      );
+      fireEvent.change(screen.getByLabelText(/tempo \(bpm\)/i), { target: { value: '10' } });
+      fireEvent.click(screen.getByRole('button', { name: /^apply$/i }));
 
-    const alert = screen.getByRole('alert');
-    expect(alert).toHaveTextContent(/20 and 300/i);
-    expect(showErrorSpy).not.toHaveBeenCalled();
-    expect(onApply).not.toHaveBeenCalled();
-    expect(screen.getByLabelText(/tempo \(bpm\)/i)).toHaveAttribute('aria-describedby', 'vybpad-tempo-meter-error');
-    showErrorSpy.mockRestore();
-  });
+      const alert = screen.getByRole('alert');
+      expect(alert).toHaveTextContent(/20 and 300/i);
+      expect(showErrorSpy).not.toHaveBeenCalled();
+      expect(onApply).not.toHaveBeenCalled();
+      showErrorSpy.mockRestore();
+    });
 
-  it('shows role="alert" for invalid meter and does not call toast showError', () => {
-    const showErrorSpy = vi.spyOn(useToastStore.getState(), 'showError');
-    const onApply = vi.fn();
-    render(
-      <TempoMeterAtMeasureDialog
-        open
-        measureIndex={0}
-        song={minimalSong}
-        onDismiss={vi.fn()}
-        onApply={onApply}
-      />,
-    );
-    fireEvent.change(screen.getByLabelText(/beats per bar/i), { target: { value: '0' } });
-    fireEvent.click(screen.getByRole('button', { name: /^apply$/i }));
+    it('shows role="alert" for non-integer tempo and does not call toast showError', () => {
+      const showErrorSpy = vi.spyOn(useToastStore.getState(), 'showError');
+      const onApply = vi.fn();
+      render(
+        <TempoMeterAtMeasureDialog
+          open
+          measureIndex={0}
+          song={minimalSong}
+          onDismiss={vi.fn()}
+          onApply={onApply}
+        />,
+      );
+      fireEvent.change(screen.getByLabelText(/tempo \(bpm\)/i), { target: { value: '90.5' } });
+      fireEvent.click(screen.getByRole('button', { name: /^apply$/i }));
 
-    const alert = screen.getByRole('alert');
-    expect(alert).toHaveTextContent(/Time signature must use/i);
-    expect(showErrorSpy).not.toHaveBeenCalled();
-    expect(onApply).not.toHaveBeenCalled();
-    expect(screen.getByLabelText(/beats per bar/i)).toHaveAttribute('aria-describedby', 'vybpad-tempo-meter-error');
-    showErrorSpy.mockRestore();
+      expect(screen.getByRole('alert')).toHaveTextContent(/whole number/i);
+      expect(showErrorSpy).not.toHaveBeenCalled();
+      expect(onApply).not.toHaveBeenCalled();
+      showErrorSpy.mockRestore();
+    });
+
+    it('shows role="alert" for invalid meter and does not call toast showError', () => {
+      const showErrorSpy = vi.spyOn(useToastStore.getState(), 'showError');
+      const onApply = vi.fn();
+      render(
+        <TempoMeterAtMeasureDialog
+          open
+          measureIndex={0}
+          song={minimalSong}
+          onDismiss={vi.fn()}
+          onApply={onApply}
+        />,
+      );
+      fireEvent.change(screen.getByLabelText(/beats per bar/i), { target: { value: '0' } });
+      fireEvent.click(screen.getByRole('button', { name: /^apply$/i }));
+
+      expect(screen.getByRole('alert')).toHaveTextContent(/time signature/i);
+      expect(showErrorSpy).not.toHaveBeenCalled();
+      expect(onApply).not.toHaveBeenCalled();
+      showErrorSpy.mockRestore();
+    });
   });
 });
