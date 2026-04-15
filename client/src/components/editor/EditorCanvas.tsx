@@ -251,12 +251,13 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
         note: hit.note,
         isRest: hit.note.isRest,
         voiceIndex: hit.voiceIndex,
+        melodyRowHeight,
       });
       const right = r.x + r.width;
       const strip = trailingResizeStripWidthPx(r.width);
       return strip > 0 && vx >= right - strip && vx <= right;
     },
-    [song, viewport],
+    [song, viewport, melodyRowHeight],
   );
 
   const paint = useCallback(() => {
@@ -315,6 +316,7 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
           note: hit.note,
           isRest: hit.note.isRest,
           voiceIndex: hit.voiceIndex,
+          melodyRowHeight,
         });
         strokeRect(r.x, r.y, r.width, r.height, isSelection ? SELECTION_STROKE : HOVER_STROKE, isSelection ? SELECTION_COLOR : undefined);
       }
