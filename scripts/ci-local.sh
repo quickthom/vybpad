@@ -18,10 +18,10 @@ echo "    $DATABASE_URL"
 echo "==> npm ci"
 npm ci
 echo "==> prisma generate"
-# Use only the workspace-installed CLI (plain `npx prisma` may download Prisma 7 and break this schema).
-npx --no-install prisma generate --schema=prisma/schema.prisma
+# Locked Prisma 6.x at repo root (`npx prisma` may resolve Prisma 7 and break this schema).
+npm run db:generate --workspace=@vybpad/server
 echo "==> prisma db push"
-npx --no-install prisma db push --schema=prisma/schema.prisma
+node node_modules/prisma/build/index.js db push --schema=prisma/schema.prisma
 echo "==> npm run build"
 npm run build
 echo "==> npm run lint"

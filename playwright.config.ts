@@ -100,7 +100,8 @@ export default defineConfig({
     : [
         {
           name: 'api',
-          command: 'npm run dev --workspace=@vybpad/server',
+          /** Avoid `tsx watch` — it restarts on `node_modules` churn during E2E and kills the API mid-suite. */
+          command: 'npm run dev:e2e --workspace=@vybpad/server',
           url: apiHealthUrl,
           reuseExistingServer: !process.env.CI,
           timeout: 180_000,
