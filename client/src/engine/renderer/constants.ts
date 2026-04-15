@@ -9,4 +9,7 @@ export const GRID_LINE_COLOR = '#E5E7EB';
 export const BAR_LINE_COLOR = '#6B7280';
 export const PLAYBACK_CURSOR_COLOR = '#EF4444';
 export const PLAYBACK_CURSOR_WIDTH = 2;
+/** UX §6 — playback highlight stroke for notes/chords sounding at `playbackTick`. */
+export const PLAYBACK_HIGHLIGHT_COLOR = '#F59E0B';
+export const PLAYBACK_HIGHLIGHT_LINE_WIDTH = 2;
 export const SELECTION_COLOR = 'rgba(59, 130, 246, 0.2)';
