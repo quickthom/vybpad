@@ -88,6 +88,56 @@ function pickSelection(ctx: EditorKeyboardContext): Selection | null {
   return ctx.selection;
 }
 
+/** Keys dispatched via Phase 7 shortcut registry when {@link EditorKeyboardContext.shortcutManager} is set — avoid duplicate ad hoc handling (TASK-7.2). */
+function isRegistryOwnedDurationKey(key: string, shortcutManager: ShortcutManager | null | undefined): boolean {
+  if (!shortcutManager) return false;
+  if (key === ';' || key === '`' || key === "'") return true;
+  return key.length === 1 && /[hjkl]/i.test(key);
+}
+
+/**
+ * When the shell supplies {@link EditorKeyboardContext.getShortcutContext}, PAT-027 duration keys must
+ * fail closed like editor-scoped registry shortcuts (modal, text editing, canvas focus).
+ */
+function isEditorShortcutContextBlockingDuration(ctx: EditorKeyboardContext): boolean {
+  const g = ctx.getShortcutContext?.();
+  if (!g) return false;
+  if (g.hasModalOpen) return true;
+  if (g.isTextEditing) return true;
+  if (!g.hasEditorFocus) return true;
+  return false;
+}
+
+/**
+ * TASK-7.2 — shared duration application: table vs text arming vs resize selection (same rules as legacy `applyDurationKey`).
+ * Uses {@link pickSong} / {@link pickSelection} so store snapshots stay authoritative after mutations.
+ */
+export function applyDurationTicksFromEditor(ctx: EditorKeyboardContext, ticks: number): void {
+  const rounded = Math.round(ticks);
+  ctx.setCurrentDurationTicks(rounded);
+  if (ctx.entryMode === 'text') {
+    ctx.textDurationArmedRef.current = true;
+    return;
+  }
+  const sel = pickSelection(ctx);
+  const id = sel?.eventIds?.[0];
+  if (!id || !sel || sel.type === 'range') return;
+  const song = pickSong(ctx);
+  if (sel.type === 'chord') {
+    const ch = song.measures[sel.measureIndex]?.chords.find((c) => c.id === id);
+    if (!ch) return;
+    const nd = clampDurationToMeasure(song, sel.measureIndex, ch.beat, rounded);
+    if (nd !== ch.duration) ctx.onChordEdit(sel.measureIndex, { type: 'resize', chordId: id, newDuration: nd });
+  } else if (sel.type === 'note') {
+    const voice = findVoiceForNote(song, sel.measureIndex, id);
+    if (voice == null) return;
+    const note = song.measures[sel.measureIndex]?.notes[voice].find((n) => n.id === id);
+    if (!note) return;
+    const nd = clampDurationToMeasure(song, sel.measureIndex, note.beat, rounded);
+    if (nd !== note.duration) ctx.onNoteEdit(sel.measureIndex, voice, { type: 'resize', noteId: id, newDuration: nd });
+  }
+}
+
 /**
  * Diatonic chord digit path shared with the left-panel chord palette (TASK-5.1).
  * Mutates `textDurationArmedRef` on text-mode paths the same way digit keys do.
@@ -263,33 +313,8 @@ export function handleEditorKeydown(e: KeyboardEvent, ctx: EditorKeyboardContext
   }
 
   if (e.ctrlKey || e.metaKey || e.altKey) return;
+
   const selection = pickSelection(ctx);
-
-  const applyDurationKey = (ticks: number): void => {
-    const rounded = Math.round(ticks);
-    ctx.setCurrentDurationTicks(rounded);
-    if (ctx.entryMode === 'text') {
-      ctx.textDurationArmedRef.current = true;
-      return;
-    }
-    const sel = selection;
-    const id = sel?.eventIds?.[0];
-    if (!id || !sel || sel.type === 'range') return;
-    if (sel.type === 'chord') {
-      const ch = ctx.song.measures[sel.measureIndex]?.chords.find((c) => c.id === id);
-      if (!ch) return;
-      const nd = clampDurationToMeasure(ctx.song, sel.measureIndex, ch.beat, rounded);
-      if (nd !== ch.duration) ctx.onChordEdit(sel.measureIndex, { type: 'resize', chordId: id, newDuration: nd });
-    } else if (sel.type === 'note') {
-      const voice = findVoiceForNote(ctx.song, sel.measureIndex, id);
-      if (voice == null) return;
-      const note = ctx.song.measures[sel.measureIndex]?.notes[voice].find((n) => n.id === id);
-      if (!note) return;
-      const nd = clampDurationToMeasure(ctx.song, sel.measureIndex, note.beat, rounded);
-      if (nd !== note.duration) ctx.onNoteEdit(sel.measureIndex, voice, { type: 'resize', noteId: id, newDuration: nd });
-    }
-  };
-
   const key = e.key;
 
   const toggleEntryMode = ctx.onToggleEntryMode ?? ctx.onEntryModeToggle;
@@ -378,8 +403,16 @@ export function handleEditorKeydown(e: KeyboardEvent, ctx: EditorKeyboardContext
     DURATION_KEYS[key] ??
     (key.length === 1 && /[a-zA-Z]/.test(key) ? DURATION_KEYS[key.toLowerCase()] : undefined);
   if (dur !== undefined) {
+    // When the shell wires PAT-027 `shortcutManager`, primary-row duration is dispatched by command id only
+    // (avoids double-firing with `handleKeyDown`); alternate row q w e r t still uses this path.
+    if (isRegistryOwnedDurationKey(key, ctx.shortcutManager)) {
+      return;
+    }
+    if (isEditorShortcutContextBlockingDuration(ctx)) {
+      return;
+    }
     e.preventDefault();
-    applyDurationKey(dur);
+    applyDurationTicksFromEditor(ctx, dur);
     return;
   }
 
