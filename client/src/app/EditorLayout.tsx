@@ -33,6 +33,8 @@ import { EntryModeToggle } from '../components/editor/EntryModeToggle';
 import { formatTransportBeat, getPlaybackEngine, getPlaybackInitErrorMessage } from '../engine/audio';
 import { useAuthStore } from '../store/authStore';
 import { syncPlaybackEngineWithSong, usePlaybackStore } from '../store/playbackStore';
+import { readPlainTextFromClipboard, writePlainTextToClipboard } from '../utils/clipboardTransport';
+import { parseSelectionClipboardPayloadJson } from '../utils/selectionClipboard';
 import { buildDefaultSong, useSongStore } from '../store/songStore';
 import { useToastStore } from '../store/toastStore';
 import { useUIStore } from '../store/uiStore';
@@ -196,6 +198,24 @@ export function EditorLayout() {
   );
 
   durationShortcutCommandRef.current = (id: ShortcutCommandId) => {
+    if (id === 'copySelection') {
+      void (async () => {
+        const payload = useSongStore.getState().buildSelectionClipboardPayload();
+        if (!payload) return;
+        await writePlainTextToClipboard(JSON.stringify(payload));
+      })();
+      return;
+    }
+    if (id === 'pasteSelection') {
+      void (async () => {
+        const text = await readPlainTextFromClipboard();
+        if (text == null) return;
+        const parsed = parseSelectionClipboardPayloadJson(text);
+        if (!parsed) return;
+        useSongStore.getState().applySelectionClipboardPayload(parsed);
+      })();
+      return;
+    }
     if (id === 'splitSelection' || id === 'tieSelection' || id === 'toggleTriplet') {
       const kb: EditorKeyboardContext = {
         song,
@@ -306,6 +326,30 @@ export function EditorLayout() {
       shortcutManager.registerShortcut({
         id: 'toggleTriplet',
         chord: TASK73_EDITOR_SHORTCUT_CHORDS.toggleTriplet,
+        scope: 'editor',
+        conflictPolicy: 'replace',
+      }),
+      shortcutManager.registerShortcut({
+        id: 'copySelection',
+        chord: 'Ctrl+C',
+        scope: 'editor',
+        conflictPolicy: 'replace',
+      }),
+      shortcutManager.registerShortcut({
+        id: 'copySelection',
+        chord: 'Meta+C',
+        scope: 'editor',
+        conflictPolicy: 'replace',
+      }),
+      shortcutManager.registerShortcut({
+        id: 'pasteSelection',
+        chord: 'Ctrl+V',
+        scope: 'editor',
+        conflictPolicy: 'replace',
+      }),
+      shortcutManager.registerShortcut({
+        id: 'pasteSelection',
+        chord: 'Meta+V',
         scope: 'editor',
         conflictPolicy: 'replace',
       }),

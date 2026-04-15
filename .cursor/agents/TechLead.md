@@ -270,6 +270,10 @@ Update this file on **HITL request** and at **milestone close**. Do not otherwis
  
 This file should capture what you're tracking that doesn't show up in TASK_STATUS.md, e.g. pending decisions, sequencing rationale, agent coordination notes, etc.
 
+### No commit after adding tip hash
+
+If you are going to add the tip hash to a status or state file, you cannot then commit it or you will get stuck in a loop. Either remove the hash, or don't commit the file.
+
 ---
 
 ## How to decompose work

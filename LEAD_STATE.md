@@ -32,7 +32,47 @@ You are the Tech Lead. Per HITL direction, you shall not perform any task or por
 
 ---
 
-## Last flush
+## Session continuity (2026-04-15) — Phase 7
+
+**Authoritative task rows:** `TASK_STATUS.md` (this section is recovery/orchestration only).
+
+### `develop` / remote
+
+- **Sync:** `git pull origin develop` before spawning agents. `INTERFACES.md` on `develop` includes `SongStore.editNoteBatch` and `EditorCanvasProps.onNoteEditBatch`; `TASK_STATUS.md` marks **7.3 merged** (see table there for current rows).
+
+### Phase 7 — Wave 2 progress
+
+| Task | Status | PR | Notes |
+|------|--------|-----|--------|
+| 7.1 | merged | #64 | PAT-027 shortcut manager + shell wiring |
+| 7.2 | merged | #65 | Granular duration `ShortcutCommandId`s; duration keys via registry |
+| 7.3 | merged | #66 | Split/tie/triplet; `editNoteBatch`; `Slash` vs `/` registration fix (`task73ShortcutChords.ts`); Reviewer round 2 approve |
+| 7.4 | **in-progress** | — | Branch `phase-7/clipboard-json`; worktree `/home/thom/py/vybpad-worktrees/phase-7-clipboard-json`; Builder+QA spawned |
+| 7.5 | pending | — | Navigation / playback shortcuts — queue after 7.4 merge (shared `EditorLayout`) |
+
+- **TASK-7.0** (phase-start cleanup): still **pending** in `TASK_STATUS.md` — optional early merge; does not block 7.4+.
+
+- **Wave 0 contracts:** Shortcut + clipboard shapes largely in `INTERFACES.md` / `PATTERNS.md` (PAT-027, PAT-028); TL extends `INTERFACES` when implementation discovers gaps (e.g. 7.2 duration command ids, 7.3 batch API on `SongStore` / `EditorCanvas`).
+
+### Worktrees / branches
+
+- **Removed after merge:** `…/phase-7-split-tie-triplet` (TASK-7.3).
+- **Operator:** create a fresh worktree per concurrent Builder/QA pair under `<WORKTREE_ROOT>` (see `ENVIRONMENTS.md`); remove after merge.
+
+### Pipeline (plan)
+
+- **Wave 2:** sequential **7.4 → 7.5** (shortcut behaviors; avoid parallel file collisions on editor shell).
+- **Wave 3:** 7.6 / 7.7 parallel candidates after 7.5 boundary clear.
+- **Wave 4:** 7.10 E2E after 7.1–7.5 stable.
+- **Wave 5–6:** 7.8 (Designer + Builder) → 7.9 min width.
+
+### Local CI caveat (unchanged)
+
+- Untracked nested `worktrees/` under the repo lint root can cause eslint “not found by the project service” noise. Prefer `ci-local` from a clean worktree or exclude stray paths.
+
+---
+
+## Last flush (archive)
 
 **2026-04-15 (Phase 6 close)** — PRs **#55–#58** integrated on `develop` (MIDI export stack + TASK-6.7 tests). **TASK-6.6** StudioOne live check remains **HITL** (QA protocol only). `TASK_STATUS` archived Phase 6; README/CHANGELOG milestone docs pushed. PAT-017: Reviewers/QA briefed with explicit `<WORKTREE_ROOT>` paths for parallel work.
 

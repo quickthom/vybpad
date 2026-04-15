@@ -18,11 +18,21 @@ import type {
   MeasureChanges,
   NoteEditAction,
   NoteEvent,
+  SelectionClipboardPayload,
   SongData,
   SongMetadata,
 } from '@vybpad/shared';
 
+import { getMeterAtMeasure, measureLengthInTicks } from '../engine/renderer/tickUtils';
 import { mergeMeasureChanges } from '../utils/measureChangeValidation';
+import {
+  buildClipboardMeasureSlices,
+  getPasteAnchor,
+  isCopyableSelection,
+  minBeatAtMinMeasureOffset,
+  validateSelectionClipboardPayload,
+} from '../utils/selectionClipboard';
+import { useUIStore } from './uiStore';
 
 /** PAT-009: match Hookpad — cap undo history length. */
 const UNDO_LIMIT = 20;
@@ -79,6 +89,8 @@ export interface SongStore {
   editNoteBatch: (
     operations: ReadonlyArray<{ measureIndex: number; voice: 0 | 1 | 2 | 3; action: NoteEditAction }>,
   ) => void;
+  buildSelectionClipboardPayload: () => SelectionClipboardPayload | null;
+  applySelectionClipboardPayload: (payload: SelectionClipboardPayload) => void;
   setMeasureChanges: (measureIndex: number, changes: MeasureChanges) => void;
   addMeasures: (atIndex: number, count: number) => void;
   deleteMeasures: (start: number, end: number) => void;
@@ -187,6 +199,13 @@ function applyNoteEdit(measure: Measure, voice: number, action: NoteEditAction):
   }
 }
 
+function clampBeatToMeasure(song: SongData, measureIndex: number, beat: number, duration: number): number {
+  const len = measureLengthInTicks(getMeterAtMeasure(song, measureIndex));
+  const d = Math.max(1, Math.round(duration));
+  const maxStart = Math.max(0, len - d);
+  return Math.max(0, Math.min(Math.round(beat), maxStart));
+}
+
 function pushUndoSnapshot(draft: SongStoreState): void {
   draft._undoPast.push(structuredClone(current(draft.song)));
   if (draft._undoPast.length > UNDO_LIMIT) draft._undoPast.shift();
@@ -238,6 +257,85 @@ export const useSongStore = create<SongStoreState>()(
           if (!measure || op.voice < 0 || op.voice > 3) continue;
           applyNoteEdit(measure, op.voice, op.action);
         }
+        afterMutation(draft);
+      });
+    },
+
+    buildSelectionClipboardPayload: () => {
+      const song = get().song;
+      const selection = useUIStore.getState().selection;
+      if (!isCopyableSelection(selection)) return null;
+      const slices = buildClipboardMeasureSlices(song, selection!);
+      if (!slices || slices.length === 0) return null;
+      return {
+        version: 1,
+        kind: 'selection',
+        source: 'vybpad',
+        copiedAt: new Date().toISOString(),
+        selection: structuredClone(selection!),
+        measures: slices,
+      };
+    },
+
+    applySelectionClipboardPayload: (payload) => {
+      const validated = validateSelectionClipboardPayload(payload as unknown);
+      if (!validated) return;
+
+      const anchor = getPasteAnchor(get().song, useUIStore.getState().selection);
+      if (!anchor) return;
+
+      const sorted = [...validated.measures].sort((a, b) => a.measureOffset - b.measureOffset);
+      const minB = minBeatAtMinMeasureOffset(sorted);
+      if (minB === null) return;
+      const shiftDelta = anchor.anchorBeat - minB;
+      const destBase = anchor.measureIndex;
+      const maxOffset = Math.max(...sorted.map((s) => s.measureOffset));
+
+      set((draft) => {
+        const need = destBase + maxOffset + 1;
+        while (draft.song.measures.length < need) {
+          draft.song.measures.push({
+            id: crypto.randomUUID(),
+            chords: [],
+            notes: [[], [], [], []],
+            changes: undefined,
+          });
+        }
+
+        pushUndoSnapshot(draft);
+
+        for (const slice of sorted) {
+          const mi = destBase + slice.measureOffset;
+          const measure = draft.song.measures[mi];
+          if (!measure) continue;
+
+          for (const c of slice.chords) {
+            const nc: ChordEvent = { ...structuredClone(c), id: crypto.randomUUID() };
+            nc.beat = clampBeatToMeasure(draft.song, mi, nc.beat + shiftDelta, nc.duration);
+            measure.chords.push(nc);
+          }
+          sortChords(measure.chords);
+
+          for (let v = 0; v < 4; v++) {
+            for (const n of slice.notes[v]) {
+              const nn: NoteEvent = { ...structuredClone(n), id: crypto.randomUUID() };
+              nn.beat = clampBeatToMeasure(draft.song, mi, nn.beat + shiftDelta, nn.duration);
+              measure.notes[v].push(nn);
+            }
+            sortNotes(measure.notes[v]);
+          }
+
+          if (slice.changes) {
+            const merged = mergeMeasureChanges(measure.changes, slice.changes);
+            const empty =
+              merged.key === undefined &&
+              merged.scale === undefined &&
+              merged.tempo === undefined &&
+              merged.meter === undefined;
+            measure.changes = empty ? undefined : merged;
+          }
+        }
+
         afterMutation(draft);
       });
     },

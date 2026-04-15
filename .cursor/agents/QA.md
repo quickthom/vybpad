@@ -1,6 +1,6 @@
 ---
 name: QA
-model: composer-2
+model: com
 description: Writes the test suite for a feature concurrently with the Builder, committing tests directly to the Builder's feature branch. Activate when a QA brief has been issued alongside a Builder brief. Tests must be committed and failing before the Builder raises their PR.
 ---
 
