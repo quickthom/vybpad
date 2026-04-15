@@ -12,13 +12,13 @@ Phases 0 (7/7), 1A (7/7), 1B (6/6), Phase 2 (15/15), Phase 3 (10/10), Phase 4 (1
 
 ## Phase 7 — Keyboard Shortcuts & Polish
 
-**Status:** active — TASK-7.1 merged; next up TASK-7.2.
+**Status:** active — Wave 2: TASK-7.2 in progress (QA + Builder).
 
 | Task | Role | Branch | Status | PR | Depends | Notes |
 |---|---|---|---|---|---|---|
 | 7.0 | Builder | — | pending | — | — | phase-start cleanup for carried-over follow-ups; merge early |
 | 7.1 | Builder | — | merged | #64 | Wave 0 contract prep | squash merge `0bbf4b9`; PAT-027 shortcut manager + shell wiring |
-| 7.2 | Builder | — | pending | — | 7.1, 2.8 | note duration shortcuts |
+| 7.2 | Builder | `phase-7/duration-shortcuts` | in-progress | — | 7.1, 2.8 | note duration shortcuts; worktree `…/phase-7-duration-shortcuts` |
 | 7.3 | Builder | — | pending | — | 7.1, 2.1 | split / tie / triplet operations |
 | 7.4 | Builder | — | pending | — | 7.1, 2.1 | clipboard copy/paste as JSON |
 | 7.5 | Builder | — | pending | — | 7.1 | zoom / scroll / selection / playback shortcuts |

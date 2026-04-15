@@ -590,7 +590,13 @@ type ShortcutChord = string;            // normalized chord string, e.g. "Ctrl+S
 
 type ShortcutCommandId =
   | "toggleEntryMode"
-  | "setNoteDuration"
+  /** Note-duration row (TASK-7.2 / Hookpad parity). Default registrations use keys h,j,k,l,;,`; optional alternate row q,w,e,r,t may map to the same ids. Ticks per PAT-004. */
+  | "setNoteDurationWhole" // 192 ticks — default chord `H`
+  | "setNoteDurationHalf" // 96 — `J`
+  | "setNoteDurationQuarter" // 48 — `K`
+  | "setNoteDurationEighth" // 24 — `L`
+  | "setNoteDurationSixteenth" // 12 — `;`
+  | "setNoteDurationThirtySecond" // 6 — `'` (if enabled)
   | "splitSelection"
   | "tieSelection"
   | "toggleTriplet"

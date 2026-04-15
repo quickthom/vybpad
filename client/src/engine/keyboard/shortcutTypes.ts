@@ -10,7 +10,12 @@ export type ShortcutChord = string;
 
 export type ShortcutCommandId =
   | 'toggleEntryMode'
-  | 'setNoteDuration'
+  | 'setNoteDurationWhole'
+  | 'setNoteDurationHalf'
+  | 'setNoteDurationQuarter'
+  | 'setNoteDurationEighth'
+  | 'setNoteDurationSixteenth'
+  | 'setNoteDurationThirtySecond'
   | 'splitSelection'
   | 'tieSelection'
   | 'toggleTriplet'
