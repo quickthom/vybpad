@@ -143,7 +143,7 @@ export function PianoKeyboardPanel({
               return null;
             }
             const on = highlightSet.has(m);
-            const fill = on ? highlightFillForMidi(m, homeKey, scale) : '#111827';
+            const fill = on ? highlightFillForMidi(m, homeKey, scale) : 'var(--color-text-primary, #111827)';
             return (
               <div
                 key={m}
@@ -154,7 +154,7 @@ export function PianoKeyboardPanel({
                 style={{
                   left: `${pct}%`,
                   width: whiteCount > 0 ? `${(60 / whiteCount).toFixed(4)}%` : '4%',
-                  backgroundColor: on ? fill : '#111827',
+                  backgroundColor: on ? fill : 'var(--color-text-primary, #111827)',
                 }}
               />
             );

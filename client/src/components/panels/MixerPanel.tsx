@@ -46,7 +46,7 @@ function TrackRow({
           aria-label={`${ROLE_LABEL[track.role]} volume`}
           className="vybpad-mixer-range h-[6px] w-full cursor-pointer"
           style={{
-            background: `linear-gradient(to right, var(--color-primary,#4F46E5) 0%, var(--color-primary,#4F46E5) ${fillPct}%, #E5E7EB ${fillPct}%, #E5E7EB 100%)`,
+            background: `linear-gradient(to right, var(--color-primary,#4F46E5) 0%, var(--color-primary,#4F46E5) ${fillPct}%, var(--color-border,#E5E7EB) ${fillPct}%, var(--color-border,#E5E7EB) 100%)`,
           }}
           onChange={(e) => {
             const next = clampVolume(Number(e.target.value) / 100);
@@ -61,7 +61,7 @@ function TrackRow({
         type="button"
         aria-label={track.mute ? `Unmute ${ROLE_LABEL[track.role]}` : `Mute ${ROLE_LABEL[track.role]}`}
         aria-pressed={track.mute}
-        className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] text-xs font-semibold text-[var(--color-text-primary,#111827)] outline-none transition hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2 aria-pressed:bg-[var(--color-surface-muted,#F9FAFB)]"
+        className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] text-xs font-semibold text-[var(--color-text-primary,#111827)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2 aria-pressed:bg-[var(--color-surface-muted,#F9FAFB)]"
         onClick={() => onTrackChange(track.role, { mute: !track.mute })}
       >
         M
@@ -76,7 +76,7 @@ function TrackRow({
 export function MixerPanel({ bandConfig, onTrackChange }: MixerPanelProps) {
   return (
     <div className="flex h-full min-h-0 w-full flex-col px-4 py-3">
-      <h3 className="mb-3 text-sm font-semibold text-[var(--color-text-primary,#111827)]">Mixer</h3>
+      <h3 className="mb-3 text-base font-semibold text-[var(--color-text-primary,#111827)]">Mixer</h3>
       <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">
         {bandConfig.tracks.map((t) => (
           <TrackRow key={t.role} track={t} onTrackChange={onTrackChange} />
