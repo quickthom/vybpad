@@ -569,13 +569,15 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
 
   const cursorClass = isDragging ? 'cursor-grabbing' : hoverHit ? 'cursor-grab' : 'cursor-default';
 
+  // TODO(Designer): optional side-rail caption for chord shortcuts (F08.2); aria-label covers screen readers until then.
+
   return (
     <canvas
       ref={canvasRef}
       role="application"
       tabIndex={0}
       className={`${cursorClass} outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2`}
-      aria-label="Song editor — digits 1–7, duration h j k l ; , Delete, arrow keys to navigate, Ctrl+1–4 melody voice"
+      aria-label="Song editor — digits 1–7; chord d secondary, i inversion, e embellishment; duration h j k l ; , Delete, arrow keys to navigate, Ctrl+1–4 melody voice"
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}

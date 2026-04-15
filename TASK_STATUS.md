@@ -12,12 +12,12 @@ Phases 0 (7/7), 1A (7/7), 1B (6/6), Phase 2 (15/15), Phase 3 (10/10), Phase 4 (1
 
 ## Phase 7 — Keyboard Shortcuts & Polish
 
-**Status:** launch prep in progress — Wave 0 contract updates are being completed before builders start.
+**Status:** active — TASK-7.1 in review (PR #64).
 
 | Task | Role | Branch | Status | PR | Depends | Notes |
 |---|---|---|---|---|---|---|
 | 7.0 | Builder | — | pending | — | — | phase-start cleanup for carried-over follow-ups; merge early |
-| 7.1 | Builder | — | pending | — | Wave 0 contract prep | centralized shortcut manager foundation |
+| 7.1 | Builder | phase-7/shortcut-manager | in-review | #64 | Wave 0 contract prep | PAT-027 shortcut manager + shell wiring; local `ci-local.sh` green on branch tip |
 | 7.2 | Builder | — | pending | — | 7.1, 2.8 | note duration shortcuts |
 | 7.3 | Builder | — | pending | — | 7.1, 2.1 | split / tie / triplet operations |
 | 7.4 | Builder | — | pending | — | 7.1, 2.1 | clipboard copy/paste as JSON |
