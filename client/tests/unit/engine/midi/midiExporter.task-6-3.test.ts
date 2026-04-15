@@ -268,7 +268,7 @@ describe('TASK-6.3 MidiExporter — tempo/meter map (INTERFACES § MidiExporter,
       expect(atBoundary).toBeDefined();
       expect(atBoundary!.usecPerQuarter).toBe(expectedUsecPerQuarterForBpm(getTempoAtMeasure(song, 1)));
 
-      const initial = setTempos.find((e) => e.absTick === 0);
+      const initial = setTempos.find((e) => e.absTick === internalAbsTickToMidiTick(0));
       expect(initial).toBeDefined();
       expect(initial!.usecPerQuarter).toBe(expectedUsecPerQuarterForBpm(getTempoAtMeasure(song, 0)));
     });
@@ -285,7 +285,7 @@ describe('TASK-6.3 MidiExporter — tempo/meter map (INTERFACES § MidiExporter,
 
       const bytes = exporter.exportSong(song);
       const { timeSignatures } = conductorMetas(bytes);
-      const t0 = timeSignatures.find((e) => e.absTick === 0);
+      const t0 = timeSignatures.find((e) => e.absTick === internalAbsTickToMidiTick(starts[0] ?? 0));
       expect(t0).toBeDefined();
       expect(t0!.numerator).toBe(m0.numerator);
       expect(t0!.denominator).toBe(m0.denominator);
