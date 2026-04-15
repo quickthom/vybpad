@@ -47,8 +47,8 @@ You are the Tech Lead. Per HITL direction, you shall not perform any task or por
 | 7.1 | merged | #64 | PAT-027 shortcut manager + shell wiring |
 | 7.2 | merged | #65 | Granular duration `ShortcutCommandId`s; duration keys via registry |
 | 7.3 | merged | #66 | Split/tie/triplet; `editNoteBatch`; `Slash` vs `/` registration fix (`task73ShortcutChords.ts`); Reviewer round 2 approve |
-| 7.4 | **next** | — | Clipboard JSON (`copySelection` / `pasteSelection`, PAT-028); brief branch e.g. `phase-7/clipboard-json` + PAT-017 worktree |
-| 7.5 | pending | — | Navigation / playback shortcuts (after 7.4 per plan) |
+| 7.4 | **in-progress** | — | Branch `phase-7/clipboard-json`; worktree `/home/thom/py/vybpad-worktrees/phase-7-clipboard-json`; Builder+QA spawned |
+| 7.5 | pending | — | Navigation / playback shortcuts — queue after 7.4 merge (shared `EditorLayout`) |
 
 - **TASK-7.0** (phase-start cleanup): still **pending** in `TASK_STATUS.md` — optional early merge; does not block 7.4+.
 
