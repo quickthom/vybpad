@@ -22,6 +22,12 @@ export default defineConfig({
     ],
     globals: false,
     setupFiles: ['./client/tests/setup-jsdom-pointer.ts'],
+    // Report-only: no thresholds until the team adopts a policy (Phase 8 pre-audit).
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'html'],
+      reportsDirectory: './coverage',
+    },
   },
   resolve: {
     alias: {
