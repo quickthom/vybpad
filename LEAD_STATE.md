@@ -56,34 +56,24 @@ Squash-merged to `develop` as **PR [#76](https://github.com/quickthom/vybpad/pul
 
 ---
 
-## Session continuity (2026-04-15) — Phase 7 closed
+## Session continuity — Phase 8 QA wave merged (2026-04-15)
 
-**Authoritative task rows:** `TASK_STATUS.md` (Phase 8 stub); Phase 7 detail in `TASK_STATUS_ARCHIVE.md`.
+**Authoritative task rows:** `TASK_STATUS.md`.
 
 ### `develop` / remote
 
-- **Tip (2026-04-15):** `origin/develop` head includes **#75** (TASK-8.0) + **#76** (archive follow-ups, squash `06e9d3c`) + follow-on **`5622aae`** (`LEAD_STATE` state log only). Prior: Phase 7 milestone; `CHANGELOG.md` Phase 7 entry; `UX_GUIDELINES` v1.4.
+- **`origin/develop`:** Phase 8 pre-audit QA deliverables merged: **#77** (TASK-8.1 coverage matrix), **#78** (TASK-8.2 full workflow E2E + `docs/CI_LOCAL.md` parity with `ci-local.sh` Prisma), **#79** (TASK-8.3 axe + TASK-8.4 visual baselines; orphan `task-8-3` snapshot dir removed), **#80** (optional Vitest `test:coverage`, report-only). Follow-on: **`TASK_STATUS.md`** commit marks **8.1–8.4** merged.
+- **`ROADMAP.md`:** Task **8.3** + Phase 8 **milestone** require at least one automated check that **seeded song content is visibly rendered in the editor canvas** (not chrome-only baselines); complements renderer unit tests and workflow E2E.
 
-### Phase 7 — outcome summary
+### Next (per `ROADMAP.md`)
 
-| Wave | Content | PRs |
-|------|---------|-----|
-| 7.1–7.5 | Shortcuts + clipboard + nav | #64–#68 |
-| 7.6–7.7 | Settings + piano (EditorLayout integration) | #70, #69 |
-| 7.10 | Shortcut E2E | #71 |
-| 7.8 | UI polish + Designer `UX_GUIDELINES` §9 clarification | #72 + Designer commit `3c38bd9` |
-| 7.9 | No separate PR — `EditorViewportGate` + F-07 E2E (pre-existing) | — |
-
-- **TASK-7.0** optional backlog: delivered as **TASK-8.0** (PR [#75](https://github.com/quickthom/vybpad/pull/75)), not as standalone 7.0.
-
-### Next
-
-- **Phase 8** — Final QA & Deployment (`ROADMAP.md`); TASK-8.1–8.4 + optional Vitest coverage per `TASK_STATUS.md` and test coverage pre-audit plan.
+- **8.5–8.9** — production Docker, HTTPS/proxy, perf, deploy + smoke, HITL walkthrough.
+- **TASK-6.6** StudioOne — still **HITL manual** (see matrix / `TASK_STATUS`).
 
 ### Local CI caveat (unchanged)
 
 - Untracked nested `worktrees/` under the repo lint root can cause eslint “not found by the project service” noise. Prefer `ci-local` from a clean worktree or exclude stray paths.
-- **`coverage/`:** On `develop` after **#76**, `eslint.config.js` ignores `**/coverage/**` — local `vitest --coverage` + `npm run lint` should not fight generated HTML/JS under `coverage/`.
+- **`coverage/`:** `eslint.config.js` ignores `**/coverage/**` — local `vitest --coverage` + `npm run lint` should not fight generated HTML/JS under `coverage/`.
 
 ---
 

@@ -220,7 +220,7 @@ Phase 8: Final QA & Deployment
 | 8.0 Phase-start tech debt cleanup (TASK-7.0 backlog, comment hygiene, archived non-blocking follow-ups) | Builder + QA | all above | 8.1–8.4, optional Vitest coverage tooling |
 | 8.1 Test coverage audit (identify gaps vs testing strategy) | QA | all above | 8.2 |
 | 8.2 E2E test suite: full user workflow (register → create → compose → play → export) | QA | all above | 8.1 |
-| 8.3 Visual regression baseline (Playwright screenshots of key editor states) | QA | 8.2 | 8.4 |
+| 8.3 Visual regression baseline (Playwright screenshots of key editor states; **must include verification that seeded song content is visibly rendered in the canvas** — e.g. API-seeded project + canvas-region or masked screenshot, not chrome-only baselines) | QA | 8.2 | 8.4 |
 | 8.4 Accessibility audit (axe-core, keyboard-only navigation for non-canvas) | QA | 7.8 | 8.3 |
 | 8.5 Production Docker build (multi-stage, Nginx + Node + PG) | Tech Lead | 0.5 | 8.1–8.4 |
 | 8.6 HTTPS + reverse proxy configuration | Tech Lead | 8.5 | 8.1–8.4 |
@@ -228,7 +228,7 @@ Phase 8: Final QA & Deployment
 | 8.8 Production deployment + smoke test | Tech Lead | 8.5, 8.6, 8.7 | — |
 | 8.9 HITL walkthrough + final acceptance | — | 8.8 | — |
 
-**Milestone:** App is live at a public HTTPS URL. All tests pass. HITL can walk through a full composition workflow with zero bugs in the happy path.
+**Milestone:** App is live at a public HTTPS URL. All tests pass. HITL can walk through a full composition workflow with zero bugs in the happy path. **Automated tests include at least one check that representative song data produces visible chord/note (or equivalent) rendering in the editor canvas** (covered under task 8.3; complements renderer unit tests and full-workflow E2E).
 
 ---
 
