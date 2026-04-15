@@ -28,6 +28,7 @@ import {
   tableInsertBeatFromSelection,
   tableModeAdvanceRange,
 } from '../components/editor/editorKeyboardLogic';
+import type { ShortcutContext, ShortcutManager } from '../engine/keyboard/shortcutTypes';
 import { getKeyAtMeasure, getScaleAtMeasure } from '../engine/renderer/tickUtils';
 
 /** PAT-004 — re-export for unit tests (alias of DURATION_KEYS). */
@@ -55,6 +56,10 @@ export interface EditorKeyboardContext {
   onChordEdit: (measureIndex: number, event: ChordEditAction) => void;
   onNoteEdit: (measureIndex: number, voice: number, event: NoteEditAction) => void;
   onSelectionChange: (selection: Selection | null) => void;
+
+  /** Optional PAT-027 layer; when set with {@link getShortcutContext}, runs before grid editor handling. */
+  shortcutManager?: ShortcutManager | null;
+  getShortcutContext?: () => ShortcutContext;
 }
 
 function parseScaleDegreeKey(key: string): ScaleDegree | null {
@@ -454,7 +459,17 @@ export function useKeyboard(ctx: EditorKeyboardContext): void {
 
   useEffect(() => {
     const listener = (e: KeyboardEvent) => {
-      handleEditorKeydown(e, ref.current);
+      if (e.isComposing) return;
+      if (e.defaultPrevented) return;
+      const current = ref.current;
+      const mgr = current.shortcutManager;
+      const shortcutCtx = current.getShortcutContext;
+      if (mgr && shortcutCtx) {
+        if (mgr.handleKeyDown(e, shortcutCtx())) {
+          return;
+        }
+      }
+      handleEditorKeydown(e, current);
     };
     window.addEventListener('keydown', listener, true);
     return () => window.removeEventListener('keydown', listener, true);
