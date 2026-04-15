@@ -5,9 +5,9 @@
  *
  * Criterion: Editor shell registers INTERFACES `ShortcutCommandId`s for zoom / scroll / selection / playback
  *   and dispatches to `UIStore` + `PlaybackStore` public surfaces (no duplicate legacy handling).
- *   happy: Ctrl+= zoom in; Ctrl+0 reset; Alt+Arrow scroll; Arrow moves selection; Space play; Escape stop; Home rewind
- *   error: modal open suppresses shortcuts (PAT-027) — spot-checked via Key/scale dialog + zoom attempt
- *   edges: zoom clamp at expected min/max (asserted once zoom-in is implemented — see Builder brief)
+ *   happy: Ctrl+=/- zoom; Ctrl+0 reset; ArrowUp/Down scroll; ArrowLeft/Right selection; Space; Period stop; Comma rewind
+ *   error: modal open suppresses shortcuts (PAT-027) — Key/scale dialog + Space
+ *   edges: zoom clamp [0.25, 4]; scrollY >= 0
  *
  * ASSUMPTIONS:
  * - Chord strings below are the TASK-7.5 registration targets; Builder must match (or update this suite).
@@ -15,7 +15,7 @@
  * - `scrollUp` decreases `scrollY` and `scrollDown` increases it (canvas pitch scroll convention).
  */
 
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -56,19 +56,20 @@ vi.mock('tone', () => ({
   }),
 }));
 
-/** Builder must register identical normalized chords in EditorLayout (TASK-7.5). */
+/** TASK-7.5 default chords (INTERFACES `ShortcutCommandId` + PAT-027 normalized form). */
 const TASK75_CHORDS = {
   zoomIn: { key: '=', code: 'Equal', ctrlKey: true },
   zoomOut: { key: '-', code: 'Minus', ctrlKey: true },
   resetZoom: { key: '0', code: 'Digit0', ctrlKey: true },
-  scrollUp: { key: 'ArrowUp', code: 'ArrowUp', altKey: true },
-  scrollDown: { key: 'ArrowDown', code: 'ArrowDown', altKey: true },
-  moveLeft: { key: 'ArrowLeft', code: 'ArrowLeft' },
-  moveRight: { key: 'ArrowRight', code: 'ArrowRight' },
+  scrollUp: { key: 'ArrowUp', code: 'ArrowUp' },
+  scrollDown: { key: 'ArrowDown', code: 'ArrowDown' },
   playPause: { key: ' ', code: 'Space' },
-  stopPlayback: { key: 'Escape', code: 'Escape' },
-  rewindPlayback: { key: 'Home', code: 'Home' },
+  stopPlayback: { key: '.', code: 'Period' },
+  rewindPlayback: { key: ',', code: 'Comma' },
 } as const;
+
+const EXPECT_ZOOM_MIN = 0.25;
+const EXPECT_ZOOM_MAX = 4;
 
 function polyfillRaf(): void {
   if (typeof globalThis.requestAnimationFrame !== 'function') {
@@ -174,6 +175,50 @@ describe('EditorLayout — TASK-7.5 — navigation + playback shortcuts (stores 
     });
   });
 
+  it('does not increase zoom beyond EXPECT_ZOOM_MAX when zoom-in is pressed at the maximum zoom level', async () => {
+    stubCanvas2d();
+    await focusSongCanvas();
+
+    useUIStore.getState().setViewport({
+      ...useUIStore.getState().viewport,
+      zoom: EXPECT_ZOOM_MAX,
+    });
+
+    window.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        ...TASK75_CHORDS.zoomIn,
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+
+    await waitFor(() => {
+      expect(useUIStore.getState().viewport.zoom).toBe(EXPECT_ZOOM_MAX);
+    });
+  });
+
+  it('does not decrease zoom below EXPECT_ZOOM_MIN when zoom-out is pressed at the minimum zoom level', async () => {
+    stubCanvas2d();
+    await focusSongCanvas();
+
+    useUIStore.getState().setViewport({
+      ...useUIStore.getState().viewport,
+      zoom: EXPECT_ZOOM_MIN,
+    });
+
+    window.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        ...TASK75_CHORDS.zoomOut,
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+
+    await waitFor(() => {
+      expect(useUIStore.getState().viewport.zoom).toBe(EXPECT_ZOOM_MIN);
+    });
+  });
+
   it('resets viewport zoom to 1 when Ctrl+0 is pressed after zoom has been changed', async () => {
     stubCanvas2d();
     await focusSongCanvas();
@@ -196,7 +241,7 @@ describe('EditorLayout — TASK-7.5 — navigation + playback shortcuts (stores 
     });
   });
 
-  it('changes scrollY when Alt+ArrowDown is pressed (scroll down increases scrollY)', async () => {
+  it('changes scrollY when ArrowDown is pressed (scroll down increases scrollY)', async () => {
     stubCanvas2d();
     await focusSongCanvas();
 
@@ -234,7 +279,7 @@ describe('EditorLayout — TASK-7.5 — navigation + playback shortcuts (stores 
     });
   });
 
-  it('calls PlaybackStore stop when Escape is pressed while playing (stopPlayback)', async () => {
+  it('calls PlaybackStore stop when Period is pressed while playing (stopPlayback)', async () => {
     stubCanvas2d();
     await focusSongCanvas();
 
@@ -254,7 +299,7 @@ describe('EditorLayout — TASK-7.5 — navigation + playback shortcuts (stores 
     });
   });
 
-  it('invokes PlaybackStore rewind when Home is pressed (rewindPlayback)', async () => {
+  it('invokes PlaybackStore rewind when Comma is pressed (rewindPlayback)', async () => {
     stubCanvas2d();
     await focusSongCanvas();
 
@@ -272,6 +317,49 @@ describe('EditorLayout — TASK-7.5 — navigation + playback shortcuts (stores 
     await waitFor(() => {
       expect(usePlaybackStore.getState().currentTick).toBe(0);
     });
+  });
+
+  it('does not drive scrollY negative when ArrowUp is pressed at scrollY 0', async () => {
+    stubCanvas2d();
+    await focusSongCanvas();
+
+    useUIStore.getState().setViewport({
+      ...useUIStore.getState().viewport,
+      scrollY: 0,
+    });
+
+    window.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        ...TASK75_CHORDS.scrollUp,
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+
+    await waitFor(() => {
+      expect(useUIStore.getState().viewport.scrollY).toBe(0);
+    });
+  });
+
+  it('does not start playback when Key/scale modal is open and Space is pressed (PAT-027 gating)', async () => {
+    stubCanvas2d();
+    await focusSongCanvas();
+
+    await usePlaybackStore.getState().initializeAudio();
+    expect(usePlaybackStore.getState().initStatus).toBe('ready');
+
+    fireEvent.click(screen.getByRole('button', { name: /key \/ scale/i }));
+    expect(await screen.findByRole('dialog', { name: /key and scale/i })).toBeTruthy();
+
+    window.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        ...TASK75_CHORDS.playPause,
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+
+    expect(usePlaybackStore.getState().isPlaying).toBe(false);
   });
 
 });
