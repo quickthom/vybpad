@@ -94,9 +94,9 @@ npm run test:e2e -- -g "persistence happy"
 
 Same env and prerequisites as the full sequence above. Prefer targeted runs during remediation; run the **full** `npm run test:e2e` locally (or `./scripts/ci-local.sh`) once before you consider a fix ready — this is the definitive pass/fail signal.
 
-## End-to-end and PAT-029
+## End-to-end
 
-E2E uses Playwright’s **dual `webServer`** setup: the suite waits for **both** `GET /api/health` (API) and the Vite dev server before running tests (**PAT-029**). Do not skip that unless you intentionally set `PLAYWRIGHT_SKIP_WEBSERVER=1` with both servers already up (see [README.md](../README.md#end-to-end-playwright)).
+E2E uses Playwright’s **dual `webServer`** setup: the suite waits for **both** `GET /api/health` (API) and the Vite dev server before running tests. Do not skip that unless you intentionally set `PLAYWRIGHT_SKIP_WEBSERVER=1` with both servers already up (see [README.md](../README.md#end-to-end-playwright)).
 
 `npm run e2e:devstack` is a convenience to run API + Vite in one terminal for manual debugging; the **CI-equivalent** path is `npm run test:e2e` with defaults so Playwright starts the stack.
 

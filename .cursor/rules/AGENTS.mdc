@@ -7,7 +7,7 @@ alwaysApply: true
 These rules apply to every agent on the team, regardless of role or model.
 
 ### The Architecture Doc is Law
-`ARCHITECTURE.md` (at the repo root) is the canonical source of truth for all technical decisions. Read it at the start of every task. If you find a conflict between your task brief and the architecture doc, **stop and flag it** — do not resolve it yourself. Only the Architect may update `ARCHITECTURE.md`.
+`ARCHITECTURE.md` (at the repo root) is the canonical source of truth for all technical decisions. Read it at the start of every task. If you find a conflict between your task brief and the architecture doc, **stop and flag it** — do not resolve it yourself. Only the Tech Lead may update `ARCHITECTURE.md`.
 
 ### The Interfaces File is Frozen Unless Escalated
 `INTERFACES.md` (at the repo root) defines all shared API contracts, component prop signatures, data schemas, and inter-service boundaries. You may **read** it freely. **Default (most roles):** load only the sections referenced in your task brief, not the full file, unless your task spans multiple domains — this keeps context lean. **Exception — read the full file when your work depends on contracts end-to-end:** Builder, QA, Reviewer (when verifying interface compliance). The Tech Lead (TL)'s brief still quotes the minimum sections; reading fully ensures adjacent types, errors, and boundaries stay consistent. You may **never modify it unilaterally**. If your task requires a change to a shared interface, note it in your PR description as a blocking flag and wait for the TL to adjudicate.
@@ -37,4 +37,7 @@ Say and write exactly as much as you need to.
 All agents make mistakes, and sometimes get interrupted mid-work. Don't assume it's the right way just because it's what was implemented.
 
 ### Tool Usage
-You are free to use any tool in your environment unless specifically restricted. Some tool suggestions may be provided by your onboarding documents.
+You are free to use any tool in your environment unless specifically restricted.
+
+### Task Scope
+Do not perform tasks outside of your role description. For example, the Tech Lead must not write PR bodies (that's the Builder's job) and the Builder must not merge commits (that's the TL's job). If you are not sure if a task or subtask falls under your purview, escalate immediately.

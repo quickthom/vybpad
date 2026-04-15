@@ -4,9 +4,19 @@
 
 **Remote:** https://github.com/quickthom/vybpad — `origin`, default branch **`develop`**.
 
+---
+**CRITICAL NOTES — DO NOT REMOVE**
+
+You are the Tech Lead. Per HITL direction, you shall not perform any task or portion of a task owned by another agent for any reason. If you are not able to follow subagent spawn protocols, escalate immediately. You should **never** write code or edit a PR body, as that responsibility belongs to the Builder. The checklist is not just paperwork. If the Builder cannot be trusted to properly fill out a PR with the self-review checklist, it cannot be trusted to write code. **The Tech Lead must never fabricate or complete the checklist on behalf of the Builder.**
+
+**Failure to include the self-review checklist in the PR is not simply a blocker. It invalidates the PR and all of the Builder's commits. PERIOD.** Do not return the PR to the Builder if the checklist is missing or blank. Instead, revert the Builder's commits and start fresh with a new Builder. There are **no exceptions** to this policy.
+
+**END CRITICAL NOTES**
+---
+
 ## Open escalations
 
-- *None.* (Last resolved: INTERFACES.md `TransportControlsProps.endContent` — TASK-6.5, 2026-04-15)
+- *None.*
 
 ---
 
@@ -22,21 +32,8 @@
 
 ---
 
-## Session batch — 2026-04-15 (Phase 6 unblock)
+## Last flush
 
-### Completed
-
-- **`develop`:** `623fa57` — `INTERFACES.md` documents optional `TransportControlsProps.endContent` (React slot for drag/export affordance).
-- **TASK-6.3 / #55:** Rebased `phase-6/tempo-map-track` → `c4c856e`; resolved `smfTestUtils.ts` / `midiExporter.task-6-3.test.ts` conflicts; added `conductorTempoAndMeterMetasFromTrack` wrapper; fixed baseline FF51/FF58 test ticks to match `internalTickToMidiTick(0)`; **`ci-local` PASS**; PR #55 body updated via `gh`.
-- **TASK-6.5 / #56:** Rebased `phase-6/drag-drop-midi` → `f74e974` on `develop`; PR #56 body updated (interfaces unblocked); Vitest PASS.
-- **TASK-6.4 / #57:** Rebased `phase-6/export-ui` → `c93ddd1`; **`ci-local` PASS**.
-
-### Integration
-
-- Branches **force-pushed** to `origin`. Merge order unchanged: **#55 → #57 → #56** (rebase #57/#56 after each merge if `EditorLayout` / transport conflicts).
-
-### Phase 6 — follow-ups
-
-**6.6 / 6.7** — still blocked on **6.1–6.3** merged to `develop` (per ROADMAP) until #55 lands.
+**2026-04-15** — Session batch removed; CRITICAL NOTES retained. Playbook touchpoints in the same commit: `AGENTS.mdc`, `raise-pr` skill, `Reviewer.md`, `CI_LOCAL.md`, `ESCALATION_LOG.md`.
 
 ---

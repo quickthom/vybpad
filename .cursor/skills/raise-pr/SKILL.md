@@ -1,6 +1,6 @@
 ---
 name: raise-pr
-description: Use this skill when a Builder agent is ready to raise a pull request. Guides the agent through composing a complete, correctly structured PR description including the self-review checklist, ASSUMPTIONS block, blocking flags, and Spark disclosure — exactly as required by the team's role instructions.
+description: Use this skill when a Builder agent is ready to raise a pull request. Guides the agent through composing a complete, correctly structured PR description including the self-review checklist, ASSUMPTIONS block, and blocking flags — exactly as required by the team's role instructions.
 ---
 
 # Skill: Raise PR
@@ -57,7 +57,7 @@ List any way in which your implementation differs from what the task brief speci
 #### INTERFACES.md change required?
 If your implementation requires a change to `INTERFACES.md`, write:
 
-> ⛔ BLOCKING: Interface change required — [describe the change needed]. Do not merge until Architect resolves.
+> ⛔ BLOCKING: Interface change required — [describe the change needed]. Do not merge until TL resolves.
 
 If no interface change is needed, write: `No interface changes required.`
 
@@ -70,23 +70,9 @@ If no guideline gap exists, write: `No UX guideline gaps.`
 
 ---
 
-### Spark disclosure
-
-If you used Codex-Spark for any part of this PR, list each use:
-
-```
-- File/section: [filename or description]
-  Spark used for: [what was generated]
-  Verification performed: [what you checked — types, error handling, edge cases, naming consistency]
-```
-
-If Spark was not used, write: `Spark not used in this PR.`
-
----
-
 ## Step 3 — Complete the self-review checklist
 
-For each item, mark ✔ (pass) or ✘ (fail). A ✘ is not automatically a blocker, but you **must** provide an explanation for every ✘. A missing checklist is an automatic blocker.
+For each item, mark ✔ (pass) or ✘ (fail). A ✘ is not automatically a blocker, but you **must** provide an explanation for every ✘. A missing or blank checklist **invalidates your work entirely** and all of your commits will be reverted. This is not meaningless paperwork; it is a critical quality control.
 
 ```
 SELF-REVIEW CHECKLIST
@@ -118,7 +104,7 @@ Once the description is written and the checklist is complete, raise the PR agai
 [<task-id>] <one-sentence description of what was built>
 ```
 
-After raising, post a STATUS_UPDATE to the PM:
+After raising, post a STATUS_UPDATE to the TL:
 
 ```
 STATUS_UPDATE
