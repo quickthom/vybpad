@@ -21,10 +21,12 @@ import { ChordPalette, SecondaryChordInspector } from '../components/panels/Chor
 import { getKeyAtMeasure, getScaleAtMeasure } from '../engine/renderer/tickUtils';
 import { createShortcutManager } from '../engine/keyboard/shortcutManager';
 import type { ShortcutCommandId, ShortcutContext } from '../engine/keyboard/shortcutTypes';
+import { TASK73_EDITOR_SHORTCUT_CHORDS } from '../engine/keyboard/task73ShortcutChords';
 import { theoryEngine } from '../engine/theory';
 import {
   applyChordPalettePayloadFromEditor,
   applyDurationTicksFromEditor,
+  applyNoteShortcutCommandFromEditor,
   type EditorKeyboardContext,
 } from '../hooks/useKeyboard';
 import { EntryModeToggle } from '../components/editor/EntryModeToggle';
@@ -90,6 +92,7 @@ export function EditorLayout() {
   const loadSong = useSongStore((s) => s.loadSong);
   const editChord = useSongStore((s) => s.editChord);
   const editNote = useSongStore((s) => s.editNote);
+  const editNoteBatch = useSongStore((s) => s.editNoteBatch);
   const addMeasures = useSongStore((s) => s.addMeasures);
   const deleteMeasures = useSongStore((s) => s.deleteMeasures);
   const setMeasureChanges = useSongStore((s) => s.setMeasureChanges);
@@ -193,6 +196,31 @@ export function EditorLayout() {
   );
 
   durationShortcutCommandRef.current = (id: ShortcutCommandId) => {
+    if (id === 'splitSelection' || id === 'tieSelection' || id === 'toggleTriplet') {
+      const kb: EditorKeyboardContext = {
+        song,
+        viewport,
+        selection,
+        activeVoice,
+        setActiveVoice,
+        entryMode,
+        currentDurationTicks,
+        setCurrentDurationTicks,
+        keyboardTargetMeasureRef,
+        textDurationArmedRef,
+        getSongAfterMutation,
+        getSelectionAfterMutation,
+        onToggleEntryMode: toggleEntryMode,
+        onChordEdit: editChord,
+        onNoteEdit: editNote,
+        editNoteBatch,
+        onSelectionChange: setSelection,
+        shortcutManager,
+        getShortcutContext,
+      };
+      applyNoteShortcutCommandFromEditor(kb, id);
+      return;
+    }
     const ticks = NOTE_DURATION_COMMAND_TICKS[id];
     if (ticks === undefined) return;
     const kb: EditorKeyboardContext = {
@@ -211,6 +239,7 @@ export function EditorLayout() {
       onToggleEntryMode: toggleEntryMode,
       onChordEdit: editChord,
       onNoteEdit: editNote,
+      editNoteBatch,
       onSelectionChange: setSelection,
       shortcutManager,
       getShortcutContext,
@@ -259,6 +288,24 @@ export function EditorLayout() {
       shortcutManager.registerShortcut({
         id: 'setNoteDurationThirtySecond',
         chord: "'",
+        scope: 'editor',
+        conflictPolicy: 'replace',
+      }),
+      shortcutManager.registerShortcut({
+        id: 'splitSelection',
+        chord: TASK73_EDITOR_SHORTCUT_CHORDS.splitSelection,
+        scope: 'editor',
+        conflictPolicy: 'replace',
+      }),
+      shortcutManager.registerShortcut({
+        id: 'tieSelection',
+        chord: TASK73_EDITOR_SHORTCUT_CHORDS.tieSelection,
+        scope: 'editor',
+        conflictPolicy: 'replace',
+      }),
+      shortcutManager.registerShortcut({
+        id: 'toggleTriplet',
+        chord: TASK73_EDITOR_SHORTCUT_CHORDS.toggleTriplet,
         scope: 'editor',
         conflictPolicy: 'replace',
       }),
@@ -795,6 +842,7 @@ export function EditorLayout() {
                 colorScheme={colorScheme}
                 onChordEdit={editChord}
                 onNoteEdit={editNote}
+                onNoteEditBatch={editNoteBatch}
                 onSelectionChange={setSelection}
                 onViewportChange={setViewport}
                 getSongAfterMutation={getSongAfterMutation}

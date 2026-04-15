@@ -188,6 +188,30 @@ describe('shortcut manager — Task 7.1 — register + resolve (contract)', () =
     expect(dispatch).not.toHaveBeenCalled();
   });
 
+  it('TASK-7.3 parity: chord "Slash" matches physical / (code Slash); chord "/" does not', () => {
+    const mgrSlash = createShortcutManager({ onCommand: dispatch });
+    mgrSlash.registerShortcut({
+      id: 'splitSelection',
+      chord: 'Slash',
+      scope: 'editor',
+      conflictPolicy: 'replace',
+    });
+    const evSlash = keydown({ key: '/', code: 'Slash' });
+    expect(mgrSlash.handleKeyDown(evSlash, baseContext())).toBe(true);
+    expect(dispatch).toHaveBeenCalledWith('splitSelection');
+    dispatch.mockClear();
+
+    const mgrWrong = createShortcutManager({ onCommand: dispatch });
+    mgrWrong.registerShortcut({
+      id: 'splitSelection',
+      chord: '/',
+      scope: 'editor',
+      conflictPolicy: 'replace',
+    });
+    expect(mgrWrong.handleKeyDown(evSlash, baseContext())).toBe(false);
+    expect(dispatch).not.toHaveBeenCalled();
+  });
+
   it('unregisterShortcut removes a command so it no longer dispatches', () => {
     const mgr = createShortcutManager({ onCommand: dispatch });
     mgr.registerShortcut({ id: 'zoomIn', chord: 'Ctrl+9', scope: 'global' });

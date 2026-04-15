@@ -28,7 +28,17 @@ import {
   tableInsertBeatFromSelection,
   tableModeAdvanceRange,
 } from '../components/editor/editorKeyboardLogic';
-import type { ShortcutContext, ShortcutManager } from '../engine/keyboard/shortcutTypes';
+import {
+  findVoiceForNote,
+  type NoteBatchOperation,
+  planSplitNote,
+  planTieNote,
+  planTripletToggle,
+  selectionAfterSplit,
+  selectionAfterTie,
+  splitMidpointParts,
+} from '../components/editor/noteCommands';
+import type { ShortcutContext, ShortcutManager, ShortcutCommandId } from '../engine/keyboard/shortcutTypes';
 import { getKeyAtMeasure, getScaleAtMeasure } from '../engine/renderer/tickUtils';
 
 /** PAT-004 — re-export for unit tests (alias of DURATION_KEYS). */
@@ -55,6 +65,10 @@ export interface EditorKeyboardContext {
   onEntryModeToggle?: () => void;
   onChordEdit: (measureIndex: number, event: ChordEditAction) => void;
   onNoteEdit: (measureIndex: number, voice: number, event: NoteEditAction) => void;
+  /** TASK-7.3 — single-undo batched note ops (split/tie); shell wires from `songStore.editNoteBatch`. */
+  editNoteBatch?: (
+    operations: ReadonlyArray<{ measureIndex: number; voice: 0 | 1 | 2 | 3; action: NoteEditAction }>,
+  ) => void;
   onSelectionChange: (selection: Selection | null) => void;
 
   /** Optional PAT-027 layer; when set with {@link getShortcutContext}, runs before grid editor handling. */
@@ -64,15 +78,6 @@ export interface EditorKeyboardContext {
 
 function parseScaleDegreeKey(key: string): ScaleDegree | null {
   if (key >= '1' && key <= '7') return Number(key) as ScaleDegree;
-  return null;
-}
-
-function findVoiceForNote(song: SongData, measureIndex: number, noteId: string): 0 | 1 | 2 | 3 | null {
-  const m = song.measures[measureIndex];
-  if (!m) return null;
-  for (const v of [0, 1, 2, 3] as const) {
-    if (m.notes[v].some((n) => n.id === noteId)) return v;
-  }
   return null;
 }
 
@@ -86,6 +91,17 @@ function pickSelection(ctx: EditorKeyboardContext): Selection | null {
     return ctx.getSelectionAfterMutation();
   }
   return ctx.selection;
+}
+
+function applyNoteOperations(ctx: EditorKeyboardContext, ops: readonly NoteBatchOperation[]): void {
+  if (ops.length === 0) return;
+  if (ctx.editNoteBatch) {
+    ctx.editNoteBatch(ops);
+    return;
+  }
+  for (const op of ops) {
+    ctx.onNoteEdit(op.measureIndex, op.voice, op.action);
+  }
 }
 
 /** Keys dispatched via Phase 7 shortcut registry when {@link EditorKeyboardContext.shortcutManager} is set — avoid duplicate ad hoc handling (TASK-7.2). */
@@ -135,6 +151,55 @@ export function applyDurationTicksFromEditor(ctx: EditorKeyboardContext, ticks: 
     if (!note) return;
     const nd = clampDurationToMeasure(song, sel.measureIndex, note.beat, rounded);
     if (nd !== note.duration) ctx.onNoteEdit(sel.measureIndex, voice, { type: 'resize', noteId: id, newDuration: nd });
+  }
+}
+
+/**
+ * TASK-7.3 — `splitSelection` / `tieSelection` / `toggleTriplet` from PAT-027 registry (EditorLayout `onCommand`).
+ */
+export function applyNoteShortcutCommandFromEditor(
+  ctx: EditorKeyboardContext,
+  id: Extract<ShortcutCommandId, 'splitSelection' | 'tieSelection' | 'toggleTriplet'>,
+): void {
+  const song = pickSong(ctx);
+  const sel = pickSelection(ctx);
+
+  if (id === 'splitSelection') {
+    const ops = planSplitNote(song, sel);
+    if (!ops) return;
+    const noteId = sel?.type === 'note' ? sel.eventIds?.[0] : undefined;
+    const measureIndex = sel?.measureIndex;
+    if (noteId == null || measureIndex === undefined) return;
+    const voice = findVoiceForNote(song, measureIndex, noteId);
+    const note = voice != null ? song.measures[measureIndex]?.notes[voice].find((n) => n.id === noteId) : undefined;
+    const parts = note ? splitMidpointParts(note) : null;
+    applyNoteOperations(ctx, ops);
+    if (parts && voice != null && ctx.editNoteBatch) {
+      const songAfter = ctx.getSongAfterMutation?.();
+      if (songAfter) {
+        const nextSel = selectionAfterSplit(songAfter, measureIndex, voice, parts.splitBeat, parts.secondDuration);
+        if (nextSel) ctx.onSelectionChange(nextSel);
+      }
+    }
+    return;
+  }
+
+  if (id === 'tieSelection') {
+    const ops = planTieNote(song, sel);
+    if (!ops?.length) return;
+    const first = ops[0];
+    if (first.action.type !== 'resize') return;
+    const keptId = first.action.noteId;
+    applyNoteOperations(ctx, ops);
+    const mi = sel?.type === 'note' ? sel.measureIndex : undefined;
+    if (mi !== undefined) ctx.onSelectionChange(selectionAfterTie(keptId, mi));
+    return;
+  }
+
+  if (id === 'toggleTriplet') {
+    const ops = planTripletToggle(song, sel);
+    if (!ops?.length) return;
+    applyNoteOperations(ctx, ops);
   }
 }
 
