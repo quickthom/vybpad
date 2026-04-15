@@ -12,7 +12,7 @@ Phases 0 (7/7), 1A (7/7), 1B (6/6), Phase 2 (15/15), Phase 3 (10/10), Phase 4 (1
 
 ## Phase 7 — Keyboard Shortcuts & Polish
 
-**Status:** active — Wave 2 complete (TASK-7.1–7.5 merged); Wave 3 next: TASK-7.6 / 7.7 (parallel candidates).
+**Status:** active — Wave 3: TASK-7.6 + TASK-7.7 in progress (parallel worktrees).
 
 | Task | Role | Branch | Status | PR | Depends | Notes |
 |---|---|---|---|---|---|---|
@@ -22,8 +22,8 @@ Phases 0 (7/7), 1A (7/7), 1B (6/6), Phase 2 (15/15), Phase 3 (10/10), Phase 4 (1
 | 7.3 | Builder | — | merged | #66 | 7.2, 7.1, 2.1 | squash `72ebbe2`; split/tie/triplet + `editNoteBatch`; Slash registration fix |
 | 7.4 | Builder | — | merged | #67 | 7.3, 7.1, 2.1 | squash `a98b2b0`; clipboard JSON + SongStore build/apply; Reviewer approve |
 | 7.5 | Builder | — | merged | #68 | 7.1, 7.4 | squash `43cfa7c`; nav + transport shortcuts; Reviewer approve |
-| 7.6 | Builder | — | pending | — | Wave 0 contract prep | settings panel (entry mode, labels, colors, guides, staff spacing) |
-| 7.7 | Builder | — | pending | — | 1A.2, 0.2 | piano keyboard visualization panel |
+| 7.6 | Builder | phase-7/settings-panel | in-progress | — | Wave 0 contract prep, develop | settings panel + localStorage persistence |
+| 7.7 | Builder | phase-7/piano-keyboard-panel | in-progress | — | 1A.2, 0.2, develop | piano keyboard visualization (read-only) |
 | 7.8 | Designer + Builder | — | pending | — | 7.1–7.7 | UI polish pass |
 | 7.9 | Builder | — | pending | — | 7.8 | minimum 1024px responsive guard |
 | 7.10 | QA | — | pending | — | 7.1–7.5 | shortcut E2E coverage |

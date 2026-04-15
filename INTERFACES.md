@@ -539,6 +539,39 @@ interface MixerPanelProps {
 }
 ```
 
+### EditorSettingsPanel (TASK-7.6)
+
+```typescript
+/** Binds to the same fields as `UIStore` for editor chrome. Persistence is **client-only** (`localStorage` JSON under one versioned key); no server preferences API (ARCHITECTURE.md). */
+interface EditorSettingsPanelProps {
+  entryMode: "table" | "text";
+  labelMode: "degree" | "roman" | "both" | "off";
+  colorScheme: "diatonic" | "major";
+  showGuides: boolean;
+  staffSpacing: "compact" | "default" | "wide";
+  onEntryModeChange: (mode: "table" | "text") => void;
+  onLabelModeChange: (mode: "degree" | "roman" | "both" | "off") => void;
+  onColorSchemeChange: (scheme: "diatonic" | "major") => void;
+  onShowGuidesChange: (show: boolean) => void;
+  onStaffSpacingChange: (spacing: "compact" | "default" | "wide") => void;
+}
+```
+
+### PianoKeyboardPanel (TASK-7.7)
+
+```typescript
+/** Read-only piano keyboard strip for visualization. **Web MIDI input is out of scope** (ARCHITECTURE.md). Parent supplies theory-derived highlights. */
+interface PianoKeyboardPanelProps {
+  homeKey: NoteName;
+  scale: ScaleType;
+  /** Absolute MIDI note numbers (0–127) to highlight (e.g. chord voicing + active melody tones). */
+  highlightedMidi: readonly number[];
+  /** Visible keyboard range; defaults are implementation-defined if omitted (e.g. two–three octaves centered on middle C). */
+  lowMidi?: number;
+  highMidi?: number;
+}
+```
+
 ---
 
 ## Zustand Store Shape (Frontend State)
@@ -582,7 +615,7 @@ interface UIStore {
   colorScheme: "diatonic" | "major";
   labelMode: "degree" | "roman" | "both" | "off";
   staffSpacing: "compact" | "default" | "wide";
-  activePanels: Set<string>;           // "band" | "mixer" | "keys" | "meters" | "lyrics"
+  activePanels: Set<string>;           // "band" | "mixer" | "keys" | "meters" | "lyrics" | "settings" | "piano"
 
   setViewport: (v: Viewport) => void;
   setSelection: (s: Selection | null) => void;
