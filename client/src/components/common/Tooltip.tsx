@@ -142,7 +142,7 @@ export function Tooltip({ label, children }: TooltipProps): ReactElement {
         id={tipId}
         role="tooltip"
         style={tipStyle}
-        className="pointer-events-none max-w-[min(20rem,calc(100vw-1rem))] rounded-md border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-2 py-1.5 text-left text-[12px] leading-snug text-[var(--color-text-primary,#111827)] shadow-lg transition-opacity duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)]"
+        className="pointer-events-none max-w-[min(20rem,calc(100vw-1rem))] rounded-md border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-2 py-2 text-left text-[12px] leading-snug text-[var(--color-text-primary,#111827)] shadow-lg transition-opacity duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)]"
       >
         {label}
       </span>
