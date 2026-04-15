@@ -46,4 +46,6 @@ export type {
 
 export type { ChordEditAction, NoteEditAction, Selection, Viewport } from './editor.js';
 
+export type { ClipboardMeasureSlice, SelectionClipboardPayload } from './clipboard.js';
+
 export const TICKS_PER_QUARTER = 48;
