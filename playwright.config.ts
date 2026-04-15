@@ -94,7 +94,26 @@ export default defineConfig({
     video: 'retain-on-failure',
     trace: 'on-first-retry',
   },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  /**
+   * TASK-8.3 — `visual` holds screenshot baselines (`toHaveScreenshot`); keep serial to limit GPU load.
+   * PAT-030 — ports still come from `PLAYWRIGHT_BASE_URL` / root `.env`; only viewport differs (UX §4 ≥1024×768).
+   */
+  projects: [
+    {
+      name: 'chromium',
+      testIgnore: '**/*.visual.spec.ts',
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'visual',
+      testMatch: '**/*.visual.spec.ts',
+      fullyParallel: false,
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 1280, height: 800 },
+      },
+    },
+  ],
   webServer: process.env.PLAYWRIGHT_SKIP_WEBSERVER
     ? undefined
     : [
