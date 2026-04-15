@@ -431,6 +431,9 @@ interface EditorCanvasProps {
   getSongAfterMutation?: () => SongData;  // post-mutation store snapshot for keyboard auto-advance; optional escape hatch for React render-cycle staleness
   getSelectionAfterMutation?: () => Selection | null;  // post-mutation selection snapshot; same timing contract as getSongAfterMutation
   onToggleEntryMode?: () => void;          // callback for Tab key to signal mode switch to parent; paired with entryMode prop
+  /** PAT-027 — shell supplies registry + live context (modal/text/canvas focus). Types: `ShortcutManager`, `ShortcutContext` below. */
+  shortcutManager?: ShortcutManager | null;
+  getShortcutContext?: () => ShortcutContext;
 }
 
 interface Viewport {
