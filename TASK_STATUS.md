@@ -18,8 +18,8 @@ Phases 0 (7/7), 1A (7/7), 1B (6/6), Phase 2 (15/15), Phase 3 (10/10), Phase 4 (1
 
 | Task | Role | Branch | Status | PR | Depends | Notes |
 |---|---|---|---|---|---|---|
-| 8.0 | Builder | phase-8/tech-debt-cleanup | in-progress | — | None | Phase-start cleanup per TechLead § tech debt; TASK-7.0 + archive follow-ups; **avoid** `package.json`, `vitest.config.ts`, `docs/TEST_COVERAGE_MATRIX.md` (overlap with 8.1 / vitest PRs) |
-| 8.0 | QA | phase-8/tech-debt-cleanup | in-progress | — | None | Concurrent with Builder; commit failing tests first |
+| 8.0 | Builder | — | merged | [#75](https://github.com/quickthom/vybpad/pull/75) | None | Phase-start cleanup (MeasureBar stride, TransportControls JSDoc, TASK-8.0 tests, editor UI settings test spy); TASK-7.0 backlog addressed |
+| 8.0 | QA | — | merged | #75 | None | Tests on branch with Builder (#75) |
 | F10-12–15 | Builder | — | merged | [#73](https://github.com/quickthom/vybpad/pull/73) | None | Items 12–15: MIDI ARIA, Tooltip, ChordPalette width, lg chrome |
 | F10-12–15 | QA | — | merged | #73 | — | Concurrent tests landed with implementation |
 | F10-16 | Tech Lead | — | merged | [#74](https://github.com/quickthom/vybpad/pull/74) | — | `docs/E2E_EDITOR.md` + `docs/CI_LOCAL.md` link |

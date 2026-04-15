@@ -161,7 +161,7 @@
 
 | Task | Role | PR | Notes |
 |---|---|---|---|
-| 7.0 | Builder | — | **Optional** phase-start cleanup — not executed (tech debt follow-up) |
+| 7.0 | Builder | — | **Optional** phase-start cleanup — not executed as 7.0; backlog delivered in Phase 8 **TASK-8.0** ([#75](https://github.com/quickthom/vybpad/pull/75)) |
 | 7.1 | Builder | [#64](https://github.com/quickthom/vybpad/pull/64) | PAT-027 shortcut manager |
 | 7.2 | Builder | [#65](https://github.com/quickthom/vybpad/pull/65) | Duration keys |
 | 7.3 | Builder | [#66](https://github.com/quickthom/vybpad/pull/66) | Split/tie/triplet |
@@ -174,5 +174,7 @@
 | 7.10 | QA | [#71](https://github.com/quickthom/vybpad/pull/71) | Playwright shortcut E2E; Reviewer R2 triplet waiter fix |
 
 **Milestone:** Shortcuts + clipboard + panels + polish + shortcut E2E on `develop`; viewport gate pre-existing.
+
+**Post-archive (2026-04-15):** TASK-7.0 optional backlog was subsumed by Phase 8 TASK-8.0 (PR [#75](https://github.com/quickthom/vybpad/pull/75)).
 
 ---
