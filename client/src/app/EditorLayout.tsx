@@ -15,6 +15,7 @@ import {
   clearSecondaryChordEdit,
   cycleSecondaryChordEdit,
   isEditableKeyboardTarget,
+  navigateSelection,
   resolveTargetMeasureIndex,
 } from '../components/editor/editorKeyboardLogic';
 import { ChordPalette, SecondaryChordInspector } from '../components/panels/ChordPalette';
@@ -22,6 +23,10 @@ import { getKeyAtMeasure, getScaleAtMeasure } from '../engine/renderer/tickUtils
 import { createShortcutManager } from '../engine/keyboard/shortcutManager';
 import type { ShortcutCommandId, ShortcutContext } from '../engine/keyboard/shortcutTypes';
 import { TASK73_EDITOR_SHORTCUT_CHORDS } from '../engine/keyboard/task73ShortcutChords';
+import {
+  TASK75_NAVIGATION_SHORTCUT_CHORDS,
+  TASK75_TRANSPORT_SHORTCUT_CHORDS,
+} from '../engine/keyboard/task75NavigationShortcutChords';
 import { theoryEngine } from '../engine/theory';
 import {
   applyChordPalettePayloadFromEditor,
@@ -33,6 +38,13 @@ import { EntryModeToggle } from '../components/editor/EntryModeToggle';
 import { formatTransportBeat, getPlaybackEngine, getPlaybackInitErrorMessage } from '../engine/audio';
 import { useAuthStore } from '../store/authStore';
 import { syncPlaybackEngineWithSong, usePlaybackStore } from '../store/playbackStore';
+import {
+  EDITOR_SCROLL_STEP_Y,
+  withResetZoom,
+  withScrollYDelta,
+  withZoomIn,
+  withZoomOut,
+} from '../utils/viewportNavigation';
 import { readPlainTextFromClipboard, writePlainTextToClipboard } from '../utils/clipboardTransport';
 import { parseSelectionClipboardPayloadJson } from '../utils/selectionClipboard';
 import { buildDefaultSong, useSongStore } from '../store/songStore';
@@ -187,6 +199,14 @@ export function EditorLayout() {
   const getSongAfterMutation = useCallback(() => useSongStore.getState().song, []);
   const getSelectionAfterMutation = useCallback(() => useUIStore.getState().selection, []);
 
+  /**
+   * TASK-7.2–7.5 — PAT-027 command dispatch from `createShortcutManager` (runs before `handleEditorKeydown` in useKeyboard).
+   *
+   * Precedence (TASK-7.5): `moveSelectionLeft` / `moveSelectionRight` use the same `navigateSelection` math as legacy
+   * `ArrowLeft`/`ArrowRight` in `handleEditorKeydown`. When the canvas has editor focus, the registry consumes those
+   * keys first (editor scope) and legacy handling is skipped. Without canvas focus, editor-scoped chords do not match
+   * and the legacy arrow path still runs — so selection can move when focus is elsewhere non-text, matching pre–7.5 behavior.
+   */
   const durationShortcutCommandRef = useRef<(id: ShortcutCommandId) => void>(() => {});
 
   const shortcutManager = useMemo(
@@ -198,6 +218,81 @@ export function EditorLayout() {
   );
 
   durationShortcutCommandRef.current = (id: ShortcutCommandId) => {
+    // TASK-7.5 — viewport (zoom / scroll) reads fresh UIStore to avoid stale React closures in the ref.
+    if (id === 'zoomIn') {
+      setViewport(withZoomIn(useUIStore.getState().viewport));
+      return;
+    }
+    if (id === 'zoomOut') {
+      setViewport(withZoomOut(useUIStore.getState().viewport));
+      return;
+    }
+    if (id === 'resetZoom') {
+      setViewport(withResetZoom(useUIStore.getState().viewport));
+      return;
+    }
+    if (id === 'scrollUp') {
+      setViewport(withScrollYDelta(useUIStore.getState().viewport, -EDITOR_SCROLL_STEP_Y));
+      return;
+    }
+    if (id === 'scrollDown') {
+      setViewport(withScrollYDelta(useUIStore.getState().viewport, EDITOR_SCROLL_STEP_Y));
+      return;
+    }
+    if (id === 'moveSelectionLeft' || id === 'moveSelectionRight') {
+      const songNow = useSongStore.getState().song;
+      const ui = useUIStore.getState();
+      const dir = id === 'moveSelectionLeft' ? (-1 as const) : (1 as const);
+      const next = navigateSelection(songNow, ui.viewport, ui.selection, ui.activeVoice, dir, ui.entryMode);
+      if (next) ui.setSelection(next);
+      return;
+    }
+
+    // TASK-7.5 — transport: `playPause` / `stopPlayback` / `rewindPlayback` use global scope (justified: Hookpad-style
+    // transport from the shell without canvas focus). Still gated by modal + text editing in ShortcutManager.
+    if (id === 'playPause') {
+      void (async () => {
+        const before = usePlaybackStore.getState();
+        if (before.initStatus === 'ready') {
+          if (before.isPlaying) before.pause();
+          else before.play();
+          return;
+        }
+        await before.initializeAudio();
+        const st = usePlaybackStore.getState();
+        if (st.initStatus === 'ready') {
+          if (!st.isPlaying) st.play();
+        } else if (st.initErrorCode) {
+          showErrorToast(getPlaybackInitErrorMessage(st.initErrorCode));
+        }
+      })().catch((err: unknown) => {
+        console.error(err);
+      });
+      return;
+    }
+    if (id === 'stopPlayback') {
+      void (async () => {
+        if (usePlaybackStore.getState().initStatus !== 'ready') {
+          await usePlaybackStore.getState().initializeAudio();
+        }
+        usePlaybackStore.getState().stop();
+      })().catch((err: unknown) => {
+        console.error(err);
+      });
+      return;
+    }
+    if (id === 'rewindPlayback') {
+      void (async () => {
+        if (usePlaybackStore.getState().initStatus !== 'ready') {
+          await usePlaybackStore.getState().initializeAudio();
+        }
+        usePlaybackStore.getState().rewind();
+      })().catch((err: unknown) => {
+        console.error(err);
+      });
+      return;
+    }
+
     if (id === 'copySelection') {
       void (async () => {
         const payload = useSongStore.getState().buildSelectionClipboardPayload();
@@ -351,6 +446,74 @@ export function EditorLayout() {
         id: 'pasteSelection',
         chord: 'Meta+V',
         scope: 'editor',
+        conflictPolicy: 'replace',
+      }),
+      // TASK-7.5 — navigation + zoom (editor scope; default chords in task75NavigationShortcutChords).
+      shortcutManager.registerShortcut({
+        id: 'zoomIn',
+        chord: TASK75_NAVIGATION_SHORTCUT_CHORDS.zoomInPrimary,
+        scope: 'editor',
+        conflictPolicy: 'replace',
+      }),
+      shortcutManager.registerShortcut({
+        id: 'zoomIn',
+        chord: TASK75_NAVIGATION_SHORTCUT_CHORDS.zoomInShifted,
+        scope: 'editor',
+        conflictPolicy: 'replace',
+      }),
+      shortcutManager.registerShortcut({
+        id: 'zoomOut',
+        chord: TASK75_NAVIGATION_SHORTCUT_CHORDS.zoomOut,
+        scope: 'editor',
+        conflictPolicy: 'replace',
+      }),
+      shortcutManager.registerShortcut({
+        id: 'resetZoom',
+        chord: TASK75_NAVIGATION_SHORTCUT_CHORDS.resetZoom,
+        scope: 'editor',
+        conflictPolicy: 'replace',
+      }),
+      shortcutManager.registerShortcut({
+        id: 'scrollUp',
+        chord: TASK75_NAVIGATION_SHORTCUT_CHORDS.scrollUp,
+        scope: 'editor',
+        conflictPolicy: 'replace',
+      }),
+      shortcutManager.registerShortcut({
+        id: 'scrollDown',
+        chord: TASK75_NAVIGATION_SHORTCUT_CHORDS.scrollDown,
+        scope: 'editor',
+        conflictPolicy: 'replace',
+      }),
+      shortcutManager.registerShortcut({
+        id: 'moveSelectionLeft',
+        chord: TASK75_NAVIGATION_SHORTCUT_CHORDS.moveSelectionLeft,
+        scope: 'editor',
+        conflictPolicy: 'replace',
+      }),
+      shortcutManager.registerShortcut({
+        id: 'moveSelectionRight',
+        chord: TASK75_NAVIGATION_SHORTCUT_CHORDS.moveSelectionRight,
+        scope: 'editor',
+        conflictPolicy: 'replace',
+      }),
+      // Transport: global scope so Play/Stop/Rewind work without canvas focus; modal/text still block (PAT-027).
+      shortcutManager.registerShortcut({
+        id: 'playPause',
+        chord: TASK75_TRANSPORT_SHORTCUT_CHORDS.playPause,
+        scope: 'global',
+        conflictPolicy: 'replace',
+      }),
+      shortcutManager.registerShortcut({
+        id: 'stopPlayback',
+        chord: TASK75_TRANSPORT_SHORTCUT_CHORDS.stopPlayback,
+        scope: 'global',
+        conflictPolicy: 'replace',
+      }),
+      shortcutManager.registerShortcut({
+        id: 'rewindPlayback',
+        chord: TASK75_TRANSPORT_SHORTCUT_CHORDS.rewindPlayback,
+        scope: 'global',
         conflictPolicy: 'replace',
       }),
     ];

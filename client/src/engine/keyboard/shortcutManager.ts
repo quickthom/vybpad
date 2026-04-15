@@ -82,6 +82,10 @@ export function tokenFromKeyboardEventKey(key: string, code?: string): string {
   if (code === 'BracketRight') return 'BracketRight';
   if (code === 'Slash' && key === '/') return 'Slash';
   if (code === 'Backslash') return 'Backslash';
+  // TASK-7.5 transport: match `normalizeChord('.')` / `normalizeChord(',')` registrations regardless of
+  // whether the runtime exposes `key` or `code` (browser vs jsdom variance).
+  if (code === 'Period' || key === '.') return '.';
+  if (code === 'Comma' || key === ',') return ',';
   if (key.length === 1) return key.toUpperCase();
   if (key === 'Escape') return 'Escape';
   if (key.startsWith('Arrow')) return key;
