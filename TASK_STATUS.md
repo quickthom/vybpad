@@ -2,7 +2,6 @@
 
 > Single source of truth for build state. Owned by the Tech Lead.
 
-
 ---
 
 ## Completed Phases
@@ -13,6 +12,20 @@ Phases 0 (7/7), 1A (7/7), 1B (6/6), Phase 2 (15/15), Phase 3 (10/10), Phase 4 (1
 
 ## Phase 7 — Keyboard Shortcuts & Polish
 
-**Status:** not started — see `ROADMAP.md`.
+**Status:** launch prep in progress — Wave 0 contract updates are being completed before builders start.
+
+| Task | Role | Branch | Status | PR | Depends | Notes |
+|---|---|---|---|---|---|---|
+| 7.0 | Builder | — | pending | — | — | phase-start cleanup for carried-over follow-ups; merge early |
+| 7.1 | Builder | — | pending | — | Wave 0 contract prep | centralized shortcut manager foundation |
+| 7.2 | Builder | — | pending | — | 7.1, 2.8 | note duration shortcuts |
+| 7.3 | Builder | — | pending | — | 7.1, 2.1 | split / tie / triplet operations |
+| 7.4 | Builder | — | pending | — | 7.1, 2.1 | clipboard copy/paste as JSON |
+| 7.5 | Builder | — | pending | — | 7.1 | zoom / scroll / selection / playback shortcuts |
+| 7.6 | Builder | — | pending | — | Wave 0 contract prep | settings panel (entry mode, labels, colors, guides, staff spacing) |
+| 7.7 | Builder | — | pending | — | 1A.2, 0.2 | piano keyboard visualization panel |
+| 7.8 | Designer + Builder | — | pending | — | 7.1–7.7 | UI polish pass |
+| 7.9 | Builder | — | pending | — | 7.8 | minimum 1024px responsive guard |
+| 7.10 | QA | — | pending | — | 7.1–7.5 | shortcut E2E coverage |
 
 ---

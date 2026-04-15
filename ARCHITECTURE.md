@@ -221,6 +221,7 @@ StudioOne imports MIDI Type 1 and displays text events as markers. Users drag th
 - **Single instrument for this release.** Piano only for all playback tracks (harmony, melody, bass). Band/instrument system is designed extensibly but not built out.
 - **Client-side export.** MIDI, and future MP3/PDF, generated in the browser. No server-side rendering pipeline.
 - **48 TPQN internal timing.** All durations and positions in ticks. MIDI export scales to 480 PPQN.
+- **Client-only editor preferences.** Phase 7 settings such as entry mode, labels, colors, guides, and staff spacing persist in browser-local state only; no server preferences API in this release.
 
 ### Out of Scope
 - Full band/arrangement system (beyond default piano)

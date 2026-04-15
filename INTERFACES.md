@@ -565,13 +565,80 @@ interface UIStore {
   entryMode: "table" | "text";
   showGuides: boolean;
   colorScheme: "diatonic" | "major";
+  labelMode: "degree" | "roman" | "both" | "off";
+  staffSpacing: "compact" | "default" | "wide";
   activePanels: Set<string>;           // "band" | "mixer" | "keys" | "meters" | "lyrics"
 
   setViewport: (v: Viewport) => void;
   setSelection: (s: Selection | null) => void;
   setActiveVoice: (v: 0 | 1 | 2 | 3) => void;
+  setEntryMode: (mode: "table" | "text") => void;
   toggleEntryMode: () => void;            // toggles entryMode between "table" and "text"
+  setShowGuides: (showGuides: boolean) => void;
+  setColorScheme: (colorScheme: "diatonic" | "major") => void;
+  setLabelMode: (mode: "degree" | "roman" | "both" | "off") => void;
+  setStaffSpacing: (staffSpacing: "compact" | "default" | "wide") => void;
   togglePanel: (panel: string) => void;
+}
+
+type ShortcutScope = "global" | "editor" | "panel" | "input";
+type ShortcutConflictPolicy = "warn" | "replace" | "ignore";
+type ShortcutChord = string;            // normalized chord string, e.g. "Ctrl+Shift+T"
+
+type ShortcutCommandId =
+  | "toggleEntryMode"
+  | "setNoteDuration"
+  | "splitSelection"
+  | "tieSelection"
+  | "toggleTriplet"
+  | "copySelection"
+  | "pasteSelection"
+  | "zoomIn"
+  | "zoomOut"
+  | "resetZoom"
+  | "scrollUp"
+  | "scrollDown"
+  | "moveSelectionLeft"
+  | "moveSelectionRight"
+  | "playPause"
+  | "stopPlayback"
+  | "rewindPlayback";
+
+interface ShortcutDefinition {
+  id: ShortcutCommandId;
+  chord: ShortcutChord;
+  scope: ShortcutScope;
+  enabled?: boolean;
+  conflictPolicy?: ShortcutConflictPolicy;
+}
+
+interface ShortcutContext {
+  hasModalOpen: boolean;
+  isTextEditing: boolean;
+  hasEditorFocus: boolean;
+  isPlaying: boolean;
+}
+
+interface ShortcutManager {
+  registerShortcut: (shortcut: ShortcutDefinition) => () => void;
+  unregisterShortcut: (id: ShortcutCommandId) => void;
+  handleKeyDown: (event: KeyboardEvent, context: ShortcutContext) => boolean;
+}
+
+interface ClipboardMeasureSlice {
+  measureOffset: number;               // offset from the first copied measure
+  chords: ChordEvent[];
+  notes: NoteEvent[][];
+  changes?: MeasureChanges;
+}
+
+interface SelectionClipboardPayload {
+  version: 1;
+  kind: "selection";
+  source: "vybpad";
+  copiedAt: string;                    // ISO 8601
+  selection: Selection;
+  measures: ClipboardMeasureSlice[];
 }
 
 interface PlaybackStore {

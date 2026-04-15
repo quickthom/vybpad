@@ -357,6 +357,24 @@ For Phase 4 playback work, use this canonical store-level audio initialization c
 
 ---
 
-## PAT-027 - 030: DELETED.
+## PAT-027: Keyboard Shortcut Dispatch
+
+Use a single shortcut registry for editor, panel, and transport commands.
+
+- Register normalized chord strings only, in canonical form such as `Ctrl+Shift+T`.
+- Scope shortcuts explicitly: `global`, `editor`, `panel`, or `input`.
+- Resolve conflicts before dispatch. Prefer the most specific scope, then the most recent registration only when the binding's `conflictPolicy` is `replace`.
+- Ignore shortcuts while text is actively being edited, while a modal is open, or while the event is part of IME composition, unless a command is explicitly allowed in that context.
+- Dispatch by command id, not by raw key string, after a shortcut is accepted.
+- Call `preventDefault()` only after a command is matched and accepted.
+
+## PAT-028: Clipboard Payload Versioning
+
+Use a versioned JSON payload for editor copy/paste so future schema changes stay backward-compatible.
+
+- Include a numeric `version` field on every clipboard payload.
+- Keep copied song slices relative to their source selection, not tied to a single absolute editor state snapshot.
+- Reject unknown clipboard versions cleanly and treat them as a no-op paste.
+- Preserve measure-relative offsets so paste can re-anchor the selection at the destination measure.
 
 ---
