@@ -12,14 +12,14 @@ Phases 0 (7/7), 1A (7/7), 1B (6/6), Phase 2 (15/15), Phase 3 (10/10), Phase 4 (1
 
 ## Phase 7 — Keyboard Shortcuts & Polish
 
-**Status:** active — Wave 2: TASK-7.2 in progress (QA + Builder).
+**Status:** active — Wave 2: TASK-7.2 merged; next TASK-7.3.
 
 | Task | Role | Branch | Status | PR | Depends | Notes |
 |---|---|---|---|---|---|---|
 | 7.0 | Builder | — | pending | — | — | phase-start cleanup for carried-over follow-ups; merge early |
 | 7.1 | Builder | — | merged | #64 | Wave 0 contract prep | squash merge `0bbf4b9`; PAT-027 shortcut manager + shell wiring |
-| 7.2 | Builder | `phase-7/duration-shortcuts` | in-review | #65 | 7.1, 2.8 | note duration shortcuts; worktree `…/phase-7-duration-shortcuts` |
-| 7.3 | Builder | — | pending | — | 7.1, 2.1 | split / tie / triplet operations |
+| 7.2 | Builder | — | merged | #65 | 7.1, 2.8 | squash `de0f9cc`; PAT-027 duration keys + QA unit tests; Reviewer approve |
+| 7.3 | Builder | — | pending | — | 7.2, 7.1, 2.1 | split / tie / triplet operations |
 | 7.4 | Builder | — | pending | — | 7.1, 2.1 | clipboard copy/paste as JSON |
 | 7.5 | Builder | — | pending | — | 7.1 | zoom / scroll / selection / playback shortcuts |
 | 7.6 | Builder | — | pending | — | Wave 0 contract prep | settings panel (entry mode, labels, colors, guides, staff spacing) |
