@@ -6,7 +6,7 @@
  *   error: 401 without Bearer on protected routes; 404 for missing / other-user project
  *   edges: Set-Cookie refresh rotation still authorizes after register
  */
-import type { ProjectListResponse, ProjectResponse, SongData } from '@vybpad/shared';
+import type { ProjectListResponse, ProjectResponse, ProjectSummary, SongData } from '@vybpad/shared';
 import jwt from 'jsonwebtoken';
 import { beforeEach, describe, expect, it } from 'vitest';
 
@@ -42,6 +42,32 @@ function expectDefaultSongFactoryShape(song: SongData): void {
   expect(song.bandConfig.tracks).toHaveLength(7);
   const roles = song.bandConfig.tracks.map((t) => t.role);
   expect(roles).toEqual(['melody1', 'melody2', 'melody3', 'melody4', 'harmony', 'bass', 'drums']);
+}
+
+/** INTERFACES.md — full ProjectResponse contract (IDs + timestamps + embedded song). */
+function expectProjectResponseContract(p: ProjectResponse): void {
+  expect(p).toEqual(
+    expect.objectContaining({
+      id: expect.any(String),
+      name: expect.any(String),
+      createdAt: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T/),
+      updatedAt: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T/),
+    }),
+  );
+  expect(p.songData).toBeTruthy();
+  expect(typeof p.songData.version).toBe('string');
+}
+
+function expectProjectSummaryContract(s: ProjectSummary): void {
+  expect(s).toEqual(
+    expect.objectContaining({
+      id: expect.any(String),
+      name: expect.any(String),
+      createdAt: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T/),
+      updatedAt: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T/),
+    }),
+  );
+  expect(s).not.toHaveProperty('songData');
 }
 
 describe('TASK-1B.6 API integration — auth + project lifecycle', () => {
@@ -107,10 +133,8 @@ describe('TASK-1B.6 API integration — auth + project lifecycle', () => {
       });
       expect(created.statusCode).toBe(201);
       const project = created.json() as ProjectResponse;
+      expectProjectResponseContract(project);
       expect(project.name).toBe('Integration Project');
-      expect(project.id).toEqual(expect.any(String));
-      expect(project.createdAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
-      expect(project.updatedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
       expectDefaultSongFactoryShape(project.songData);
 
       const list = await app.inject({
@@ -121,6 +145,7 @@ describe('TASK-1B.6 API integration — auth + project lifecycle', () => {
       expect(list.statusCode).toBe(200);
       const listBody = list.json() as ProjectListResponse;
       expect(listBody.projects.length).toBe(1);
+      expectProjectSummaryContract(listBody.projects[0]!);
       expect(listBody.projects[0]).toEqual(
         expect.objectContaining({
           id: project.id,
@@ -129,7 +154,6 @@ describe('TASK-1B.6 API integration — auth + project lifecycle', () => {
           updatedAt: project.updatedAt,
         }),
       );
-      expect(listBody.projects[0]).not.toHaveProperty('songData');
 
       const getOne = await app.inject({
         method: 'GET',
@@ -137,7 +161,13 @@ describe('TASK-1B.6 API integration — auth + project lifecycle', () => {
         headers: { authorization: `Bearer ${access}` },
       });
       expect(getOne.statusCode).toBe(200);
-      expect((getOne.json() as ProjectResponse).id).toBe(project.id);
+      const fetched = getOne.json() as ProjectResponse;
+      expectProjectResponseContract(fetched);
+      expect(fetched.id).toBe(project.id);
+      expect(fetched.name).toBe(project.name);
+      expect(fetched.createdAt).toBe(project.createdAt);
+      expect(fetched.updatedAt).toBe(project.updatedAt);
+      expect(fetched.songData).toEqual(project.songData);
 
       const updated = await app.inject({
         method: 'PUT',
@@ -149,7 +179,11 @@ describe('TASK-1B.6 API integration — auth + project lifecycle', () => {
         payload: { name: 'Renamed Integration' },
       });
       expect(updated.statusCode).toBe(200);
-      expect((updated.json() as ProjectResponse).name).toBe('Renamed Integration');
+      const afterRename = updated.json() as ProjectResponse;
+      expectProjectResponseContract(afterRename);
+      expect(afterRename.name).toBe('Renamed Integration');
+      expect(afterRename.songData).toEqual(project.songData);
+      expect(afterRename.id).toBe(project.id);
 
       const del = await app.inject({
         method: 'DELETE',
@@ -220,6 +254,19 @@ describe('TASK-1B.6 API integration — auth + project lifecycle', () => {
   });
 
   describe('error handling', () => {
+    it('returns 401 UNAUTHORIZED for POST /api/projects when no Bearer token is sent', async () => {
+      const app = await buildProjectTestApp(asPrismaClient(store));
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/projects',
+        headers: { 'content-type': 'application/json' },
+        payload: { name: 'Should Fail' },
+      });
+      expect(res.statusCode).toBe(401);
+      expect(res.json()).toEqual({ code: 'UNAUTHORIZED' });
+      await app.close();
+    });
+
     it('returns 401 UNAUTHORIZED for GET /api/projects/:id when no Bearer token is sent', async () => {
       const app = await buildProjectTestApp(asPrismaClient(store));
       const res = await app.inject({

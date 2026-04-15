@@ -32,13 +32,37 @@ You are the Tech Lead. Per HITL direction, you shall not perform any task or por
 
 ---
 
+## TASK-8.0 — Phase-start tech debt (**merged** 2026-04-15)
+
+Squash-merged to `develop` as **PR [#75](https://github.com/quickthom/vybpad/pull/75)** (MeasureBar `measuresPerLine` stride guard, TransportControls JSDoc, TASK-8.0 component tests, `editorUiSettingsLocalStorage` test spy fix for green `ci-local`). TASK-7.0 backlog and archive follow-ups addressed per plan; full brief text flushed — see merge commit and PR body.
+
+---
+
+## Test coverage pre-audit plan — **updated** 2026-04-15
+
+**Artifact:** Cursor plan **`test_coverage_pre-audit_44b564bb.plan.md`** (stored in the operator’s Cursor plans directory — not vendored in this repo; search by filename if needed).
+
+**Why:** Session work (TASK-8.0 merge, then archive follow-ups) affects **operational sequencing** for optional Vitest coverage (Phase E) and **narrative accuracy** for server/API and theory rows — not the core Phase 8.2–8.4 QA scope.
+
+**Edits made:** Overview extended; §1.1 (theory barrel + API integration pointer); §1.2 (ESLint + generated `coverage/`); new **§6 Session delta** table (TASK-8.0, `archive-followups`, TASK-6.6 HITL); former §6 Summary renumbered to **§7**; summary row notes **8.0 ≠** workflow/a11y/visual E2E.
+
+**Repo:** Plan narrative is satisfied on `develop` after **PR [#76](https://github.com/quickthom/vybpad/pull/76)** (theory barrel re-exports, deeper `api.integration` assertions, `eslint` ignores `**/coverage/**`, `LEAD_STATE` portability fix for plan pointer).
+
+---
+
+## Archive follow-ups — **merged** 2026-04-15
+
+Squash-merged to `develop` as **PR [#76](https://github.com/quickthom/vybpad/pull/76)** (`06e9d3c`): `client/src/engine/theory` barrel for app imports, `server/tests/api.integration.test.ts` INTERFACES-shaped checks, `eslint.config.js` `**/coverage/**`, EditorCanvas grab JSDoc, `midiExporter` lint-directive cleanup, `LEAD_STATE` refresh. Remote branch `phase-8/archive-followups` deleted after merge.
+
+---
+
 ## Session continuity (2026-04-15) — Phase 7 closed
 
 **Authoritative task rows:** `TASK_STATUS.md` (Phase 8 stub); Phase 7 detail in `TASK_STATUS_ARCHIVE.md`.
 
 ### `develop` / remote
 
-- **Tip:** Phase 7 milestone integrated; `CHANGELOG.md` Phase 7 entry (2026-04-15); `UX_GUIDELINES` v1.4 on `develop`.
+- **Tip (2026-04-15):** `origin/develop` head includes **#75** (TASK-8.0) + **#76** (archive follow-ups, squash `06e9d3c`) + follow-on **`5622aae`** (`LEAD_STATE` state log only). Prior: Phase 7 milestone; `CHANGELOG.md` Phase 7 entry; `UX_GUIDELINES` v1.4.
 
 ### Phase 7 — outcome summary
 
@@ -50,15 +74,16 @@ You are the Tech Lead. Per HITL direction, you shall not perform any task or por
 | 7.8 | UI polish + Designer `UX_GUIDELINES` §9 clarification | #72 + Designer commit `3c38bd9` |
 | 7.9 | No separate PR — `EditorViewportGate` + F-07 E2E (pre-existing) | — |
 
-- **TASK-7.0** cleanup: not run (optional debt).
+- **TASK-7.0** optional backlog: delivered as **TASK-8.0** (PR [#75](https://github.com/quickthom/vybpad/pull/75)), not as standalone 7.0.
 
 ### Next
 
-- **Phase 8** — Final QA & Deployment (`ROADMAP.md`); populate `TASK_STATUS.md` Phase 8 table when first wave is briefed.
+- **Phase 8** — Final QA & Deployment (`ROADMAP.md`); TASK-8.1–8.4 + optional Vitest coverage per `TASK_STATUS.md` and test coverage pre-audit plan.
 
 ### Local CI caveat (unchanged)
 
 - Untracked nested `worktrees/` under the repo lint root can cause eslint “not found by the project service” noise. Prefer `ci-local` from a clean worktree or exclude stray paths.
+- **`coverage/`:** On `develop` after **#76**, `eslint.config.js` ignores `**/coverage/**` — local `vitest --coverage` + `npm run lint` should not fight generated HTML/JS under `coverage/`.
 
 ---
 

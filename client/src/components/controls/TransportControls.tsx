@@ -3,9 +3,7 @@ import type { ReactNode } from 'react';
 import { getPlaybackInitErrorMessage } from '../../engine/audio';
 import type { PlaybackInitErrorCode, PlaybackInitStatus } from '../../store/playbackStore';
 
-/**
- * INTERFACES.md `TransportControls` + TASK-4.1 readiness (Architect may merge into INTERFACES).
- */
+/** INTERFACES.md — `TransportControls` / `TransportControlsProps` (TASK-4.1 readiness). */
 export interface TransportControlsProps {
   isPlaying: boolean;
   tempo: number;

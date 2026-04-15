@@ -599,6 +599,7 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
     scheduleRedraw();
   };
 
+  /** Real-browser drag affordance (Phase 2 archive: not “dead” in jsdom — hover hit-testing is limited in tests, but classes are live in Chromium/WebKit). */
   const cursorClass = isDragging ? 'cursor-grabbing' : hoverHit ? 'cursor-grab' : 'cursor-default';
 
   // TODO(Designer): optional side-rail caption for chord shortcuts (F08.2); aria-label covers screen readers until then.

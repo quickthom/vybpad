@@ -8,7 +8,7 @@ import {
   getScaleAtMeasure,
   getTempoAtMeasure,
 } from '@/engine/renderer/tickUtils';
-import { theoryEngine } from '@/engine/theory/theoryEngine';
+import { theoryEngine } from '@/engine/theory';
 
 import MidiWriter from 'midi-writer-js';
 
@@ -52,13 +52,11 @@ function smfDeltaTimeVlq(deltaTicks: number): number[] {
     throw new Error('midiExporter: invalid SMF delta time');
   }
   let buffer = ticks & 0x7f;
-  // eslint-disable-next-line no-cond-assign
   while ((ticks >>= 7)) {
     buffer <<= 8;
     buffer |= (ticks & 0x7f) | 0x80;
   }
   const out: number[] = [];
-  // eslint-disable-next-line no-constant-condition
   while (true) {
     out.push(buffer & 0xff);
     if (buffer & 0x80) buffer >>= 8;

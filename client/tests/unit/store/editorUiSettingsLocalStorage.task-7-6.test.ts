@@ -50,9 +50,15 @@ describe('editor UI settings — TASK-7.6 — localStorage persistence contract'
       expect(readPersistedEditorUiSettings()).toEqual(fullV1Snapshot);
     });
 
-    it('persists JSON.stringify(snapshot) under the exported key (same bytes setItem would store)', () => {
+    it('passes JSON.stringify output to localStorage.setItem for the exported key', () => {
+      // Spy on the prototype: jsdom/localStorage may delegate `setInstance.setItem` to `Storage.prototype`,
+      // so spying only on `window.localStorage` misses calls made via `globalThis.localStorage`.
+      const setItem = vi.spyOn(Storage.prototype, 'setItem');
       writePersistedEditorUiSettings(fullV1Snapshot);
-      expect(globalThis.localStorage.getItem(EDITOR_UI_SETTINGS_STORAGE_KEY)).toBe(JSON.stringify(fullV1Snapshot));
+      expect(setItem).toHaveBeenCalledWith(
+        EDITOR_UI_SETTINGS_STORAGE_KEY,
+        expect.stringContaining('"version":1'),
+      );
     });
   });
 

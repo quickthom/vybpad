@@ -1,7 +1,7 @@
 import type { NoteName, ScaleType } from '@vybpad/shared';
 import { useEffect, useRef, useState } from 'react';
 
-import { applyKeyChange, applyScaleChange } from '@/engine/theory/keyScaleTranspose';
+import { applyKeyChange, applyScaleChange } from '@/engine/theory';
 import { getKeyAtMeasure, getScaleAtMeasure } from '@/engine/renderer/tickUtils';
 import { useSongStore } from '@/store/songStore';
 

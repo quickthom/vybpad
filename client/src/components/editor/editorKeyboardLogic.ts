@@ -7,13 +7,13 @@ import {
   measureIndexFromAbsoluteTick,
   measureLengthInTicks,
 } from '../../engine/renderer/tickUtils';
-import { theoryEngine } from '../../engine/theory';
 import {
   chordEventFieldsForSecondary,
   chordRootPitchClassFromEvent,
   diatonicChordFieldsFromRootPitchClass,
   getSecondaryCycleSequence,
-} from '../../engine/theory/secondaryChords';
+  theoryEngine,
+} from '../../engine/theory';
 
 /**
  * INTERFACES.md `ChordEvent` field order: seventh → suspension → addition.

@@ -21,6 +21,7 @@ export default tseslint.config(
       '**/.archive-ignore/**',
       '**/dist/**',
       '**/build/**',
+      '**/coverage/**',
       'package-lock.json',
       'eslint.config.js',
       // Typed by client/tsconfig.node.json; projectService does not attach it to client/tsconfig.json
