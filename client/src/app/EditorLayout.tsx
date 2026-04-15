@@ -9,6 +9,7 @@ import { TempoMeterAtMeasureDialog } from '../components/controls/TempoMeterAtMe
 import { MidiDragExportControl } from '../components/controls/MidiDragExportControl';
 import { TransportControls } from '../components/controls/TransportControls';
 import { MixerPanel } from '../components/panels/MixerPanel';
+import { PianoKeyboardPanel } from '../components/panels/PianoKeyboardPanel';
 import { MeasureBar } from '../components/MeasureBar';
 import { EditorCanvas } from '../components/editor/EditorCanvas';
 import {
@@ -19,7 +20,12 @@ import {
   resolveTargetMeasureIndex,
 } from '../components/editor/editorKeyboardLogic';
 import { ChordPalette, SecondaryChordInspector } from '../components/panels/ChordPalette';
-import { getKeyAtMeasure, getScaleAtMeasure } from '../engine/renderer/tickUtils';
+import {
+  getKeyAtMeasure,
+  getMeasureStartTicks,
+  getScaleAtMeasure,
+  measureIndexFromAbsoluteTick,
+} from '../engine/renderer/tickUtils';
 import { createShortcutManager } from '../engine/keyboard/shortcutManager';
 import type { ShortcutCommandId, ShortcutContext } from '../engine/keyboard/shortcutTypes';
 import { TASK73_EDITOR_SHORTCUT_CHORDS } from '../engine/keyboard/task73ShortcutChords';
@@ -35,7 +41,15 @@ import {
   type EditorKeyboardContext,
 } from '../hooks/useKeyboard';
 import { EntryModeToggle } from '../components/editor/EntryModeToggle';
-import { formatTransportBeat, getPlaybackEngine, getPlaybackInitErrorMessage } from '../engine/audio';
+import {
+  buildScheduledPlayEvents,
+  collectActiveMidiNotesAtScheduledEvents,
+} from '../engine/audio/songScheduler';
+import {
+  formatTransportBeat,
+  getPlaybackEngine,
+  getPlaybackInitErrorMessage,
+} from '../engine/audio';
 import { useAuthStore } from '../store/authStore';
 import { syncPlaybackEngineWithSong, usePlaybackStore } from '../store/playbackStore';
 import {
@@ -163,6 +177,7 @@ export function EditorLayout() {
   const activePanels = useUIStore((s) => s.activePanels);
   const togglePanel = useUIStore((s) => s.togglePanel);
   const mixerOpen = activePanels.has('mixer');
+  const pianoOpen = activePanels.has('piano');
 
   const [selectedMeasures, setSelectedMeasures] = useState<[number, number] | null>(null);
   const [tempoMeterDialogOpen, setTempoMeterDialogOpen] = useState(false);
@@ -183,9 +198,9 @@ export function EditorLayout() {
     }
     return 0;
   }, [selectedMeasures, selection]);
-  const [chordPaletteMode, setChordPaletteMode] = useState<'diatonic' | 'borrowed' | 'secondary' | 'search'>(
-    'diatonic',
-  );
+  const [chordPaletteMode, setChordPaletteMode] = useState<
+    'diatonic' | 'borrowed' | 'secondary' | 'search'
+  >('diatonic');
 
   const getShortcutContext = useCallback((): ShortcutContext => {
     return {
@@ -243,7 +258,14 @@ export function EditorLayout() {
       const songNow = useSongStore.getState().song;
       const ui = useUIStore.getState();
       const dir = id === 'moveSelectionLeft' ? (-1 as const) : (1 as const);
-      const next = navigateSelection(songNow, ui.viewport, ui.selection, ui.activeVoice, dir, ui.entryMode);
+      const next = navigateSelection(
+        songNow,
+        ui.viewport,
+        ui.selection,
+        ui.activeVoice,
+        dir,
+        ui.entryMode,
+      );
       if (next) ui.setSelection(next);
       return;
     }
@@ -527,6 +549,32 @@ export function EditorLayout() {
   const paletteKey = getKeyAtMeasure(song, paletteMeasureIndex);
   const paletteScale = getScaleAtMeasure(song, paletteMeasureIndex);
 
+  const pianoPlayheadTick = useMemo(() => {
+    const starts = getMeasureStartTicks(song);
+    return playbackTick ?? starts[paletteMeasureIndex] ?? 0;
+  }, [song, playbackTick, paletteMeasureIndex]);
+
+  const scheduledPlayEvents = useMemo(() => buildScheduledPlayEvents(song, theoryEngine), [song]);
+
+  const pianoHighlightedMidi = useMemo(
+    () => collectActiveMidiNotesAtScheduledEvents(scheduledPlayEvents, song, pianoPlayheadTick),
+    [scheduledPlayEvents, song, pianoPlayheadTick],
+  );
+
+  const pianoTheoryMeasure = useMemo(
+    () => measureIndexFromAbsoluteTick(song, pianoPlayheadTick),
+    [song, pianoPlayheadTick],
+  );
+
+  const pianoHomeKey = useMemo(
+    () => getKeyAtMeasure(song, pianoTheoryMeasure),
+    [song, pianoTheoryMeasure],
+  );
+  const pianoScaleForKeyboard = useMemo(
+    () => getScaleAtMeasure(song, pianoTheoryMeasure),
+    [song, pianoTheoryMeasure],
+  );
+
   const handleChordPaletteSelect = useCallback(
     (chord: Omit<ChordEvent, 'id' | 'beat' | 'duration'>) => {
       const ctx: EditorKeyboardContext = {
@@ -599,7 +647,10 @@ export function EditorLayout() {
     }
 
     // POST-bootstrap ref is only meaningful for the current route param; clear when switching projects.
-    if (editorBootstrapHydratedIdRef.current != null && editorBootstrapHydratedIdRef.current !== projectId) {
+    if (
+      editorBootstrapHydratedIdRef.current != null &&
+      editorBootstrapHydratedIdRef.current !== projectId
+    ) {
       editorBootstrapHydratedIdRef.current = null;
     }
 
@@ -791,7 +842,8 @@ export function EditorLayout() {
   const selectedChordId = selection?.type === 'chord' ? selection.eventIds?.[0] : undefined;
   const selectedChord =
     selectedChordId != null && selection?.type === 'chord'
-      ? song.measures[selection.measureIndex]?.chords.find((c) => c.id === selectedChordId) ?? null
+      ? (song.measures[selection.measureIndex]?.chords.find((c) => c.id === selectedChordId) ??
+        null)
       : null;
 
   const chordTheoryScale =
@@ -822,14 +874,17 @@ export function EditorLayout() {
         <div>
           <h1 className="text-xl font-semibold tracking-tight">{headerTitle}</h1>
           {projectName ? (
-            <p className="mt-0.5 text-sm text-[var(--color-text-secondary,#4B5563)]">{projectName}</p>
+            <p className="mt-0.5 text-sm text-[var(--color-text-secondary,#4B5563)]">
+              {projectName}
+            </p>
           ) : null}
           {projectId && lastSavedAt ? (
             <p className="mt-1 text-xs text-[var(--color-text-muted,#9CA3AF)]" aria-live="polite">
               Last saved{' '}
-              {new Intl.DateTimeFormat(undefined, { dateStyle: 'short', timeStyle: 'short' }).format(
-                lastSavedAt,
-              )}
+              {new Intl.DateTimeFormat(undefined, {
+                dateStyle: 'short',
+                timeStyle: 'short',
+              }).format(lastSavedAt)}
             </p>
           ) : null}
           <p className="mt-1 text-sm text-[var(--color-text-secondary,#4B5563)]">
@@ -838,7 +893,9 @@ export function EditorLayout() {
         </div>
         <div className="flex flex-wrap items-center gap-3">
           {user ? (
-            <span className="text-sm text-[var(--color-text-secondary,#4B5563)]">{user.displayName}</span>
+            <span className="text-sm text-[var(--color-text-secondary,#4B5563)]">
+              {user.displayName}
+            </span>
           ) : null}
           {projectId ? (
             <button
@@ -885,6 +942,15 @@ export function EditorLayout() {
             className="inline-flex h-10 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-4 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
           >
             Mixer
+          </button>
+          <button
+            type="button"
+            onClick={() => togglePanel('piano')}
+            aria-expanded={pianoOpen}
+            aria-controls={pianoOpen ? 'vybpad-panel-piano' : undefined}
+            className="inline-flex h-10 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-4 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
+          >
+            Piano
           </button>
           <button
             ref={keyScaleTriggerRef}
@@ -1082,15 +1148,37 @@ export function EditorLayout() {
             onEditTempoMeter={() => setTempoMeterDialogOpen(true)}
           />
         </div>
-        {mixerOpen ? (
-          <aside
-            id="vybpad-panel-mixer"
-            className="flex w-[288px] shrink-0 flex-col border-l border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)]"
-            role="complementary"
-            aria-label="Mixer"
-          >
-            <MixerPanel bandConfig={song.bandConfig} onTrackChange={handleTrackChange} />
-          </aside>
+        {mixerOpen || pianoOpen ? (
+          <div className="flex w-[288px] shrink-0 flex-col border-l border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)]">
+            {mixerOpen ? (
+              <aside
+                id="vybpad-panel-mixer"
+                className={
+                  pianoOpen
+                    ? 'flex shrink-0 flex-col border-b border-[var(--color-border,#E5E7EB)]'
+                    : 'flex min-h-0 flex-1 flex-col'
+                }
+                role="complementary"
+                aria-label="Mixer"
+              >
+                <MixerPanel bandConfig={song.bandConfig} onTrackChange={handleTrackChange} />
+              </aside>
+            ) : null}
+            {pianoOpen ? (
+              <aside
+                id="vybpad-panel-piano"
+                className="flex min-h-0 flex-1 flex-col"
+                role="complementary"
+                aria-labelledby="vybpad-piano-panel-title"
+              >
+                <PianoKeyboardPanel
+                  homeKey={pianoHomeKey}
+                  scale={pianoScaleForKeyboard}
+                  highlightedMidi={pianoHighlightedMidi}
+                />
+              </aside>
+            ) : null}
+          </div>
         ) : null}
       </div>
       <TempoMeterAtMeasureDialog
