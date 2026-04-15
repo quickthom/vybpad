@@ -13,7 +13,7 @@ Phases 0 (7/7), 1A (7/7), 1B (6/6), Phase 2 (15/15), Phase 3 (10/10), Phase 4 (1
 
 ## Phase 6 — MIDI Export & StudioOne Integration
 
-**Develop tip:** `623fa57` (`origin/develop`, 2026-04-15) — includes `INTERFACES.md` `TransportControlsProps.endContent` (TL remediation for TASK-6.5) atop prior Phase 6 work.
+**Develop tip:** `3488912` (`origin/develop`, 2026-04-15) — includes `INTERFACES.md` `TransportControlsProps.endContent`, TASK_STATUS/LEAD_STATE Phase 6 unblock notes.
 
 **Merge-order gates:** Merge **6.1** before **6.2** and **6.3** (they extend the same exporter). **6.4** / **6.5** branched from `develop` @ **6.2**; **merge #55 (6.3) before #56/#57** when possible, then **#56 ↔ #57** may conflict on `EditorLayout.tsx` / transport — TL sequences rebases. **6.6** / **6.7** (QA) start once **6.1–6.3** are merged (or as briefed).
 
