@@ -34,6 +34,6 @@ You are the Tech Lead. Per HITL direction, you shall not perform any task or por
 
 ## Last flush
 
-**2026-04-15** — Session batch removed; CRITICAL NOTES retained. Playbook touchpoints in the same commit: `AGENTS.mdc`, `raise-pr` skill, `Reviewer.md`, `CI_LOCAL.md`, `ESCALATION_LOG.md`.
+**2026-04-15 (Phase 6 close)** — PRs **#55–#58** integrated on `develop` (MIDI export stack + TASK-6.7 tests). **TASK-6.6** StudioOne live check remains **HITL** (QA protocol only). `TASK_STATUS` archived Phase 6; README/CHANGELOG milestone docs pushed. PAT-017: Reviewers/QA briefed with explicit `<WORKTREE_ROOT>` paths for parallel work.
 
 ---
