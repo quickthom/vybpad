@@ -1,4 +1,4 @@
-import type { SongData, TrackRole } from '@vybpad/shared';
+import type { SongData, TimeSignature, TrackRole } from '@vybpad/shared';
 
 import { buildScheduledPlayEvents, type ScheduledPlayEvent } from '@/engine/audio/songScheduler';
 import {
@@ -25,6 +25,9 @@ export const MIDI_TICK_SCALE = 10;
 /** midi-writer-js treats `startTick: 0` as missing; pad so explicit ticks are never 0. */
 const MIDI_EXPLICIT_TICK_PAD = 1;
 
+/** SMF meta status (matches midi-writer-js `Constants.META_EVENT_ID`). */
+const SMF_META = 0xff;
+
 const MELODY_ROLES: readonly TrackRole[] = ['melody1', 'melody2', 'melody3', 'melody4'];
 
 const WRITER_OPTS = { ticksPerBeat: 480 };
@@ -40,6 +43,129 @@ function internalTickToMidiTick(tick: number): number {
 
 function internalDurationToMidiTicks(duration: number): number {
   return duration * MIDI_TICK_SCALE;
+}
+
+/** Variable-length quantity for SMF delta-times (same semantics as midi-writer-js `Utils.numberToVariableLength`). */
+function smfDeltaTimeVlq(deltaTicks: number): number[] {
+  let ticks = Math.round(deltaTicks);
+  if (ticks < 0 || !Number.isFinite(ticks)) {
+    throw new Error('midiExporter: invalid SMF delta time');
+  }
+  let buffer = ticks & 0x7f;
+  // eslint-disable-next-line no-cond-assign
+  while ((ticks >>= 7)) {
+    buffer <<= 8;
+    buffer |= (ticks & 0x7f) | 0x80;
+  }
+  const out: number[] = [];
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    out.push(buffer & 0xff);
+    if (buffer & 0x80) buffer >>= 8;
+    else break;
+  }
+  return out;
+}
+
+function metersEqual(a: TimeSignature, b: TimeSignature): boolean {
+  return a.numerator === b.numerator && a.denominator === b.denominator;
+}
+
+/**
+ * Time signature meta (FF 58) with an explicit leading delta (midi-writer-js `TimeSignatureEvent` always emits delta 0).
+ * Denominator must be a power of two (INTERFACES / SMF).
+ */
+function timeSignatureMetaWithDelta(
+  delta: number,
+  numerator: number,
+  denominator: number,
+  midiclockspertick = 24,
+  notespermidiclock = 8,
+): { data: number[]; delta: number; name: string } {
+  const denomPow = Math.round(Math.log2(denominator));
+  return {
+    name: 'TimeSignatureMeta',
+    delta: 0,
+    data: [
+      ...smfDeltaTimeVlq(delta),
+      SMF_META,
+      0x58,
+      0x04,
+      numerator & 0xff,
+      denomPow & 0xff,
+      midiclockspertick & 0xff,
+      notespermidiclock & 0xff,
+    ],
+  };
+}
+
+type ConductorTempoMeterOp =
+  | { kind: 'tempo'; absMidiTick: number; bpm: number }
+  | { kind: 'meter'; absMidiTick: number; meter: TimeSignature };
+
+/**
+ * Tempo map + time-signature changes at measure boundaries, PAT-004 scaled (+ explicit tick pad like notes).
+ * Emits baseline at measure 0; later events only when effective tempo/meter differs from the prior measure.
+ */
+function collectConductorTempoMeterOps(song: SongData): ConductorTempoMeterOp[] {
+  const n = song.measures.length;
+  const measureStarts = getMeasureStartTicks(song);
+  const ops: ConductorTempoMeterOp[] = [];
+  const iterations = n === 0 ? 1 : n;
+
+  for (let m = 0; m < iterations; m += 1) {
+    const tempo = getTempoAtMeasure(song, m);
+    const meter = getMeterAtMeasure(song, m);
+    const absInternal = measureStarts[m] ?? 0;
+    const absMidiTick = internalTickToMidiTick(absInternal);
+
+    if (m === 0) {
+      ops.push({ kind: 'tempo', absMidiTick, bpm: tempo });
+      ops.push({ kind: 'meter', absMidiTick, meter });
+      continue;
+    }
+
+    const prevTempo = getTempoAtMeasure(song, m - 1);
+    const prevMeter = getMeterAtMeasure(song, m - 1);
+    if (tempo !== prevTempo) {
+      ops.push({ kind: 'tempo', absMidiTick, bpm: tempo });
+    }
+    if (!metersEqual(meter, prevMeter)) {
+      ops.push({ kind: 'meter', absMidiTick, meter });
+    }
+  }
+
+  ops.sort((a, b) => {
+    if (a.absMidiTick !== b.absMidiTick) return a.absMidiTick - b.absMidiTick;
+    if (a.kind !== b.kind) return a.kind === 'tempo' ? -1 : 1;
+    return 0;
+  });
+
+  return ops;
+}
+
+function applyConductorTempoMeterOps(
+  track: InstanceType<typeof MidiWriter.Track>,
+  ops: ConductorTempoMeterOp[],
+): void {
+  let prevAbsTick = 0;
+  for (const op of ops) {
+    const delta = op.absMidiTick - prevAbsTick;
+    prevAbsTick = op.absMidiTick;
+    if (op.kind === 'tempo') {
+      track.addEvent(
+        new MidiWriter.TempoEvent({
+          bpm: op.bpm,
+          delta,
+          tick: op.absMidiTick,
+        }),
+      );
+    } else {
+      track.addEvent(
+        timeSignatureMetaWithDelta(delta, op.meter.numerator, op.meter.denominator),
+      );
+    }
+  }
 }
 
 /** Map song velocity 1–127 → midi-writer’s 1–100 scale. */
@@ -103,11 +229,8 @@ function scheduledEventsToHarmonyNoteEvents(
 
 function buildConductorTrack(song: SongData): InstanceType<typeof MidiWriter.Track> {
   const track = new MidiWriter.Track();
-  const meter = getMeterAtMeasure(song, 0);
-  const tempo = getTempoAtMeasure(song, 0);
   track.addTrackName('Conductor');
-  track.setTempo(tempo, 0);
-  track.setTimeSignature(meter.numerator, meter.denominator, 24, 8);
+  applyConductorTempoMeterOps(track, collectConductorTempoMeterOps(song));
   return track;
 }
 
