@@ -16,7 +16,12 @@ import { randomUUID } from 'node:crypto';
 
 import { chordFromKeyboardEvent, createShortcutManager } from '@/engine/keyboard/shortcutManager';
 import type { ShortcutCommandId, ShortcutContext, ShortcutDefinition, ShortcutManager } from '@/engine/keyboard/shortcutTypes';
-import { applyDurationTicksFromEditor, type EditorKeyboardContext, handleEditorKeydown } from '@/hooks/useKeyboard';
+import {
+  applyDurationTicksFromEditor,
+  applyNoteShortcutCommandFromEditor,
+  type EditorKeyboardContext,
+  handleEditorKeydown,
+} from '@/hooks/useKeyboard';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const viewport: Viewport = { startMeasure: 0, measureCount: 8, scrollY: 0, zoom: 1 };
@@ -37,11 +42,15 @@ function keydown(
   return new KeyboardEvent('keydown', { bubbles: true, cancelable: true, ...init });
 }
 
-/**
- * Pre–TASK-7.3 shell behavior: only duration ShortcutCommandIds are applied. Builder must extend this to call
- * split/tie/triplet handlers for the new ids.
- */
-function editorLayoutStyleOnCommandPre73(id: ShortcutCommandId, ctx: EditorKeyboardContext): void {
+/** Mirrors {@link EditorLayout} `durationShortcutCommandRef` / TASK-7.3 branch (duration + split/tie/triplet). */
+function editorLayoutStyleOnCommand(id: ShortcutCommandId, ctx: EditorKeyboardContext): void {
+  if (id === 'splitSelection' || id === 'tieSelection' || id === 'toggleTriplet') {
+    applyNoteShortcutCommandFromEditor(
+      ctx,
+      id as 'splitSelection' | 'tieSelection' | 'toggleTriplet',
+    );
+    return;
+  }
   const ticks = NOTE_DURATION_COMMAND_TICKS[id];
   if (ticks !== undefined) applyDurationTicksFromEditor(ctx, ticks);
 }
@@ -153,7 +162,7 @@ describe('TASK-7.3 — split / tie / triplet shell wiring (useKeyboard + Shortcu
     const ctx = makeCtx({ onNoteEdit });
 
     const mgr = createShortcutManager({
-      onCommand: (id) => editorLayoutStyleOnCommandPre73(id, ctx),
+      onCommand: (id) => editorLayoutStyleOnCommand(id, ctx),
     });
     registerTask73Bindings(mgr);
 
@@ -211,7 +220,7 @@ describe('TASK-7.3 — split / tie / triplet shell wiring (useKeyboard + Shortcu
     });
 
     const mgr = createShortcutManager({
-      onCommand: (id) => editorLayoutStyleOnCommandPre73(id, ctx),
+      onCommand: (id) => editorLayoutStyleOnCommand(id, ctx),
     });
     registerTask73Bindings(mgr);
 
@@ -258,7 +267,7 @@ describe('TASK-7.3 — split / tie / triplet shell wiring (useKeyboard + Shortcu
     });
 
     const mgr = createShortcutManager({
-      onCommand: (id) => editorLayoutStyleOnCommandPre73(id, ctx),
+      onCommand: (id) => editorLayoutStyleOnCommand(id, ctx),
     });
     registerTask73Bindings(mgr);
 
@@ -294,7 +303,7 @@ describe('TASK-7.3 — split / tie / triplet shell wiring (useKeyboard + Shortcu
     const ctx = makeCtx({ onNoteEdit });
 
     const mgr = createShortcutManager({
-      onCommand: (id) => editorLayoutStyleOnCommandPre73(id, ctx),
+      onCommand: (id) => editorLayoutStyleOnCommand(id, ctx),
     });
     registerTask73Bindings(mgr);
 
@@ -322,7 +331,7 @@ describe('TASK-7.3 — split / tie / triplet shell wiring (useKeyboard + Shortcu
     const ctx = makeCtx({ onNoteEdit });
 
     const mgr = createShortcutManager({
-      onCommand: (id) => editorLayoutStyleOnCommandPre73(id, ctx),
+      onCommand: (id) => editorLayoutStyleOnCommand(id, ctx),
     });
     registerTask73Bindings(mgr);
 
@@ -345,7 +354,7 @@ describe('TASK-7.3 — split / tie / triplet shell wiring (useKeyboard + Shortcu
     const ctx = makeCtx({ onNoteEdit });
 
     const mgr = createShortcutManager({
-      onCommand: (id) => editorLayoutStyleOnCommandPre73(id, ctx),
+      onCommand: (id) => editorLayoutStyleOnCommand(id, ctx),
     });
     registerTask73Bindings(mgr);
 
@@ -400,7 +409,7 @@ describe('TASK-7.3 — split / tie / triplet shell wiring (useKeyboard + Shortcu
 
     const mgr = createShortcutManager({
       onCommand: (id) => {
-        editorLayoutStyleOnCommandPre73(id, ctx);
+        editorLayoutStyleOnCommand(id, ctx);
       },
     });
     registerTask73Bindings(mgr);

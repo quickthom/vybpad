@@ -613,4 +613,46 @@ describe('TASK-2.15 — comprehensive SongStore mutations and undo/redo', () => 
       expect(useSongStore.getState().canUndo).toBe(false);
     });
   });
+
+  describe('TASK-7.3 — editNoteBatch (single undo step)', () => {
+    it('applies two note actions with one undo snapshot', () => {
+      useSongStore.getState().loadSong(makeDefaultSong());
+      useSongStore.getState().editNote(0, 0, {
+        type: 'add',
+        note: {
+          scaleDegree: 1,
+          octave: 0,
+          chromatic: 0,
+          beat: 0,
+          duration: 48,
+          isRest: false,
+          velocity: 100,
+        },
+      });
+      const id = useSongStore.getState().song.measures[0].notes[0][0]!.id;
+      useSongStore.getState().editNoteBatch([
+        { measureIndex: 0, voice: 0, action: { type: 'resize', noteId: id, newDuration: 24 } },
+        {
+          measureIndex: 0,
+          voice: 0,
+          action: {
+            type: 'add',
+            note: {
+              scaleDegree: 1,
+              octave: 0,
+              chromatic: 0,
+              beat: 24,
+              duration: 24,
+              isRest: false,
+              velocity: 100,
+            },
+          },
+        },
+      ]);
+      expect(useSongStore.getState().song.measures[0].notes[0]).toHaveLength(2);
+      useSongStore.getState().undo();
+      expect(useSongStore.getState().song.measures[0].notes[0]).toHaveLength(1);
+      expect(useSongStore.getState().song.measures[0].notes[0][0]!.duration).toBe(48);
+    });
+  });
 });

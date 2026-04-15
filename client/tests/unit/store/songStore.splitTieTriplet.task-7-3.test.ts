@@ -64,20 +64,26 @@ describe('TASK-7.3 — SongStore undo parity for split (single user command)', (
     const before = structuredClone(useSongStore.getState().song);
     const noteId = before.measures[0].notes[0][0].id;
 
-    // Simulates a naive split as two edits — two undo entries; TASK-7.3 must not ship this for one `/` press.
-    useSongStore.getState().editNote(0, 0, { type: 'resize', noteId, newDuration: 24 });
-    useSongStore.getState().editNote(0, 0, {
-      type: 'add',
-      note: {
-        scaleDegree: 1,
-        octave: 0,
-        chromatic: 0,
-        beat: 24,
-        duration: 24,
-        isRest: false,
-        velocity: 100,
+    // One `/` press must map to a single `editNoteBatch` (not two `editNote` calls — two undo points).
+    useSongStore.getState().editNoteBatch([
+      { measureIndex: 0, voice: 0, action: { type: 'resize', noteId, newDuration: 24 } },
+      {
+        measureIndex: 0,
+        voice: 0,
+        action: {
+          type: 'add',
+          note: {
+            scaleDegree: 1,
+            octave: 0,
+            chromatic: 0,
+            beat: 24,
+            duration: 24,
+            isRest: false,
+            velocity: 100,
+          },
+        },
       },
-    });
+    ]);
 
     useSongStore.getState().undo();
 

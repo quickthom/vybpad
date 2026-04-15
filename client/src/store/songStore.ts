@@ -72,6 +72,13 @@ export interface SongStore {
 
   editChord: (measureIndex: number, action: ChordEditAction) => void;
   editNote: (measureIndex: number, voice: number, action: NoteEditAction) => void;
+  /**
+   * TASK-7.3 — Apply multiple note edits in one Immer transaction → **one** undo step (PAT-009).
+   * Client extension: not yet listed in INTERFACES.md `SongStore` — TL may promote to shared contract.
+   */
+  editNoteBatch: (
+    operations: ReadonlyArray<{ measureIndex: number; voice: 0 | 1 | 2 | 3; action: NoteEditAction }>,
+  ) => void;
   setMeasureChanges: (measureIndex: number, changes: MeasureChanges) => void;
   addMeasures: (atIndex: number, count: number) => void;
   deleteMeasures: (start: number, end: number) => void;
@@ -218,6 +225,19 @@ export const useSongStore = create<SongStoreState>()(
         if (!measure) return;
         pushUndoSnapshot(draft);
         applyNoteEdit(measure, voice, action);
+        afterMutation(draft);
+      });
+    },
+
+    editNoteBatch: (operations) => {
+      if (operations.length === 0) return;
+      set((draft) => {
+        pushUndoSnapshot(draft);
+        for (const op of operations) {
+          const measure = draft.song.measures[op.measureIndex];
+          if (!measure || op.voice < 0 || op.voice > 3) continue;
+          applyNoteEdit(measure, op.voice, op.action);
+        }
         afterMutation(draft);
       });
     },

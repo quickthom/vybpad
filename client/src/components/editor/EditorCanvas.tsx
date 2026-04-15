@@ -56,6 +56,10 @@ export interface EditorCanvasProps {
   colorScheme: 'diatonic' | 'major';
   onChordEdit: (measureIndex: number, event: ChordEditAction) => void;
   onNoteEdit: (measureIndex: number, voice: number, event: NoteEditAction) => void;
+  /** TASK-7.3 — batched note edits for split/tie (single undo); optional. */
+  onNoteEditBatch?: (
+    operations: ReadonlyArray<{ measureIndex: number; voice: 0 | 1 | 2 | 3; action: NoteEditAction }>,
+  ) => void;
   onSelectionChange: (selection: Selection | null) => void;
   onViewportChange: (viewport: Viewport) => void;
   getSongAfterMutation?: () => SongData;
@@ -153,6 +157,7 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
     entryMode,
     onChordEdit,
     onNoteEdit,
+    onNoteEditBatch,
     onSelectionChange,
     getSongAfterMutation,
     getSelectionAfterMutation,
@@ -215,6 +220,7 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
     onToggleEntryMode,
     onChordEdit,
     onNoteEdit,
+    editNoteBatch: onNoteEditBatch,
     onSelectionChange,
     shortcutManager,
     getShortcutContext,
