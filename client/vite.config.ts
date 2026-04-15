@@ -27,7 +27,11 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['tests/**/*.test.ts', 'tests/**/*.test.tsx'],
-    environmentMatchGlobs: [['tests/**/*.test.tsx', 'jsdom']],
+    environmentMatchGlobs: [
+      ['tests/**/*.test.tsx', 'jsdom'],
+      ['tests/unit/store/uiStore.test.ts', 'jsdom'],
+      ['tests/unit/store/editorUiSettingsLocalStorage.task-7-6.test.ts', 'jsdom'],
+    ],
     globals: false,
     setupFiles: ['./tests/setup-jsdom-pointer.ts'],
     restoreMocks: true,

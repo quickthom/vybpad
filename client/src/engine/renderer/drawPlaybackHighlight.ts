@@ -1,6 +1,7 @@
 import type { SongData, Viewport } from '@vybpad/shared';
 
 import {
+  NOTE_HEIGHT,
   PLAYBACK_HIGHLIGHT_COLOR,
   PLAYBACK_HIGHLIGHT_LINE_WIDTH,
 } from './constants';
@@ -17,6 +18,7 @@ export function drawPlaybackHighlight(
   song: SongData,
   viewport: Viewport,
   playbackTick: number | null,
+  melodyRowHeight: number = NOTE_HEIGHT,
 ): void {
   if (playbackTick == null) {
     return;
@@ -61,6 +63,7 @@ export function drawPlaybackHighlight(
           note,
           isRest: false,
           voiceIndex: v,
+          melodyRowHeight,
         });
         strokeRoundRect(ctx, r.x, r.y, r.width, r.height, NOTE_BLOCK_CORNER_RADIUS);
       }

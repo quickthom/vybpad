@@ -131,8 +131,8 @@ export function noteStaffTopY(): number {
 /**
  * PAT-018: chromatic alteration shifts the note vertically by half a row per semitone step.
  */
-export function chromaticYOffset(chromatic: number): number {
-  return chromatic * (NOTE_HEIGHT / 2);
+export function chromaticYOffset(chromatic: number, rowHeight: number = NOTE_HEIGHT): number {
+  return chromatic * (rowHeight / 2);
 }
 
 /**
@@ -151,13 +151,15 @@ export function noteRowY(
   octave: number,
   chromatic: number,
   scrollY: number,
+  /** Melody row height from staff spacing (defaults to PAT-012 {@link NOTE_HEIGHT}). */
+  rowHeight: number = NOTE_HEIGHT,
 ): number {
   const base = noteStaffTopY();
   const row = diatonicRowIndex(scaleDegree, octave);
-  return base + row * NOTE_HEIGHT + chromaticYOffset(chromatic) - scrollY;
+  return base + row * rowHeight + chromaticYOffset(chromatic, rowHeight) - scrollY;
 }
 
 /** Layout Y for a {@link NoteEvent} (callers skip rests). */
-export function noteRowYFromNoteEvent(note: NoteEvent, scrollY: number): number {
-  return noteRowY(note.scaleDegree, note.octave, note.chromatic, scrollY);
+export function noteRowYFromNoteEvent(note: NoteEvent, scrollY: number, rowHeight: number = NOTE_HEIGHT): number {
+  return noteRowY(note.scaleDegree, note.octave, note.chromatic, scrollY, rowHeight);
 }
