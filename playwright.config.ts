@@ -89,15 +89,15 @@ export default defineConfig({
   use: {
     baseURL,
     ...devices['Desktop Chrome'],
-    /** UX §4 / docs/E2E_EDITOR.md — minimum 1024×768; 800px height matches `visual` project. */
-    viewport: { width: 1280, height: 800 },
+    /** UX §4 / docs/E2E_EDITOR.md — minimum 1024×768. */
+    viewport: { width: 1280, height: 768 },
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
     trace: 'on-first-retry',
   },
   /**
-   * TASK-8.3 — `visual` holds screenshot baselines (`toHaveScreenshot`); keep serial to limit GPU load.
-   * PAT-030 — ports from `PLAYWRIGHT_BASE_URL` / root `.env`. Both projects use 1280×800 (UX §4 / E2E_EDITOR ≥1024×768).
+   * TASK-8.4 — `visual` holds screenshot baselines (`toHaveScreenshot`); serial to limit GPU load.
+   * PAT-030 — ports from `PLAYWRIGHT_BASE_URL` / root `.env`. Viewport 1280×768 (UX §4 ≥1024×768).
    */
   projects: [
     {
@@ -105,7 +105,7 @@ export default defineConfig({
       testIgnore: '**/*.visual.spec.ts',
       use: {
         ...devices['Desktop Chrome'],
-        viewport: { width: 1280, height: 800 },
+        viewport: { width: 1280, height: 768 },
       },
     },
     {
@@ -114,8 +114,8 @@ export default defineConfig({
       fullyParallel: false,
       use: {
         ...devices['Desktop Chrome'],
-        /** UX_GUIDELINES §4 — minimum layout width 1024px; 1280×800 is the agreed visual baseline. */
-        viewport: { width: 1280, height: 800 },
+        /** UX_GUIDELINES §4 — agreed visual baseline (≥ minimum 1024×768). */
+        viewport: { width: 1280, height: 768 },
       },
     },
   ],

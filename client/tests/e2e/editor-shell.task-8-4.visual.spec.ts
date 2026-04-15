@@ -1,5 +1,5 @@
 /*
- * QA COVERAGE PLAN — TASK-8.3
+ * QA COVERAGE PLAN — TASK-8.4
  *
  * Criterion: Playwright screenshot baselines for stable editor/auth states (UX §4 viewport ≥1024×768).
  *   happy: login, register, projects, empty editor (chord palette open by default), populated grid, transport toolbar while playing (full-page height can flake; toolbar shot is stable).
@@ -30,7 +30,7 @@ async function disableCssAnimationFlake(page: Page): Promise<void> {
   });
 }
 
-test.describe('TASK-8.3 — visual regression (project=visual)', () => {
+test.describe('TASK-8.4 — visual regression (project=visual)', () => {
   test.describe.configure({ mode: 'serial', timeout: 300_000 });
 
   test('login page baseline', async ({ page }) => {

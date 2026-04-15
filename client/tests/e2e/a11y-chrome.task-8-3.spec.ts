@@ -1,5 +1,5 @@
 /*
- * QA COVERAGE PLAN — TASK-8.4
+ * QA COVERAGE PLAN — TASK-8.3
  *
  * Criterion: Axe scans non-canvas surfaces; canvas excluded (UX §9).
  *   happy: /login, /register, /projects, editor chrome — zero axe violations with application/canvas excluded.
@@ -18,7 +18,7 @@ import {
 } from './helpers/transport';
 import { submitRegisterFormAndExpectProjects } from './helpers/registerFlow';
 
-test.describe('TASK-8.4 — axe on non-canvas surfaces (canvas excluded)', () => {
+test.describe('TASK-8.3 — axe on non-canvas surfaces (canvas excluded)', () => {
   /** Serial: shared devstack + Web Audio init order; parallel was flaky with cold sample loads. */
   test.describe.configure({ mode: 'serial' });
 
