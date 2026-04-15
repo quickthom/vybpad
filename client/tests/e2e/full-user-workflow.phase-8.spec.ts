@@ -144,7 +144,8 @@ async function readDownloadBytes(download: import('@playwright/test').Download):
 }
 
 test.describe('TASK-8.2 — full user workflow (register → edit → play → MIDI export)', () => {
-  test.describe.configure({ mode: 'serial', timeout: 180_000 });
+  /** bcrypt register + 90s autosave poll + Web Audio playback need more than default 120s / 180s caps. */
+  test.describe.configure({ mode: 'serial', timeout: 420_000 });
 
   test('register → new project → UI chord + API melody note → play advances readout → Download .mid yields valid SMF Type 1 (480 PPQN)', async ({
     page,
@@ -163,12 +164,23 @@ test.describe('TASK-8.2 — full user workflow (register → edit → play → M
     await submitRegisterFormAndExpectProjects(page);
 
     await page.locator('#new-project-name').fill(projectName);
+    const createProjectResponse = page.waitForResponse(
+      (r) =>
+        r.request().method() === 'POST' &&
+        r.url().includes('/api/projects') &&
+        !/\/api\/projects\/[0-9a-f-]{36}/i.test(r.url()),
+      { timeout: 90_000 },
+    );
     await page.getByRole('button', { name: 'Create project' }).click();
-    await expect(page).toHaveURL(/\/editor\/[0-9a-f-]{36}/i);
+    const createdRes = await createProjectResponse;
+    expect(createdRes.ok(), await createdRes.text().catch(() => '')).toBeTruthy();
+    const created = (await createdRes.json()) as { id: string };
+    expect(created.id, 'POST /api/projects should return a project id').toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+    );
+    await page.waitForURL(new RegExp(`/editor/${created.id}(?:/|[?#]|$)`, 'i'), { timeout: 90_000 });
 
-    const projectId = page.url().match(/\/editor\/([0-9a-f-]{36})/i)?.[1];
-    expect(projectId).toBeTruthy();
-    const id = projectId as string;
+    const id = created.id;
 
     await waitForEditorRouteReady(page);
     await ensureTableEntryMode(page);
@@ -199,7 +211,8 @@ test.describe('TASK-8.2 — full user workflow (register → edit → play → M
 
     await addMelodyQuarterNoteVoice0(request, accessToken, id);
 
-    await page.reload();
+    // Full navigation instead of `reload()` — on some CI hosts Chromium can crash during reload after Web Audio + canvas.
+    await page.goto(`/editor/${id}`, { waitUntil: 'domcontentloaded' });
     await waitForEditorRouteReady(page);
 
     const transport = getTransportToolbar(page);
