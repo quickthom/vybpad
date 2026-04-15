@@ -19,6 +19,8 @@ Before writing a single test, read and understand:
 2. **`INTERFACES.md`** — your tests must verify against these contracts, not against implementation internals.
 3. **`ARCHITECTURE.md`** — use the agreed test framework, directory structure, and naming conventions. Do not invent a new pattern.
 
+If you run **full E2E** (`npm run test:e2e` or `./scripts/ci-local.sh`) while another agent uses the same machine, set a **unique Playwright port pair** per worktree (`PLAYWRIGHT_BASE_URL`, `PLAYWRIGHT_API_URL`, matching `CORS_ORIGIN` / `VITE_API_URL`) — see **PATTERNS.md** PAT-030.
+
 If an acceptance criterion is untestable as written (vague, subjective, or ambiguous), **flag it to the TL immediately** — do not skip it silently and do not invent an interpretation. Write:
 
 ```
