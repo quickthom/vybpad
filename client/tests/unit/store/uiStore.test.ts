@@ -1,3 +1,4 @@
+/** @vitest-environment jsdom */
 /**
  * TASK-2.11 — Zustand `UIStore` contract tests (INTERFACES.md UIStore + TASK-2.11 acceptance criteria).
  * Uses only `useUIStore.getState()` / `useUIStore` public surface (no store internals).
@@ -56,12 +57,21 @@ function baselineUIState(): void {
   s.setViewport({ ...DEFAULT_VIEWPORT });
   s.setSelection(null);
   s.setActiveVoice(0);
+  s.setEntryMode('table');
+  s.setLabelMode('degree');
+  s.setStaffSpacing('default');
+  s.setShowGuides(false);
+  s.setColorScheme('diatonic');
   while (useUIStore.getState().entryMode !== 'table') {
     useUIStore.getState().toggleEntryMode();
   }
 }
 
 describe('UIStore — TASK-2.11 / INTERFACES.md', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
   describe('public entrypoints', () => {
     it('exports the same useUIStore hook from client/src/store/index.ts as from uiStore.ts', () => {
       expect(useUIStoreFromBarrel).toBe(useUIStore);
@@ -96,6 +106,14 @@ describe('UIStore — TASK-2.11 / INTERFACES.md', () => {
 
     it('exposes colorScheme "diatonic" on first getState()', () => {
       expect(useUIStore.getState().colorScheme).toBe('diatonic');
+    });
+
+    it('exposes labelMode "degree" on first getState()', () => {
+      expect(useUIStore.getState().labelMode).toBe('degree');
+    });
+
+    it('exposes staffSpacing "default" on first getState()', () => {
+      expect(useUIStore.getState().staffSpacing).toBe('default');
     });
 
     it('exposes activePanels as an empty Set on first getState()', () => {

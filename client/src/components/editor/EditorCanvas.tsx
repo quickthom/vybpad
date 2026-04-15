@@ -2,6 +2,7 @@ import type { ChordEditAction, NoteEditAction, ScaleDegree, Selection, SongData,
 import {
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type Dispatch,
@@ -13,9 +14,11 @@ import type { PointerEvent as ReactPointerEvent } from 'react';
 
 import type { ShortcutContext, ShortcutManager } from '../../engine/keyboard/shortcutTypes';
 import { useKeyboard } from '../../hooks/useKeyboard';
+import type { EditorLabelMode, StaffSpacing } from '../../types/editorChrome';
 import { useUIStore } from '../../store/uiStore';
+import { melodyRowHeightPx } from '../../utils/staffSpacing';
 import { theoryEngine } from '../../engine/theory';
-import { CHORD_AREA_HEIGHT, MEASURE_HEADER_HEIGHT, NOTE_HEIGHT, SELECTION_COLOR } from '../../engine/renderer/constants';
+import { CHORD_AREA_HEIGHT, MEASURE_HEADER_HEIGHT, SELECTION_COLOR } from '../../engine/renderer/constants';
 import { drawPlaybackCursor } from '../../engine/renderer/drawPlaybackCursor';
 import { drawPlaybackHighlight } from '../../engine/renderer/drawPlaybackHighlight';
 import { drawChordBlocks, layoutChordBlock } from '../../engine/renderer/chordBlocks';
@@ -54,6 +57,9 @@ export interface EditorCanvasProps {
   entryMode: 'table' | 'text';
   showGuides: boolean;
   colorScheme: 'diatonic' | 'major';
+  /** Defaults match `UIStore` / INTERFACES.md when omitted (tests). */
+  labelMode?: EditorLabelMode;
+  staffSpacing?: StaffSpacing;
   onChordEdit: (measureIndex: number, event: ChordEditAction) => void;
   onNoteEdit: (measureIndex: number, voice: number, event: NoteEditAction) => void;
   /** TASK-7.3 — batched note edits for split/tie (single undo); optional. */
@@ -113,8 +119,8 @@ function visibleMeasuresWidthPx(song: SongData, viewport: Viewport): number {
   return horizontalTicksToPx((starts[lastEx] ?? 0) - (starts[first] ?? 0), viewport.zoom);
 }
 
-function canvasHeightPx(): number {
-  return MEASURE_HEADER_HEIGHT + CHORD_AREA_HEIGHT + STAFF_DIATONIC_ROWS * NOTE_HEIGHT;
+function canvasHeightPx(melodyRowHeight: number): number {
+  return MEASURE_HEADER_HEIGHT + CHORD_AREA_HEIGHT + STAFF_DIATONIC_ROWS * melodyRowHeight;
 }
 
 function clampChordBeat(song: SongData, measureIndex: number, beat: number, duration: number): number {
@@ -153,6 +159,8 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
     playbackTick,
     colorScheme,
     showGuides,
+    labelMode = 'degree',
+    staffSpacing = 'default',
     activeVoice,
     entryMode,
     onChordEdit,
@@ -179,6 +187,8 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
   const setCurrentDurationTicks = keyboardPlumbing?.setCurrentDurationTicks ?? setInternalDurationTicks;
 
   const setActiveVoice = useUIStore((s) => s.setActiveVoice);
+
+  const melodyRowHeight = useMemo(() => melodyRowHeightPx(staffSpacing), [staffSpacing]);
 
   const [hoverHit, setHoverHit] = useState<EditorCanvasHit | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -269,13 +279,17 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
     // Main canvas layer stack (bottom → top). Keep in sync with hitTest.ts global Z-order notes.
     // drawGridBackground → drawChordBlocks → drawNoteBlocks → drawGuideOverlay → drawPlaybackHighlight → hover/selection → cursor.
     drawGridBackground(ctx, song, viewport, h);
-    drawChordBlocks(ctx, song, viewport, theoryEngine, { colorScheme });
-    drawNoteBlocks(ctx, song, viewport, { colorScheme });
+    drawChordBlocks(ctx, song, viewport, theoryEngine, { colorScheme, labelMode });
+    drawNoteBlocks(ctx, song, viewport, {
+      colorScheme,
+      labelMode,
+      melodyRowHeight,
+    });
     if (showGuides) {
-      drawGuideOverlay(ctx, song, viewport, colorScheme);
+      drawGuideOverlay(ctx, song, viewport, colorScheme, { melodyRowHeight });
     }
 
-    drawPlaybackHighlight(ctx, song, viewport, playbackTick);
+    drawPlaybackHighlight(ctx, song, viewport, playbackTick, melodyRowHeight);
 
     const strokeRect = (x: number, y: number, rw: number, rh: number, stroke: string, fill?: string) => {
       ctx.save();
@@ -330,7 +344,17 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
     }
 
     drawPlaybackCursor(ctx, song, viewport, playbackTick, h);
-  }, [song, viewport, selection, hoverHit, playbackTick, colorScheme, showGuides]);
+  }, [
+    song,
+    viewport,
+    selection,
+    hoverHit,
+    playbackTick,
+    colorScheme,
+    showGuides,
+    labelMode,
+    melodyRowHeight,
+  ]);
 
   useEffect(() => {
     paint();
@@ -344,7 +368,7 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
       const parent = canvas.parentElement;
       const cssW = parent?.clientWidth ?? 800;
       const contentW = Math.max(visibleMeasuresWidthPx(song, viewport), cssW);
-      const cssH = canvasHeightPx();
+      const cssH = canvasHeightPx(melodyRowHeight);
       const dpr = window.devicePixelRatio || 1;
       canvas.style.width = `${contentW}px`;
       canvas.style.height = `${cssH}px`;
@@ -364,7 +388,7 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
       ro?.disconnect();
       window.removeEventListener('resize', resize);
     };
-  }, [song, viewport, scheduleRedraw]);
+  }, [song, viewport, scheduleRedraw, melodyRowHeight]);
 
   const endDrag = useCallback(
     (canvas: HTMLCanvasElement, clientX: number, clientY: number) => {
@@ -398,7 +422,7 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
           if (!note.isRest) {
             const vy = end.y;
             const rel = viewportYToStaffRelativeY(vy, viewport.scrollY);
-            const grid = nearestPitchGridFromStaffRelY(rel);
+            const grid = nearestPitchGridFromStaffRelY(rel, melodyRowHeight);
             const po = diatonicRowToDegreeAndOctave(grid.diatonicRow);
             newSd = po.scaleDegree;
             newOct = po.octave;
@@ -426,7 +450,7 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
       }
       sessionRef.current = null;
     },
-    [onChordEdit, onNoteEdit, song, viewport.scrollY, viewport.zoom],
+    [onChordEdit, onNoteEdit, song, viewport.scrollY, viewport.zoom, melodyRowHeight],
   );
 
   const handlePointerDown = (e: ReactPointerEvent<HTMLCanvasElement>) => {
@@ -437,7 +461,7 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
     const cx = e.clientX ?? 0;
     const cy = e.clientY ?? 0;
     const { x: vx, y: vy } = pointerEventToViewportXY(canvas, cx, cy);
-    const hit = hitTestEditorCanvas(vx, vy, song, viewport);
+    const hit = hitTestEditorCanvas(vx, vy, song, viewport, melodyRowHeight);
 
     if (typeof canvas.setPointerCapture === 'function') {
       canvas.setPointerCapture(e.pointerId);
@@ -515,7 +539,7 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
 
     if (!sess) {
       const { x: vx, y: vy } = pointerEventToViewportXY(canvas, mcx, mcy);
-      const hit = hitTestEditorCanvas(vx, vy, song, viewport);
+      const hit = hitTestEditorCanvas(vx, vy, song, viewport, melodyRowHeight);
       setHoverHit(hit);
       scheduleRedraw();
       return;

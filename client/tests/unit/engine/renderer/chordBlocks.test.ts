@@ -181,7 +181,7 @@ describe('chordBlocks — canvas draw calls (TASK-2.14)', () => {
     const expectedRoman = theoryEngine.toRomanNumeral(ch, 'major');
     const { ctx, fillText } = createChordBlocksDrawContext();
 
-    drawChordBlocks(ctx, song, viewport, theoryEngine);
+    drawChordBlocks(ctx, song, viewport, theoryEngine, { labelMode: 'roman' });
 
     expect(expectedRoman).toBe('I');
     expect(fillText).toHaveBeenCalledWith(

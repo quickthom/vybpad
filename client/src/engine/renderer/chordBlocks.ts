@@ -1,5 +1,6 @@
 import type { ChordEvent, NoteName, ScaleDegree, ScaleType, SongData, Viewport } from '@vybpad/shared';
 
+import type { EditorLabelMode } from '../../types/editorChrome';
 import type { TheoryEngine } from '../theory/theoryEngine';
 import { noteNameToMidiBase } from '../theory/noteNames';
 import { resolveSecondaryTarget } from '../theory/secondaryChords';
@@ -206,6 +207,8 @@ export interface DrawChordBlocksOptions {
   colorScheme?: ChordColorScheme;
   /** When false, only the Roman line is drawn (narrow blocks). Default true when width ≥ 56px. */
   showAbsoluteChordName?: boolean;
+  /** INTERFACES.md EditorSettingsPanel — how chord blocks are labeled. */
+  labelMode?: EditorLabelMode;
 }
 
 /**
@@ -220,6 +223,7 @@ export function drawChordBlocks(
   options?: DrawChordBlocksOptions,
 ): void {
   const colorScheme = options?.colorScheme ?? 'diatonic';
+  const labelMode: EditorLabelMode = options?.labelMode ?? 'degree';
   const start = viewport.startMeasure;
   const end = Math.min(start + viewport.measureCount, song.measures.length);
 
@@ -254,8 +258,13 @@ export function drawChordBlocks(
       ctx.stroke();
 
       const { romanLine, absoluteLine } = chordBlockLabelLines(chord, key, scale, theory);
+      const degreeLine = String(chord.scaleDegree);
       const wantAbsoluteLine = options?.showAbsoluteChordName !== false;
-      const showTwoLines = wantAbsoluteLine && w >= 48 && h >= 36 && absoluteLine.length > 0;
+
+      if (labelMode === 'off') {
+        ctx.restore();
+        continue;
+      }
 
       const primaryStyle = chordBlockTextStyle(fill, DARK_LABEL);
       ctx.textAlign = 'center';
@@ -270,21 +279,46 @@ export function drawChordBlocks(
       }
       ctx.fillStyle = primaryStyle.fill;
 
-      if (showTwoLines) {
-        ctx.fillText(romanLine, x + w / 2, y + 14);
-        ctx.shadowBlur = 0;
-        ctx.font =
-          '500 10px ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-        const absStyle = chordBlockTextStyle(fill, SECONDARY_LABEL);
-        ctx.fillStyle = absStyle.fill;
-        if (absStyle.shadow) {
-          ctx.shadowColor = 'rgba(0,0,0,0.35)';
-          ctx.shadowOffsetY = 1;
-          ctx.shadowBlur = 2;
+      if (labelMode === 'degree') {
+        ctx.fillText(degreeLine, x + w / 2, y + h / 2);
+      } else if (labelMode === 'roman') {
+        const showRomanPlusAbsolute =
+          wantAbsoluteLine && w >= 48 && h >= 36 && absoluteLine.length > 0;
+        if (showRomanPlusAbsolute) {
+          ctx.fillText(romanLine, x + w / 2, y + 14);
+          ctx.shadowBlur = 0;
+          ctx.font =
+            '500 10px ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+          const absStyle = chordBlockTextStyle(fill, SECONDARY_LABEL);
+          ctx.fillStyle = absStyle.fill;
+          if (absStyle.shadow) {
+            ctx.shadowColor = 'rgba(0,0,0,0.35)';
+            ctx.shadowOffsetY = 1;
+            ctx.shadowBlur = 2;
+          }
+          ctx.fillText(absoluteLine, x + w / 2, y + 30);
+        } else {
+          ctx.fillText(romanLine, x + w / 2, y + h / 2);
         }
-        ctx.fillText(absoluteLine, x + w / 2, y + 30);
-      } else {
-        ctx.fillText(romanLine, x + w / 2, y + h / 2);
+      } else if (labelMode === 'both') {
+        const showTwo = w >= 40 && h >= 32;
+        if (showTwo) {
+          ctx.fillText(romanLine, x + w / 2, y + 14);
+          ctx.shadowBlur = 0;
+          ctx.font =
+            '500 10px ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+          const degStyle = chordBlockTextStyle(fill, SECONDARY_LABEL);
+          ctx.fillStyle = degStyle.fill;
+          if (degStyle.shadow) {
+            ctx.shadowColor = 'rgba(0,0,0,0.35)';
+            ctx.shadowOffsetY = 1;
+            ctx.shadowBlur = 2;
+          }
+          ctx.fillText(degreeLine, x + w / 2, y + 30);
+        } else {
+          ctx.font = '600 11px ui-sans-serif, system-ui, sans-serif';
+          ctx.fillText(`${romanLine} · ${degreeLine}`, x + w / 2, y + h / 2);
+        }
       }
 
       ctx.restore();

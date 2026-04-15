@@ -2,6 +2,7 @@ import type { ChordEvent, ProjectResponse, SongData, Track, TrackRole } from '@v
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
+import { EditorSettingsPanel } from '../components/panels/EditorSettingsPanel';
 import { KeyScaleChangeDialog } from '../components/common/KeyScaleChangeDialog';
 import { LoopBar } from '../components/controls/LoopBar';
 import { MidiExportControls } from '../components/controls/MidiExportControls';
@@ -38,13 +39,8 @@ import { EntryModeToggle } from '../components/editor/EntryModeToggle';
 import { formatTransportBeat, getPlaybackEngine, getPlaybackInitErrorMessage } from '../engine/audio';
 import { useAuthStore } from '../store/authStore';
 import { syncPlaybackEngineWithSong, usePlaybackStore } from '../store/playbackStore';
-import {
-  EDITOR_SCROLL_STEP_Y,
-  withResetZoom,
-  withScrollYDelta,
-  withZoomIn,
-  withZoomOut,
-} from '../utils/viewportNavigation';
+import { withResetZoom, withScrollYDelta, withZoomIn, withZoomOut } from '../utils/viewportNavigation';
+import { melodyRowHeightPx } from '../utils/staffSpacing';
 import { readPlainTextFromClipboard, writePlainTextToClipboard } from '../utils/clipboardTransport';
 import { parseSelectionClipboardPayloadJson } from '../utils/selectionClipboard';
 import { buildDefaultSong, useSongStore } from '../store/songStore';
@@ -160,9 +156,17 @@ export function EditorLayout() {
   const setActiveVoice = useUIStore((s) => s.setActiveVoice);
   const showGuides = useUIStore((s) => s.showGuides);
   const colorScheme = useUIStore((s) => s.colorScheme);
+  const labelMode = useUIStore((s) => s.labelMode);
+  const staffSpacing = useUIStore((s) => s.staffSpacing);
+  const setEntryMode = useUIStore((s) => s.setEntryMode);
+  const setShowGuides = useUIStore((s) => s.setShowGuides);
+  const setColorScheme = useUIStore((s) => s.setColorScheme);
+  const setLabelMode = useUIStore((s) => s.setLabelMode);
+  const setStaffSpacing = useUIStore((s) => s.setStaffSpacing);
   const activePanels = useUIStore((s) => s.activePanels);
   const togglePanel = useUIStore((s) => s.togglePanel);
   const mixerOpen = activePanels.has('mixer');
+  const settingsOpen = activePanels.has('settings');
 
   const [selectedMeasures, setSelectedMeasures] = useState<[number, number] | null>(null);
   const [tempoMeterDialogOpen, setTempoMeterDialogOpen] = useState(false);
@@ -232,11 +236,13 @@ export function EditorLayout() {
       return;
     }
     if (id === 'scrollUp') {
-      setViewport(withScrollYDelta(useUIStore.getState().viewport, -EDITOR_SCROLL_STEP_Y));
+      const step = melodyRowHeightPx(useUIStore.getState().staffSpacing);
+      setViewport(withScrollYDelta(useUIStore.getState().viewport, -step));
       return;
     }
     if (id === 'scrollDown') {
-      setViewport(withScrollYDelta(useUIStore.getState().viewport, EDITOR_SCROLL_STEP_Y));
+      const step = melodyRowHeightPx(useUIStore.getState().staffSpacing);
+      setViewport(withScrollYDelta(useUIStore.getState().viewport, step));
       return;
     }
     if (id === 'moveSelectionLeft' || id === 'moveSelectionRight') {
@@ -881,10 +887,21 @@ export function EditorLayout() {
             type="button"
             onClick={() => togglePanel('mixer')}
             aria-expanded={mixerOpen}
+            aria-pressed={mixerOpen}
             aria-controls={mixerOpen ? 'vybpad-panel-mixer' : undefined}
             className="inline-flex h-10 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-4 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
           >
             Mixer
+          </button>
+          <button
+            type="button"
+            onClick={() => togglePanel('settings')}
+            aria-expanded={settingsOpen}
+            aria-pressed={settingsOpen}
+            aria-controls={settingsOpen ? 'vybpad-panel-settings' : undefined}
+            className="inline-flex h-10 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-4 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
+          >
+            Settings
           </button>
           <button
             ref={keyScaleTriggerRef}
@@ -1047,6 +1064,8 @@ export function EditorLayout() {
                 entryMode={entryMode}
                 showGuides={showGuides}
                 colorScheme={colorScheme}
+                labelMode={labelMode}
+                staffSpacing={staffSpacing}
                 onChordEdit={editChord}
                 onNoteEdit={editNote}
                 onNoteEditBatch={editNoteBatch}
@@ -1082,15 +1101,39 @@ export function EditorLayout() {
             onEditTempoMeter={() => setTempoMeterDialogOpen(true)}
           />
         </div>
-        {mixerOpen ? (
-          <aside
-            id="vybpad-panel-mixer"
-            className="flex w-[288px] shrink-0 flex-col border-l border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)]"
-            role="complementary"
-            aria-label="Mixer"
-          >
-            <MixerPanel bandConfig={song.bandConfig} onTrackChange={handleTrackChange} />
-          </aside>
+        {mixerOpen || settingsOpen ? (
+          <div className="flex max-h-full min-h-0 w-[288px] min-w-[240px] max-w-[400px] shrink-0 flex-col overflow-y-auto border-l border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)]">
+            {mixerOpen ? (
+              <aside
+                id="vybpad-panel-mixer"
+                role="complementary"
+                aria-label="Mixer"
+                className={
+                  settingsOpen
+                    ? 'shrink-0 border-b border-[var(--color-border,#E5E7EB)]'
+                    : 'flex min-h-0 min-w-0 flex-1 flex-col'
+                }
+              >
+                <MixerPanel bandConfig={song.bandConfig} onTrackChange={handleTrackChange} />
+              </aside>
+            ) : null}
+            {settingsOpen ? (
+              <div id="vybpad-panel-settings" className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+                <EditorSettingsPanel
+                  entryMode={entryMode}
+                  labelMode={labelMode}
+                  colorScheme={colorScheme}
+                  showGuides={showGuides}
+                  staffSpacing={staffSpacing}
+                  onEntryModeChange={setEntryMode}
+                  onLabelModeChange={setLabelMode}
+                  onColorSchemeChange={setColorScheme}
+                  onShowGuidesChange={setShowGuides}
+                  onStaffSpacingChange={setStaffSpacing}
+                />
+              </div>
+            ) : null}
+          </div>
         ) : null}
       </div>
       <TempoMeterAtMeasureDialog
