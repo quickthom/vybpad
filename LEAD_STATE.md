@@ -32,39 +32,29 @@ You are the Tech Lead. Per HITL direction, you shall not perform any task or por
 
 ---
 
-## Session continuity (2026-04-15) — Phase 7
+## Session continuity (2026-04-15) — Phase 7 closed
 
-**Authoritative task rows:** `TASK_STATUS.md` (this section is recovery/orchestration only).
+**Authoritative task rows:** `TASK_STATUS.md` (Phase 8 stub); Phase 7 detail in `TASK_STATUS_ARCHIVE.md`.
 
 ### `develop` / remote
 
-- **Sync:** `git pull origin develop` before spawning agents.
+- **Tip:** Phase 7 milestone integrated; `CHANGELOG.md` Phase 7 entry (2026-04-15); `UX_GUIDELINES` v1.4 on `develop`.
 
-### Phase 7 — Wave 2 (merged on `develop`)
+### Phase 7 — outcome summary
 
-| Task | Status | PR | Notes |
-|------|--------|-----|--------|
-| 7.1–7.5 | merged | #64–#68 | Shortcut stack + clipboard + nav/transport (see `TASK_STATUS_ARCHIVE` / table) |
+| Wave | Content | PRs |
+|------|---------|-----|
+| 7.1–7.5 | Shortcuts + clipboard + nav | #64–#68 |
+| 7.6–7.7 | Settings + piano (EditorLayout integration) | #70, #69 |
+| 7.10 | Shortcut E2E | #71 |
+| 7.8 | UI polish + Designer `UX_GUIDELINES` §9 clarification | #72 + Designer commit `3c38bd9` |
+| 7.9 | No separate PR — `EditorViewportGate` + F-07 E2E (pre-existing) | — |
 
-### Phase 7 — Wave 3 (merged 2026-04-15)
+- **TASK-7.0** cleanup: not run (optional debt).
 
-| Task | Status | PR | Notes |
-|------|--------|-----|--------|
-| 7.6 | merged | [#70](https://github.com/quickthom/vybpad/pull/70) | Reviewer block on `EditorCanvas`/`melodyRowHeight` remediated (`6eae0fb`); merged to `develop`. |
-| 7.7 | merged | [#69](https://github.com/quickthom/vybpad/pull/69) | Integration merge `b884158` combined settings + piano in `EditorLayout`; then merged to `develop`. |
+### Next
 
-- **TASK-7.0** (phase-start cleanup): still **pending** — optional.
-
-- **E2E / parallel agents:** PAT-030 — distinct Playwright port pair per worktree when multiple agents run full CI.
-
-### Worktrees / branches
-
-- Wave 3 feature branches merged; remove idle worktrees per PAT-017.
-
-### Pipeline (plan)
-
-- **Wave 4 (current):** TASK-7.10 — QA Playwright E2E for registered shortcuts (`TASK_STATUS.md`).
-- **Wave 5–6:** 7.8 Designer + Builder polish → 7.9 min width (`useMinViewport1024` / UX §4).
+- **Phase 8** — Final QA & Deployment (`ROADMAP.md`); populate `TASK_STATUS.md` Phase 8 table when first wave is briefed.
 
 ### Local CI caveat (unchanged)
 
