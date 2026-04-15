@@ -426,6 +426,10 @@ interface EditorCanvasProps {
   colorScheme: "diatonic" | "major";
   onChordEdit: (measureIndex: number, event: ChordEditAction) => void;
   onNoteEdit: (measureIndex: number, voice: number, event: NoteEditAction) => void;
+  /** TASK-7.3 — optional batched note edits (split/tie); one store transaction when wired to `SongStore.editNoteBatch` (single undo step). */
+  onNoteEditBatch?: (
+    operations: ReadonlyArray<{ measureIndex: number; voice: 0 | 1 | 2 | 3; action: NoteEditAction }>,
+  ) => void;
   onSelectionChange: (selection: Selection | null) => void;
   onViewportChange: (viewport: Viewport) => void;
   getSongAfterMutation?: () => SongData;  // post-mutation store snapshot for keyboard auto-advance; optional escape hatch for React render-cycle staleness
@@ -547,6 +551,10 @@ interface SongStore {
   // Mutations (all produce undo entries)
   editChord: (measureIndex: number, action: ChordEditAction) => void;
   editNote: (measureIndex: number, voice: number, action: NoteEditAction) => void;
+  /** TASK-7.3 — multiple note edits in one Immer transaction → one undo snapshot (PAT-009). */
+  editNoteBatch: (
+    operations: ReadonlyArray<{ measureIndex: number; voice: 0 | 1 | 2 | 3; action: NoteEditAction }>,
+  ) => void;
   setMeasureChanges: (measureIndex: number, changes: MeasureChanges) => void;
   addMeasures: (atIndex: number, count: number) => void;
   deleteMeasures: (start: number, end: number) => void;
