@@ -148,7 +148,7 @@ export function LoginForm() {
         <button
           type="submit"
           disabled={submitting}
-          className="mt-2 inline-flex h-10 w-full items-center justify-center rounded-lg bg-[var(--color-primary,#4F46E5)] px-4 text-sm font-medium text-[var(--color-text-on-primary,#FFFFFF)] hover:bg-[var(--color-primary-hover,#4338CA)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus-ring,#4F46E5)] disabled:cursor-not-allowed disabled:bg-[var(--color-surface-muted,#F9FAFB)] disabled:text-[var(--color-text-muted,#9CA3AF)]"
+          className="mt-2 inline-flex h-10 w-full items-center justify-center rounded-lg bg-[var(--color-primary,#4F46E5)] px-4 text-sm font-medium text-[var(--color-text-on-primary,#FFFFFF)] outline-none hover:bg-[var(--color-primary-hover,#4338CA)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-[var(--color-surface-muted,#F9FAFB)] disabled:text-[var(--color-text-muted,#9CA3AF)]"
         >
           {submitting ? 'Signing in…' : 'Sign in'}
         </button>
