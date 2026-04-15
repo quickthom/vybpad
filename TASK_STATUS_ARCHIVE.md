@@ -136,3 +136,21 @@
 **Milestone:** User can use parallel minor borrow, V/V, key/scale changes, tempo/meter changes, multiple voices, and hear correct playback.
 
 ---
+
+## Phase 6 — MIDI Export & StudioOne Integration
+
+**Goal:** Export MIDI Type 1; StudioOne import validation. **Archived from `TASK_STATUS.md` 2026-04-15.** `develop` @ **`0dbcc21`** (after TASK-6.7 #58).
+
+| Task | Role | PR | Squash / tip on `develop` | Notes |
+|---|---|---|---|---|
+| 6.1 | Builder + QA | [#53](https://github.com/quickthom/vybpad/pull/53) | `abda90f` | Type 1 MIDI, 480 PPQN |
+| 6.2 | Builder + QA | [#54](https://github.com/quickthom/vybpad/pull/54) | `23b068c` | FF 01 chord-name text events |
+| 6.3 | Builder + QA | [#55](https://github.com/quickthom/vybpad/pull/55) | `ec92791` | Tempo map (FF 51 / FF 58 conductor) |
+| 6.4 | Builder + QA | [#57](https://github.com/quickthom/vybpad/pull/57) | `510696c` | Export UI + `TransportControls` `endContent` (merged after #55/#56) |
+| 6.5 | Builder + QA | [#56](https://github.com/quickthom/vybpad/pull/56) | `a7278af` | Drag-to-DAW `createDragBlob` |
+| 6.6 | QA | — | — | **HITL:** Live StudioOne import + chord-track open question — QA delivered validation protocol (STATUS_UPDATE 2026-04-15); no automated merge artifact |
+| 6.7 | QA | [#58](https://github.com/quickthom/vybpad/pull/58) | `0dbcc21` | `midiExporter.integration.test.ts` |
+
+**Milestone:** User exports `.mid` from transport (download + drag); integration tests cover exporter contracts; StudioOne checklist awaits HITL where PreSonus host is available.
+
+---
