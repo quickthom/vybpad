@@ -12,7 +12,7 @@ Phases 0 (7/7), 1A (7/7), 1B (6/6), Phase 2 (15/15), Phase 3 (10/10), Phase 4 (1
 
 ## Phase 7 — Keyboard Shortcuts & Polish
 
-**Status:** active — Wave 3: TASK-7.6 + TASK-7.7 **in review** (PRs open; awaiting Reviewer).
+**Status:** active — Wave 3: TASK-7.6 **merged** to `develop` (PR #70); TASK-7.7 **integrate then merge** — rebase/merge `develop` into `phase-7/piano-keyboard-panel`, combine `EditorLayout` (settings + piano), then close PR #69.
 
 | Task | Role | Branch | Status | PR | Depends | Notes |
 |---|---|---|---|---|---|---|
@@ -22,8 +22,8 @@ Phases 0 (7/7), 1A (7/7), 1B (6/6), Phase 2 (15/15), Phase 3 (10/10), Phase 4 (1
 | 7.3 | Builder | — | merged | #66 | 7.2, 7.1, 2.1 | squash `72ebbe2`; split/tie/triplet + `editNoteBatch`; Slash registration fix |
 | 7.4 | Builder | — | merged | #67 | 7.3, 7.1, 2.1 | squash `a98b2b0`; clipboard JSON + SongStore build/apply; Reviewer approve |
 | 7.5 | Builder | — | merged | #68 | 7.1, 7.4 | squash `43cfa7c`; nav + transport shortcuts; Reviewer approve |
-| 7.6 | Builder | phase-7/settings-panel | in-review | #70 | Wave 0 contract prep, develop | Builder STATUS_UPDATE: PR ready; checklist present; mergeable |
-| 7.7 | Builder | phase-7/piano-keyboard-panel | in-review | #69 | 1A.2, 0.2, develop | PR open; checklist present; mergeable |
+| 7.6 | Builder | — | merged | #70 | Wave 0 contract prep, develop | merge commit on `develop` after remediation `6eae0fb`; settings panel + staff spacing |
+| 7.7 | Builder | phase-7/piano-keyboard-panel | in-progress | #69 | 1A.2, 0.2, develop | First review: recommend approve (warnings). **Integration required:** branch predates merged 7.6 — merge `develop`, unify `EditorLayout` + resolve dup `INTERFACES` if any |
 | 7.8 | Designer + Builder | — | pending | — | 7.1–7.7 | UI polish pass |
 | 7.9 | Builder | — | pending | — | 7.8 | minimum 1024px responsive guard |
 | 7.10 | QA | — | pending | — | 7.1–7.5 | shortcut E2E coverage |
