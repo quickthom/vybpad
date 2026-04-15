@@ -2,7 +2,6 @@ import type { MeasureChanges, SongData, TimeSignature } from '@vybpad/shared';
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 
 import { getMeterAtMeasure, getTempoAtMeasure } from '../../engine/renderer/tickUtils';
-import { useToastStore } from '../../store/toastStore';
 import { isValidMeter, isValidTempo } from '../../utils/measureChangeValidation';
 
 export interface TempoMeterAtMeasureDialogProps {
@@ -38,7 +37,6 @@ export function TempoMeterAtMeasureDialog({
   const panelRef = useRef<HTMLDivElement>(null);
   const onDismissRef = useRef(onDismiss);
   onDismissRef.current = onDismiss;
-  const showErrorToast = useToastStore((s) => s.showError);
   const [tempoStr, setTempoStr] = useState('');
   const [numStr, setNumStr] = useState('4');
   const [denStr, setDenStr] = useState('4');
@@ -111,13 +109,11 @@ export function TempoMeterAtMeasureDialog({
     // Reject decimals, scientific notation, and non-digits — do not round (INTERFACES: integer BPM 20–300).
     if (trimmed === '' || !/^\d+$/.test(trimmed)) {
       setInlineError(tempoMsg);
-      showErrorToast(tempoMsg);
       return;
     }
     const tempoParsed = Number.parseInt(trimmed, 10);
     if (!isValidTempo(tempoParsed)) {
       setInlineError(tempoMsg);
-      showErrorToast(tempoMsg);
       return;
     }
 
@@ -128,7 +124,6 @@ export function TempoMeterAtMeasureDialog({
       const msg =
         'Time signature must use a numerator from 1 to 32 and a denominator of 1, 2, 4, 8, 16, or 32.';
       setInlineError(msg);
-      showErrorToast(msg);
       return;
     }
 
@@ -206,6 +201,8 @@ export function TempoMeterAtMeasureDialog({
                 value={numStr}
                 onChange={(e) => setNumStr(e.target.value)}
                 className="mt-1 w-20 rounded-lg border border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)] px-3 py-2 font-mono text-sm outline-none focus:border-[var(--color-primary,#4F46E5)] focus:ring-1 focus:ring-[var(--color-primary,#4F46E5)]"
+                aria-invalid={inlineError ? true : undefined}
+                aria-describedby={inlineError ? 'vybpad-tempo-meter-error' : undefined}
               />
             </div>
             <span className="pb-2 text-sm text-[var(--color-text-muted,#9CA3AF)]" aria-hidden="true">
@@ -220,6 +217,8 @@ export function TempoMeterAtMeasureDialog({
                 value={denStr}
                 onChange={(e) => setDenStr(e.target.value)}
                 className="mt-1 block rounded-lg border border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)] px-3 py-2 text-sm outline-none focus:border-[var(--color-primary,#4F46E5)] focus:ring-1 focus:ring-[var(--color-primary,#4F46E5)]"
+                aria-invalid={inlineError ? true : undefined}
+                aria-describedby={inlineError ? 'vybpad-tempo-meter-error' : undefined}
               >
                 {DENOM_OPTIONS.map((d) => (
                   <option key={d} value={String(d)}>

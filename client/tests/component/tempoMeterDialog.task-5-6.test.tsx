@@ -97,7 +97,7 @@ describe('TempoMeterAtMeasureDialog — TASK-5.6', () => {
     fireEvent.change(screen.getByLabelText(/tempo \(bpm\)/i), { target: { value: '10' } });
     fireEvent.click(screen.getByRole('button', { name: /^apply$/i }));
     expect(screen.getByRole('alert')).toBeTruthy();
-    expect(showErrorSpy).toHaveBeenCalled();
+    expect(showErrorSpy).not.toHaveBeenCalled();
     expect(onApply).not.toHaveBeenCalled();
     showErrorSpy.mockRestore();
   });
@@ -117,7 +117,7 @@ describe('TempoMeterAtMeasureDialog — TASK-5.6', () => {
     fireEvent.change(screen.getByLabelText(/tempo \(bpm\)/i), { target: { value: '90.5' } });
     fireEvent.click(screen.getByRole('button', { name: /^apply$/i }));
     expect(screen.getByRole('alert')).toHaveTextContent(/whole number/i);
-    expect(showErrorSpy).toHaveBeenCalled();
+    expect(showErrorSpy).not.toHaveBeenCalled();
     expect(onApply).not.toHaveBeenCalled();
     showErrorSpy.mockRestore();
   });
