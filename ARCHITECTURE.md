@@ -258,6 +258,7 @@ These features exist in Hookpad but are **excluded or deferred** per the require
 | **DOM/UI integration** | Vitest + RTL | Verify DOM elements reflect state: note highlighting, chord display, meter/key indicators |
 | **User flows (E2E)** | Playwright | Enter chords → enter melody → play back → verify cursor movement → export MIDI → verify file |
 | **Accessibility** | Playwright + axe-core | Keyboard navigation, ARIA labels for non-canvas controls |
+| **Coverage metrics (optional)** | Vitest + `@vitest/coverage-v8` | HTML/text report via `npm run test:coverage`; **no enforced thresholds** until explicitly adopted — use for audits and gap triage only |
 
 **E2E harness (local):** Playwright must not start tests until **both** the API (`GET /api/health`) and the Vite dev server respond. Tests are executed locally; GitHub Actions is disabled. See `docs/CI_LOCAL.md` for the required pre-review sequence.
 
