@@ -14,8 +14,9 @@
 import type { NoteEvent, Selection, SongData, Viewport } from '@vybpad/shared';
 import { randomUUID } from 'node:crypto';
 
-import { chordFromKeyboardEvent, createShortcutManager } from '@/engine/keyboard/shortcutManager';
+import { createShortcutManager } from '@/engine/keyboard/shortcutManager';
 import type { ShortcutCommandId, ShortcutContext, ShortcutDefinition, ShortcutManager } from '@/engine/keyboard/shortcutTypes';
+import { TASK73_EDITOR_SHORTCUT_CHORDS } from '@/engine/keyboard/task73ShortcutChords';
 import {
   applyDurationTicksFromEditor,
   applyNoteShortcutCommandFromEditor,
@@ -56,14 +57,13 @@ function editorLayoutStyleOnCommand(id: ShortcutCommandId, ctx: EditorKeyboardCo
 }
 
 function registerTask73Bindings(mgr: ShortcutManager): void {
-  const rows: { init: Partial<KeyboardEventInit>; id: ShortcutCommandId }[] = [
-    { init: { key: '/', code: 'Slash' }, id: 'splitSelection' },
-    { init: { key: 't', code: 'KeyT' }, id: 'tieSelection' },
-    { init: { key: 'T', code: 'KeyT', shiftKey: true }, id: 'toggleTriplet' },
+  const rows: { id: keyof typeof TASK73_EDITOR_SHORTCUT_CHORDS }[] = [
+    { id: 'splitSelection' },
+    { id: 'tieSelection' },
+    { id: 'toggleTriplet' },
   ];
   for (const row of rows) {
-    const ev = keydown(row.init);
-    const chord = chordFromKeyboardEvent(ev);
+    const chord = TASK73_EDITOR_SHORTCUT_CHORDS[row.id];
     const def: ShortcutDefinition = {
       id: row.id,
       chord,

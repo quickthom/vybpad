@@ -14,8 +14,9 @@
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { chordFromKeyboardEvent, createShortcutManager } from '@/engine/keyboard/shortcutManager';
+import { createShortcutManager } from '@/engine/keyboard/shortcutManager';
 import type { ShortcutCommandId, ShortcutContext, ShortcutDefinition } from '@/engine/keyboard/shortcutTypes';
+import { TASK73_EDITOR_SHORTCUT_CHORDS } from '@/engine/keyboard/task73ShortcutChords';
 
 function keydown(
   init: Partial<KeyboardEventInit & { ctrlKey?: boolean; altKey?: boolean; shiftKey?: boolean; metaKey?: boolean }>,
@@ -35,11 +36,10 @@ function baseContext(over: Partial<ShortcutContext> = {}): ShortcutContext {
 
 function registerSplitTieTriplet(
   mgr: ReturnType<typeof createShortcutManager>,
-  rows: { init: Partial<KeyboardEventInit>; id: ShortcutCommandId }[],
+  rows: { init: Partial<KeyboardEventInit>; id: keyof typeof TASK73_EDITOR_SHORTCUT_CHORDS }[],
 ): void {
   for (const row of rows) {
-    const ev = keydown(row.init);
-    const chord = chordFromKeyboardEvent(ev);
+    const chord = TASK73_EDITOR_SHORTCUT_CHORDS[row.id];
     const def: ShortcutDefinition = {
       id: row.id,
       chord,

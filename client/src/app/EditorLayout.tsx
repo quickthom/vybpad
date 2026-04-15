@@ -21,6 +21,7 @@ import { ChordPalette, SecondaryChordInspector } from '../components/panels/Chor
 import { getKeyAtMeasure, getScaleAtMeasure } from '../engine/renderer/tickUtils';
 import { createShortcutManager } from '../engine/keyboard/shortcutManager';
 import type { ShortcutCommandId, ShortcutContext } from '../engine/keyboard/shortcutTypes';
+import { TASK73_EDITOR_SHORTCUT_CHORDS } from '../engine/keyboard/task73ShortcutChords';
 import { theoryEngine } from '../engine/theory';
 import {
   applyChordPalettePayloadFromEditor,
@@ -292,19 +293,19 @@ export function EditorLayout() {
       }),
       shortcutManager.registerShortcut({
         id: 'splitSelection',
-        chord: '/',
+        chord: TASK73_EDITOR_SHORTCUT_CHORDS.splitSelection,
         scope: 'editor',
         conflictPolicy: 'replace',
       }),
       shortcutManager.registerShortcut({
         id: 'tieSelection',
-        chord: 'T',
+        chord: TASK73_EDITOR_SHORTCUT_CHORDS.tieSelection,
         scope: 'editor',
         conflictPolicy: 'replace',
       }),
       shortcutManager.registerShortcut({
         id: 'toggleTriplet',
-        chord: 'Shift+T',
+        chord: TASK73_EDITOR_SHORTCUT_CHORDS.toggleTriplet,
         scope: 'editor',
         conflictPolicy: 'replace',
       }),
