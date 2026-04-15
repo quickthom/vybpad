@@ -377,4 +377,23 @@ Use a versioned JSON payload for editor copy/paste so future schema changes stay
 - Reject unknown clipboard versions cleanly and treat them as a no-op paste.
 - Preserve measure-relative offsets so paste can re-anchor the selection at the destination measure.
 
+## PAT-030: Parallel local E2E / multi-agent port isolation
+
+Playwright starts **both** the Fastify API and Vite (`playwright.config.ts` dual `webServer`). Default URLs are `http://127.0.0.1:5173` (client) and `http://127.0.0.1:3001` (API). **Two processes cannot bind the same port** — concurrent Builders/QAs in different worktrees, or a dev server left running, will cause flaky or hard failures.
+
+**Binding rule:** Before `./scripts/ci-local.sh` or `npm run test:e2e` in a worktree, set a **unique port pair** and matching origins (same numbers in all four):
+
+| Variable | Example (agent B) |
+|---|---|
+| `PLAYWRIGHT_BASE_URL` | `http://127.0.0.1:5273` |
+| `PLAYWRIGHT_API_URL` | `http://127.0.0.1:3101` |
+| `CORS_ORIGIN` | Same host/port as `PLAYWRIGHT_BASE_URL` |
+| `VITE_API_URL` | Same host/port as `PLAYWRIGHT_API_URL` |
+
+Put them in that worktree’s **root `.env`** (gitignored) or export in the shell before CI. `playwright.config.ts` passes `PORT`, `VITE_API_URL`, and `CORS_ORIGIN` into both webServer children so stacks stay consistent.
+
+**Alternatives:** Run E2E **sequentially** across agents; or use `PLAYWRIGHT_SKIP_WEBSERVER=1` only when you already started matching servers manually (see README).
+
+**Who may apply:** Builder, QA, anyone running local E2E — no Tech Lead approval required for choosing unused ports.
+
 ---

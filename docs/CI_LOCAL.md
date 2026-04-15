@@ -100,3 +100,17 @@ E2E uses Playwright’s **dual `webServer`** setup: the suite waits for **both**
 
 `npm run e2e:devstack` is a convenience to run API + Vite in one terminal for manual debugging; the **CI-equivalent** path is `npm run test:e2e` with defaults so Playwright starts the stack.
 
+### Parallel agents / multiple worktrees (PAT-030)
+
+Each `npm run test:e2e` (and `./scripts/ci-local.sh`) spawns **its own** API + Vite on the ports implied by `PLAYWRIGHT_BASE_URL` and `PLAYWRIGHT_API_URL` (defaults **5173** and **3001**). If two agents run full E2E at once, **assign a different port pair per worktree** and set `CORS_ORIGIN` / `VITE_API_URL` to match (see [PATTERNS.md](../PATTERNS.md) PAT-030). Example for a second clone:
+
+```bash
+export PLAYWRIGHT_BASE_URL=http://127.0.0.1:5273
+export PLAYWRIGHT_API_URL=http://127.0.0.1:3101
+export CORS_ORIGIN=http://127.0.0.1:5273
+export VITE_API_URL=http://127.0.0.1:3101
+./scripts/ci-local.sh
+```
+
+Or put the same values in that worktree’s `.env` before running tests.
+

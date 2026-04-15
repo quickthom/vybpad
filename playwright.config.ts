@@ -45,14 +45,36 @@ function loadRootEnvFile(): void {
 
 loadRootEnvFile();
 
+/** HTTP(S) origin → port string for binding Playwright `webServer` children (PAT-030 — parallel agents). */
+function portFromHttpUrl(url: string, implicitDefault: string): string {
+  try {
+    const u = new URL(url);
+    if (u.port) return u.port;
+  } catch {
+    /* fall through */
+  }
+  return implicitDefault;
+}
+
 /**
  * E2E against the Vite client + Fastify API (ARCHITECTURE.md — Playwright).
  * @see ENVIRONMENTS.md — local E2E prerequisites and env vars.
  * @see PATTERNS.md PAT-029 — both API and client must be reachable before tests (avoids flaky auth/navigation).
+ * @see PATTERNS.md PAT-030 — use distinct `PLAYWRIGHT_BASE_URL` / `PLAYWRIGHT_API_URL` (ports) per parallel worktree so `npm run test:e2e` does not collide.
  */
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://127.0.0.1:5173';
 const apiOrigin = (process.env.PLAYWRIGHT_API_URL ?? 'http://127.0.0.1:3001').replace(/\/+$/, '');
 const apiHealthUrl = `${apiOrigin}/api/health`;
+const clientPort = portFromHttpUrl(baseURL, '5173');
+const apiPort = portFromHttpUrl(apiOrigin, '3001');
+
+/** Env passed to API + Vite dev children so CORS, client bundle, and `PORT` stay aligned with `baseURL` / `apiOrigin`. */
+const e2eStackEnv: NodeJS.ProcessEnv = {
+  ...process.env,
+  PORT: apiPort,
+  VITE_API_URL: apiOrigin,
+  CORS_ORIGIN: baseURL,
+};
 
 export default defineConfig({
   testDir: './client/tests/e2e',
@@ -84,16 +106,17 @@ export default defineConfig({
           timeout: 180_000,
           stdout: 'pipe',
           stderr: 'pipe',
+          env: e2eStackEnv,
         },
         {
           name: 'client',
-          command:
-            'npm run dev --workspace=@vybpad/client -- --host 127.0.0.1 --port 5173',
+          command: `npm run dev --workspace=@vybpad/client -- --host 127.0.0.1 --port ${clientPort}`,
           url: baseURL,
           reuseExistingServer: !process.env.CI,
           timeout: 180_000,
           stdout: 'pipe',
           stderr: 'pipe',
+          env: e2eStackEnv,
         },
       ],
 });

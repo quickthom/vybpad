@@ -46,21 +46,24 @@ export function viewportYToStaffRelativeY(viewportY: number, scrollY: number): n
 }
 
 /**
- * Inverse of `row * NOTE_HEIGHT + chromatic * (NOTE_HEIGHT/2)` (PAT-018): snap to the nearest
+ * Inverse of `row * rowHeight + chromatic * (rowHeight/2)` (PAT-018): snap to the nearest
  * diatonic row + chromatic offset in {-1,0,1} by brute force over a small row window.
  */
-export function nearestPitchGridFromStaffRelY(relY: number): {
+export function nearestPitchGridFromStaffRelY(
+  relY: number,
+  rowHeight: number = NOTE_HEIGHT,
+): {
   diatonicRow: number;
   chromatic: number;
 } {
-  const g = NOTE_HEIGHT / 2;
+  const g = rowHeight / 2;
   let bestD = Infinity;
   let best = { diatonicRow: 0, chromatic: 0 };
-  const rowLo = Math.max(0, Math.floor(relY / NOTE_HEIGHT) - 1);
-  const rowHi = Math.ceil(relY / NOTE_HEIGHT) + 4;
+  const rowLo = Math.max(0, Math.floor(relY / rowHeight) - 1);
+  const rowHi = Math.ceil(relY / rowHeight) + 4;
   for (let row = rowLo; row <= rowHi; row++) {
     for (const chromatic of [-1, 0, 1] as const) {
-      const y = row * NOTE_HEIGHT + chromatic * g;
+      const y = row * rowHeight + chromatic * g;
       const d = Math.abs(relY - y);
       if (d < bestD) {
         bestD = d;

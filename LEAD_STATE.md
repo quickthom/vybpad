@@ -38,32 +38,33 @@ You are the Tech Lead. Per HITL direction, you shall not perform any task or por
 
 ### `develop` / remote
 
-- **Sync:** `git pull origin develop` before spawning agents. `INTERFACES.md` on `develop` includes `SongStore.editNoteBatch` and `EditorCanvasProps.onNoteEditBatch`; `TASK_STATUS.md` marks **7.3 merged** (see table there for current rows).
+- **Sync:** `git pull origin develop` before spawning agents.
 
-### Phase 7 — Wave 2 progress
+### Phase 7 — Wave 2 (merged on `develop`)
 
 | Task | Status | PR | Notes |
 |------|--------|-----|--------|
-| 7.1 | merged | #64 | PAT-027 shortcut manager + shell wiring |
-| 7.2 | merged | #65 | Granular duration `ShortcutCommandId`s; duration keys via registry |
-| 7.3 | merged | #66 | Split/tie/triplet; `editNoteBatch`; `Slash` vs `/` registration fix (`task73ShortcutChords.ts`); Reviewer round 2 approve |
-| 7.4 | merged | #67 | Clipboard JSON; SongStore build/apply; PAT-028 |
-| 7.5 | merged | #68 | Nav + transport (`task75NavigationShortcutChords.ts`, `viewportNavigation.ts`); Reviewer warnings non-blocking |
+| 7.1–7.5 | merged | #64–#68 | Shortcut stack + clipboard + nav/transport (see `TASK_STATUS_ARCHIVE` / table) |
 
-- **TASK-7.0** (phase-start cleanup): still **pending** in `TASK_STATUS.md` — optional early merge; does not block 7.4+.
+### Phase 7 — Wave 3 (2026-04-15 STATUS_UPDATE)
 
-- **Wave 0 contracts:** Shortcut + clipboard shapes largely in `INTERFACES.md` / `PATTERNS.md` (PAT-027, PAT-028); TL extends `INTERFACES` when implementation discovers gaps (e.g. 7.2 duration command ids, 7.3 batch API on `SongStore` / `EditorCanvas`).
+| Task | Status | PR | Notes |
+|------|--------|-----|--------|
+| 7.6 | **in-review** | [#70](https://github.com/quickthom/vybpad/pull/70) | Builder finished: `EditorSettingsPanel`, `settings` panel, localStorage `vybpad:editorUiSettings:v1`; head `d3f4746`; **self-review checklist present**; mergeable. **Next:** spawn Reviewer per gate (QA/Builder handshake + local CI on tip). |
+| 7.7 | **in-review** | [#69](https://github.com/quickthom/vybpad/pull/69) | Piano panel + `piano` `activePanels`; checklist present; mergeable. **Next:** Reviewer when handshake complete. |
+
+- **TASK-7.0** (phase-start cleanup): still **pending** — optional; does not block Wave 3 PRs.
+
+- **E2E / parallel agents:** PAT-030 — distinct `PLAYWRIGHT_BASE_URL` / `PLAYWRIGHT_API_URL` (and matching `CORS_ORIGIN` / `VITE_API_URL`) per worktree when multiple agents run `./scripts/ci-local.sh`.
 
 ### Worktrees / branches
 
-- **Removed after merge:** `…/phase-7-split-tie-triplet` (TASK-7.3).
-- **Operator:** create a fresh worktree per concurrent Builder/QA pair under `<WORKTREE_ROOT>` (see `ENVIRONMENTS.md`); remove after merge.
+- Active feature branches: `phase-7/settings-panel`, `phase-7/piano-keyboard-panel` (see PRs above). Remove worktrees after merge per PAT-017.
 
 ### Pipeline (plan)
 
-- **Wave 2:** TASK-7.1–7.5 merged on `develop` (sequential shortcut waves complete).
-- **Wave 3:** 7.6 (settings) + 7.7 (piano panel) — parallel candidates with separate PAT-017 worktrees.
-- **Wave 4:** 7.10 E2E after 7.1–7.5 stable.
+- **Wave 3:** Reviewer → merge **#69** / **#70** (order: assess `INTERFACES`-adjacent overlap; likely independent).
+- **Wave 4:** 7.10 shortcut E2E after 7.1–7.5 stable (extend dependency to 7.6/7.7 when TL updates roadmap row if needed).
 - **Wave 5–6:** 7.8 (Designer + Builder) → 7.9 min width.
 
 ### Local CI caveat (unchanged)

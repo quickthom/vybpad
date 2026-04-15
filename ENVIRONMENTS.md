@@ -114,6 +114,8 @@ Run these before opening PRs.
 
 Requires the same **root** variables as local development (`DATABASE_URL`, `JWT_SECRET`, `JWT_REFRESH_SECRET`, etc.) when Playwright starts the stack. By default it launches **two** processes (Fastify + Vite) and waits for `/api/health` and the Vite origin. See the root **README** “End-to-end (Playwright)” section for the full procedure.
 
+When **multiple worktrees or agents** run `./scripts/ci-local.sh` or `npm run test:e2e` concurrently, each run must use a **different client/API port pair** — set `PLAYWRIGHT_BASE_URL`, `PLAYWRIGHT_API_URL`, `CORS_ORIGIN`, and `VITE_API_URL` consistently (see **PATTERNS.md** PAT-030 and **docs/CI_LOCAL.md**).
+
 ## Docker Compose (development)
 
 The repository includes `docker-compose.yml` (v3.8) with three services:
@@ -182,7 +184,7 @@ Security and secrets:
 ## Troubleshooting
 
 - **Database connection errors:** ensure `DATABASE_URL` is reachable and credentials match DB container/provider.
-- **Port conflicts:** ensure `PORT` and host ports (3001, 5173, 5432) are free or remap in `.env` and `docker-compose.yml`.
+- **Port conflicts:** ensure `PORT` and host ports (3001, 5173, 5432) are free or remap in `.env` and `docker-compose.yml`. For **parallel Playwright** runs, assign distinct ports per worktree (PAT-030); `playwright.config.ts` propagates `PORT` / `VITE_API_URL` / `CORS_ORIGIN` to spawned servers from `PLAYWRIGHT_*_URL`.
 - **Hot-reload in Docker:** if changes in mounted volumes are not picked up, check host OS Docker file-watching settings (macOS/Windows specifics).
 
 ---

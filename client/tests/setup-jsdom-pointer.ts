@@ -51,6 +51,40 @@ if (typeof HTMLDialogElement !== 'undefined' && typeof HTMLDialogElement.prototy
   };
 }
 
+/**
+ * Node 22+ can expose a partial `localStorage` (e.g. `--localstorage-file` without a path) where
+ * `clear` / `setItem` are missing — persistence tests need a full Storage surface.
+ */
+if (
+  typeof globalThis.localStorage !== 'undefined' &&
+  typeof globalThis.localStorage.clear !== 'function'
+) {
+  const store: Record<string, string> = {};
+  globalThis.localStorage = {
+    get length() {
+      return Object.keys(store).length;
+    },
+    clear(): void {
+      for (const k of Object.keys(store)) {
+        delete store[k];
+      }
+    },
+    getItem(key: string): string | null {
+      return Object.prototype.hasOwnProperty.call(store, key) ? store[key]! : null;
+    },
+    key(index: number): string | null {
+      const keys = Object.keys(store);
+      return keys[index] ?? null;
+    },
+    removeItem(key: string): void {
+      delete store[key];
+    },
+    setItem(key: string, value: string): void {
+      store[key] = String(value);
+    },
+  } as Storage;
+}
+
 if (typeof window !== 'undefined' && typeof window.PointerEvent === 'undefined') {
   window.PointerEvent = class PointerEvent extends window.MouseEvent {
     declare pointerId: number;

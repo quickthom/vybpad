@@ -196,6 +196,8 @@ The main worktree (`<REPO_ROOT>`) stays on `develop` and is your workspace (Tech
 
 After a task is merged, clean up: `git worktree remove <WORKTREE_ROOT>/<task-slug>`.
 
+**E2E port isolation (PAT-030):** Parallel agents that each run `./scripts/ci-local.sh` or `npm run test:e2e` must use **distinct `PLAYWRIGHT_BASE_URL` / `PLAYWRIGHT_API_URL` (and matching `CORS_ORIGIN` / `VITE_API_URL`) per worktree** so Playwright’s dual `webServer` stack does not fight for ports **5173** and **3001**. Include those exports (or a worktree `.env` snippet) in the Builder/QA brief when spawning concurrent full-CI runs.
+
 ### How to spawn
 
 Use the host’s agent-launch mechanism (i.e. **`Task`** with `subagent_type`). Include the full brief in the prompt — agents have no memory of prior sessions. For the persistent Designer, use the `resume` parameter on subsequent briefs to maintain their session context. **Verify spawn capability before starting a session**; if unavailable, stop and escalate.

@@ -2,6 +2,7 @@ import type { ChordEvent, SongData, Viewport } from '@vybpad/shared';
 
 import type { TheoryEngine } from '../theory/theoryEngine';
 import { theoryEngine } from '../theory';
+import { NOTE_HEIGHT } from './constants';
 import {
   beginRoundRectPath,
   computeNoteBlockRect,
@@ -108,6 +109,8 @@ export interface DrawGuideOverlayOptions {
   showGuides?: boolean;
   /** Defaults to shared {@link theoryEngine}. */
   theoryEngine?: TheoryEngine;
+  /** Melody row height from staff spacing (defaults to {@link NOTE_HEIGHT}). */
+  melodyRowHeight?: number;
 }
 
 /**
@@ -125,6 +128,7 @@ export function drawGuideOverlay(
     return;
   }
 
+  const melodyRowHeight = options.melodyRowHeight ?? NOTE_HEIGHT;
   const te = options.theoryEngine ?? theoryEngine;
 
   const start = viewport.startMeasure;
@@ -164,6 +168,7 @@ export function drawGuideOverlay(
           note,
           isRest: false,
           voiceIndex: v,
+          melodyRowHeight,
         });
 
         const baseFill = noteBlockFillColor(note, key, scale, colorScheme);

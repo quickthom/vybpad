@@ -1,5 +1,6 @@
 import type { ChordEvent, NoteEvent, SongData, Viewport } from '@vybpad/shared';
 
+import { NOTE_HEIGHT } from './constants';
 import { layoutChordBlock } from './chordBlocks';
 import { computeNoteBlockRect } from './noteBlocks';
 
@@ -67,7 +68,13 @@ function hitChordTopmost(x: number, y: number, song: SongData, viewport: Viewpor
  * Higher voice index and later list entries are painted on top. Hit-testing reverses that walk
  * (measures backward, voices 3→0, notes backward in each list) and returns the first match.
  */
-function hitNoteTopmost(x: number, y: number, song: SongData, viewport: Viewport): EditorCanvasHit | null {
+function hitNoteTopmost(
+  x: number,
+  y: number,
+  song: SongData,
+  viewport: Viewport,
+  melodyRowHeight: number,
+): EditorCanvasHit | null {
   const start = viewport.startMeasure;
   const end = Math.min(start + viewport.measureCount, song.measures.length);
   for (let mi = end - 1; mi >= start; mi--) {
@@ -89,6 +96,7 @@ function hitNoteTopmost(x: number, y: number, song: SongData, viewport: Viewport
           note,
           isRest: note.isRest,
           voiceIndex: v,
+          melodyRowHeight,
         });
         if (pointInBlockRect(x, y, rect)) {
           return { kind: 'note', measureIndex: mi, voiceIndex: v, note };
@@ -111,8 +119,14 @@ function hitNoteTopmost(x: number, y: number, song: SongData, viewport: Viewport
  * they win when a point lies in both regions (e.g. chord strip vs staff overlap when scrolled). Guide
  * overlay is above notes and is not hit-tested. We test notes first, then chords.
  */
-export function hitTestEditorCanvas(x: number, y: number, song: SongData, viewport: Viewport): EditorCanvasHit | null {
-  const noteHit = hitNoteTopmost(x, y, song, viewport);
+export function hitTestEditorCanvas(
+  x: number,
+  y: number,
+  song: SongData,
+  viewport: Viewport,
+  melodyRowHeight: number = NOTE_HEIGHT,
+): EditorCanvasHit | null {
+  const noteHit = hitNoteTopmost(x, y, song, viewport, melodyRowHeight);
   if (noteHit) {
     return noteHit;
   }

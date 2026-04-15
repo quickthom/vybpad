@@ -1,5 +1,6 @@
 import type { NoteEvent, NoteName, ScaleDegree, ScaleType, SongData, Viewport } from '@vybpad/shared';
 
+import type { EditorLabelMode } from '../../types/editorChrome';
 import { NOTE_HEIGHT } from './constants';
 import { pat010DiatonicHex, pat010MajorCentricHex } from './colorMaps';
 import {
@@ -188,8 +189,14 @@ export const REST_VERTICAL_ANCHOR: Pick<NoteEvent, 'scaleDegree' | 'octave' | 'c
   chromatic: 0,
 };
 
-function restTopY(scrollY: number): number {
-  return noteRowY(REST_VERTICAL_ANCHOR.scaleDegree, REST_VERTICAL_ANCHOR.octave, REST_VERTICAL_ANCHOR.chromatic, scrollY);
+function restTopY(scrollY: number, rowHeight: number): number {
+  return noteRowY(
+    REST_VERTICAL_ANCHOR.scaleDegree,
+    REST_VERTICAL_ANCHOR.octave,
+    REST_VERTICAL_ANCHOR.chromatic,
+    scrollY,
+    rowHeight,
+  );
 }
 
 export interface NoteBlockRect {
@@ -202,8 +209,9 @@ export interface NoteBlockRect {
 /** TASK-5.7 — subtle vertical stagger per melody voice so four lanes stay distinguishable (PAT-010 fills unchanged). */
 export const VOICE_LANE_Y_OFFSET_PX = 1.75;
 
-export function voiceLaneOffsetY(voice: 0 | 1 | 2 | 3): number {
-  return voice * VOICE_LANE_Y_OFFSET_PX;
+export function voiceLaneOffsetY(voice: 0 | 1 | 2 | 3, rowHeight: number = NOTE_HEIGHT): number {
+  const scale = rowHeight / NOTE_HEIGHT;
+  return voice * VOICE_LANE_Y_OFFSET_PX * scale;
 }
 
 export interface ComputeNoteBlockRectParams {
@@ -215,6 +223,8 @@ export interface ComputeNoteBlockRectParams {
   isRest: boolean;
   /** Melody voice 0–3; offsets Y within the row (TASK-5.7). Defaults to 0. */
   voiceIndex?: 0 | 1 | 2 | 3;
+  /** Staff spacing row height (defaults to PAT-012 {@link NOTE_HEIGHT}). */
+  melodyRowHeight?: number;
 }
 
 /**
@@ -223,12 +233,16 @@ export interface ComputeNoteBlockRectParams {
 export function computeNoteBlockRect(params: ComputeNoteBlockRectParams): NoteBlockRect {
   const { song, viewport, measureIndex, note, isRest } = params;
   const voice = params.voiceIndex ?? 0;
+  const rowHeight = params.melodyRowHeight ?? NOTE_HEIGHT;
+  const inset = Math.min(NOTE_BLOCK_VERTICAL_INSET, Math.max(1, Math.floor(rowHeight / 8)));
   const absTick = absoluteTickFromMeasurePosition(song, measureIndex, note.beat);
   const x = absoluteTickToViewportX(absTick, viewport, song);
   const w = note.duration * pixelsPerTick(viewport.zoom);
-  const rowTop = isRest ? restTopY(viewport.scrollY) : noteRowYFromNoteEvent(note, viewport.scrollY);
-  const y = rowTop + NOTE_BLOCK_VERTICAL_INSET + voiceLaneOffsetY(voice);
-  const height = NOTE_HEIGHT - 2 * NOTE_BLOCK_VERTICAL_INSET;
+  const rowTop = isRest
+    ? restTopY(viewport.scrollY, rowHeight)
+    : noteRowYFromNoteEvent(note, viewport.scrollY, rowHeight);
+  const y = rowTop + inset + voiceLaneOffsetY(voice, rowHeight);
+  const height = rowHeight - 2 * inset;
   return { x, y, width: w, height };
 }
 
@@ -239,6 +253,23 @@ export interface DegreeLabelParts {
   degreeNumeral: string;
   /** "+1" / "-1" style octave hint, or null when octave === 0 or rest. */
   octaveIndicator: string | null;
+}
+
+const ROMAN_BY_DEGREE: readonly string[] = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
+
+/** Roman-style line for a melody note (degree + chromatic prefix only; no chord quality). */
+export function formatNoteRomanLine(note: NoteEvent): string {
+  if (note.isRest) {
+    return '';
+  }
+  const base = ROMAN_BY_DEGREE[note.scaleDegree - 1] ?? '?';
+  let accidentalPrefix = '';
+  if (note.chromatic < 0) {
+    accidentalPrefix = '♭';
+  } else if (note.chromatic > 0) {
+    accidentalPrefix = '♯';
+  }
+  return `${accidentalPrefix}${base}`;
 }
 
 export function formatDegreeLabelParts(note: NoteEvent): DegreeLabelParts {
@@ -321,6 +352,10 @@ export interface DrawNoteBlocksOptions {
   /** When set, only this voice index (0–3) is drawn; otherwise all voices. */
   voiceIndex?: 0 | 1 | 2 | 3;
   colorScheme?: 'diatonic' | 'major';
+  /** INTERFACES.md — shared with toolbar settings; default `degree` matches numeric melody labels. */
+  labelMode?: EditorLabelMode;
+  /** Vertical pitch ladder step from staff spacing (defaults to {@link NOTE_HEIGHT}). */
+  melodyRowHeight?: number;
 }
 
 /**
@@ -334,6 +369,8 @@ export function drawNoteBlocks(
   options: DrawNoteBlocksOptions = {},
 ): void {
   const colorScheme = options.colorScheme ?? 'diatonic';
+  const labelMode: EditorLabelMode = options.labelMode ?? 'degree';
+  const melodyRowHeight = options.melodyRowHeight ?? NOTE_HEIGHT;
   const start = viewport.startMeasure;
   const end = Math.min(start + viewport.measureCount, song.measures.length);
   const voices: readonly (0 | 1 | 2 | 3)[] =
@@ -362,6 +399,7 @@ export function drawNoteBlocks(
           note,
           isRest: note.isRest,
           voiceIndex: v,
+          melodyRowHeight,
         });
         if (note.isRest) {
           fillRestHatch(ctx, rect.x, rect.y, rect.width, rect.height);
@@ -377,42 +415,69 @@ export function drawNoteBlocks(
         beginRoundRectPath(ctx, rect.x, rect.y, rect.width, rect.height, NOTE_BLOCK_CORNER_RADIUS);
         ctx.stroke();
 
-        const parts = formatDegreeLabelParts(note);
-        const cx = rect.x + rect.width / 2;
-        const cy = rect.y + rect.height / 2;
-        const { fillStyle, useShadow } = labelTextStyleForBackground(fill);
-        ctx.fillStyle = fillStyle;
-        if (useShadow) {
-          ctx.shadowColor = 'rgba(0,0,0,0.35)';
-          ctx.shadowBlur = 0;
-          ctx.shadowOffsetX = 0;
-          ctx.shadowOffsetY = 1;
-        } else {
-          ctx.shadowColor = 'transparent';
-        }
+        if (labelMode !== 'off') {
+          const parts = formatDegreeLabelParts(note);
+          const cx = rect.x + rect.width / 2;
+          const cy = rect.y + rect.height / 2;
+          const { fillStyle, useShadow } = labelTextStyleForBackground(fill);
+          ctx.fillStyle = fillStyle;
+          if (useShadow) {
+            ctx.shadowColor = 'rgba(0,0,0,0.35)';
+            ctx.shadowBlur = 0;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 1;
+          } else {
+            ctx.shadowColor = 'transparent';
+          }
 
-        const accWidth = parts.accidentalPrefix
-          ? ctx.measureText(parts.accidentalPrefix).width
-          : 0;
-        const degWidth = ctx.measureText(parts.degreeNumeral).width;
-        const half = (accWidth + degWidth) / 2;
-        let tx = cx - half;
-        if (parts.accidentalPrefix) {
-          ctx.fillText(parts.accidentalPrefix, tx + accWidth / 2, cy);
-          tx += accWidth;
-        }
-        ctx.fillText(parts.degreeNumeral, tx + degWidth / 2, cy);
+          const romanLine = formatNoteRomanLine(note);
 
-        if (parts.octaveIndicator) {
-          ctx.shadowColor = 'transparent';
-          ctx.fillStyle = NOTE_OCTAVE_LABEL_COLOR;
-          ctx.font = '500 9px ui-sans-serif, system-ui, sans-serif';
-          const ox = cx + half + 2;
-          const oy = note.octave > 0 ? rect.y + 5 : rect.y + rect.height - 3;
-          ctx.textBaseline = note.octave > 0 ? 'top' : 'bottom';
-          ctx.fillText(parts.octaveIndicator, ox, oy);
-          ctx.textBaseline = 'middle';
-          ctx.font = '600 11px ui-sans-serif, system-ui, sans-serif';
+          if (labelMode === 'roman') {
+            ctx.font = '600 11px ui-sans-serif, system-ui, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(romanLine, cx, cy);
+          } else if (labelMode === 'both') {
+            ctx.font = '600 11px ui-sans-serif, system-ui, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            const degLine = `${parts.accidentalPrefix}${parts.degreeNumeral}`;
+            ctx.fillText(degLine, cx, cy - 5);
+            ctx.shadowColor = 'transparent';
+            ctx.fillStyle = fillStyle;
+            ctx.font = '500 9px ui-sans-serif, system-ui, sans-serif';
+            ctx.fillText(romanLine, cx, cy + 6);
+          } else {
+            /* degree */
+            const accWidth = parts.accidentalPrefix
+              ? ctx.measureText(parts.accidentalPrefix).width
+              : 0;
+            const degWidth = ctx.measureText(parts.degreeNumeral).width;
+            const half = (accWidth + degWidth) / 2;
+            let tx = cx - half;
+            if (parts.accidentalPrefix) {
+              ctx.fillText(parts.accidentalPrefix, tx + accWidth / 2, cy);
+              tx += accWidth;
+            }
+            ctx.fillText(parts.degreeNumeral, tx + degWidth / 2, cy);
+          }
+
+          if (parts.octaveIndicator && labelMode !== 'roman') {
+            ctx.shadowColor = 'transparent';
+            ctx.fillStyle = NOTE_OCTAVE_LABEL_COLOR;
+            ctx.font = '500 9px ui-sans-serif, system-ui, sans-serif';
+            const accWidth = parts.accidentalPrefix
+              ? ctx.measureText(parts.accidentalPrefix).width
+              : 0;
+            const degWidth = ctx.measureText(parts.degreeNumeral).width;
+            const half = (accWidth + degWidth) / 2;
+            const ox = cx + half + 2;
+            const oy = note.octave > 0 ? rect.y + 5 : rect.y + rect.height - 3;
+            ctx.textBaseline = note.octave > 0 ? 'top' : 'bottom';
+            ctx.fillText(parts.octaveIndicator, ox, oy);
+            ctx.textBaseline = 'middle';
+            ctx.font = '600 11px ui-sans-serif, system-ui, sans-serif';
+          }
         }
         ctx.shadowColor = 'transparent';
         ctx.shadowOffsetY = 0;
