@@ -6,7 +6,8 @@ import { RegisterForm } from '../components/auth/RegisterForm';
 import { ToastHost } from '../components/common/ToastHost';
 import { ProjectListPage } from '../components/projects/ProjectListPage';
 import { useAuthStore } from '../store/authStore';
-import { EditorLayout } from './EditorLayout';
+import { AuthViewportGate } from './AuthViewportGate';
+import { EditorViewportGate } from './EditorViewportGate';
 import { ensureSessionBootstrapped } from './sessionBootstrap';
 
 /**
@@ -110,24 +111,28 @@ export function AppRoutes() {
         <Route
           path="/login"
           element={
-            <div className="flex min-h-screen items-center justify-center bg-[var(--color-app-bg,#F3F4F6)] px-4 py-12 font-[ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe_UI',Roboto,'Helvetica_Neue',Arial,'Noto_Sans',sans-serif]">
-              <LoginForm />
-            </div>
+            <AuthViewportGate>
+              <div className="flex min-h-screen items-center justify-center bg-[var(--color-app-bg,#F3F4F6)] px-4 py-12 font-[ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe_UI',Roboto,'Helvetica_Neue',Arial,'Noto_Sans',sans-serif]">
+                <LoginForm />
+              </div>
+            </AuthViewportGate>
           }
         />
         <Route
           path="/register"
           element={
-            <div className="flex min-h-screen items-center justify-center bg-[var(--color-app-bg,#F3F4F6)] px-4 py-12 font-[ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe_UI',Roboto,'Helvetica_Neue',Arial,'Noto_Sans',sans-serif]">
-              <RegisterForm />
-            </div>
+            <AuthViewportGate>
+              <div className="flex min-h-screen items-center justify-center bg-[var(--color-app-bg,#F3F4F6)] px-4 py-12 font-[ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe_UI',Roboto,'Helvetica_Neue',Arial,'Noto_Sans',sans-serif]">
+                <RegisterForm />
+              </div>
+            </AuthViewportGate>
           }
         />
         <Route
           path="/editor/:projectId"
           element={
             <RequireAuth>
-              <EditorLayout />
+              <EditorViewportGate />
             </RequireAuth>
           }
         />
@@ -135,7 +140,7 @@ export function AppRoutes() {
           path="/editor"
           element={
             <RequireAuth>
-              <EditorLayout />
+              <EditorViewportGate />
             </RequireAuth>
           }
         />

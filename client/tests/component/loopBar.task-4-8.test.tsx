@@ -135,4 +135,21 @@ describe('EditorLayout — TASK-4.8 — loop bar shell wiring', () => {
     expect(state.loopStart).toBe(48);
     expect(state.loopEnd).toBe(192);
   });
+
+  it('shows a visible Active badge when loop playback is on (F-07)', async () => {
+    const user = userEvent.setup();
+    renderEditorLayout();
+
+    const group = loopGroup();
+    const start = within(group).getByRole('spinbutton', { name: /loop start/i });
+    const end = within(group).getByRole('spinbutton', { name: /loop end/i });
+
+    await user.clear(start);
+    await user.type(start, '48');
+    await user.clear(end);
+    await user.type(end, '192');
+    await user.click(getLoopActionButton(group));
+
+    expect(screen.getByTestId('vybpad-loop-active-badge')).toBeVisible();
+  });
 });

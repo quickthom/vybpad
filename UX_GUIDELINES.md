@@ -228,6 +228,14 @@ Aligned with **PAT-001**: API and client errors surface via toast; map codes in 
 - Width: **min(400px, 100vw - 32px)**; padding **16px**; radius **8px**; shadow lg; background `--color-surface`.
 - Content: `body-strong` title line + optional `caption` detail; dismiss button icon-only.
 
+**Implementation vs. the four-type table**
+
+The product MAY ship a **binary** toast layer (**error** + **success** only) before warning/info variants exist. When that is true:
+
+- Map **API and blocking failures** to the **error** row (assertive `aria-live`, `role="alert"`).
+- Map **completed positive outcomes** (save succeeded, copy succeeded) to the **success** row.
+- **Transient operational feedback** that is neither failure nor completion — e.g. MIDI drag-to-DAW **started** (§8 drag affordances) — SHOULD use the **info** row once an **info** accent + `role="status"` + `aria-live="polite"` path exists. **Until then**, it is acceptable to reuse the **success** chrome + polite live region for that copy so users still get non-blocking feedback; Reviewers treat this as **interim**, not semantic “success.”
+
 ### 5.8 Toolbar and transport
 
 - **Single horizontal bar** **48px**: background `--color-surface`, bottom border **1px** `--color-border`.
@@ -236,6 +244,15 @@ Aligned with **PAT-001**: API and client errors surface via toast; map codes in 
 - **Tempo / key / meter:** use **compact** selects or **ghost** buttons opening popovers/modals per feature spec.
 
 **Phased delivery:** Transport chrome (play/pause/stop/rewind, tempo, audio-init loading state) may ship in an early milestone before the full `ROADMAP.md` Phase 4 playback feature set; all such controls still follow the table above, including `aria-live` / `role="toolbar"` and error surfacing for init failures.
+
+**MIDI export cluster (trailing `endContent`)**
+
+When MIDI download and drag-to-DAW ship in the transport row (`TransportControls` `endContent` or equivalent):
+
+- **Anatomy (left → right):** format control (**full song** vs **melody-only** / active voice) → **Download .mid** (secondary/outline button) → **drag** affordance (text or icon button, `draggable`, **copy** cursor per §8).
+- **Targets:** interactive controls in this cluster SHOULD use at least **44×44px** hit area (`min-h-11` or equivalent); use §1 semantic tokens and `focus-visible` ring per §9.
+- **Labels:** field label “Export” (or equivalent) SHOULD use the **`label`** typography tier (§2); `text-sm` (14px) is an acceptable minor deviation where it matches adjacent transport text.
+- **Grouping / ARIA:** Prefer **one** labeled region for the whole trailing cluster (e.g. a single `role="group"` with `aria-label="MIDI export"`). If the transport wraps `endContent` in `role="group"` **and** a child component also uses `role="group"` with a similar purpose, screen readers may hear redundant nesting — acceptable short-term; new work SHOULD consolidate to a single group label or omit the redundant wrapper (see §9).
 
 ### 5.9 Form layout (auth, settings)
 
@@ -403,7 +420,7 @@ Values align with **PAT-012**; this section is the UX authority for Builders (su
 
 **ARIA patterns**
 
-- **Toolbar:** container `role="toolbar"` with `aria-label` e.g. “Transport” / “Editor tools”; grouped items `role="group"` with `aria-label` when needed.
+- **Toolbar:** container `role="toolbar"` with `aria-label` e.g. “Transport” / “Editor tools”; grouped items `role="group"` with `aria-label` when needed. Avoid **nested** `role="group"` with overlapping names (e.g. parent “Export” plus child “MIDI export” for the same visual cluster); prefer one `aria-label` for the combined export region (§5.8 MIDI export cluster).
 - **Side panels:** `role="complementary"` or region with `aria-label` (“Chord palette”, “Mixer”); toggle `aria-expanded` / `aria-controls` linking to panel id.
 - **Modal:** `role="dialog"`, `aria-modal="true"`, `aria-labelledby` pointing to title id.
 - **Toast:** `role="status"` for non-critical; `role="alert"` for critical errors.
@@ -419,7 +436,8 @@ Values align with **PAT-012**; this section is the UX authority for Builders (su
 - [ ] Modals trap focus and restore on close.
 - [ ] Toasts for API errors per PAT-001; no raw error codes exposed to users.
 - [ ] Minimum width messaging below 1024px or layout constrained per §4.
+- [ ] Transport MIDI export cluster (if present): §5.8 anatomy, drag cursor + §8 copy, toast behavior per §5.7 implementation notes; no redundant nested `role="group"` in new work unless justified.
 
 ---
 
-*Document version: 1.2 — MILESTONE-F06-DESIGN-REVIEW: §4 editor-route viewport guard, §8 autosave feedback notes; F-05 items (§1 interim tokens, §7 phased panels, §9 measure-strip targets) unchanged.*
+*Document version: 1.3 — MILESTONE-F09-DESIGN-REVIEW (Phase 6): §5.7 toast implementation mapping (binary vs four-type); §5.8 MIDI export cluster; §9 nested-group note; §10 checklist. Prior F-06/F-08 content unchanged.*

@@ -33,8 +33,16 @@ export function LoopBar() {
       role="group"
       aria-labelledby={`${groupId}-label`}
     >
-      <span id={`${groupId}-label`} className="text-sm font-medium text-[var(--color-text-primary,#111827)]">
+      <span id={`${groupId}-label`} className="flex flex-wrap items-center gap-2 text-sm font-medium text-[var(--color-text-primary,#111827)]">
         Loop
+        {isLooping ? (
+          <span
+            data-testid="vybpad-loop-active-badge"
+            className="rounded-full bg-[var(--color-primary,#4F46E5)] px-2 py-0.5 text-xs font-semibold text-[var(--color-text-on-primary,#FFFFFF)]"
+          >
+            Active
+          </span>
+        ) : null}
       </span>
       <div className="mx-2 hidden h-6 w-px bg-[var(--color-border,#E5E7EB)] sm:block" aria-hidden />
       <div className="flex flex-wrap items-center gap-2">

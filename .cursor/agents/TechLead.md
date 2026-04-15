@@ -511,6 +511,16 @@ If the same Reviewer is unavailable or a circuit breaker has fired, spawn a new 
 
 ---
 
+## PR Approval Guidelines
+
+The Reviewer only *recommends* approval or a block; the final adjudication rests with the Tech Lead. When making your determination, consider the following:
+
+- Are there any signs of irregularity in the PR or in the Reviewer's response? Is everything in the proper format? Agents that cannot use the proper format for their response are not likely to have performed their task well and should receive additional scrutiny.
+- Did you receive the CHECKLIST_MISSING signal from the Reviewer? If so, the Builder's commits must be reverted as per project policy.
+- For Warnings, assess whether action needs to be taken and whom (TL for document update or Builder for remediation). If so, either do it immediately or add it to your task list for future resolution.
+
+If you decide to approve a PR that contains unresolved Warnings from the Reviewer, you must justify that decision in your report to the HITL. 
+
 ## Processing STATUS_UPDATEs from agents
 
 When any agent sends a STATUS_UPDATE, you must:

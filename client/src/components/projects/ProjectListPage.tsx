@@ -10,6 +10,7 @@ import { useToastStore } from '../../store/toastStore';
 import { getApiErrorMessage } from '../../utils/errorMessages';
 import { projectsApi } from '../../utils/apiClient';
 import { clearEditorPostBootstrap } from '../../app/editorProjectHydration';
+import { ViewportTooNarrow } from '../common/ViewportTooNarrow';
 import { DeleteProjectDialog } from './DeleteProjectDialog';
 
 const dateFmt = new Intl.DateTimeFormat(undefined, {
@@ -85,13 +86,7 @@ export function ProjectListPage() {
   const loading = status === 'loading' && projects.length === 0;
 
   if (!wideEnough) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-[var(--color-app-bg,#F3F4F6)] px-6 py-12 font-[ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe_UI',Roboto,'Helvetica_Neue',Arial,'Noto_Sans',sans-serif]">
-        <p className="max-w-md text-center text-base text-[var(--color-text-secondary,#4B5563)]">
-          vYbpad needs a display at least 1024px wide. Please use a larger window or device.
-        </p>
-      </div>
-    );
+    return <ViewportTooNarrow />;
   }
 
   return (
@@ -161,7 +156,12 @@ export function ProjectListPage() {
               ))}
             </ul>
           ) : projects.length === 0 ? (
-            <p className="text-sm text-[var(--color-text-secondary,#4B5563)]">No projects yet.</p>
+            <div className="rounded-lg border border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)] p-6">
+              <h3 className="text-base font-semibold text-[var(--color-text-primary,#111827)]">No projects yet</h3>
+              <p className="mt-2 text-sm text-[var(--color-text-secondary,#4B5563)]">
+                Create your first project using the form above.
+              </p>
+            </div>
           ) : (
             <div className="overflow-x-auto rounded-lg border border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)]">
               <table className="w-full min-w-[320px] border-collapse text-left text-sm">

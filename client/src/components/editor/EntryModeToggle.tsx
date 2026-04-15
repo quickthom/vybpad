@@ -15,7 +15,7 @@ export function EntryModeToggle(props: EntryModeToggleProps): ReactElement {
   return (
     <button
       type="button"
-      className="inline-flex h-8 shrink-0 items-center gap-2 rounded-md border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-3 text-xs text-[var(--color-text-secondary,#4B5563)] transition-colors hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
+      className="inline-flex min-h-11 min-w-11 shrink-0 items-center gap-2 rounded-md border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-3 text-xs text-[var(--color-text-secondary,#4B5563)] transition-colors hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
       onClick={onToggle}
       aria-label={`Entry mode ${isTable ? 'Table' : 'Text'}. Click or press Tab to toggle.`}
       title="Entry mode — Tab to toggle (Table: advance after entry; Text: duration then degree)"

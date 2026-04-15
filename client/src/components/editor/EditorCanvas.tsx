@@ -16,6 +16,7 @@ import { useUIStore } from '../../store/uiStore';
 import { theoryEngine } from '../../engine/theory';
 import { CHORD_AREA_HEIGHT, MEASURE_HEADER_HEIGHT, NOTE_HEIGHT, SELECTION_COLOR } from '../../engine/renderer/constants';
 import { drawPlaybackCursor } from '../../engine/renderer/drawPlaybackCursor';
+import { drawPlaybackHighlight } from '../../engine/renderer/drawPlaybackHighlight';
 import { drawChordBlocks, layoutChordBlock } from '../../engine/renderer/chordBlocks';
 import { drawGridBackground } from '../../engine/renderer/gridBackground';
 import type { EditorCanvasHit } from '../../engine/renderer/hitTest';
@@ -252,13 +253,15 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
     ctx.fillRect(0, 0, w, h);
 
     // Main canvas layer stack (bottom → top). Keep in sync with hitTest.ts global Z-order notes.
-    // drawGridBackground → drawChordBlocks → drawNoteBlocks → drawGuideOverlay when showGuides.
+    // drawGridBackground → drawChordBlocks → drawNoteBlocks → drawGuideOverlay → drawPlaybackHighlight → hover/selection → cursor.
     drawGridBackground(ctx, song, viewport, h);
     drawChordBlocks(ctx, song, viewport, theoryEngine, { colorScheme });
     drawNoteBlocks(ctx, song, viewport, { colorScheme });
     if (showGuides) {
       drawGuideOverlay(ctx, song, viewport, colorScheme);
     }
+
+    drawPlaybackHighlight(ctx, song, viewport, playbackTick);
 
     const strokeRect = (x: number, y: number, rw: number, rh: number, stroke: string, fill?: string) => {
       ctx.save();

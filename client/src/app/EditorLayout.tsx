@@ -89,6 +89,8 @@ export function EditorLayout() {
     projectId ? 'loading' : 'ready',
   );
   const [saveBusy, setSaveBusy] = useState(false);
+  /** UX §8 — lightweight persistence cue when autosave success is silent (no toast). */
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   /** Mirrors `saveBusy` for async guards without putting `saveBusy` in `useCallback` deps (would reset debounce). */
   const saveBusyRef = useRef(false);
   const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -285,6 +287,10 @@ export function EditorLayout() {
   }, [projectId, loadSong, navigate, showErrorToast]);
 
   useEffect(() => {
+    setLastSavedAt(null);
+  }, [projectId]);
+
+  useEffect(() => {
     setSelectedMeasures((prev) => {
       if (!prev) return null;
       const n = song.measures.length;
@@ -326,6 +332,7 @@ export function EditorLayout() {
         if (songMatchesSentBaseline(current, latest)) {
           loadSong(updated.songData);
           setProjectName(updated.name);
+          setLastSavedAt(new Date());
           if (source === 'manual') {
             showSuccessToast('Saved.');
           }
@@ -443,6 +450,14 @@ export function EditorLayout() {
           <h1 className="text-xl font-semibold tracking-tight">{headerTitle}</h1>
           {projectName ? (
             <p className="mt-0.5 text-sm text-[var(--color-text-secondary,#4B5563)]">{projectName}</p>
+          ) : null}
+          {projectId && lastSavedAt ? (
+            <p className="mt-1 text-xs text-[var(--color-text-muted,#9CA3AF)]" aria-live="polite">
+              Last saved{' '}
+              {new Intl.DateTimeFormat(undefined, { dateStyle: 'short', timeStyle: 'short' }).format(
+                lastSavedAt,
+              )}
+            </p>
           ) : null}
           <p className="mt-1 text-sm text-[var(--color-text-secondary,#4B5563)]">
             Grid editor — click to select, drag to move, drag trailing edge to resize (TASK-2.7)

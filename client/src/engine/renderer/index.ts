@@ -9,4 +9,5 @@ export * from './chordBlocks';
 export * from './noteBlocks';
 export * from './guideOverlay';
 export * from './drawPlaybackCursor';
+export * from './drawPlaybackHighlight';
 export * from './hitTest';
