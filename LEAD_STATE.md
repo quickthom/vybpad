@@ -38,6 +38,18 @@ Squash-merged to `develop` as **PR [#75](https://github.com/quickthom/vybpad/pul
 
 ---
 
+## Test coverage pre-audit plan — **updated** 2026-04-15
+
+**File:** `/home/thom/.cursor/plans/test_coverage_pre-audit_44b564bb.plan.md`
+
+**Why:** Session work (TASK-8.0 merge, open branch `phase-8/archive-followups` with theory barrel + deeper `api.integration` + ESLint `**/coverage/**` ignore) affects **operational sequencing** for optional Vitest coverage (Phase E) and **narrative accuracy** for server/API and theory rows — not the core Phase 8.2–8.4 QA scope.
+
+**Edits made:** Overview extended; §1.1 (theory barrel + API integration pointer); §1.2 (ESLint + generated `coverage/`); new **§6 Session delta** table (TASK-8.0, `archive-followups`, TASK-6.6 HITL); former §6 Summary renumbered to **§7**; summary row notes **8.0 ≠** workflow/a11y/visual E2E.
+
+**Open branch (not on `develop` at update time):** `phase-8/archive-followups` — merge when ready so `eslint .` stays safe after local `vitest --coverage`.
+
+---
+
 ## Session continuity (2026-04-15) — Phase 7 closed
 
 **Authoritative task rows:** `TASK_STATUS.md` (Phase 8 stub); Phase 7 detail in `TASK_STATUS_ARCHIVE.md`.
@@ -56,11 +68,11 @@ Squash-merged to `develop` as **PR [#75](https://github.com/quickthom/vybpad/pul
 | 7.8 | UI polish + Designer `UX_GUIDELINES` §9 clarification | #72 + Designer commit `3c38bd9` |
 | 7.9 | No separate PR — `EditorViewportGate` + F-07 E2E (pre-existing) | — |
 
-- **TASK-7.0** cleanup: not run (optional debt).
+- **TASK-7.0** optional backlog: delivered as **TASK-8.0** (PR [#75](https://github.com/quickthom/vybpad/pull/75)), not as standalone 7.0.
 
 ### Next
 
-- **Phase 8** — Final QA & Deployment (`ROADMAP.md`); populate `TASK_STATUS.md` Phase 8 table when first wave is briefed.
+- **Phase 8** — Final QA & Deployment (`ROADMAP.md`); TASK-8.1–8.4 + optional Vitest coverage per `TASK_STATUS.md` and test coverage pre-audit plan.
 
 ### Local CI caveat (unchanged)
 
