@@ -481,6 +481,8 @@ interface TransportControlsProps {
   onStop: () => void;
   onRewind: () => void;
   onTempoChange: (bpm: number) => void;
+  /** Optional trailing slot (e.g. MIDI export / drag-to-desktop affordance); omit when unused. */
+  endContent?: React.ReactNode;
 }
 ```
 
