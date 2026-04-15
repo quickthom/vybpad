@@ -9,6 +9,7 @@
   ],
   "scripts": {
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "e2e:devstack": "concurrently -k -n api,client \"npm run dev --workspace=@vybpad/server\" \"npm run dev --workspace=@vybpad/client -- --host 127.0.0.1 --port 5173\"",
     "build": "tsc --build",
@@ -19,6 +20,7 @@
     "@eslint/js": "^9.17.0",
     "@playwright/test": "^1.51.0",
     "@testing-library/jest-dom": "^6.9.1",
+    "@vitest/coverage-v8": "^4.1.4",
     "concurrently": "^9.1.2",
     "dotenv": "^17.4.2",
     "eslint": "^9.17.0",
