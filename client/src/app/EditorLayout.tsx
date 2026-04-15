@@ -480,8 +480,6 @@ export function EditorLayout() {
           >
             Voice {activeVoice + 1}
           </span>
-          {/* TASK-6.4: MIDI download uses shared midiExporter; lives in header to avoid overlapping TransportControls (TASK-6.5 may extend editor chrome). */}
-          <MidiExportControls song={song} activeVoice={activeVoice} projectName={projectName} />
           <button
             type="button"
             onClick={() => setChordPaletteExpanded((o) => !o)}
@@ -532,7 +530,12 @@ export function EditorLayout() {
           if (!Number.isFinite(n) || n < 20 || n > 300) return;
           updateMetadata({ tempo: n });
         }}
-        endContent={<MidiDragExportControl />}
+        endContent={
+          <>
+            <MidiExportControls song={song} activeVoice={activeVoice} projectName={projectName} />
+            <MidiDragExportControl />
+          </>
+        }
       />
       <LoopBar />
       <KeyScaleChangeDialog
