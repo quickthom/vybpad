@@ -19,7 +19,7 @@ These rules apply to every agent on the team, regardless of role or model.
 `PATTERNS.md` (at the repo root) contains pre-authorized decisions binding on the whole team. **Who may apply which pattern without TL escalation** is defined per pattern (Builder, QA, DevOps, etc.). If a decision is covered in `PATTERNS.md`, apply it and note which pattern you used in your PR or task output. If it is not covered, escalate.
 
 ### One Branch Per Task
-You work on the branch specified in your task brief. You do not touch other branches. You do not merge your own branch. Merges are handled by the Integrator.
+You work on the branch specified in your task brief. You do not touch other branches. You do not merge your own branch. Merges are handled by the Tech Lead.
 
 ### Write Your Assumptions Down
 At the start of any non-trivial task, write a brief `ASSUMPTIONS` block in your output or PR description listing any assumptions you made. This makes review faster and gives downstream agents a clear picture of your reasoning.
