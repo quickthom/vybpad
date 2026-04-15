@@ -18,7 +18,7 @@ function midiFileName(song: SongData): string {
  * and shows the §373 toast. Does not mutate song state.
  */
 export function useMidiDragExport(song: SongData) {
-  const showSuccess = useToastStore((s) => s.showSuccess);
+  const showInfo = useToastStore((s) => s.showInfo);
   const dismiss = useToastStore((s) => s.dismiss);
 
   const handleDragStart = useCallback(
@@ -38,9 +38,9 @@ export function useMidiDragExport(song: SongData) {
       }
       dt.items.add(file);
 
-      showSuccess(MIDI_DRAG_TOAST_MESSAGE);
+      showInfo(MIDI_DRAG_TOAST_MESSAGE);
     },
-    [song, showSuccess],
+    [song, showInfo],
   );
 
   const handleDragEnd = useCallback(() => {

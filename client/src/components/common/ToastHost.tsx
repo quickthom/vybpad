@@ -2,7 +2,7 @@ import { useToastStore } from '../../store/toastStore';
 
 /**
  * API/error toasts — UX §5.7: bottom-right stack, width min(400px, 100vw − 32px), 16px inset,
- * 8px stack gap, error = destructive accent + assertive; success = success accent + status.
+ * 8px stack gap, error = destructive + assertive; success/info = polite + status + row accent.
  */
 export function ToastHost() {
   const message = useToastStore((s) => s.message);
@@ -12,9 +12,12 @@ export function ToastHost() {
   if (!message) return null;
 
   const isError = variant === 'error';
-  const accent = isError
-    ? 'border-l-[var(--color-destructive,#DC2626)]'
-    : 'border-l-[var(--color-success,#16A34A)]';
+  const accent =
+    variant === 'error'
+      ? 'border-l-[var(--color-destructive,#DC2626)]'
+      : variant === 'info'
+        ? 'border-l-[var(--color-info,#0284C7)]'
+        : 'border-l-[var(--color-success,#16A34A)]';
 
   return (
     <div className="pointer-events-none fixed bottom-4 right-4 z-[9999] flex w-[min(400px,calc(100vw-32px))] flex-col gap-2">

@@ -148,7 +148,11 @@ export function TransportControls({
       ) : null}
 
       {endContent ? (
-        <div className="ml-auto flex shrink-0 items-center gap-2" role="group" aria-label="Export">
+        <div
+          className="ml-auto flex shrink-0 flex-wrap items-center gap-2"
+          role="group"
+          aria-label="MIDI export"
+        >
           {endContent}
         </div>
       ) : null}
