@@ -86,7 +86,7 @@ npm run test:e2e
 PLAYWRIGHT_SKIP_WEBSERVER=1 npm run test:e2e
 ```
 
-Optional overrides: `PLAYWRIGHT_BASE_URL` (default `http://127.0.0.1:5173`) and `PLAYWRIGHT_API_URL` (default `http://127.0.0.1:3001`) for API assertions from tests.
+Optional overrides: `PLAYWRIGHT_BASE_URL` (default `http://127.0.0.1:5173`) and `PLAYWRIGHT_API_URL` (default `http://127.0.0.1:3001`) for API assertions from tests. **Parallel agents or worktrees** running full E2E at the same time must use **different ports** and matching `CORS_ORIGIN` / `VITE_API_URL` — see `PATTERNS.md` PAT-030 and `docs/CI_LOCAL.md`.
 
 CI runs `npm run test:e2e` with a PostgreSQL service and auto-starts the stack; see `.github/workflows/ci.yml`.
 
