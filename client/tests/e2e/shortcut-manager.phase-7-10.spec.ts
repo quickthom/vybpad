@@ -232,9 +232,8 @@ test.describe('TASK-7.10 — Phase 7 shortcut manager (E2E)', () => {
     await expect(canvas).toBeFocused();
 
     /** Atomic chord so Chromium sends one keydown with `shiftKey` (matches `chordFromKeyboardEvent` → `Shift+T`). */
-    await page.keyboard.press('Shift+KeyT');
-
     const put = waitForProjectPut(page, projectId);
+    await page.keyboard.press('Shift+KeyT');
     await put;
 
     const song = await getSong(request, accessToken, projectId);
