@@ -364,3 +364,226 @@ export function ff01EventsInFile(midi: Uint8Array): Array<Ff01TextEvent & { trac
   });
   return out;
 }
+
+/** FF 51 Set Tempo — microseconds per quarter note. */
+export interface Ff51TempoEvent {
+  absTick: number;
+  usecPerQuarter: number;
+}
+
+/** FF 58 Time Signature. */
+export interface Ff58TimeSignatureEvent {
+  absTick: number;
+  numerator: number;
+  denominator: number;
+}
+
+/**
+ * Collects FF 51 (tempo) meta events from one MTrk payload (delta accumulation).
+ */
+export function ff51EventsFromTrack(trackData: Uint8Array): Ff51TempoEvent[] {
+  const out: Ff51TempoEvent[] = [];
+  let pos = 0;
+  let absTick = 0;
+  let runningStatus = 0;
+
+  while (pos < trackData.length) {
+    const d = readVlq(trackData, pos);
+    pos = d.next;
+    absTick += d.value;
+
+    const peek = trackData[pos];
+    if (peek === undefined) break;
+
+    if (peek < 0x80) {
+      if (runningStatus === 0) {
+        throw new Error('SMF: data byte without running status');
+      }
+      const status = runningStatus;
+      const cmd = status & 0xf0;
+      if (cmd === 0x90) {
+        const velocity = trackData[pos + 1];
+        if (velocity === undefined) break;
+        pos += 2;
+        continue;
+      }
+      if (cmd === 0x80) {
+        pos += 2;
+        continue;
+      }
+      throw new Error(`SMF: running status 0x${status.toString(16)} not handled`);
+    }
+
+    const status = peek;
+    pos += 1;
+
+    if (status === 0xff) {
+      runningStatus = 0;
+      const metaType = trackData[pos]!;
+      pos += 1;
+      const len = readVlq(trackData, pos);
+      const dataStart = len.next;
+      const dataLen = len.value;
+      if (metaType === 0x51 && dataLen === 3) {
+        const a = trackData[dataStart]!;
+        const b = trackData[dataStart + 1]!;
+        const c = trackData[dataStart + 2]!;
+        const usecPerQuarter = (a << 16) | (b << 8) | c;
+        out.push({ absTick, usecPerQuarter });
+      }
+      pos = dataStart + dataLen;
+      continue;
+    }
+
+    if (status === 0xf0) {
+      runningStatus = 0;
+      while (pos < trackData.length && trackData[pos] !== 0xf7) {
+        pos += 1;
+      }
+      pos += 1;
+      continue;
+    }
+
+    const cmd = status & 0xf0;
+    if (cmd >= 0x80 && cmd <= 0xe0) {
+      runningStatus = status;
+    }
+
+    if (cmd === 0x90) {
+      pos += 2;
+      continue;
+    }
+    if (cmd === 0x80) {
+      pos += 2;
+      continue;
+    }
+    if (cmd === 0xa0 || cmd === 0xb0) {
+      pos += 2;
+      continue;
+    }
+    if (cmd === 0xc0 || cmd === 0xd0) {
+      pos += 1;
+      continue;
+    }
+    if (cmd === 0xe0) {
+      pos += 2;
+      continue;
+    }
+
+    throw new Error(`SMF: unhandled status 0x${status.toString(16)}`);
+  }
+
+  return out;
+}
+
+/**
+ * Collects FF 58 (time signature) meta events from one MTrk payload.
+ */
+export function ff58EventsFromTrack(trackData: Uint8Array): Ff58TimeSignatureEvent[] {
+  const out: Ff58TimeSignatureEvent[] = [];
+  let pos = 0;
+  let absTick = 0;
+  let runningStatus = 0;
+
+  while (pos < trackData.length) {
+    const d = readVlq(trackData, pos);
+    pos = d.next;
+    absTick += d.value;
+
+    const peek = trackData[pos];
+    if (peek === undefined) break;
+
+    if (peek < 0x80) {
+      if (runningStatus === 0) {
+        throw new Error('SMF: data byte without running status');
+      }
+      const status = runningStatus;
+      const cmd = status & 0xf0;
+      if (cmd === 0x90) {
+        const velocity = trackData[pos + 1];
+        if (velocity === undefined) break;
+        pos += 2;
+        continue;
+      }
+      if (cmd === 0x80) {
+        pos += 2;
+        continue;
+      }
+      throw new Error(`SMF: running status 0x${status.toString(16)} not handled`);
+    }
+
+    const status = peek;
+    pos += 1;
+
+    if (status === 0xff) {
+      runningStatus = 0;
+      const metaType = trackData[pos]!;
+      pos += 1;
+      const len = readVlq(trackData, pos);
+      const dataStart = len.next;
+      const dataLen = len.value;
+      if (metaType === 0x58 && dataLen === 4) {
+        const numerator = trackData[dataStart]!;
+        const denomPow = trackData[dataStart + 1]!;
+        out.push({ absTick, numerator, denominator: 2 ** denomPow });
+      }
+      pos = dataStart + dataLen;
+      continue;
+    }
+
+    if (status === 0xf0) {
+      runningStatus = 0;
+      while (pos < trackData.length && trackData[pos] !== 0xf7) {
+        pos += 1;
+      }
+      pos += 1;
+      continue;
+    }
+
+    const cmd = status & 0xf0;
+    if (cmd >= 0x80 && cmd <= 0xe0) {
+      runningStatus = status;
+    }
+
+    if (cmd === 0x90) {
+      pos += 2;
+      continue;
+    }
+    if (cmd === 0x80) {
+      pos += 2;
+      continue;
+    }
+    if (cmd === 0xa0 || cmd === 0xb0) {
+      pos += 2;
+      continue;
+    }
+    if (cmd === 0xc0 || cmd === 0xd0) {
+      pos += 1;
+      continue;
+    }
+    if (cmd === 0xe0) {
+      pos += 2;
+      continue;
+    }
+
+    throw new Error(`SMF: unhandled status 0x${status.toString(16)}`);
+  }
+
+  return out;
+}
+
+/** First MTrk in the file (conductor track for Type 1 exports). */
+export function firstTrackPayload(bytes: Uint8Array): Uint8Array {
+  return listMTrkPayloads(bytes)[0]!;
+}
+
+/** FF 51 + FF 58 metas from one MTrk payload (composed from single-kind parsers). */
+export function conductorTempoAndMeterMetasFromTrack(trackData: Uint8Array): {
+  setTempos: Ff51TempoEvent[];
+  timeSignatures: Ff58TimeSignatureEvent[];
+} {
+  return {
+    setTempos: ff51EventsFromTrack(trackData),
+    timeSignatures: ff58EventsFromTrack(trackData),
+  };
+}
