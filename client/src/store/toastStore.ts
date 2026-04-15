@@ -59,3 +59,8 @@ export const useToastStore = create<ToastState>((set) => ({
     set({ message: null, variant: 'error' });
   },
 }));
+
+/** Clears success/error dedupe window — use in tests that fire identical toasts in sequence. */
+export function resetToastDedupeForTests(): void {
+  lastDedupe = null;
+}
