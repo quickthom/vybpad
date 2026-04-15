@@ -41,13 +41,18 @@ Each git worktree is an **independent directory** — it does not inherit the pa
    NODE_ENV=development
    ```
 
-2. **Run `npm install`** from the worktree root (worktrees do not share `node_modules`).
+2. **Install dependencies** from the worktree root (worktrees do not share `node_modules`). Prefer **`npm ci`** to match CI; `npm install` is acceptable for quick iteration.
 
-3. **Apply the schema:** `npx prisma db push --schema=prisma/schema.prisma`
+3. **Generate the Prisma client and apply the schema** using the **same commands as `./scripts/ci-local.sh`** — do **not** use plain `npx prisma …` (it may resolve **Prisma 7** and break this schema):
+
+   ```bash
+   npm run db:generate --workspace=@vybpad/server
+   node node_modules/prisma/build/index.js db push --schema=prisma/schema.prisma
+   ```
 
 4. **Install Playwright browsers:** `npx playwright install chromium`
 
-These four steps replace the `.env`-based setup that the main clone already has. Skip any you have already done in this worktree session.
+These steps replace the `.env`-based setup that the main clone already has. Skip any you have already done in this worktree session.
 
 ## Environment (match CI job `env`)
 
@@ -71,8 +76,8 @@ From the repository root:
 
 ```bash
 npm ci
-npx prisma generate --schema=prisma/schema.prisma
-npx prisma db push --schema=prisma/schema.prisma
+npm run db:generate --workspace=@vybpad/server
+node node_modules/prisma/build/index.js db push --schema=prisma/schema.prisma
 npm run build
 npm run lint
 npm test

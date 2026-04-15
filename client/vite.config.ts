@@ -19,9 +19,8 @@ export default defineConfig({
   server: {
     port: 5173,
     strictPort: true,
-    watch: {
-      ignored: ['**/tests/**'],
-    },
+    /** Playwright specs live under `client/tests/e2e`; watching them triggers full reloads during E2E. */
+    watch: { ignored: ['**/tests/e2e/**'] },
   },
   build: {
     outDir: 'build',
