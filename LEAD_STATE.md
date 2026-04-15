@@ -38,22 +38,21 @@ You are the Tech Lead. Per HITL direction, you shall not perform any task or por
 
 ### `develop` / remote
 
-- **Tip (this clone):** `2f04c35` — documents `SongStore.editNoteBatch` + `EditorCanvasProps.onNoteEditBatch` in `INTERFACES.md`; TASK_STATUS marks **7.3 merged**.
-- **Origin:** sync with `git pull origin develop` before spawning agents.
+- **Sync:** `git pull origin develop` before spawning agents. `INTERFACES.md` on `develop` includes `SongStore.editNoteBatch` and `EditorCanvasProps.onNoteEditBatch`; `TASK_STATUS.md` marks **7.3 merged** (see table there for current rows).
 
 ### Phase 7 — Wave 2 progress
 
 | Task | Status | PR | Notes |
 |------|--------|-----|--------|
-| 7.1 | merged | #64 | PAT-027 shortcut manager + shell wiring (`0bbf4b9` squash ancestry) |
-| 7.2 | merged | #65 | Granular duration `ShortcutCommandId`s; duration keys via registry (`de0f9cc` feature squash) |
+| 7.1 | merged | #64 | PAT-027 shortcut manager + shell wiring |
+| 7.2 | merged | #65 | Granular duration `ShortcutCommandId`s; duration keys via registry |
 | 7.3 | merged | #66 | Split/tie/triplet; `editNoteBatch`; `Slash` vs `/` registration fix (`task73ShortcutChords.ts`); Reviewer round 2 approve |
 | 7.4 | **next** | — | Clipboard JSON (`copySelection` / `pasteSelection`, PAT-028); brief branch e.g. `phase-7/clipboard-json` + PAT-017 worktree |
 | 7.5 | pending | — | Navigation / playback shortcuts (after 7.4 per plan) |
 
 - **TASK-7.0** (phase-start cleanup): still **pending** in `TASK_STATUS.md` — optional early merge; does not block 7.4+.
 
-- **Wave 0 contracts:** Shortcut + clipboard shapes largely in `INTERFACES.md` / `PATTERNS.md` (PAT-027, PAT-028); TL extends `INTERFACES` when implementation discovers gaps (e.g. 7.2 duration command ids, 7.3 batch API promoted post-merge in `2f04c35`).
+- **Wave 0 contracts:** Shortcut + clipboard shapes largely in `INTERFACES.md` / `PATTERNS.md` (PAT-027, PAT-028); TL extends `INTERFACES` when implementation discovers gaps (e.g. 7.2 duration command ids, 7.3 batch API on `SongStore` / `EditorCanvas`).
 
 ### Worktrees / branches
 

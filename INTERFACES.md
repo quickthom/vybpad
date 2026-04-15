@@ -555,6 +555,10 @@ interface SongStore {
   editNoteBatch: (
     operations: ReadonlyArray<{ measureIndex: number; voice: 0 | 1 | 2 | 3; action: NoteEditAction }>,
   ) => void;
+  /** TASK-7.4 — build clipboard JSON from current `song` plus UI selection; `null` when nothing is copyable (PAT-028). */
+  buildSelectionClipboardPayload: () => SelectionClipboardPayload | null;
+  /** TASK-7.4 — merge pasted measures/events; no-op if `version` is unknown or payload fails validation (PAT-028). */
+  applySelectionClipboardPayload: (payload: SelectionClipboardPayload) => void;
   setMeasureChanges: (measureIndex: number, changes: MeasureChanges) => void;
   addMeasures: (atIndex: number, count: number) => void;
   deleteMeasures: (start: number, end: number) => void;
@@ -657,6 +661,11 @@ interface SelectionClipboardPayload {
   selection: Selection;
   measures: ClipboardMeasureSlice[];
 }
+
+// Clipboard transport (TASK-7.4, PAT-028)
+// - Serialize `SelectionClipboardPayload` as minified JSON (UTF-8).
+// - Prefer `navigator.clipboard.writeText` / `readText` for Ctrl+C / Ctrl+V when the document has focus and the async Clipboard API is available; handle `NotAllowedError` without throwing to the user.
+// - MIME: treat clipboard contents as `text/plain` JSON for interoperability; reject paste if JSON parse fails or `source !== "vybpad"` or `kind !== "selection"`.
 
 interface PlaybackStore {
   isPlaying: boolean;
