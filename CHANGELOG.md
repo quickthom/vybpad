@@ -66,3 +66,18 @@ All notable changes to this project are described by **phase milestone** (see [`
 ### Fixed
 
 - Digit-key entry dispatch corrected (reviewer catch; see [PR #17](https://github.com/quickthom/vybpad/pull/17)).
+
+---
+
+## Phase 6 — MIDI Export & StudioOne Integration — 2026-04-15
+
+### Added
+
+- **SMF Type 1** MIDI generation with multi-track scheduling via `MidiExporter` ([PR #53](https://github.com/quickthom/vybpad/pull/53)).
+- **Chord names** on a dedicated track as MIDI **text meta events** (FF 01) ([PR #54](https://github.com/quickthom/vybpad/pull/54)).
+- **Conductor track** with tempo and time-signature map at measure boundaries ([PR #55](https://github.com/quickthom/vybpad/pull/55)).
+- **Drag-to-DAW** MIDI from the transport (full-song export) ([PR #56](https://github.com/quickthom/vybpad/pull/56)).
+- Transport **MIDI export UI**: full song vs melody-only (active voice), download plus drag control in `endContent` ([PR #57](https://github.com/quickthom/vybpad/pull/57)).
+- **`MidiExporter` integration unit tests** ([PR #58](https://github.com/quickthom/vybpad/pull/58)).
+
+**TASK-6.6** (Studio One live validation) was completed using QA’s HITL protocol; it did not add merged application code.

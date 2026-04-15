@@ -90,6 +90,10 @@ Optional overrides: `PLAYWRIGHT_BASE_URL` (default `http://127.0.0.1:5173`) and 
 
 CI runs `npm run test:e2e` with a PostgreSQL service and auto-starts the stack; see `.github/workflows/ci.yml`.
 
+## MIDI export
+
+The client generates **Standard MIDI Files (SMF Type 1)** from the current song: a conductor track for tempo and time-signature changes, instrument tracks for scheduled playback, a dedicated track with **chord names** as MIDI text meta events (FF 01), and optional **melody-only** export for the active voice. In the **transport** bar, use **Export** to choose *Full song (Type 1)* or *Melody only*, then **Download .mid**; use the separate **MIDI** control to **drag** a file into a desktop DAW (drag always exports the **full** arrangement). Timing resolution and stack choices are summarized in [`ARCHITECTURE.md`](ARCHITECTURE.md); the `MidiExporter` contract lives in [`INTERFACES.md`](INTERFACES.md).
+
 ## Documentation map
 
 | Document                               | Role                                                       |
