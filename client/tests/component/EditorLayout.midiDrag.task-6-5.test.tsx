@@ -8,7 +8,7 @@
  *   edges: assert not success accent / not assertive live region for this feedback
  *
  * Criterion 2: MIDI export cluster does not expose redundant nested ARIA groups for the same visual region (UX §5.8)
- *   happy: trailing transport export slot exposes at most one role=group for the cluster (no Export wrapper + inner MIDI export group)
+ *   happy: trailing cluster uses one role=group labeled "MIDI export" (no duplicate inner group for the same region)
  *   error: N/A
  *   edges: N/A
  *
@@ -191,8 +191,7 @@ describe('F09.1 — MIDI export cluster ARIA (UX §5.8)', () => {
     it('does not nest multiple role=group regions for the trailing MIDI export cluster', () => {
       renderEditorWithToast();
       const toolbar = screen.getByTestId('vybpad-transport-toolbar');
-      const exportCluster = toolbar.querySelector('[aria-label="Export"]');
-      expect(exportCluster).toBeTruthy();
+      const exportCluster = within(toolbar).getByRole('group', { name: 'MIDI export' });
 
       const root = exportCluster as HTMLElement;
       const selfIsGroup = root.getAttribute('role') === 'group' ? 1 : 0;
