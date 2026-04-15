@@ -58,8 +58,8 @@ export function nextCycledEmbellishment(chord: ChordEvent): Pick<ChordEvent, 'se
 }
 
 /**
- * PAT-004 durations. Primary row: h j k l ; (TASK-2.8 / UX).
- * q w e r t are accepted as aliases so existing shortcuts/tests remain valid.
+ * PAT-004 durations. Primary row: h j k l ; ` and ' (32nd = 6 ticks) — TASK-7.2 / Hookpad parity.
+ * q w e r t are alternate aliases so existing shortcuts/tests remain valid.
  * TASK-5.4: `e` on a **single selected chord** cycles embellishments instead (see handleEditorKeydown).
  */
 export const DURATION_KEYS: Record<string, number> = {
@@ -68,6 +68,8 @@ export const DURATION_KEYS: Record<string, number> = {
   k: 48,
   l: 24,
   ';': 12,
+  '`': 6,
+  "'": 6,
   q: 192,
   w: 96,
   e: 48,

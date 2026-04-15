@@ -20,9 +20,13 @@ import {
 import { ChordPalette, SecondaryChordInspector } from '../components/panels/ChordPalette';
 import { getKeyAtMeasure, getScaleAtMeasure } from '../engine/renderer/tickUtils';
 import { createShortcutManager } from '../engine/keyboard/shortcutManager';
-import type { ShortcutContext } from '../engine/keyboard/shortcutTypes';
+import type { ShortcutCommandId, ShortcutContext } from '../engine/keyboard/shortcutTypes';
 import { theoryEngine } from '../engine/theory';
-import { applyChordPalettePayloadFromEditor, type EditorKeyboardContext } from '../hooks/useKeyboard';
+import {
+  applyChordPalettePayloadFromEditor,
+  applyDurationTicksFromEditor,
+  type EditorKeyboardContext,
+} from '../hooks/useKeyboard';
 import { EntryModeToggle } from '../components/editor/EntryModeToggle';
 import { formatTransportBeat, getPlaybackEngine, getPlaybackInitErrorMessage } from '../engine/audio';
 import { useAuthStore } from '../store/authStore';
@@ -41,6 +45,16 @@ import {
 
 /** TASK-3.4: idle delay after the last edit before auto PUT (coalesces rapid edits). */
 const AUTOSAVE_DEBOUNCE_MS = 1500;
+
+/** TASK-7.2 — `ShortcutCommandId` → ticks (PAT-004); wired through `createShortcutManager` `onCommand`. */
+const NOTE_DURATION_COMMAND_TICKS: Partial<Record<ShortcutCommandId, number>> = {
+  setNoteDurationWhole: 192,
+  setNoteDurationHalf: 96,
+  setNoteDurationQuarter: 48,
+  setNoteDurationEighth: 24,
+  setNoteDurationSixteenth: 12,
+  setNoteDurationThirtySecond: 6,
+};
 
 /** Compare the song snapshot we PUT with current store state to detect edits during an in-flight save. */
 function songMatchesSentBaseline(sent: SongData, now: SongData): boolean {
@@ -156,16 +170,6 @@ export function EditorLayout() {
     'diatonic',
   );
 
-  const shortcutManager = useMemo(
-    () =>
-      createShortcutManager({
-        onCommand: () => {
-          /* Future: map ShortcutCommandId to transport/zoom/clipboard; PAT-027 layer is keyed before grid handling. */
-        },
-      }),
-    [],
-  );
-
   const getShortcutContext = useCallback((): ShortcutContext => {
     return {
       hasModalOpen: keyScaleDialogOpen || tempoMeterDialogOpen,
@@ -177,6 +181,90 @@ export function EditorLayout() {
 
   const getSongAfterMutation = useCallback(() => useSongStore.getState().song, []);
   const getSelectionAfterMutation = useCallback(() => useUIStore.getState().selection, []);
+
+  const durationShortcutCommandRef = useRef<(id: ShortcutCommandId) => void>(() => {});
+
+  const shortcutManager = useMemo(
+    () =>
+      createShortcutManager({
+        onCommand: (id) => durationShortcutCommandRef.current(id),
+      }),
+    [],
+  );
+
+  durationShortcutCommandRef.current = (id: ShortcutCommandId) => {
+    const ticks = NOTE_DURATION_COMMAND_TICKS[id];
+    if (ticks === undefined) return;
+    const kb: EditorKeyboardContext = {
+      song,
+      viewport,
+      selection,
+      activeVoice,
+      setActiveVoice,
+      entryMode,
+      currentDurationTicks,
+      setCurrentDurationTicks,
+      keyboardTargetMeasureRef,
+      textDurationArmedRef,
+      getSongAfterMutation,
+      getSelectionAfterMutation,
+      onToggleEntryMode: toggleEntryMode,
+      onChordEdit: editChord,
+      onNoteEdit: editNote,
+      onSelectionChange: setSelection,
+      shortcutManager,
+      getShortcutContext,
+    };
+    applyDurationTicksFromEditor(kb, ticks);
+  };
+
+  useEffect(() => {
+    const unsubs = [
+      shortcutManager.registerShortcut({
+        id: 'setNoteDurationWhole',
+        chord: 'H',
+        scope: 'editor',
+        conflictPolicy: 'replace',
+      }),
+      shortcutManager.registerShortcut({
+        id: 'setNoteDurationHalf',
+        chord: 'J',
+        scope: 'editor',
+        conflictPolicy: 'replace',
+      }),
+      shortcutManager.registerShortcut({
+        id: 'setNoteDurationQuarter',
+        chord: 'K',
+        scope: 'editor',
+        conflictPolicy: 'replace',
+      }),
+      shortcutManager.registerShortcut({
+        id: 'setNoteDurationEighth',
+        chord: 'L',
+        scope: 'editor',
+        conflictPolicy: 'replace',
+      }),
+      shortcutManager.registerShortcut({
+        id: 'setNoteDurationSixteenth',
+        chord: ';',
+        scope: 'editor',
+        conflictPolicy: 'replace',
+      }),
+      shortcutManager.registerShortcut({
+        id: 'setNoteDurationThirtySecond',
+        chord: '`',
+        scope: 'editor',
+        conflictPolicy: 'replace',
+      }),
+      shortcutManager.registerShortcut({
+        id: 'setNoteDurationThirtySecond',
+        chord: "'",
+        scope: 'editor',
+        conflictPolicy: 'replace',
+      }),
+    ];
+    return () => unsubs.forEach((u) => u());
+  }, [shortcutManager]);
 
   const paletteMeasureIndex = useMemo(
     () => resolveTargetMeasureIndex(selection, viewport, song),

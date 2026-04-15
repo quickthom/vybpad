@@ -577,7 +577,7 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
       role="application"
       tabIndex={0}
       className={`${cursorClass} outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2`}
-      aria-label="Song editor — digits 1–7; chord d secondary, i inversion, e embellishment; duration h j k l ; , Delete, arrow keys to navigate, Ctrl+1–4 melody voice"
+      aria-label="Song editor — digits 1–7; chord d secondary, i inversion, e embellishment; duration h j k l ; ` ' (triplet row q w e r t); Delete, arrow keys to navigate, Ctrl+1–4 melody voice"
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}

@@ -44,12 +44,14 @@ function makeCtx(overrides: Partial<EditorKeyboardContext> = {}): EditorKeyboard
 }
 
 describe('editor keyboard — Task 7.1 — duration keys (Phase 2 / PAT-004)', () => {
-  it('maps primary duration row h j k l ; to PAT-004 tick values via DURATION_KEYS', () => {
+  it('maps primary duration row h j k l ; ` and PAT-004 tick values via DURATION_KEYS (32nd = 6 ticks)', () => {
     expect(DURATION_KEYS.h).toBe(192);
     expect(DURATION_KEYS.j).toBe(96);
     expect(DURATION_KEYS.k).toBe(48);
     expect(DURATION_KEYS.l).toBe(24);
     expect(DURATION_KEYS[';']).toBe(12);
+    expect(DURATION_KEYS['`']).toBe(6);
+    expect(DURATION_KEYS["'"]).toBe(6);
   });
 
   it('exposes the same map through DURATION_KEY_TICKS alias for shortcut-layer consumers', () => {
