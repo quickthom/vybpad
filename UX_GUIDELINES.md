@@ -416,6 +416,7 @@ Values align with **PAT-012**; this section is the UX authority for Builders (su
 **Touch targets**
 
 - Minimum **44×44px** clickable area for toolbar and panel controls; icon buttons may show **40px** visual with **44px** hit area via padding.
+- **Exception:** Modal **close** controls follow **§5.6** (**32×32px** icon button) and are exempt from the 44px chrome minimum; all other dialog controls (footer actions, fields) still meet **44px** where they read as toolbar-like chrome.
 - **Measure strip (§7 optional bottom):** All interactive controls in this row — including **Add**, **Delete**, and similar secondary buttons — MUST meet the **44×44px** minimum (e.g. `min-h-11`, padding, or an invisible hit-area extension). Do not rely on **32px** compact button height alone for pointer targets in this strip.
 
 **ARIA patterns**
@@ -440,4 +441,4 @@ Values align with **PAT-012**; this section is the UX authority for Builders (su
 
 ---
 
-*Document version: 1.3 — MILESTONE-F09-DESIGN-REVIEW (Phase 6): §5.7 toast implementation mapping (binary vs four-type); §5.8 MIDI export cluster; §9 nested-group note; §10 checklist. Prior F-06/F-08 content unchanged.*
+*Document version: 1.4 — TASK-7.8 design review: §9 touch-target exception for modal close (§5.6).*
