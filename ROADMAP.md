@@ -217,6 +217,7 @@ Phase 8: Final QA & Deployment
 
 | Task | Assignee | Depends on | Parallel with |
 |---|---|---|---|
+| 8.0 Phase-start tech debt cleanup (TASK-7.0 backlog, comment hygiene, archived non-blocking follow-ups) | Builder + QA | all above | 8.1–8.4, optional Vitest coverage tooling |
 | 8.1 Test coverage audit (identify gaps vs testing strategy) | QA | all above | 8.2 |
 | 8.2 E2E test suite: full user workflow (register → create → compose → play → export) | QA | all above | 8.1 |
 | 8.3 Visual regression baseline (Playwright screenshots of key editor states) | QA | 8.2 | 8.4 |

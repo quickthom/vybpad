@@ -51,8 +51,9 @@ describe('editor UI settings — TASK-7.6 — localStorage persistence contract'
     });
 
     it('passes JSON.stringify output to localStorage.setItem for the exported key', () => {
-      // jsdom binds `setItem` on the instance; `Storage.prototype` spies do not intercept.
-      const setItem = vi.spyOn(window.localStorage, 'setItem');
+      // Spy on the prototype: jsdom/localStorage may delegate `setInstance.setItem` to `Storage.prototype`,
+      // so spying only on `window.localStorage` misses calls made via `globalThis.localStorage`.
+      const setItem = vi.spyOn(Storage.prototype, 'setItem');
       writePersistedEditorUiSettings(fullV1Snapshot);
       expect(setItem).toHaveBeenCalledWith(
         EDITOR_UI_SETTINGS_STORAGE_KEY,
