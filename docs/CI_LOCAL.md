@@ -2,6 +2,8 @@
 
 **Tests are run locally.** GitHub Actions is disabled to conserve minutes. Every agent and contributor must run the full local suite and confirm it passes before signalling a PR as review-ready. There is no remote CI gate — local execution is the gate.
 
+**Editor E2E / authenticated baselines:** See [E2E_EDITOR.md](E2E_EDITOR.md) for login and session patterns when tests target the authenticated editor shell.
+
 ## Prerequisites
 
 - **Node.js 22** and **npm** at the repo root
