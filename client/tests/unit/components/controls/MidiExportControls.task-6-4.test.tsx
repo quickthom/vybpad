@@ -11,7 +11,7 @@
  *   edges: song prop changes → subsequent download uses updated song
  *
  * Criterion 3: Accessibility / UX (testable toolbar-adjacent controls)
- *   happy: labeled group, labeled format control, download button discoverable by name
+ *   happy: labeled format control, download button discoverable by name (cluster `role="group"` lives on Transport `endContent`)
  */
 
 import { cleanup, render, screen } from '@testing-library/react';
@@ -55,11 +55,10 @@ describe('TASK-6.4 MidiExportControls — export affordance and MidiExporter wir
   });
 
   describe('happy path', () => {
-    it('renders a MIDI export group with format control and download affordance', () => {
+    it('renders format control and download affordance', () => {
       const song = buildDefaultSong();
       render(<MidiExportControls song={song} activeVoice={0} projectName={null} />);
 
-      expect(screen.getByRole('group', { name: /midi export/i })).toBeTruthy();
       expect(screen.getByLabelText('MIDI export format')).toBeTruthy();
       expect(screen.getByTestId('vybpad-midi-export-download')).toBeTruthy();
     });

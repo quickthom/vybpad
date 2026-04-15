@@ -72,7 +72,7 @@ export function MidiExportControls({ song, activeVoice, projectName }: MidiExpor
   }, [mode, song, activeVoice, projectName]);
 
   return (
-    <div role="group" aria-label="MIDI export" className="flex flex-wrap items-center gap-2">
+    <div className="flex flex-wrap items-center gap-2">
       <label
         htmlFor={selectId}
         className="text-sm font-medium text-[var(--color-text-secondary,#4B5563)]"
