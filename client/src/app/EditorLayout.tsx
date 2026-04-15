@@ -4,6 +4,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import { KeyScaleChangeDialog } from '../components/common/KeyScaleChangeDialog';
 import { LoopBar } from '../components/controls/LoopBar';
+import { MidiExportControls } from '../components/controls/MidiExportControls';
 import { TempoMeterAtMeasureDialog } from '../components/controls/TempoMeterAtMeasureDialog';
 import { MidiDragExportControl } from '../components/controls/MidiDragExportControl';
 import { TransportControls } from '../components/controls/TransportControls';
@@ -529,7 +530,12 @@ export function EditorLayout() {
           if (!Number.isFinite(n) || n < 20 || n > 300) return;
           updateMetadata({ tempo: n });
         }}
-        endContent={<MidiDragExportControl />}
+        endContent={
+          <>
+            <MidiExportControls song={song} activeVoice={activeVoice} projectName={projectName} />
+            <MidiDragExportControl />
+          </>
+        }
       />
       <LoopBar />
       <KeyScaleChangeDialog
