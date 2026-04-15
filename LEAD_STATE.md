@@ -62,7 +62,7 @@ Squash-merged to `develop` as **PR [#76](https://github.com/quickthom/vybpad/pul
 
 ### `develop` / remote
 
-- **Tip (2026-04-15):** `origin/develop` @ **`06e9d3c`** — includes TASK-8.0 (**#75**) + archive follow-ups (**#76**). Prior: Phase 7 milestone; `CHANGELOG.md` Phase 7 entry; `UX_GUIDELINES` v1.4.
+- **Tip (2026-04-15):** `origin/develop` head includes **#75** (TASK-8.0) + **#76** (archive follow-ups, squash `06e9d3c`) + follow-on **`5622aae`** (`LEAD_STATE` state log only). Prior: Phase 7 milestone; `CHANGELOG.md` Phase 7 entry; `UX_GUIDELINES` v1.4.
 
 ### Phase 7 — outcome summary
 
