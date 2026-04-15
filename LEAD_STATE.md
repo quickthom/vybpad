@@ -42,11 +42,17 @@ Squash-merged to `develop` as **PR [#75](https://github.com/quickthom/vybpad/pul
 
 **Artifact:** Cursor plan **`test_coverage_pre-audit_44b564bb.plan.md`** (stored in the operator’s Cursor plans directory — not vendored in this repo; search by filename if needed).
 
-**Why:** Session work (TASK-8.0 merge, open branch `phase-8/archive-followups` with theory barrel + deeper `api.integration` + ESLint `**/coverage/**` ignore) affects **operational sequencing** for optional Vitest coverage (Phase E) and **narrative accuracy** for server/API and theory rows — not the core Phase 8.2–8.4 QA scope.
+**Why:** Session work (TASK-8.0 merge, then archive follow-ups) affects **operational sequencing** for optional Vitest coverage (Phase E) and **narrative accuracy** for server/API and theory rows — not the core Phase 8.2–8.4 QA scope.
 
 **Edits made:** Overview extended; §1.1 (theory barrel + API integration pointer); §1.2 (ESLint + generated `coverage/`); new **§6 Session delta** table (TASK-8.0, `archive-followups`, TASK-6.6 HITL); former §6 Summary renumbered to **§7**; summary row notes **8.0 ≠** workflow/a11y/visual E2E.
 
-**Open branch (not on `develop` at update time):** `phase-8/archive-followups` — merge when ready so `eslint .` stays safe after local `vitest --coverage`.
+**Repo:** Plan narrative is satisfied on `develop` after **PR [#76](https://github.com/quickthom/vybpad/pull/76)** (theory barrel re-exports, deeper `api.integration` assertions, `eslint` ignores `**/coverage/**`, `LEAD_STATE` portability fix for plan pointer).
+
+---
+
+## Archive follow-ups — **merged** 2026-04-15
+
+Squash-merged to `develop` as **PR [#76](https://github.com/quickthom/vybpad/pull/76)** (`06e9d3c`): `client/src/engine/theory` barrel for app imports, `server/tests/api.integration.test.ts` INTERFACES-shaped checks, `eslint.config.js` `**/coverage/**`, EditorCanvas grab JSDoc, `midiExporter` lint-directive cleanup, `LEAD_STATE` refresh. Remote branch `phase-8/archive-followups` deleted after merge.
 
 ---
 
@@ -56,7 +62,7 @@ Squash-merged to `develop` as **PR [#75](https://github.com/quickthom/vybpad/pul
 
 ### `develop` / remote
 
-- **Tip:** Phase 7 milestone integrated; `CHANGELOG.md` Phase 7 entry (2026-04-15); `UX_GUIDELINES` v1.4 on `develop`.
+- **Tip (2026-04-15):** `origin/develop` @ **`06e9d3c`** — includes TASK-8.0 (**#75**) + archive follow-ups (**#76**). Prior: Phase 7 milestone; `CHANGELOG.md` Phase 7 entry; `UX_GUIDELINES` v1.4.
 
 ### Phase 7 — outcome summary
 
@@ -77,6 +83,7 @@ Squash-merged to `develop` as **PR [#75](https://github.com/quickthom/vybpad/pul
 ### Local CI caveat (unchanged)
 
 - Untracked nested `worktrees/` under the repo lint root can cause eslint “not found by the project service” noise. Prefer `ci-local` from a clean worktree or exclude stray paths.
+- **`coverage/`:** On `develop` after **#76**, `eslint.config.js` ignores `**/coverage/**` — local `vitest --coverage` + `npm run lint` should not fight generated HTML/JS under `coverage/`.
 
 ---
 
