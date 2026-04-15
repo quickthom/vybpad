@@ -878,7 +878,7 @@ export function EditorLayout() {
     <div className="flex min-h-screen flex-col bg-[var(--color-app-bg,#F3F4F6)] text-[var(--color-text-primary,#111827)]">
       <header className="flex min-h-[48px] flex-wrap items-start justify-between gap-3 border-b border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)] px-4 py-3">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight">{headerTitle}</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{headerTitle}</h1>
           {projectName ? (
             <p className="mt-0.5 text-sm text-[var(--color-text-secondary,#4B5563)]">
               {projectName}
@@ -894,7 +894,7 @@ export function EditorLayout() {
             </p>
           ) : null}
           <p className="mt-1 text-sm text-[var(--color-text-secondary,#4B5563)]">
-            Grid editor — click to select, drag to move, drag trailing edge to resize (TASK-2.7)
+            Grid editor — click to select, drag to move, drag trailing edge to resize.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -908,7 +908,7 @@ export function EditorLayout() {
               type="button"
               disabled={saveDisabled}
               onClick={() => void handleSave()}
-              className="inline-flex h-10 items-center justify-center rounded-lg bg-[var(--color-primary,#4F46E5)] px-4 text-sm font-medium text-[var(--color-text-on-primary,#FFFFFF)] outline-none transition hover:bg-[var(--color-primary-hover,#4338CA)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+              className="inline-flex min-h-11 items-center justify-center rounded-lg bg-[var(--color-primary,#4F46E5)] px-4 text-sm font-medium text-[var(--color-text-on-primary,#FFFFFF)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-primary-hover,#4338CA)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
             >
               {saveBusy ? 'Saving…' : 'Save'}
             </button>
@@ -919,7 +919,7 @@ export function EditorLayout() {
               if (projectId) clearEditorPostBootstrap(projectId);
               navigate('/projects');
             }}
-            className="inline-flex h-10 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-4 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
+            className="inline-flex min-h-11 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-4 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
           >
             Projects
           </button>
@@ -936,7 +936,7 @@ export function EditorLayout() {
             onClick={() => setChordPaletteExpanded((o) => !o)}
             aria-expanded={chordPaletteExpanded}
             aria-controls="vybpad-panel-chords"
-            className="inline-flex h-10 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-4 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
+            className="inline-flex min-h-11 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-4 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
           >
             Chords
           </button>
@@ -946,7 +946,7 @@ export function EditorLayout() {
             aria-expanded={mixerOpen}
             aria-pressed={mixerOpen}
             aria-controls={mixerOpen ? 'vybpad-panel-mixer' : undefined}
-            className="inline-flex h-10 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-4 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
+            className="inline-flex min-h-11 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-4 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
           >
             Mixer
           </button>
@@ -956,7 +956,7 @@ export function EditorLayout() {
             aria-expanded={settingsOpen}
             aria-pressed={settingsOpen}
             aria-controls={settingsOpen ? 'vybpad-panel-settings' : undefined}
-            className="inline-flex h-10 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-4 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
+            className="inline-flex min-h-11 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-4 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
           >
             Settings
           </button>
@@ -966,7 +966,7 @@ export function EditorLayout() {
             aria-expanded={pianoOpen}
             aria-pressed={pianoOpen}
             aria-controls={pianoOpen ? 'vybpad-panel-piano' : undefined}
-            className="inline-flex h-10 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-4 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
+            className="inline-flex min-h-11 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-4 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
           >
             Piano
           </button>
@@ -974,14 +974,14 @@ export function EditorLayout() {
             ref={keyScaleTriggerRef}
             type="button"
             onClick={() => setKeyScaleDialogOpen(true)}
-            className="inline-flex min-h-11 items-center justify-center rounded-md px-3 text-sm font-medium text-[var(--color-primary,#4F46E5)] outline-none transition hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
+            className="inline-flex min-h-11 items-center justify-center rounded-md px-3 text-sm font-medium text-[var(--color-primary,#4F46E5)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
           >
             Key / scale
           </button>
           <button
             type="button"
             onClick={() => void handleLogout()}
-            className="inline-flex h-10 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-4 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
+            className="inline-flex min-h-11 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-4 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
           >
             Log out
           </button>
@@ -1043,8 +1043,8 @@ export function EditorLayout() {
                     onClick={() => setChordPaletteMode('diatonic')}
                     className={
                       chordPaletteMode === 'diatonic'
-                        ? 'inline-flex min-h-11 flex-1 items-center justify-center rounded-md bg-[var(--color-surface,#FFFFFF)] px-3 text-sm font-medium text-[var(--color-text-primary,#111827)] shadow-sm outline-none transition focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2'
-                        : 'inline-flex min-h-11 flex-1 items-center justify-center rounded-md px-3 text-sm font-medium text-[var(--color-text-secondary,#4B5563)] outline-none transition hover:bg-[var(--color-surface,#FFFFFF)]/60 focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2'
+                        ? 'inline-flex min-h-11 flex-1 items-center justify-center rounded-md bg-[var(--color-surface,#FFFFFF)] px-3 text-sm font-medium text-[var(--color-text-primary,#111827)] shadow-sm outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2'
+                        : 'inline-flex min-h-11 flex-1 items-center justify-center rounded-md px-3 text-sm font-medium text-[var(--color-text-secondary,#4B5563)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface,#FFFFFF)]/60 focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2'
                     }
                   >
                     Diatonic
@@ -1055,8 +1055,8 @@ export function EditorLayout() {
                     onClick={() => setChordPaletteMode('borrowed')}
                     className={
                       chordPaletteMode === 'borrowed'
-                        ? 'inline-flex min-h-11 flex-1 items-center justify-center rounded-md bg-[var(--color-surface,#FFFFFF)] px-3 text-sm font-medium text-[var(--color-text-primary,#111827)] shadow-sm outline-none transition focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2'
-                        : 'inline-flex min-h-11 flex-1 items-center justify-center rounded-md px-3 text-sm font-medium text-[var(--color-text-secondary,#4B5563)] outline-none transition hover:bg-[var(--color-surface,#FFFFFF)]/60 focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2'
+                        ? 'inline-flex min-h-11 flex-1 items-center justify-center rounded-md bg-[var(--color-surface,#FFFFFF)] px-3 text-sm font-medium text-[var(--color-text-primary,#111827)] shadow-sm outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2'
+                        : 'inline-flex min-h-11 flex-1 items-center justify-center rounded-md px-3 text-sm font-medium text-[var(--color-text-secondary,#4B5563)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface,#FFFFFF)]/60 focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2'
                     }
                   >
                     Borrowed
@@ -1106,7 +1106,7 @@ export function EditorLayout() {
               aria-expanded={false}
               aria-controls="vybpad-panel-chords"
               onClick={() => setChordPaletteExpanded(true)}
-              className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] text-lg font-semibold leading-none text-[var(--color-text-primary,#111827)] outline-none transition hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
+              className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] text-lg font-semibold leading-none text-[var(--color-text-primary,#111827)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
             >
               ›
             </button>
@@ -1118,8 +1118,18 @@ export function EditorLayout() {
             aria-busy={projectId ? loadStatus === 'loading' : false}
           >
             {projectId && loadStatus === 'loading' ? (
-              <div className="flex min-h-[240px] items-center justify-center text-sm text-[var(--color-text-secondary,#4B5563)]">
-                Loading project…
+              <div
+                className="flex min-h-[240px] flex-col items-center justify-center gap-3"
+                role="status"
+                aria-live="polite"
+              >
+                <div
+                  className="h-8 w-8 shrink-0 animate-spin rounded-full border-2 border-[var(--color-primary,#4F46E5)] border-t-transparent"
+                  aria-hidden="true"
+                />
+                <p className="text-[12px] leading-snug text-[var(--color-text-muted,#9CA3AF)]">
+                  Loading project…
+                </p>
               </div>
             ) : (
               <EditorCanvas

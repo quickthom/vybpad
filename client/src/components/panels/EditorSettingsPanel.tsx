@@ -17,7 +17,7 @@ export interface EditorSettingsPanelProps {
 }
 
 const toggleBase =
-  'inline-flex min-h-11 flex-1 items-center justify-center rounded-md px-2 text-sm font-medium outline-none transition focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2';
+  'inline-flex min-h-11 flex-1 items-center justify-center rounded-md px-2 text-sm font-medium outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2';
 
 const toggleOn =
   'bg-[var(--color-surface,#FFFFFF)] text-[var(--color-text-primary,#111827)] shadow-sm';
@@ -47,12 +47,12 @@ export function EditorSettingsPanel(props: EditorSettingsPanelProps): ReactEleme
       data-testid="editor-settings-panel"
       className="flex min-h-0 flex-1 flex-col bg-[var(--color-surface,#FFFFFF)] px-4 pt-3 pb-4"
     >
-      <h2
+      <h3
         id="vybpad-editor-settings-title"
         className="text-base font-semibold tracking-tight text-[var(--color-text-primary,#111827)]"
       >
         Editor settings
-      </h2>
+      </h3>
       <p className="mt-1 text-xs text-[var(--color-text-secondary,#4B5563)]">
         Preferences are saved in this browser only.
       </p>
