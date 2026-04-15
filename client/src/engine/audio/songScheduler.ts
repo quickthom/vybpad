@@ -5,12 +5,7 @@ import type { TheoryEngine } from '../theory/theoryEngine';
 import { getKeyAtMeasure, getMeasureStartTicks, getScaleAtMeasure } from '../renderer/tickUtils';
 import { buildHarmonyVoicingSequence } from './harmonyVoicing';
 
-const MELODY_ROLES: readonly TrackRole[] = [
-  'melody1',
-  'melody2',
-  'melody3',
-  'melody4',
-] as const;
+const MELODY_ROLES: readonly TrackRole[] = ['melody1', 'melody2', 'melody3', 'melody4'] as const;
 
 /** One sampled note line for Tone scheduling (harmony may emit several per chord hit). */
 export interface ScheduledPlayEvent {
@@ -34,7 +29,10 @@ function getTrackOctave(song: SongData, role: TrackRole): number {
  * Builds absolute-tick note events from {@link SongData} for all audible roles (melody 0–3,
  * harmony, bass). Drums are omitted (no drum samples in MVP graph).
  */
-export function buildScheduledPlayEvents(song: SongData, theory: TheoryEngine): ScheduledPlayEvent[] {
+export function buildScheduledPlayEvents(
+  song: SongData,
+  theory: TheoryEngine,
+): ScheduledPlayEvent[] {
   const out: ScheduledPlayEvent[] = [];
   const starts = getMeasureStartTicks(song);
 
@@ -85,6 +83,35 @@ export function buildScheduledPlayEvents(song: SongData, theory: TheoryEngine): 
 
   out.sort((a, b) => a.tick - b.tick || a.midi - b.midi);
   return out;
+}
+
+function isTrackAudible(song: SongData, role: TrackRole): boolean {
+  const t = song.bandConfig.tracks.find((tr) => tr.role === role);
+  if (!t) {
+    return true;
+  }
+  return !t.mute;
+}
+
+/**
+ * MIDI pitches sounding at `tick` (exclusive end), aligned with {@link buildScheduledPlayEvents} and mixer mute flags.
+ * Used by the read-only piano keyboard panel (TASK-7.7).
+ */
+export function collectActiveMidiNotesAtScheduledEvents(
+  events: readonly ScheduledPlayEvent[],
+  song: SongData,
+  tick: number,
+): number[] {
+  const set = new Set<number>();
+  for (const e of events) {
+    if (!isTrackAudible(song, e.role)) {
+      continue;
+    }
+    if (tick >= e.tick && tick < e.tick + e.durationTicks) {
+      set.add(e.midi);
+    }
+  }
+  return [...set].sort((a, b) => a - b);
 }
 
 function pushMelodyNote(
