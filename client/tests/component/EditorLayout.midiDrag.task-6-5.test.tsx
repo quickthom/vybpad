@@ -128,7 +128,6 @@ afterEach(() => {
   vi.restoreAllMocks();
   resetPlaybackStoreForTests();
   useToastStore.getState().dismiss();
-  resetToastDedupeForTests();
 });
 
 describe('TASK-6.5 — MIDI drag export (INTERFACES § MidiExporter.createDragBlob)', () => {
