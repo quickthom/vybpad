@@ -40,7 +40,7 @@ Squash-merged to `develop` as **PR [#75](https://github.com/quickthom/vybpad/pul
 
 ## Test coverage pre-audit plan — **updated** 2026-04-15
 
-**File:** `/home/thom/.cursor/plans/test_coverage_pre-audit_44b564bb.plan.md`
+**Artifact:** Cursor plan **`test_coverage_pre-audit_44b564bb.plan.md`** (stored in the operator’s Cursor plans directory — not vendored in this repo; search by filename if needed).
 
 **Why:** Session work (TASK-8.0 merge, open branch `phase-8/archive-followups` with theory barrel + deeper `api.integration` + ESLint `**/coverage/**` ignore) affects **operational sequencing** for optional Vitest coverage (Phase E) and **narrative accuracy** for server/API and theory rows — not the core Phase 8.2–8.4 QA scope.
 

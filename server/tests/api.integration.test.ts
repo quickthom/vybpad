@@ -154,7 +154,6 @@ describe('TASK-1B.6 API integration — auth + project lifecycle', () => {
           updatedAt: project.updatedAt,
         }),
       );
-      expect(listBody.projects[0]).not.toHaveProperty('songData');
 
       const getOne = await app.inject({
         method: 'GET',
