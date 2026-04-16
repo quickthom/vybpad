@@ -1,6 +1,7 @@
-import type { ChordEvent, ScaleDegree, ScaleType, SecondaryChord } from '@vybpad/shared';
+import type { ChordEvent, NoteName, ScaleDegree, ScaleType, SecondaryChord } from '@vybpad/shared';
 import type { ReactElement } from 'react';
 
+import { theoryEngine } from '../../engine/theory';
 import { useToastStore } from '../../store/toastStore';
 
 const QUALITIES: ChordEvent['quality'][] = ['major', 'minor', 'diminished', 'augmented'];
@@ -47,13 +48,26 @@ function maxInversion(chord: ChordEvent): 2 | 3 {
 
 export interface ChordPropertiesProps {
   chord: ChordEvent;
+  /** Key + scale at the chord’s measure (Roman / names). */
+  currentKey: NoteName;
+  theoryScale: ScaleType;
   onUpdate: (changes: Partial<ChordEvent>) => void;
+  /** UI-W7 — same edit path as `d` / keyboard; omit to hide secondary action row. */
+  onSecondaryCycle?: () => void;
+  onSecondaryClear?: () => void;
 }
 
 /**
  * UI-W4 — selected chord inspector; dispatches partial updates (INTERFACES `ChordEditAction` update).
  */
-export function ChordProperties({ chord, onUpdate }: ChordPropertiesProps): ReactElement {
+export function ChordProperties({
+  chord,
+  currentKey,
+  theoryScale,
+  onUpdate,
+  onSecondaryCycle,
+  onSecondaryClear,
+}: ChordPropertiesProps): ReactElement {
   const showError = useToastStore((s) => s.showError);
 
   const triad = chord.seventh === 'none';
@@ -68,9 +82,21 @@ export function ChordProperties({ chord, onUpdate }: ChordPropertiesProps): Reac
     onUpdate(changes);
   };
 
+  const romanLabel = theoryEngine.toRomanNumeral(chord, theoryScale);
+
   return (
     <div className="flex flex-col gap-4 px-4 py-4">
       <h3 className="text-base font-semibold text-[var(--color-text-primary,#111827)]">Chord</h3>
+      <p
+        data-testid="properties-chord-roman"
+        aria-live="polite"
+        className="text-sm font-semibold text-[var(--color-text-primary,#111827)]"
+      >
+        {romanLabel}
+      </p>
+      <p className="text-xs text-[var(--color-text-secondary,#4B5563)]">
+        {currentKey} · {theoryEngine.toChordName(chord, currentKey, theoryScale)}
+      </p>
 
       <div className="flex flex-col gap-2">
         <label htmlFor="properties-chord-quality" className="text-[13px] font-medium text-[var(--color-text-primary,#111827)]">
@@ -208,6 +234,34 @@ export function ChordProperties({ chord, onUpdate }: ChordPropertiesProps): Reac
           )}
         </select>
       </div>
+
+      {onSecondaryCycle != null && onSecondaryClear != null ? (
+        <div className="flex flex-col gap-2 border-t border-[var(--color-border,#E5E7EB)] pt-4">
+          <p className="text-[13px] font-medium text-[var(--color-text-primary,#111827)]">Secondary actions</p>
+          <p className="text-xs text-[var(--color-text-secondary,#4B5563)]">
+            Mirrors the <kbd className="rounded bg-[var(--color-surface-muted,#F9FAFB)] px-1 font-mono text-[11px]">d</kbd> key for undo-consistent edits.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              data-testid="properties-chord-secondary-cycle"
+              onClick={onSecondaryCycle}
+              className="inline-flex h-9 min-h-0 shrink-0 items-center justify-center rounded-md px-3 text-sm font-medium text-[var(--color-primary,#4F46E5)] outline-none transition hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
+            >
+              Cycle secondary (d)
+            </button>
+            <button
+              type="button"
+              data-testid="properties-chord-secondary-clear"
+              disabled={chord.secondary == null}
+              onClick={onSecondaryClear}
+              className="inline-flex h-9 min-h-0 shrink-0 items-center justify-center rounded-md px-3 text-sm font-medium text-[var(--color-text-secondary,#4B5563)] outline-none transition hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+            >
+              Clear to diatonic
+            </button>
+          </div>
+        </div>
+      ) : null}
 
       <div className="flex flex-col gap-2">
         <label htmlFor="properties-chord-borrow" className="text-[13px] font-medium text-[var(--color-text-primary,#111827)]">

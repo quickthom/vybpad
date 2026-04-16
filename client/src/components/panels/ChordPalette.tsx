@@ -262,7 +262,7 @@ export function ChordPalette(props: ChordPaletteProps): ReactElement {
             </p>
           ) : (
             <div
-              className="mt-4 grid grid-cols-2 gap-2"
+              className="mt-4 flex flex-col gap-2"
               role="group"
               aria-label="Borrowed scale degrees"
             >
@@ -283,15 +283,16 @@ export function ChordPalette(props: ChordPaletteProps): ReactElement {
                   duration: 48,
                 };
                 const roman = theoryEngine.toRomanNumeral(preview, currentScale);
+                const name = theoryEngine.toChordName(preview, currentKey, currentScale);
                 return (
                   <button
                     key={`${borrowedSource}-${deg}`}
                     type="button"
                     data-testid={`chord-palette-borrowed-degree-${deg}`}
                     tabIndex={0}
-                    className="flex min-h-[44px] flex-col items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] px-2 py-2 text-center outline-none transition hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
+                    className="flex min-h-10 w-full flex-row items-stretch gap-3 rounded-lg border border-[var(--color-border-strong,#D1D5DB)] text-left outline-none transition hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
                     style={{
-                      backgroundImage: `linear-gradient(${fill}CC, ${fill}CC), linear-gradient(var(--color-surface,#FFFFFF), var(--color-surface,#FFFFFF))`,
+                      backgroundImage: `linear-gradient(90deg, ${fill}33 0, ${fill}33 4px, transparent 4px), linear-gradient(var(--color-surface,#FFFFFF), var(--color-surface,#FFFFFF))`,
                     }}
                     aria-label={`Add borrowed chord, degree ${deg}, ${roman}`}
                     onClick={() =>
@@ -307,9 +308,10 @@ export function ChordPalette(props: ChordPaletteProps): ReactElement {
                       })
                     }
                   >
-                    <span className="text-sm font-semibold text-[var(--color-text-primary,#111827)]">{deg}</span>
-                    <span className="mt-0.5 text-xs font-medium text-[var(--color-text-secondary,#4B5563)]">
-                      {roman}
+                    <span className="sr-only">{deg}</span>
+                    <span className="flex min-w-0 flex-1 flex-col justify-center px-3 py-2">
+                      <span className="text-sm font-semibold text-[var(--color-text-primary,#111827)]">{roman}</span>
+                      <span className="mt-0.5 text-xs font-normal text-[var(--color-text-secondary,#4B5563)]">{name}</span>
                     </span>
                   </button>
                 );
@@ -331,41 +333,41 @@ export function ChordPalette(props: ChordPaletteProps): ReactElement {
           >
             Magic: tonic chord
           </button>
-          <div className="grid grid-cols-2 gap-2" role="group" aria-label="Diatonic scale degrees">
+          <div className="flex flex-col gap-2" role="group" aria-label="Diatonic scale degrees">
             {DIATONIC_DEGREES.map((deg) => {
               const fill = pat010DiatonicHex(deg);
-              const roman = theoryEngine.toRomanNumeral(
-                {
-                  id: 'palette-preview',
-                  scaleDegree: deg,
-                  quality: theoryEngine.getDiatonicQuality(deg, currentScale),
-                  seventh: theoryEngine.getDiatonicSeventh(deg, currentScale),
-                  suspension: 'none',
-                  addition: 'none',
-                  inversion: 0,
-                  borrowed: null,
-                  secondary: null,
-                  beat: 0,
-                  duration: 48,
-                },
-                currentScale,
-              );
+              const preview: ChordEvent = {
+                id: 'palette-preview',
+                scaleDegree: deg,
+                quality: theoryEngine.getDiatonicQuality(deg, currentScale),
+                seventh: theoryEngine.getDiatonicSeventh(deg, currentScale),
+                suspension: 'none',
+                addition: 'none',
+                inversion: 0,
+                borrowed: null,
+                secondary: null,
+                beat: 0,
+                duration: 48,
+              };
+              const roman = theoryEngine.toRomanNumeral(preview, currentScale);
+              const name = theoryEngine.toChordName(preview, currentKey, currentScale);
               return (
                 <button
                   key={deg}
                   type="button"
                   data-testid={`chord-palette-degree-${deg}`}
                   tabIndex={0}
-                  className="flex min-h-[44px] flex-col items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] px-2 py-2 text-center outline-none transition hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
+                  className="flex min-h-10 w-full flex-row items-stretch gap-3 rounded-lg border border-[var(--color-border-strong,#D1D5DB)] text-left outline-none transition hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
                   style={{
-                    backgroundImage: `linear-gradient(${fill}CC, ${fill}CC), linear-gradient(var(--color-surface,#FFFFFF), var(--color-surface,#FFFFFF))`,
+                    backgroundImage: `linear-gradient(90deg, ${fill}33 0, ${fill}33 4px, transparent 4px), linear-gradient(var(--color-surface,#FFFFFF), var(--color-surface,#FFFFFF))`,
                   }}
                   aria-label={`Add diatonic chord, degree ${deg}, ${roman}`}
                   onClick={() => onChordSelect(diatonicSelectPayload(deg, currentScale))}
                 >
-                  <span className="text-sm font-semibold text-[var(--color-text-primary,#111827)]">{deg}</span>
-                  <span className="mt-0.5 text-xs font-medium text-[var(--color-text-secondary,#4B5563)]">
-                    {roman}
+                  <span className="sr-only">{deg}</span>
+                  <span className="flex min-w-0 flex-1 flex-col justify-center px-3 py-2">
+                    <span className="text-sm font-semibold text-[var(--color-text-primary,#111827)]">{roman}</span>
+                    <span className="mt-0.5 text-xs font-normal text-[var(--color-text-secondary,#4B5563)]">{name}</span>
                   </span>
                 </button>
               );
