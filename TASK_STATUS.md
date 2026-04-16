@@ -51,5 +51,11 @@ Phases 0 (7/7), 1A (7/7), 1B (6/6), Phase 2 (15/15), Phase 3 (10/10), Phase 4 (1
 | UI-W5 | QA | — | merged | — | UI-W4 | Tests with UI-W5 |
 | UI-W6 | Builder | — | merged | — (local 2f40e28 + INTERFACES dd97eb3) | UI-W5 | RA-9/11/18 + RA-15 stubs; `docs/pull-requests/UI-W6.md`; `phase-8/ui-shell-consolidation` merged to develop |
 | UI-W6 | QA | — | merged | — | UI-W5 | Playwright `ui-shell-consolidation.ui-w6.spec.ts` |
+| UI-W7 | Builder | phase-8/ui-palette-density | in-progress | — | UI-W6 | RA-10 + RA-12 |
+| UI-W7 | QA | phase-8/ui-palette-density | in-progress | — | UI-W6 | Pre-implementation tests |
+| UI-W8 | Builder | — | pending | — | UI-W7 | RA-13–16,20–21 + RA-15 gate |
+| UI-W8 | QA | — | pending | — | UI-W7 | — |
+| UI-W9 | Builder | — | pending | — | UI-W8 | RA-17 + RA-19 |
+| UI-W9 | QA | — | pending | — | UI-W8 | — |
 
 ---
