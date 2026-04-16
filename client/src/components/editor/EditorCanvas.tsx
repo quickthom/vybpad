@@ -85,6 +85,10 @@ export interface EditorCanvasProps {
   getShortcutContext?: () => ShortcutContext;
   /** UI-W3 — left-panel Chromatic toggle; new melody notes use default `chromatic` per PAT-018 when true. */
   melodyChromaticEntryActive?: boolean;
+  /** UI-W4 — see INTERFACES.md `EditorCanvasProps`; omitted → all voices visible, alpha inactive lanes. */
+  melodyVoiceVisible?: readonly [boolean, boolean, boolean, boolean];
+  inactiveMelodyDisplayMode?: 'outline' | 'solid' | 'alpha';
+  smartOctaveEnabled?: boolean;
 }
 
 const SELECTION_STROKE = 'rgba(37, 99, 235, 0.8)';
@@ -181,6 +185,9 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
     shortcutManager,
     getShortcutContext,
     melodyChromaticEntryActive = false,
+    melodyVoiceVisible = [true, true, true, true] as const,
+    inactiveMelodyDisplayMode = 'alpha',
+    smartOctaveEnabled = false,
   } = props;
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -243,6 +250,7 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
     shortcutManager,
     getShortcutContext,
     melodyChromaticEntryActive,
+    smartOctaveEnabled,
   });
 
   const hitIsResizeEdge = useCallback(
@@ -302,13 +310,16 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
       colorScheme,
       labelMode,
       melodyRowHeight,
+      melodyVoiceVisible,
+      activeVoice,
+      inactiveMelodyDisplayMode,
     });
     drawChordBlocks(ctx, song, viewport, theoryEngine, { colorScheme, labelMode, melodyRowHeight });
     if (showGuides) {
       drawGuideOverlay(ctx, song, viewport, colorScheme, { melodyRowHeight });
     }
 
-    drawPlaybackHighlight(ctx, song, viewport, playbackTick, melodyRowHeight);
+    drawPlaybackHighlight(ctx, song, viewport, playbackTick, melodyRowHeight, melodyVoiceVisible);
 
     const strokeRect = (x: number, y: number, rw: number, rh: number, stroke: string, fill?: string) => {
       ctx.save();
@@ -377,6 +388,9 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
     showGuides,
     labelMode,
     melodyRowHeight,
+    activeVoice,
+    melodyVoiceVisible,
+    inactiveMelodyDisplayMode,
   ]);
 
   useEffect(() => {
@@ -484,7 +498,7 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
     const cx = e.clientX ?? 0;
     const cy = e.clientY ?? 0;
     const { x: vx, y: vy } = pointerEventToViewportXY(canvas, cx, cy, PITCH_GUTTER_WIDTH);
-    const hit = hitTestEditorCanvas(vx, vy, song, viewport, melodyRowHeight);
+    const hit = hitTestEditorCanvas(vx, vy, song, viewport, melodyRowHeight, melodyVoiceVisible);
 
     if (typeof canvas.setPointerCapture === 'function') {
       canvas.setPointerCapture(e.pointerId);
@@ -562,7 +576,7 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
 
     if (!sess) {
       const { x: vx, y: vy } = pointerEventToViewportXY(canvas, mcx, mcy, PITCH_GUTTER_WIDTH);
-      const hit = hitTestEditorCanvas(vx, vy, song, viewport, melodyRowHeight);
+      const hit = hitTestEditorCanvas(vx, vy, song, viewport, melodyRowHeight, melodyVoiceVisible);
       setHoverHit(hit);
       scheduleRedraw();
       return;
@@ -625,11 +639,16 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
 
   // TODO(Designer): optional side-rail caption for chord shortcuts (F08.2); aria-label covers screen readers until then.
 
+  const visBits = melodyVoiceVisible.map((v) => (v ? '1' : '0')).join('');
+
   return (
     <canvas
       ref={canvasRef}
       role="application"
       tabIndex={0}
+      data-melody-inactive-display-mode={inactiveMelodyDisplayMode}
+      data-melody-voice-visible={visBits}
+      data-smart-octave={smartOctaveEnabled ? 'true' : 'false'}
       className={`${cursorClass} outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2`}
       aria-label="Song editor — digits 1–7; chord d secondary, i inversion, e embellishment; duration h j k l ; ` ' (triplet row q w e r t); Delete, arrow keys to navigate, Ctrl+1–4 melody voice"
       onPointerDown={handlePointerDown}

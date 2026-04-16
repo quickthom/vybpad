@@ -15,6 +15,8 @@ import {
   getSecondaryCycleSequence,
   theoryEngine,
 } from '../../engine/theory';
+import { getKeyScaleAtMeasure } from '../../engine/renderer/noteBlocks';
+import { scaleDegreeToMidi } from '../../engine/theory/scaleDegreeToMidi';
 
 /**
  * INTERFACES.md `ChordEvent` field order: seventh → suspension → addition.
@@ -331,6 +333,102 @@ export function buildDefaultNotePayload(
     isRest: false,
     velocity: 100,
   };
+}
+
+/**
+ * UI-W4 — choose relative octave so a new/edited pitch sits nearest the previous melody pitch in the
+ * same voice (Hookpad-style “smart octave”). When there is no prior note, returns `0`.
+ */
+export function pickSmartOctaveForNewNote(
+  song: SongData,
+  measureIndex: number,
+  voice: 0 | 1 | 2 | 3,
+  insertBeat: number,
+  degree: ScaleDegree,
+  chromatic: number,
+): number {
+  const prevMidi = findPreviousMelodyMidiInVoice(song, measureIndex, voice, insertBeat);
+  if (prevMidi == null) {
+    return 0;
+  }
+  const { key, scale } = getKeyScaleAtMeasure(song, measureIndex);
+  return pickOctaveNearestToMidi(degree, chromatic, key, scale, prevMidi);
+}
+
+function findPreviousMelodyMidiInVoice(
+  song: SongData,
+  measureIndex: number,
+  voice: 0 | 1 | 2 | 3,
+  insertBeat: number,
+): number | null {
+  for (let m = measureIndex; m >= 0; m--) {
+    const lane = song.measures[m]?.notes[voice] ?? [];
+    const { key, scale } = getKeyScaleAtMeasure(song, m);
+    if (m === measureIndex) {
+      let best: NoteEvent | null = null;
+      for (const n of lane) {
+        if (n.isRest) continue;
+        if (n.beat < insertBeat && (!best || n.beat > best.beat)) {
+          best = n;
+        }
+      }
+      if (best) {
+        return scaleDegreeToMidi(best.scaleDegree, best.octave, best.chromatic, key, scale, 4);
+      }
+    } else {
+      let best: NoteEvent | null = null;
+      for (const n of lane) {
+        if (n.isRest) continue;
+        if (!best || n.beat > best.beat) {
+          best = n;
+        }
+      }
+      if (best) {
+        return scaleDegreeToMidi(best.scaleDegree, best.octave, best.chromatic, key, scale, 4);
+      }
+    }
+  }
+  return null;
+}
+
+function pickOctaveNearestToMidi(
+  degree: ScaleDegree,
+  chromatic: number,
+  key: NoteName,
+  scale: ScaleType,
+  referenceMidi: number,
+): number {
+  let bestOct = 0;
+  let bestDist = Infinity;
+  for (let o = -2; o <= 2; o++) {
+    const m = scaleDegreeToMidi(degree, o, chromatic, key, scale, 4);
+    const d = Math.abs(m - referenceMidi);
+    if (d < bestDist) {
+      bestDist = d;
+      bestOct = o;
+    }
+  }
+  return bestOct;
+}
+
+/** Smart octave when editing an existing note’s scale degree in text mode — stay close to the prior pitch. */
+export function pickSmartOctaveForDegreeEdit(
+  song: SongData,
+  measureIndex: number,
+  degree: ScaleDegree,
+  chromatic: number,
+  previous: NoteEvent,
+): number {
+  const { key, scale } = getKeyScaleAtMeasure(song, measureIndex);
+  const prevMidi = scaleDegreeToMidi(
+    previous.scaleDegree,
+    previous.octave,
+    previous.chromatic,
+    key,
+    scale,
+    4,
+  );
+  return pickOctaveNearestToMidi(degree, chromatic, key, scale, prevMidi);
 }
 
 /** Rest placement — `scaleDegree` / `octave` / `chromatic` ignored when `isRest` (INTERFACES.md). */

@@ -39,6 +39,10 @@ export interface UIStore {
   labelMode: EditorLabelMode;
   staffSpacing: StaffSpacing;
   activePanels: Set<string>;
+  /** UI-W4 — per-voice editor visibility (melody voices 0–3). */
+  melodyVoiceVisible: readonly [boolean, boolean, boolean, boolean];
+  inactiveMelodyDisplayMode: 'outline' | 'solid' | 'alpha';
+  smartOctaveEnabled: boolean;
 
   setViewport: (v: Viewport) => void;
   setSelection: (s: Selection | null) => void;
@@ -51,6 +55,9 @@ export interface UIStore {
   setColorScheme: (colorScheme: 'diatonic' | 'major') => void;
   setLabelMode: (mode: EditorLabelMode) => void;
   setStaffSpacing: (staffSpacing: StaffSpacing) => void;
+  setMelodyVoiceVisible: (voice: 0 | 1 | 2 | 3, visible: boolean) => void;
+  setInactiveMelodyDisplayMode: (mode: 'outline' | 'solid' | 'alpha') => void;
+  setSmartOctaveEnabled: (enabled: boolean) => void;
 }
 
 export const useUIStore = create<UIStore>()(
@@ -64,6 +71,9 @@ export const useUIStore = create<UIStore>()(
     labelMode: hydrated?.labelMode ?? 'degree',
     staffSpacing: hydrated?.staffSpacing ?? 'default',
     activePanels: new Set<string>(),
+    melodyVoiceVisible: hydrated?.melodyVoiceVisible ?? ([true, true, true, true] as const),
+    inactiveMelodyDisplayMode: hydrated?.inactiveMelodyDisplayMode ?? 'alpha',
+    smartOctaveEnabled: hydrated?.smartOctaveEnabled ?? false,
 
     setViewport: (v: Viewport) => {
       set((draft) => {
@@ -128,6 +138,31 @@ export const useUIStore = create<UIStore>()(
         draft.staffSpacing = staffSpacing;
       });
     },
+
+    setMelodyVoiceVisible: (voice, visible) => {
+      set((draft) => {
+        const next: [boolean, boolean, boolean, boolean] = [...draft.melodyVoiceVisible] as [
+          boolean,
+          boolean,
+          boolean,
+          boolean,
+        ];
+        next[voice] = visible;
+        draft.melodyVoiceVisible = next;
+      });
+    },
+
+    setInactiveMelodyDisplayMode: (mode) => {
+      set((draft) => {
+        draft.inactiveMelodyDisplayMode = mode;
+      });
+    },
+
+    setSmartOctaveEnabled: (enabled) => {
+      set((draft) => {
+        draft.smartOctaveEnabled = enabled;
+      });
+    },
   })),
 );
 
@@ -150,6 +185,9 @@ function schedulePersist(): void {
       colorScheme: s.colorScheme,
       showGuides: s.showGuides,
       staffSpacing: s.staffSpacing,
+      melodyVoiceVisible: [...s.melodyVoiceVisible] as [boolean, boolean, boolean, boolean],
+      inactiveMelodyDisplayMode: s.inactiveMelodyDisplayMode,
+      smartOctaveEnabled: s.smartOctaveEnabled,
     });
   }, 50);
 }
@@ -161,7 +199,13 @@ if (typeof window !== 'undefined') {
       state.labelMode === prev.labelMode &&
       state.colorScheme === prev.colorScheme &&
       state.showGuides === prev.showGuides &&
-      state.staffSpacing === prev.staffSpacing
+      state.staffSpacing === prev.staffSpacing &&
+      state.inactiveMelodyDisplayMode === prev.inactiveMelodyDisplayMode &&
+      state.smartOctaveEnabled === prev.smartOctaveEnabled &&
+      state.melodyVoiceVisible[0] === prev.melodyVoiceVisible[0] &&
+      state.melodyVoiceVisible[1] === prev.melodyVoiceVisible[1] &&
+      state.melodyVoiceVisible[2] === prev.melodyVoiceVisible[2] &&
+      state.melodyVoiceVisible[3] === prev.melodyVoiceVisible[3]
     ) {
       return;
     }

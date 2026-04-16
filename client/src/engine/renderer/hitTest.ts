@@ -80,6 +80,7 @@ function hitNoteTopmost(
   song: SongData,
   viewport: Viewport,
   melodyRowHeight: number,
+  melodyVoiceVisible: readonly [boolean, boolean, boolean, boolean] = [true, true, true, true],
 ): EditorCanvasHit | null {
   const start = viewport.startMeasure;
   const end = Math.min(start + viewport.measureCount, song.measures.length);
@@ -89,6 +90,9 @@ function hitNoteTopmost(
       continue;
     }
     for (const v of [3, 2, 1, 0] as const) {
+      if (!melodyVoiceVisible[v]) {
+        continue;
+      }
       const list = measure.notes[v] ?? [];
       for (let ni = list.length - 1; ni >= 0; ni--) {
         const note = list[ni];
@@ -130,8 +134,9 @@ export function hitTestEditorCanvas(
   song: SongData,
   viewport: Viewport,
   melodyRowHeight: number = NOTE_HEIGHT,
+  melodyVoiceVisible: readonly [boolean, boolean, boolean, boolean] = [true, true, true, true],
 ): EditorCanvasHit | null {
-  const noteHit = hitNoteTopmost(x, y, song, viewport, melodyRowHeight);
+  const noteHit = hitNoteTopmost(x, y, song, viewport, melodyRowHeight, melodyVoiceVisible);
   if (noteHit) {
     return noteHit;
   }
