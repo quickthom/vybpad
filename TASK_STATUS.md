@@ -33,9 +33,9 @@ Phases 0 (7/7), 1A (7/7), 1B (6/6), Phase 2 (15/15), Phase 3 (10/10), Phase 4 (1
 
 ---
 
-## UI Remediation — REF_AUDIT_1 (Waves 1–3)
+## UI Remediation — REF_AUDIT_1 (Waves 1–9)
 
-> Sequencing: [ui_remediation_sequencing_ec8db0c2.plan.md](ui_remediation_sequencing_ec8db0c2.plan.md); Wave 2–3 detail: [docs/audit/UI_REMEDIATION_WAVES_2_3.md](docs/audit/UI_REMEDIATION_WAVES_2_3.md).
+> Sequencing: [ui_remediation_sequencing_ec8db0c2.plan.md](ui_remediation_sequencing_ec8db0c2.plan.md); Waves 2–3: [docs/audit/UI_REMEDIATION_WAVES_2_3.md](docs/audit/UI_REMEDIATION_WAVES_2_3.md); Waves 4–6: [docs/audit/UI_REMEDIATION_WAVES_4_6.md](docs/audit/UI_REMEDIATION_WAVES_4_6.md); Waves 7–9: [docs/audit/UI_REMEDIATION_WAVES_7_9.md](docs/audit/UI_REMEDIATION_WAVES_7_9.md).
 
 | Task | Role | Branch | Status | PR | Depends | Notes |
 |---|---|---|---|---|---|---|
