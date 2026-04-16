@@ -25,6 +25,30 @@ export default defineConfig({
   build: {
     outDir: 'build',
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        /**
+         * Split heavy vendor deps so the initial route shell stays smaller; editor/audio
+         * routes load additional async chunks via React.lazy + dynamic imports in the graph.
+         * Order: match specific package paths before generic `react` (react-dom/router are separate).
+         */
+        manualChunks(id) {
+          if (!id.includes('node_modules')) {
+            return undefined;
+          }
+          if (id.includes('node_modules/tone')) return 'tone';
+          if (id.includes('node_modules/smplr')) return 'smplr';
+          if (id.includes('node_modules/midi-writer-js')) return 'midi-writer';
+          if (id.includes('node_modules/react-dom')) return 'react-dom';
+          if (id.includes('node_modules/react-router')) return 'react-router';
+          if (id.includes('node_modules/scheduler')) return 'react';
+          if (id.includes('node_modules/react/')) return 'react';
+          if (id.includes('node_modules/zustand')) return 'zustand';
+          if (id.includes('node_modules/immer')) return 'immer';
+          return undefined;
+        },
+      },
+    },
   },
   test: {
     environment: 'node',
