@@ -76,6 +76,7 @@ import {
   markEditorPostBootstrapFromNavigate,
   shouldSkipDuplicateGetAfterPostBootstrap,
 } from './editorProjectHydration';
+import { keyScaleTargetMeasureIndex } from './keyScaleTargetMeasureIndex';
 
 /** TASK-3.4: idle delay after the last edit before auto PUT (coalesces rapid edits). */
 const AUTOSAVE_DEBOUNCE_MS = 1500;
@@ -210,15 +211,10 @@ export function EditorLayout() {
   const [keyScaleDialogOpen, setKeyScaleDialogOpen] = useState(false);
   const keyScaleTriggerRef = useRef<HTMLButtonElement>(null);
 
-  const keyScaleTargetMeasure = useMemo(() => {
-    if (selectedMeasures) {
-      return Math.min(selectedMeasures[0], selectedMeasures[1]);
-    }
-    if (selection?.measureIndex != null) {
-      return selection.measureIndex;
-    }
-    return 0;
-  }, [selectedMeasures, selection]);
+  const keyScaleTargetMeasure = useMemo(
+    () => keyScaleTargetMeasureIndex(selectedMeasures, selection),
+    [selectedMeasures, selection],
+  );
   const [chordPaletteMode, setChordPaletteMode] = useState<
     'diatonic' | 'borrowed' | 'secondary' | 'search'
   >('diatonic');
@@ -1456,12 +1452,11 @@ export function EditorLayout() {
       </div>
       <TempoMeterAtMeasureDialog
         open={tempoMeterDialogOpen}
-        measureIndex={selectedMeasures?.[0] ?? 0}
+        measureIndex={keyScaleTargetMeasure}
         song={song}
         onDismiss={() => setTempoMeterDialogOpen(false)}
         onApply={(changes) => {
-          const idx = selectedMeasures?.[0] ?? 0;
-          setMeasureChanges(idx, changes);
+          setMeasureChanges(keyScaleTargetMeasure, changes);
         }}
       />
     </div>
