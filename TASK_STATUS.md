@@ -49,5 +49,7 @@ Phases 0 (7/7), 1A (7/7), 1B (6/6), Phase 2 (15/15), Phase 3 (10/10), Phase 4 (1
 | UI-W4 | QA | — | merged | — | UI-W3 | Pre-written tests landed with UI-W4 |
 | UI-W5 | Builder | — | merged | — (local 43721fe) | UI-W4 | RA-7 + RA-8; `docs/pull-requests/UI-W5.md`; `phase-8/ui-voices-discovery` merged to develop |
 | UI-W5 | QA | — | merged | — | UI-W4 | Tests with UI-W5 |
+| UI-W6 | Builder | phase-8/ui-shell-consolidation | in-progress | — | UI-W5 | RA-9, RA-11, RA-18 shell |
+| UI-W6 | QA | phase-8/ui-shell-consolidation | in-progress | — | UI-W5 | Failing tests / E2E selector updates |
 
 ---
