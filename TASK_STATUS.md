@@ -43,7 +43,7 @@ Phases 0 (7/7), 1A (7/7), 1B (6/6), Phase 2 (15/15), Phase 3 (10/10), Phase 4 (1
 | UI-W1 | QA | — | merged | — | None | Tests landed with UI-W1 |
 | UI-W2 | Builder | — | merged | — (local merge) | UI-W1 | RA-2 bottom chord strip; branch `phase-8/ui-remediation-wave2` @1a92b3d + ARCHITECTURE sync 015253d |
 | UI-W2 | QA | — | merged | — | UI-W1 | chordStrip.ui-w2 tests |
-| UI-W3 | Builder | phase-8/ui-remediation-wave3 | in-progress | — | UI-W2 | RA-5 + RA-6: left panel duration + note entry |
-| UI-W3 | QA | phase-8/ui-remediation-wave3 | in-progress | — | UI-W2 | — |
+| UI-W3 | Builder | — | merged | — (local merge) | UI-W2 | RA-5 + RA-6; branch `phase-8/ui-remediation-wave3` @5fdd283 + INTERFACES `melodyChromaticEntryActive` |
+| UI-W3 | QA | — | merged | — | UI-W2 | Component tests + chromatic remediation |
 
 ---
