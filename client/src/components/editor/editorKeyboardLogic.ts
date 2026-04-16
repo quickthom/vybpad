@@ -333,6 +333,19 @@ export function buildDefaultNotePayload(
   };
 }
 
+/** Rest placement — `scaleDegree` / `octave` / `chromatic` ignored when `isRest` (INTERFACES.md). */
+export function buildRestNotePayload(beat: number, duration: number): Omit<NoteEvent, 'id'> {
+  return {
+    scaleDegree: 1,
+    octave: 0,
+    chromatic: 0,
+    beat,
+    duration,
+    isRest: true,
+    velocity: 100,
+  };
+}
+
 /** Chords + active-voice notes in one measure, sorted by beat; chord wins ties (TASK-2.8). */
 export function mergedChordAndVoiceNoteIds(
   measure: Measure,

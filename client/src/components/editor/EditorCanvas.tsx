@@ -83,6 +83,8 @@ export interface EditorCanvasProps {
   /** PAT-027 — shell supplies manager + live context (modal/focus gating). */
   shortcutManager?: ShortcutManager | null;
   getShortcutContext?: () => ShortcutContext;
+  /** UI-W3 — left-panel Chromatic toggle; new melody notes use default `chromatic` per PAT-018 when true. */
+  melodyChromaticEntryActive?: boolean;
 }
 
 const SELECTION_STROKE = 'rgba(37, 99, 235, 0.8)';
@@ -178,6 +180,7 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
     keyboardPlumbing,
     shortcutManager,
     getShortcutContext,
+    melodyChromaticEntryActive = false,
   } = props;
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -239,6 +242,7 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
     onSelectionChange,
     shortcutManager,
     getShortcutContext,
+    melodyChromaticEntryActive,
   });
 
   const hitIsResizeEdge = useCallback(
