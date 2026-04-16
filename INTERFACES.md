@@ -512,6 +512,10 @@ interface ChordPaletteProps {
   currentScale: ScaleType;
   onChordSelect: (chord: Omit<ChordEvent, "id" | "beat" | "duration">) => void;
   mode: "diatonic" | "borrowed" | "secondary" | "search";
+  /** UI-W5 (RA-8) — discovery / library row: Magic, Popular, Search, Progressions, Bass Sets. Omitted → parent defaults to `"magic"` (backward compatible). */
+  libraryTab?: "magic" | "popular" | "search" | "progressions" | "bassSets";
+  /** UI-W5 — when parent controls the library tab, notify on change. */
+  onLibraryTabChange?: (tab: "magic" | "popular" | "search" | "progressions" | "bassSets") => void;
 }
 ```
 
