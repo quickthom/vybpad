@@ -41,6 +41,17 @@ You are the Tech Lead. Per HITL direction, you shall not perform any task or por
 
 ---
 
+## UI remediation (REF_AUDIT_1) — Waves 4–6 merged locally (2026-04-16)
+
+- **Authoritative rows:** `TASK_STATUS.md` (UI-W4–UI-W6).
+- **UI-W4** — branch `phase-8/ui-right-properties`: RA-4 right properties panel; INTERFACES melody visibility / inactive display / smart octave; artifact `docs/pull-requests/UI-W4.md`.
+- **UI-W5** — branch `phase-8/ui-voices-discovery`: RA-7 + RA-8 chord library tabs; `ChordPaletteProps.libraryTab`; `buildScheduledPlayEvents` + `melodyVoiceVisible` (INTERFACES note under Audio scheduling); artifact `docs/pull-requests/UI-W5.md`. Remote merge initially lacked unpushed Builder tip — resolved by merging local `43721fe` into `develop`.
+- **UI-W6** — branch `phase-8/ui-shell-consolidation`: RA-9/11/18 + RA-15 disabled stubs; `TransportControlsProps.loopContent`; artifact `docs/pull-requests/UI-W6.md`; TL INTERFACES commit `loopContent` before merge to clear Reviewer block.
+- **`./scripts/ci-local.sh`** green on `develop` after Wave 6 integration.
+- **Remote:** local `develop` is ahead of `origin/develop` — **HITL** should `git push` when credentials allow; `gh` was **401** for PR creation during coordination.
+
+---
+
 ## TASK-8.0 — Phase-start tech debt (**merged** 2026-04-15)
 
 Squash-merged to `develop` as **PR [#75](https://github.com/quickthom/vybpad/pull/75)** (MeasureBar `measuresPerLine` stride guard, TransportControls JSDoc, TASK-8.0 component tests, `editorUiSettingsLocalStorage` test spy fix for green `ci-local`). TASK-7.0 backlog and archive follow-ups addressed per plan; full brief text flushed — see merge commit and PR body.
