@@ -68,8 +68,8 @@ Phases 0 (7/7), 1A (7/7), 1B (6/6), Phase 2 (15/15), Phase 3 (10/10), Phase 4 (1
 |---|---|---|---|---|---|---|
 | OB-4 | Builder | — | merged | [#82](https://github.com/quickthom/vybpad/pull/82) | None | P0 viewport drag — squash-merged to `develop` |
 | OB-4 | QA | — | merged | [#82](https://github.com/quickthom/vybpad/pull/82) | None | E2E + unit tests in #82 |
-| OB-3 | Builder | — | pending | — | OB-4 | Resize notes by dragging edges (P1) |
-| OB-3 | QA | — | pending | — | OB-4 | — |
+| OB-3 | Builder | `phase-8/ob-3-note-edge-resize` | in-progress | — | OB-4 | Resize notes by dragging edges (P1) |
+| OB-3 | QA | `phase-8/ob-3-note-edge-resize` | in-progress | — | OB-4 | Failing tests first; same branch |
 | OB-5 | Builder | — | pending | — | OB-3 | Magnetic snap to beats / fractions (P2) |
 | OB-5 | QA | — | pending | — | OB-3 | — |
 | OB-1+2 | Builder | — | pending | — | OB-4 | Note + chord click audition; PAT-026 (combined per TL sequencing) |
