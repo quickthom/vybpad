@@ -356,6 +356,12 @@ export interface DrawNoteBlocksOptions {
   labelMode?: EditorLabelMode;
   /** Vertical pitch ladder step from staff spacing (defaults to {@link NOTE_HEIGHT}). */
   melodyRowHeight?: number;
+  /** UI-W4 — defaults all true (INTERFACES: omitted → all visible). */
+  melodyVoiceVisible?: readonly [boolean, boolean, boolean, boolean];
+  /** UI-W4 — active melody lane; required when using visibility / inactive styling. */
+  activeVoice?: 0 | 1 | 2 | 3;
+  /** UI-W4 — styling for visible non-active voices. Omitted → full fill for every visible voice. */
+  inactiveMelodyDisplayMode?: 'outline' | 'solid' | 'alpha';
 }
 
 /**
@@ -371,6 +377,9 @@ export function drawNoteBlocks(
   const colorScheme = options.colorScheme ?? 'diatonic';
   const labelMode: EditorLabelMode = options.labelMode ?? 'degree';
   const melodyRowHeight = options.melodyRowHeight ?? NOTE_HEIGHT;
+  const visibility = options.melodyVoiceVisible ?? ([true, true, true, true] as const);
+  const activeVoice = options.activeVoice ?? 0;
+  const inactiveMode = options.inactiveMelodyDisplayMode ?? 'alpha';
   const start = viewport.startMeasure;
   const end = Math.min(start + viewport.measureCount, song.measures.length);
   const voices: readonly (0 | 1 | 2 | 3)[] =
@@ -390,6 +399,10 @@ export function drawNoteBlocks(
     const { key, scale } = getKeyScaleAtMeasure(song, m);
 
     for (const v of voices) {
+      if (!visibility[v]) {
+        continue;
+      }
+      const isInactiveLane = v !== activeVoice;
       const list = measure.notes[v] ?? [];
       for (const note of list) {
         const rect = computeNoteBlockRect({
@@ -402,24 +415,62 @@ export function drawNoteBlocks(
           melodyRowHeight,
         });
         if (note.isRest) {
-          fillRestHatch(ctx, rect.x, rect.y, rect.width, rect.height);
+          if (isInactiveLane && inactiveMode === 'alpha') {
+            ctx.save();
+            ctx.globalAlpha = 0.45;
+            fillRestHatch(ctx, rect.x, rect.y, rect.width, rect.height);
+            ctx.restore();
+          } else if (isInactiveLane && inactiveMode === 'outline') {
+            ctx.save();
+            beginRoundRectPath(ctx, rect.x, rect.y, rect.width, rect.height, NOTE_BLOCK_CORNER_RADIUS);
+            ctx.strokeStyle = NOTE_BLOCK_BORDER_STYLE;
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+            ctx.restore();
+          } else {
+            fillRestHatch(ctx, rect.x, rect.y, rect.width, rect.height);
+          }
           continue;
         }
 
         const fill = noteBlockFillColor(note, key, scale, colorScheme);
-        ctx.fillStyle = fill;
-        beginRoundRectPath(ctx, rect.x, rect.y, rect.width, rect.height, NOTE_BLOCK_CORNER_RADIUS);
-        ctx.fill();
-        ctx.strokeStyle = NOTE_BLOCK_BORDER_STYLE;
-        ctx.setLineDash([]);
-        beginRoundRectPath(ctx, rect.x, rect.y, rect.width, rect.height, NOTE_BLOCK_CORNER_RADIUS);
-        ctx.stroke();
+        const drawInactiveStyle = isInactiveLane;
+
+        if (drawInactiveStyle && inactiveMode === 'outline') {
+          ctx.save();
+          beginRoundRectPath(ctx, rect.x, rect.y, rect.width, rect.height, NOTE_BLOCK_CORNER_RADIUS);
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fill();
+          ctx.strokeStyle = NOTE_BLOCK_BORDER_STYLE;
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+          ctx.restore();
+        } else {
+          ctx.save();
+          if (drawInactiveStyle && inactiveMode === 'alpha') {
+            ctx.globalAlpha = 0.45;
+          }
+          ctx.fillStyle = fill;
+          beginRoundRectPath(ctx, rect.x, rect.y, rect.width, rect.height, NOTE_BLOCK_CORNER_RADIUS);
+          ctx.fill();
+          ctx.strokeStyle = NOTE_BLOCK_BORDER_STYLE;
+          ctx.setLineDash([]);
+          beginRoundRectPath(ctx, rect.x, rect.y, rect.width, rect.height, NOTE_BLOCK_CORNER_RADIUS);
+          ctx.stroke();
+          ctx.restore();
+        }
 
         if (labelMode !== 'off') {
           const parts = formatDegreeLabelParts(note);
           const cx = rect.x + rect.width / 2;
           const cy = rect.y + rect.height / 2;
-          const { fillStyle, useShadow } = labelTextStyleForBackground(fill);
+          const labelBgForContrast =
+            drawInactiveStyle && inactiveMode === 'outline' ? '#FFFFFF' : fill;
+          const { fillStyle, useShadow } = labelTextStyleForBackground(labelBgForContrast);
+          ctx.save();
+          if (drawInactiveStyle && inactiveMode === 'alpha') {
+            ctx.globalAlpha = 0.45;
+          }
           ctx.fillStyle = fillStyle;
           if (useShadow) {
             ctx.shadowColor = 'rgba(0,0,0,0.35)';
@@ -478,9 +529,11 @@ export function drawNoteBlocks(
             ctx.textBaseline = 'middle';
             ctx.font = '600 11px ui-sans-serif, system-ui, sans-serif';
           }
+
+          ctx.shadowColor = 'transparent';
+          ctx.shadowOffsetY = 0;
+          ctx.restore();
         }
-        ctx.shadowColor = 'transparent';
-        ctx.shadowOffsetY = 0;
       }
     }
   }

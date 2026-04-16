@@ -19,6 +19,7 @@ export function drawPlaybackHighlight(
   viewport: Viewport,
   playbackTick: number | null,
   melodyRowHeight: number = NOTE_HEIGHT,
+  melodyVoiceVisible: readonly [boolean, boolean, boolean, boolean] = [true, true, true, true],
 ): void {
   if (playbackTick == null) {
     return;
@@ -49,6 +50,9 @@ export function drawPlaybackHighlight(
 
     const voices: readonly (0 | 1 | 2 | 3)[] = [0, 1, 2, 3];
     for (const v of voices) {
+      if (!melodyVoiceVisible[v]) {
+        continue;
+      }
       for (const note of measure.notes[v] ?? []) {
         if (note.isRest) continue;
         const absStart = absoluteTickFromMeasurePosition(song, mi, note.beat);
