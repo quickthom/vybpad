@@ -33,10 +33,53 @@ export function configureApiClient(next: ApiClientConfig): void {
   config = next;
 }
 
+/** True when the configured API origin uses a loopback hostname (baked docker/local defaults). */
+export function isLoopbackApiBaseUrl(base: string): boolean {
+  try {
+    const { hostname } = new URL(base);
+    return hostname === '127.0.0.1' || hostname === 'localhost' || hostname === '[::1]';
+  } catch {
+    return false;
+  }
+}
+
+/** True when API base and page origin differ only by loopback hostname (`localhost` vs `127.0.0.1`), same port/scheme. */
+export function shouldPreferPageOriginOverApiBase(apiBase: string, pageOrigin: string): boolean {
+  try {
+    const a = new URL(apiBase);
+    const p = new URL(pageOrigin);
+    if (a.origin === p.origin) return false;
+    const loop = (h: string) => h === '127.0.0.1' || h === 'localhost' || h === '[::1]';
+    return loop(a.hostname) && loop(p.hostname) && a.protocol === p.protocol && a.port === p.port;
+  } catch {
+    return false;
+  }
+}
+
 function getBaseUrl(): string {
   const raw = import.meta.env.VITE_API_URL;
   const trimmed = (typeof raw === 'string' ? raw : '').trim();
-  return trimmed.replace(/\/+$/, '') || DEFAULT_API_BASE;
+  let base: string;
+  if (trimmed) {
+    base = trimmed.replace(/\/+$/, '');
+  } else if (import.meta.env.PROD && typeof window !== 'undefined' && window.location?.origin) {
+    /** Blank `VITE_API_URL` at build — same-origin `/api` via nginx. */
+    base = window.location.origin;
+  } else {
+    base = DEFAULT_API_BASE;
+  }
+  if (import.meta.env.PROD && typeof window !== 'undefined' && window.location?.origin) {
+    const pageO = window.location.origin;
+    /** Prefer the URL bar origin when it only differs from the baked API host by loopback alias. */
+    if (shouldPreferPageOriginOverApiBase(base, pageO)) {
+      return pageO;
+    }
+    /** Non-blank but loopback (e.g. Dockerfile `ARG VITE_API_URL=http://127.0.0.1`) — hit page origin. */
+    if (isLoopbackApiBaseUrl(base)) {
+      return pageO;
+    }
+  }
+  return base;
 }
 
 /** Serialize concurrent refresh attempts (multiple 401s share one refresh). */
@@ -204,7 +247,7 @@ async function requestJson<T>(
     return fetchWithOptionalTimeout(url, { ...init, headers: h, credentials: 'include' }, options.timeoutMs);
   };
 
-  let response = await exec(null);
+  let response: Response = await exec(null);
 
   if (response.status === 401 && options.retryOn401) {
     const refreshed = await refreshAccessTokenLocked();

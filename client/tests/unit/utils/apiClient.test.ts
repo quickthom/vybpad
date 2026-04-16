@@ -513,6 +513,30 @@ describe('apiClient — VITE_API_URL base URL (PAT-013)', () => {
   });
 });
 
+describe('apiClient — isLoopbackApiBaseUrl (PAT-013 prod)', () => {
+  it('detects loopback hosts', async () => {
+    const { isLoopbackApiBaseUrl } = await import('../../../src/utils/apiClient');
+    expect(isLoopbackApiBaseUrl('http://127.0.0.1:3001')).toBe(true);
+    expect(isLoopbackApiBaseUrl('http://localhost:8080')).toBe(true);
+    expect(isLoopbackApiBaseUrl('http://[::1]:3001/')).toBe(true);
+    expect(isLoopbackApiBaseUrl('https://api.example.com')).toBe(false);
+  });
+});
+
+describe('apiClient — shouldPreferPageOriginOverApiBase (localhost vs 127.0.0.1)', () => {
+  it('detects loopback alias mismatch (same port, different hostname)', async () => {
+    const { shouldPreferPageOriginOverApiBase } = await import('../../../src/utils/apiClient');
+    expect(
+      shouldPreferPageOriginOverApiBase('http://127.0.0.1:8080', 'http://localhost:8080'),
+    ).toBe(true);
+    expect(
+      shouldPreferPageOriginOverApiBase('http://localhost:8080', 'http://127.0.0.1:8080'),
+    ).toBe(true);
+    expect(shouldPreferPageOriginOverApiBase('http://127.0.0.1:8080', 'http://127.0.0.1:8080')).toBe(false);
+    expect(shouldPreferPageOriginOverApiBase('http://127.0.0.1:3001', 'http://localhost:8080')).toBe(false);
+  });
+});
+
 describe('apiClient — fetch transport (PAT-007)', () => {
   it('performs HTTP through the global fetch function', async () => {
     vi.mocked(fetch).mockResolvedValueOnce(
