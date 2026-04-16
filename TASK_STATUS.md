@@ -59,3 +59,22 @@ Phases 0 (7/7), 1A (7/7), 1B (6/6), Phase 2 (15/15), Phase 3 (10/10), Phase 4 (1
 | UI-W9 | QA | — | merged | — | UI-W8 | `ChordPalette.EditorLayout.ui-w9.ra17-ra19.test.tsx` |
 
 ---
+
+## Operator backlog — OB-1 … OB-6
+
+> Source: [docs/audit/UI_REMEDIATION_OPERATOR_BACKLOG.md](docs/audit/UI_REMEDIATION_OPERATOR_BACKLOG.md); sequencing: operator plan `ob_backlog_sequencing_75df398e.plan.md` (Cursor plans dir).
+
+| Task | Role | Branch | Status | PR | Depends | Notes |
+|---|---|---|---|---|---|---|
+| OB-4 | Builder | `phase-8/ob-4-viewport-drag` | in-review | [#82](https://github.com/quickthom/vybpad/pull/82) | None | P0: viewport flash/blank during note drag — gate for OB-3/5; `ci-local` + full raise-pr checklist on PR |
+| OB-4 | QA | `phase-8/ob-4-viewport-drag` | in-review | [#82](https://github.com/quickthom/vybpad/pull/82) | None | E2E + unit tests on branch; same PR as Builder |
+| OB-3 | Builder | — | pending | — | OB-4 | Resize notes by dragging edges (P1) |
+| OB-3 | QA | — | pending | — | OB-4 | — |
+| OB-5 | Builder | — | pending | — | OB-3 | Magnetic snap to beats / fractions (P2) |
+| OB-5 | QA | — | pending | — | OB-3 | — |
+| OB-1+2 | Builder | — | pending | — | OB-4 | Note + chord click audition; PAT-026 (combined per TL sequencing) |
+| OB-1+2 | QA | — | pending | — | OB-4 | — |
+| OB-6 | Builder | — | pending | — | OB-1+2 | Global UI density / windowed comfort (P2); UX_GUIDELINES if tokens change |
+| OB-6 | QA | — | pending | — | OB-1+2 | — |
+
+---
