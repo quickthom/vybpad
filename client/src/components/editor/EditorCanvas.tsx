@@ -281,7 +281,8 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
   const paint = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext('2d');
+    // `willReadFrequently` keeps readbacks (E2E probes, devtools) reliable after GPU tiling — not a perf hot path vs song edits.
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
     if (!ctx) return;
 
     const dpr = window.devicePixelRatio || 1;
