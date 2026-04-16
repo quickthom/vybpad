@@ -34,3 +34,8 @@ export {
 } from './harmonyVoicing';
 export type { HarmonyVoicingParams, HarmonyVoicingResult, SongHarmonyVoicingStep } from './harmonyVoicing';
 export { getPlaybackEngine, resetPlaybackEngineForTests } from './playbackEngineSingleton';
+export {
+  getEditorHitAuditionMidis,
+  playAuditionMidisNow,
+  playEditorHitAudition,
+} from './auditionPreview';

@@ -22,7 +22,10 @@ import {
 import type { PointerEvent as ReactPointerEvent } from 'react';
 
 import type { ShortcutContext, ShortcutManager } from '../../engine/keyboard/shortcutTypes';
+import { playEditorHitAudition } from '../../engine/audio/auditionPreview';
+import type { EditorCanvasHit } from '../../engine/renderer/hitTest';
 import { useKeyboard } from '../../hooks/useKeyboard';
+import { usePlaybackStore } from '../../store/playbackStore';
 import type { EditorLabelMode, StaffSpacing } from '../../types/editorChrome';
 import { useUIStore } from '../../store/uiStore';
 import { melodyRowHeightPx } from '../../utils/staffSpacing';
@@ -38,7 +41,6 @@ import { drawPlaybackCursor } from '../../engine/renderer/drawPlaybackCursor';
 import { drawPlaybackHighlight } from '../../engine/renderer/drawPlaybackHighlight';
 import { drawChordBlocks, layoutChordBlock } from '../../engine/renderer/chordBlocks';
 import { drawGridBackground } from '../../engine/renderer/gridBackground';
-import type { EditorCanvasHit } from '../../engine/renderer/hitTest';
 import { hitTestEditorCanvas } from '../../engine/renderer/hitTest';
 import { getMeasureStartTicks, horizontalPxToTicks, horizontalTicksToPx } from '../../engine/renderer/layout';
 import { computePitchAxisLabelsInViewport, drawPitchAxisGutter } from '../../engine/renderer/pitchAxisLayout';
@@ -194,6 +196,11 @@ function selectionFromHit(hit: EditorCanvasHit): Selection {
     return { type: 'chord', measureIndex: hit.measureIndex, eventIds: [hit.chord.id] };
   }
   return { type: 'note', measureIndex: hit.measureIndex, eventIds: [hit.note.id] };
+}
+
+/** RTL/jsdom sometimes omits `pointerId` on synthesized `pointerup`; single-session canvas treats that as the same gesture. */
+function pointerIdMatchesSession(sess: DragSession, e: ReactPointerEvent<HTMLCanvasElement>): boolean {
+  return e.pointerId === sess.pointerId || typeof e.pointerId !== 'number';
 }
 
 export function EditorCanvas(props: EditorCanvasProps): ReactElement {
@@ -743,10 +750,22 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
     const ucy = e.clientY ?? 0;
 
     const sess = sessionRef.current;
-    if (sess && e.pointerId === sess.pointerId) {
+    let auditionHit: EditorCanvasHit | null = null;
+    if (
+      sess &&
+      pointerIdMatchesSession(sess, e) &&
+      sess.phase === 'pending' &&
+      sess.hit &&
+      !sess.isMiss
+    ) {
+      auditionHit = sess.hit;
+    }
+
+    if (sess && pointerIdMatchesSession(sess, e)) {
       if (typeof canvas.releasePointerCapture === 'function') {
         try {
-          canvas.releasePointerCapture(e.pointerId);
+          const releaseId = typeof e.pointerId === 'number' ? e.pointerId : sess.pointerId;
+          canvas.releasePointerCapture(releaseId);
         } catch {
           /* ignore */
         }
@@ -759,6 +778,24 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
       dragResizePreviewRef.current = null;
       setActiveDragKind('idle');
     }
+
+    if (auditionHit) {
+      const songSnap = song;
+      const hit = auditionHit;
+      void usePlaybackStore
+        .getState()
+        .initializeAudio()
+        .then(() => {
+          if (usePlaybackStore.getState().initStatus !== 'ready') {
+            return;
+          }
+          playEditorHitAudition(songSnap, hit);
+        })
+        .catch(() => {
+          /* Init failure is surfaced via transport; audition is best-effort. */
+        });
+    }
+
     scheduleRedraw();
   };
 
