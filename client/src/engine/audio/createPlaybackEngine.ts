@@ -22,6 +22,46 @@ import { buildScheduledPlayEvents, type ScheduledPlayEvent } from './songSchedul
 
 const TPQN = TICKS_PER_QUARTER;
 
+/** UI-W8 — shell-owned preference; Tone click when the transport can schedule repeats. */
+let appMetronomeEnabled = false;
+
+/** Last `play()` metronome outcome for PAT-001 info toast when scheduling is unavailable (tests / partial mocks). */
+type MetronomePlayResult = 'off' | 'ok' | 'fail';
+let lastMetronomePlayResult: MetronomePlayResult = 'off';
+
+let implSyncMetronomeFromPreference: () => void = () => {};
+
+/**
+ * Shell sync from `PlaybackStore.setMetronomeEnabled` (single source of truth in the store).
+ * Safe before `createPlaybackEngine` runs (no-op until impl is wired).
+ */
+export function setPlaybackMetronomePreference(enabled: boolean): void {
+  appMetronomeEnabled = enabled;
+  implSyncMetronomeFromPreference();
+}
+
+export function resetPlaybackMetronomePreferenceForTests(): void {
+  appMetronomeEnabled = false;
+  lastMetronomePlayResult = 'off';
+}
+
+/** Consumed once by `playbackStore.play` after engine start — drives metronome fallback toast. */
+export function takeMetronomeLastPlayResult(): MetronomePlayResult {
+  const v = lastMetronomePlayResult;
+  lastMetronomePlayResult = 'off';
+  return v;
+}
+
+/** Editor melody-lane visibility for scheduling (RA-7); reset when the playback engine is disposed. */
+let playbackMelodyVoiceVisible: readonly [boolean, boolean, boolean, boolean] = [true, true, true, true];
+
+/** Shell syncs this from `useUIStore` before `loadSong` so hidden melody lanes never reach Tone.Part. */
+export function setPlaybackMelodyVoiceVisibleForScheduling(
+  visible: readonly [boolean, boolean, boolean, boolean],
+): void {
+  playbackMelodyVoiceVisible = visible;
+}
+
 type MixerChannel = { volume: number; mute: boolean };
 type MixerState = Partial<Record<TrackRole, MixerChannel>>;
 
@@ -54,7 +94,87 @@ export function createPlaybackEngine(): AudioEngine {
   let playing = false;
   let rafId: number | null = null;
 
+  /** Metronome click — short wood-block style; lazy so tests without `MembraneSynth` mock skip scheduling. */
+  let clickSynth: Tone.MembraneSynth | null = null;
+  let metronomeRepeatId: number | undefined;
+
   const tickListeners = new Set<(tick: number) => void>();
+
+  function ensureClickSynth(): Tone.MembraneSynth | null {
+    if (clickSynth) {
+      return clickSynth;
+    }
+    try {
+      const S = Tone.MembraneSynth;
+      if (typeof S !== 'function') {
+        return null;
+      }
+      const s = new S({
+        pitchDecay: 0.02,
+        octaves: 0,
+        envelope: { attack: 0.001, decay: 0.05, sustain: 0 },
+      }).toDestination();
+      s.volume.value = -22;
+      clickSynth = s;
+      return clickSynth;
+    } catch {
+      return null;
+    }
+  }
+
+  function stopMetronomeSchedule(): void {
+    if (metronomeRepeatId === undefined) {
+      return;
+    }
+    try {
+      const transport = Tone.getTransport();
+      if (typeof transport.clear === 'function') {
+        transport.clear(metronomeRepeatId);
+      }
+    } catch {
+      /* best-effort */
+    }
+    metronomeRepeatId = undefined;
+  }
+
+  /** Returns true when an audible click was scheduled; false when unavailable or disabled. */
+  function startMetronomeSchedule(): boolean {
+    stopMetronomeSchedule();
+    if (!appMetronomeEnabled || !ready) {
+      return false;
+    }
+    const transport = Tone.getTransport();
+    if (typeof transport.scheduleRepeat !== 'function') {
+      return false;
+    }
+    const synth = ensureClickSynth();
+    if (!synth) {
+      return false;
+    }
+    try {
+      metronomeRepeatId = transport.scheduleRepeat((time: number) => {
+        synth.triggerAttackRelease('C5', '32n', time, 0.35);
+      }, '4n', 0);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  implSyncMetronomeFromPreference = () => {
+    if (!ready) {
+      return;
+    }
+    if (!playing) {
+      stopMetronomeSchedule();
+      return;
+    }
+    if (appMetronomeEnabled) {
+      void startMetronomeSchedule();
+    } else {
+      stopMetronomeSchedule();
+    }
+  };
 
   function notifyTicks(tick: number): void {
     for (const fn of tickListeners) {
@@ -77,6 +197,7 @@ export function createPlaybackEngine(): AudioEngine {
   }
 
   function clearScheduledPlayback(): void {
+    stopMetronomeSchedule();
     try {
       Tone.getTransport().cancel();
     } catch {
@@ -150,7 +271,9 @@ export function createPlaybackEngine(): AudioEngine {
     mixer = syncMixerFromBand(song);
     applyTransportTempoMap(song);
 
-    const flat = buildScheduledPlayEvents(song, theoryEngine);
+    const flat = buildScheduledPlayEvents(song, theoryEngine, {
+      melodyVoiceVisible: playbackMelodyVoiceVisible,
+    });
     if (flat.length === 0) {
       return;
     }
@@ -165,6 +288,9 @@ export function createPlaybackEngine(): AudioEngine {
     }, partEvents);
     part.start(0);
     scheduledParts.push(part);
+    if (playing && appMetronomeEnabled) {
+      void startMetronomeSchedule();
+    }
   }
 
   return {
@@ -245,6 +371,11 @@ export function createPlaybackEngine(): AudioEngine {
       Tone.getTransport().start();
       stopCursorLoop();
       runCursorLoop();
+      if (!appMetronomeEnabled) {
+        lastMetronomePlayResult = 'off';
+      } else {
+        lastMetronomePlayResult = startMetronomeSchedule() ? 'ok' : 'fail';
+      }
     },
 
     pause(): void {
@@ -252,6 +383,7 @@ export function createPlaybackEngine(): AudioEngine {
         return;
       }
       playing = false;
+      stopMetronomeSchedule();
       stopCursorLoop();
       Tone.getTransport().pause();
     },
@@ -261,6 +393,7 @@ export function createPlaybackEngine(): AudioEngine {
         return;
       }
       playing = false;
+      stopMetronomeSchedule();
       stopCursorLoop();
       const transport = Tone.getTransport();
       transport.stop();
@@ -330,6 +463,12 @@ export function createPlaybackEngine(): AudioEngine {
       playing = false;
       tickListeners.clear();
       clearScheduledPlayback();
+      try {
+        clickSynth?.dispose();
+      } catch {
+        /* best-effort */
+      }
+      clickSynth = null;
       mixer = {};
       disposePianoSamples();
       ready = false;
@@ -341,6 +480,7 @@ export function createPlaybackEngine(): AudioEngine {
         /* dispose is best-effort */
       }
       songRef = null;
+      playbackMelodyVoiceVisible = [true, true, true, true];
     },
   };
 }

@@ -7,6 +7,22 @@ import { buildHarmonyVoicingSequence } from './harmonyVoicing';
 
 const MELODY_ROLES: readonly TrackRole[] = ['melody1', 'melody2', 'melody3', 'melody4'] as const;
 
+const DEFAULT_MELODY_VOICE_VISIBLE: readonly [boolean, boolean, boolean, boolean] = [
+  true,
+  true,
+  true,
+  true,
+];
+
+/** Optional tuning for {@link buildScheduledPlayEvents} (UI-W5 / RA-7). Omitted → all melody lanes included. */
+export interface BuildScheduledPlayEventsOptions {
+  /**
+   * Editor UI visibility per melody voice (indices 0–3 → melody1–melody4), independent of mixer mute.
+   * When `false`, no scheduled melody events are produced for that voice (see `UIStore.melodyVoiceVisible` in INTERFACES.md).
+   */
+  melodyVoiceVisible?: readonly [boolean, boolean, boolean, boolean];
+}
+
 /** One sampled note line for Tone scheduling (harmony may emit several per chord hit). */
 export interface ScheduledPlayEvent {
   tick: number;
@@ -28,13 +44,16 @@ function getTrackOctave(song: SongData, role: TrackRole): number {
 /**
  * Builds absolute-tick note events from {@link SongData} for all audible roles (melody 0–3,
  * harmony, bass). Drums are omitted (no drum samples in MVP graph).
+ * Melody lanes respect optional {@link BuildScheduledPlayEventsOptions.melodyVoiceVisible} (editor shell; separate from mixer mute).
  */
 export function buildScheduledPlayEvents(
   song: SongData,
   theory: TheoryEngine,
+  options?: BuildScheduledPlayEventsOptions,
 ): ScheduledPlayEvent[] {
   const out: ScheduledPlayEvent[] = [];
   const starts = getMeasureStartTicks(song);
+  const melodyVisible = options?.melodyVoiceVisible ?? DEFAULT_MELODY_VOICE_VISIBLE;
 
   for (let mi = 0; mi < song.measures.length; mi += 1) {
     const m = song.measures[mi];
@@ -43,6 +62,9 @@ export function buildScheduledPlayEvents(
     const scale = getScaleAtMeasure(song, mi);
 
     for (let voice = 0; voice < 4; voice += 1) {
+      if (!melodyVisible[voice]) {
+        continue;
+      }
       const role = trackForVoice(voice);
       const trOct = getTrackOctave(song, role);
       const voiceNotes = m.notes[voice] ?? [];

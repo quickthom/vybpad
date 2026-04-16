@@ -2,13 +2,14 @@ import type { ChordEvent, ProjectResponse, ScaleDegree, SongData, Track, TrackRo
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
+import { EditorPropertiesPanel } from '../components/panels/EditorPropertiesPanel';
 import { EditorSettingsPanel } from '../components/panels/EditorSettingsPanel';
 import { KeyScaleChangeDialog } from '../components/common/KeyScaleChangeDialog';
 import { Tooltip } from '../components/common/Tooltip';
-import { LoopBar } from '../components/controls/LoopBar';
 import { MidiExportControls } from '../components/controls/MidiExportControls';
 import { TempoMeterAtMeasureDialog } from '../components/controls/TempoMeterAtMeasureDialog';
 import { MidiDragExportControl } from '../components/controls/MidiDragExportControl';
+import { LoopBar } from '../components/controls/LoopBar';
 import { TransportControls } from '../components/controls/TransportControls';
 import { MixerPanel } from '../components/panels/MixerPanel';
 import { PianoKeyboardPanel } from '../components/panels/PianoKeyboardPanel';
@@ -21,12 +22,13 @@ import {
   navigateSelection,
   resolveTargetMeasureIndex,
 } from '../components/editor/editorKeyboardLogic';
-import { ChordPalette, SecondaryChordInspector } from '../components/panels/ChordPalette';
+import { ChordPalette } from '../components/panels/ChordPalette';
 import { MelodyEntryPanel } from '../components/panels/MelodyEntryPanel';
 import { PlacementDurationControls } from '../components/panels/PlacementDurationControls';
 import {
   getKeyAtMeasure,
   getMeasureStartTicks,
+  getMeterAtMeasure,
   getScaleAtMeasure,
   measureIndexFromAbsoluteTick,
 } from '../engine/renderer/tickUtils';
@@ -74,6 +76,7 @@ import {
   markEditorPostBootstrapFromNavigate,
   shouldSkipDuplicateGetAfterPostBootstrap,
 } from './editorProjectHydration';
+import { keyScaleTargetMeasureIndex } from './keyScaleTargetMeasureIndex';
 
 /** TASK-3.4: idle delay after the last edit before auto PUT (coalesces rapid edits). */
 const AUTOSAVE_DEBOUNCE_MS = 1500;
@@ -138,6 +141,10 @@ export function EditorLayout() {
   const playbackPause = usePlaybackStore((s) => s.pause);
   const playbackStop = usePlaybackStore((s) => s.stop);
   const playbackRewind = usePlaybackStore((s) => s.rewind);
+  const metronomeEnabled = usePlaybackStore((s) => s.metronomeEnabled);
+  const recordArmed = usePlaybackStore((s) => s.recordArmed);
+  const setMetronomeEnabled = usePlaybackStore((s) => s.setMetronomeEnabled);
+  const setRecordArmed = usePlaybackStore((s) => s.setRecordArmed);
 
   const showErrorToast = useToastStore((s) => s.showError);
   const showSuccessToast = useToastStore((s) => s.showSuccess);
@@ -185,6 +192,9 @@ export function EditorLayout() {
   const setStaffSpacing = useUIStore((s) => s.setStaffSpacing);
   const activePanels = useUIStore((s) => s.activePanels);
   const togglePanel = useUIStore((s) => s.togglePanel);
+  const melodyVoiceVisible = useUIStore((s) => s.melodyVoiceVisible);
+  const inactiveMelodyDisplayMode = useUIStore((s) => s.inactiveMelodyDisplayMode);
+  const smartOctaveEnabled = useUIStore((s) => s.smartOctaveEnabled);
   const mixerOpen = activePanels.has('mixer');
   const settingsOpen = activePanels.has('settings');
   const pianoOpen = activePanels.has('piano');
@@ -201,18 +211,37 @@ export function EditorLayout() {
   const [keyScaleDialogOpen, setKeyScaleDialogOpen] = useState(false);
   const keyScaleTriggerRef = useRef<HTMLButtonElement>(null);
 
-  const keyScaleTargetMeasure = useMemo(() => {
-    if (selectedMeasures) {
-      return Math.min(selectedMeasures[0], selectedMeasures[1]);
-    }
-    if (selection?.measureIndex != null) {
-      return selection.measureIndex;
-    }
-    return 0;
-  }, [selectedMeasures, selection]);
+  const keyScaleTargetMeasure = useMemo(
+    () => keyScaleTargetMeasureIndex(selectedMeasures, selection),
+    [selectedMeasures, selection],
+  );
   const [chordPaletteMode, setChordPaletteMode] = useState<
     'diatonic' | 'borrowed' | 'secondary' | 'search'
   >('diatonic');
+  const [chordPaletteLibraryTab, setChordPaletteLibraryTab] = useState<
+    'magic' | 'popular' | 'search' | 'progressions' | 'bassSets'
+  >('magic');
+
+  const transportKeyMeterLabels = useMemo(() => {
+    const mi = keyScaleTargetMeasure;
+    const m = getMeterAtMeasure(song, mi);
+    return {
+      keyLabel: `${getKeyAtMeasure(song, mi)} ${getScaleAtMeasure(song, mi)}`,
+      meterLabel: `${m.numerator}/${m.denominator}`,
+    };
+  }, [song, keyScaleTargetMeasure]);
+
+  const handleZoomInTransport = useCallback(() => {
+    setViewport(withZoomIn(useUIStore.getState().viewport));
+  }, [setViewport]);
+
+  const handleZoomOutTransport = useCallback(() => {
+    setViewport(withZoomOut(useUIStore.getState().viewport));
+  }, [setViewport]);
+
+  const handleZoomResetTransport = useCallback(() => {
+    setViewport(withResetZoom(useUIStore.getState().viewport));
+  }, [setViewport]);
 
   const getShortcutContext = useCallback((): ShortcutContext => {
     return {
@@ -369,6 +398,7 @@ export function EditorLayout() {
         shortcutManager,
         getShortcutContext,
         melodyChromaticEntryActive,
+        smartOctaveEnabled,
       };
       applyNoteShortcutCommandFromEditor(kb, id);
       return;
@@ -396,6 +426,7 @@ export function EditorLayout() {
       shortcutManager,
       getShortcutContext,
       melodyChromaticEntryActive,
+      smartOctaveEnabled,
     };
     applyDurationTicksFromEditor(kb, ticks);
   };
@@ -570,7 +601,10 @@ export function EditorLayout() {
     return playbackTick ?? starts[paletteMeasureIndex] ?? 0;
   }, [song, playbackTick, paletteMeasureIndex]);
 
-  const scheduledPlayEvents = useMemo(() => buildScheduledPlayEvents(song, theoryEngine), [song]);
+  const scheduledPlayEvents = useMemo(
+    () => buildScheduledPlayEvents(song, theoryEngine, { melodyVoiceVisible }),
+    [song, melodyVoiceVisible],
+  );
 
   const pianoHighlightedMidi = useMemo(
     () => collectActiveMidiNotesAtScheduledEvents(scheduledPlayEvents, song, pianoPlayheadTick),
@@ -614,6 +648,7 @@ export function EditorLayout() {
         shortcutManager,
         getShortcutContext,
         melodyChromaticEntryActive,
+        smartOctaveEnabled,
       };
       applyChordPalettePayloadFromEditor(ctx, chord);
     },
@@ -636,6 +671,7 @@ export function EditorLayout() {
       shortcutManager,
       getShortcutContext,
       melodyChromaticEntryActive,
+      smartOctaveEnabled,
     ],
   );
 
@@ -662,6 +698,7 @@ export function EditorLayout() {
         shortcutManager,
         getShortcutContext,
         melodyChromaticEntryActive,
+        smartOctaveEnabled,
       };
       applyDurationTicksFromEditor(ctx, ticks);
     },
@@ -684,6 +721,7 @@ export function EditorLayout() {
       shortcutManager,
       getShortcutContext,
       melodyChromaticEntryActive,
+      smartOctaveEnabled,
     ],
   );
 
@@ -709,6 +747,7 @@ export function EditorLayout() {
       shortcutManager,
       getShortcutContext,
       melodyChromaticEntryActive,
+      smartOctaveEnabled,
     };
   }, [
     song,
@@ -729,6 +768,7 @@ export function EditorLayout() {
     shortcutManager,
     getShortcutContext,
     melodyChromaticEntryActive,
+    smartOctaveEnabled,
   ]);
 
   const handleMelodyPitchDegree = useCallback(
@@ -766,7 +806,7 @@ export function EditorLayout() {
 
   useEffect(() => {
     syncPlaybackEngineWithSong();
-  }, [song]);
+  }, [song, melodyVoiceVisible]);
 
   // Load song for `/editor/:projectId` (GET) or hydrate from navigation state after POST /projects (no duplicate GET).
   useEffect(() => {
@@ -977,20 +1017,43 @@ export function EditorLayout() {
 
   const currentBeatDisplay = formatTransportBeat(song, playbackTick ?? 0);
 
-  const selectedChordId = selection?.type === 'chord' ? selection.eventIds?.[0] : undefined;
-  const selectedChord =
-    selectedChordId != null && selection?.type === 'chord'
-      ? (song.measures[selection.measureIndex]?.chords.find((c) => c.id === selectedChordId) ??
-        null)
-      : null;
+  const chordPropertyContext = useMemo(() => {
+    if (selection?.type !== 'chord' || !selection.eventIds?.[0]) return null;
+    const id = selection.eventIds[0];
+    const ch = song.measures[selection.measureIndex]?.chords.find((c) => c.id === id);
+    return ch ? { measureIndex: selection.measureIndex, chord: ch } : null;
+  }, [selection, song]);
 
-  const chordTheoryScale =
-    selectedChord != null && selection?.type === 'chord'
-      ? getScaleAtMeasure(song, selection.measureIndex)
-      : paletteScale;
+  const handleChordPropertyUpdate = useCallback(
+    (measureIndex: number, chordId: string, changes: Partial<ChordEvent>) => {
+      editChord(measureIndex, { type: 'update', chordId, changes });
+    },
+    [editChord],
+  );
 
-  const selectedChordRoman =
-    selectedChord != null ? theoryEngine.toRomanNumeral(selectedChord, chordTheoryScale) : '';
+  const handleSecondaryCycle = useCallback(() => {
+    if (selection?.type !== 'chord' || !selection.eventIds?.[0]) return;
+    const id = selection.eventIds[0];
+    const ch = song.measures[selection.measureIndex]?.chords.find((c) => c.id === id);
+    if (!ch) return;
+    const k = getKeyAtMeasure(song, selection.measureIndex);
+    const sc = getScaleAtMeasure(song, selection.measureIndex);
+    const changes = cycleSecondaryChordEdit(ch, k, sc);
+    if (Object.keys(changes).length === 0) return;
+    editChord(selection.measureIndex, { type: 'update', chordId: id, changes });
+  }, [editChord, selection, song]);
+
+  const handleSecondaryClear = useCallback(() => {
+    if (selection?.type !== 'chord' || !selection.eventIds?.[0]) return;
+    const id = selection.eventIds[0];
+    const ch = song.measures[selection.measureIndex]?.chords.find((c) => c.id === id);
+    if (!ch) return;
+    const k = getKeyAtMeasure(song, selection.measureIndex);
+    const sc = getScaleAtMeasure(song, selection.measureIndex);
+    const changes = clearSecondaryChordEdit(ch, k, sc);
+    if (Object.keys(changes).length === 0) return;
+    editChord(selection.measureIndex, { type: 'update', chordId: id, changes });
+  }, [editChord, selection, song]);
 
   async function handleTransportPlay() {
     if (usePlaybackStore.getState().initStatus === 'ready') {
@@ -1136,6 +1199,18 @@ export function EditorLayout() {
           if (!Number.isFinite(n) || n < 20 || n > 300) return;
           updateMetadata({ tempo: n });
         }}
+        recordArmed={recordArmed}
+        onRecordToggle={() => setRecordArmed(!recordArmed)}
+        metronomeEnabled={metronomeEnabled}
+        onMetronomeToggle={() => setMetronomeEnabled(!metronomeEnabled)}
+        zoomPercent={Math.round(viewport.zoom * 100)}
+        onZoomIn={handleZoomInTransport}
+        onZoomOut={handleZoomOutTransport}
+        onZoomReset={handleZoomResetTransport}
+        keyLabel={transportKeyMeterLabels.keyLabel}
+        meterLabel={transportKeyMeterLabels.meterLabel}
+        onTempoMeterEdit={() => setTempoMeterDialogOpen(true)}
+        loopContent={<LoopBar />}
         endContent={
           <>
             <MidiExportControls song={song} activeVoice={activeVoice} projectName={projectName} />
@@ -1143,7 +1218,6 @@ export function EditorLayout() {
           </>
         }
       />
-      <LoopBar />
       <KeyScaleChangeDialog
         open={keyScaleDialogOpen}
         measureIndex={keyScaleTargetMeasure}
@@ -1218,34 +1292,11 @@ export function EditorLayout() {
                   currentScale={paletteScale}
                   mode={chordPaletteMode}
                   onChordSelect={handleChordPaletteSelect}
+                  libraryTab={chordPaletteLibraryTab}
+                  onLibraryTabChange={setChordPaletteLibraryTab}
+                  onBrowseDefaultsReset={() => setChordPaletteMode('diatonic')}
                 />
               </div>
-              <SecondaryChordInspector
-                chord={selectedChord}
-                romanLabel={selectedChordRoman}
-                onCycle={() => {
-                  if (selection?.type !== 'chord' || !selection.eventIds?.[0]) return;
-                  const id = selection.eventIds[0];
-                  const ch = song.measures[selection.measureIndex]?.chords.find((c) => c.id === id);
-                  if (!ch) return;
-                  const k = getKeyAtMeasure(song, selection.measureIndex);
-                  const sc = getScaleAtMeasure(song, selection.measureIndex);
-                  const changes = cycleSecondaryChordEdit(ch, k, sc);
-                  if (Object.keys(changes).length === 0) return;
-                  editChord(selection.measureIndex, { type: 'update', chordId: id, changes });
-                }}
-                onClear={() => {
-                  if (selection?.type !== 'chord' || !selection.eventIds?.[0]) return;
-                  const id = selection.eventIds[0];
-                  const ch = song.measures[selection.measureIndex]?.chords.find((c) => c.id === id);
-                  if (!ch) return;
-                  const k = getKeyAtMeasure(song, selection.measureIndex);
-                  const sc = getScaleAtMeasure(song, selection.measureIndex);
-                  const changes = clearSecondaryChordEdit(ch, k, sc);
-                  if (Object.keys(changes).length === 0) return;
-                  editChord(selection.measureIndex, { type: 'update', chordId: id, changes });
-                }}
-              />
             </div>
           ) : (
             <Tooltip label="Expand chord palette">
@@ -1310,6 +1361,9 @@ export function EditorLayout() {
                 shortcutManager={shortcutManager}
                 getShortcutContext={getShortcutContext}
                 melodyChromaticEntryActive={melodyChromaticEntryActive}
+                melodyVoiceVisible={melodyVoiceVisible}
+                inactiveMelodyDisplayMode={inactiveMelodyDisplayMode}
+                smartOctaveEnabled={smartOctaveEnabled}
               />
             )}
           </main>
@@ -1326,73 +1380,84 @@ export function EditorLayout() {
               if (len - removing < 1) return;
               deleteMeasures(start, end);
             }}
-            onEditTempoMeter={() => setTempoMeterDialogOpen(true)}
           />
         </div>
-        {mixerOpen || settingsOpen || pianoOpen ? (
-          <div className="flex max-h-full min-h-0 w-[288px] min-w-[240px] max-w-[400px] shrink-0 flex-col overflow-y-auto border-l border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)]">
-            {mixerOpen ? (
-              <aside
-                id="vybpad-panel-mixer"
-                role="complementary"
-                aria-label="Mixer"
-                className={
-                  settingsOpen || pianoOpen
-                    ? 'shrink-0 border-b border-[var(--color-border,#E5E7EB)]'
-                    : 'flex min-h-0 min-w-0 flex-1 flex-col'
-                }
-              >
-                <MixerPanel bandConfig={song.bandConfig} onTrackChange={handleTrackChange} />
-              </aside>
-            ) : null}
-            {settingsOpen ? (
-              <div
-                id="vybpad-panel-settings"
-                className={
-                  pianoOpen
-                    ? 'flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden border-b border-[var(--color-border,#E5E7EB)]'
-                    : 'flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden'
-                }
-              >
-                <EditorSettingsPanel
-                  entryMode={entryMode}
-                  labelMode={labelMode}
-                  colorScheme={colorScheme}
-                  showGuides={showGuides}
-                  staffSpacing={staffSpacing}
-                  onEntryModeChange={setEntryMode}
-                  onLabelModeChange={setLabelMode}
-                  onColorSchemeChange={setColorScheme}
-                  onShowGuidesChange={setShowGuides}
-                  onStaffSpacingChange={setStaffSpacing}
-                />
-              </div>
-            ) : null}
-            {pianoOpen ? (
-              <aside
-                id="vybpad-panel-piano"
-                className="flex min-h-0 min-w-0 flex-1 flex-col"
-                role="complementary"
-                aria-labelledby="vybpad-piano-panel-title"
-              >
-                <PianoKeyboardPanel
-                  homeKey={pianoHomeKey}
-                  scale={pianoScaleForKeyboard}
-                  highlightedMidi={pianoHighlightedMidi}
-                />
-              </aside>
-            ) : null}
-          </div>
-        ) : null}
+        <div className="flex min-h-0 w-[288px] min-w-[240px] max-w-[400px] shrink-0 flex-col self-stretch overflow-hidden border-l border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)]">
+          <EditorPropertiesPanel
+            selectionType={selection?.type ?? null}
+            chordContext={chordPropertyContext}
+            chordKey={
+              chordPropertyContext != null ? getKeyAtMeasure(song, chordPropertyContext.measureIndex) : undefined
+            }
+            chordTheoryScale={
+              chordPropertyContext != null
+                ? getScaleAtMeasure(song, chordPropertyContext.measureIndex)
+                : undefined
+            }
+            onChordUpdate={handleChordPropertyUpdate}
+            onSecondaryCycle={handleSecondaryCycle}
+            onSecondaryClear={handleSecondaryClear}
+          />
+          {mixerOpen ? (
+            <aside
+              id="vybpad-panel-mixer"
+              role="complementary"
+              aria-label="Mixer"
+              className={
+                settingsOpen || pianoOpen
+                  ? 'shrink-0 border-t border-b border-[var(--color-border,#E5E7EB)]'
+                  : 'flex min-h-0 min-w-0 shrink-0 flex-col border-t border-[var(--color-border,#E5E7EB)]'
+              }
+            >
+              <MixerPanel bandConfig={song.bandConfig} onTrackChange={handleTrackChange} />
+            </aside>
+          ) : null}
+          {settingsOpen ? (
+            <div
+              id="vybpad-panel-settings"
+              className={
+                pianoOpen
+                  ? 'flex min-h-0 min-w-0 shrink-0 flex-col overflow-hidden border-t border-b border-[var(--color-border,#E5E7EB)]'
+                  : 'flex min-h-0 min-w-0 shrink-0 flex-col overflow-hidden border-t border-[var(--color-border,#E5E7EB)]'
+              }
+            >
+              <EditorSettingsPanel
+                entryMode={entryMode}
+                labelMode={labelMode}
+                colorScheme={colorScheme}
+                showGuides={showGuides}
+                staffSpacing={staffSpacing}
+                onEntryModeChange={setEntryMode}
+                onLabelModeChange={setLabelMode}
+                onColorSchemeChange={setColorScheme}
+                onShowGuidesChange={setShowGuides}
+                onStaffSpacingChange={setStaffSpacing}
+              />
+            </div>
+          ) : null}
+          {pianoOpen ? (
+            <aside
+              id="vybpad-panel-piano"
+              className="flex min-h-0 min-w-0 shrink-0 flex-col overflow-y-auto border-t border-[var(--color-border,#E5E7EB)]"
+              role="complementary"
+              aria-labelledby="vybpad-piano-panel-title"
+            >
+              <PianoKeyboardPanel
+                homeKey={pianoHomeKey}
+                scale={pianoScaleForKeyboard}
+                highlightedMidi={pianoHighlightedMidi}
+              />
+            </aside>
+          ) : null}
+        </div>
       </div>
       <TempoMeterAtMeasureDialog
         open={tempoMeterDialogOpen}
-        measureIndex={selectedMeasures?.[0] ?? 0}
+        measureIndex={keyScaleTargetMeasure}
         song={song}
         onDismiss={() => setTempoMeterDialogOpen(false)}
         onApply={(changes) => {
-          const idx = selectedMeasures?.[0] ?? 0;
-          setMeasureChanges(idx, changes);
+          setMeasureChanges(keyScaleTargetMeasure, changes);
         }}
       />
     </div>

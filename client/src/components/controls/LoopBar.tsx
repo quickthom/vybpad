@@ -29,7 +29,7 @@ export function LoopBar() {
 
   return (
     <div
-      className="flex min-h-12 min-w-0 flex-wrap items-center gap-2 border-b border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)] px-4 lg:flex-nowrap lg:overflow-x-auto"
+      className="flex min-h-11 min-w-0 flex-wrap items-center gap-2 lg:flex-nowrap lg:overflow-x-auto"
       role="group"
       aria-labelledby={`${groupId}-label`}
     >

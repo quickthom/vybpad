@@ -85,6 +85,10 @@ export interface EditorCanvasProps {
   getShortcutContext?: () => ShortcutContext;
   /** UI-W3 — left-panel Chromatic toggle; new melody notes use default `chromatic` per PAT-018 when true. */
   melodyChromaticEntryActive?: boolean;
+  /** UI-W4 — see INTERFACES.md `EditorCanvasProps`; omitted → all voices visible, alpha inactive lanes. */
+  melodyVoiceVisible?: readonly [boolean, boolean, boolean, boolean];
+  inactiveMelodyDisplayMode?: 'outline' | 'solid' | 'alpha';
+  smartOctaveEnabled?: boolean;
 }
 
 const SELECTION_STROKE = 'rgba(37, 99, 235, 0.8)';
@@ -181,6 +185,9 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
     shortcutManager,
     getShortcutContext,
     melodyChromaticEntryActive = false,
+    melodyVoiceVisible = [true, true, true, true] as const,
+    inactiveMelodyDisplayMode = 'alpha',
+    smartOctaveEnabled = false,
   } = props;
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -200,14 +207,15 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
 
   const [hoverHit, setHoverHit] = useState<EditorCanvasHit | null>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [, forceRedraw] = useState(0);
   const rafRef = useRef<number | null>(null);
+  /** Latest paint closure — resize + rAF paths must repaint without relying on stale React state (PAT-008, OB-4). */
+  const paintRef = useRef<() => void>(() => {});
 
   const scheduleRedraw = useCallback(() => {
     if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
     rafRef.current = requestAnimationFrame(() => {
       rafRef.current = null;
-      forceRedraw((n) => n + 1);
+      paintRef.current();
     });
   }, []);
 
@@ -243,6 +251,7 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
     shortcutManager,
     getShortcutContext,
     melodyChromaticEntryActive,
+    smartOctaveEnabled,
   });
 
   const hitIsResizeEdge = useCallback(
@@ -272,7 +281,8 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
   const paint = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext('2d');
+    // `willReadFrequently` keeps readbacks (E2E probes, devtools) reliable after GPU tiling — not a perf hot path vs song edits.
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
     if (!ctx) return;
 
     const dpr = window.devicePixelRatio || 1;
@@ -302,13 +312,16 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
       colorScheme,
       labelMode,
       melodyRowHeight,
+      melodyVoiceVisible,
+      activeVoice,
+      inactiveMelodyDisplayMode,
     });
     drawChordBlocks(ctx, song, viewport, theoryEngine, { colorScheme, labelMode, melodyRowHeight });
     if (showGuides) {
       drawGuideOverlay(ctx, song, viewport, colorScheme, { melodyRowHeight });
     }
 
-    drawPlaybackHighlight(ctx, song, viewport, playbackTick, melodyRowHeight);
+    drawPlaybackHighlight(ctx, song, viewport, playbackTick, melodyRowHeight, melodyVoiceVisible);
 
     const strokeRect = (x: number, y: number, rw: number, rh: number, stroke: string, fill?: string) => {
       ctx.save();
@@ -377,7 +390,12 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
     showGuides,
     labelMode,
     melodyRowHeight,
+    activeVoice,
+    melodyVoiceVisible,
+    inactiveMelodyDisplayMode,
   ]);
+
+  paintRef.current = paint;
 
   useEffect(() => {
     paint();
@@ -397,7 +415,8 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
       canvas.style.height = `${cssH}px`;
       canvas.width = Math.floor(contentW * dpr);
       canvas.height = Math.floor(cssH * dpr);
-      scheduleRedraw();
+      // Setting width/height clears the bitmap; repaint immediately so we never flash blank (OB-4).
+      paintRef.current();
     };
 
     resize();
@@ -411,7 +430,7 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
       ro?.disconnect();
       window.removeEventListener('resize', resize);
     };
-  }, [song, viewport, scheduleRedraw, melodyRowHeight]);
+  }, [song, viewport, melodyRowHeight]);
 
   const endDrag = useCallback(
     (canvas: HTMLCanvasElement, clientX: number, clientY: number) => {
@@ -484,7 +503,7 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
     const cx = e.clientX ?? 0;
     const cy = e.clientY ?? 0;
     const { x: vx, y: vy } = pointerEventToViewportXY(canvas, cx, cy, PITCH_GUTTER_WIDTH);
-    const hit = hitTestEditorCanvas(vx, vy, song, viewport, melodyRowHeight);
+    const hit = hitTestEditorCanvas(vx, vy, song, viewport, melodyRowHeight, melodyVoiceVisible);
 
     if (typeof canvas.setPointerCapture === 'function') {
       canvas.setPointerCapture(e.pointerId);
@@ -562,7 +581,7 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
 
     if (!sess) {
       const { x: vx, y: vy } = pointerEventToViewportXY(canvas, mcx, mcy, PITCH_GUTTER_WIDTH);
-      const hit = hitTestEditorCanvas(vx, vy, song, viewport, melodyRowHeight);
+      const hit = hitTestEditorCanvas(vx, vy, song, viewport, melodyRowHeight, melodyVoiceVisible);
       setHoverHit(hit);
       scheduleRedraw();
       return;
@@ -625,11 +644,16 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
 
   // TODO(Designer): optional side-rail caption for chord shortcuts (F08.2); aria-label covers screen readers until then.
 
+  const visBits = melodyVoiceVisible.map((v) => (v ? '1' : '0')).join('');
+
   return (
     <canvas
       ref={canvasRef}
       role="application"
       tabIndex={0}
+      data-melody-inactive-display-mode={inactiveMelodyDisplayMode}
+      data-melody-voice-visible={visBits}
+      data-smart-octave={smartOctaveEnabled ? 'true' : 'false'}
       className={`${cursorClass} outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2`}
       aria-label="Song editor — digits 1–7; chord d secondary, i inversion, e embellishment; duration h j k l ; ` ' (triplet row q w e r t); Delete, arrow keys to navigate, Ctrl+1–4 melody voice"
       onPointerDown={handlePointerDown}

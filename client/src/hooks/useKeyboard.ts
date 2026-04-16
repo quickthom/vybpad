@@ -23,6 +23,8 @@ import {
   navigateSelection,
   nextCycledEmbellishment,
   nextCycledInversion,
+  pickSmartOctaveForDegreeEdit,
+  pickSmartOctaveForNewNote,
   resolveMeasureIndexForKeyboardDigit,
   shouldAllowChordDigitEntry,
   shouldUseNoteEntry,
@@ -82,6 +84,8 @@ export interface EditorKeyboardContext {
    * Omitted or false → diatonic placement (`chromatic: 0`) and text updates do not force chromatic.
    */
   melodyChromaticEntryActive?: boolean;
+  /** UI-W4 — new table-mode notes / text-mode degree edits pick octave near prior pitch in the voice. */
+  smartOctaveEnabled?: boolean;
 }
 
 function melodyDefaultChromaticOffset(ctx: EditorKeyboardContext): number {
@@ -401,6 +405,11 @@ export function applyMelodyPitchDegreeFromEditor(ctx: EditorKeyboardContext, deg
     ctx.textDurationArmedRef.current = false;
     const durClamped = clampDurationToMeasure(song, measureIndex, note.beat, ctx.currentDurationTicks);
     const chrom = melodyDefaultChromaticOffset(ctx);
+    const nextChromatic = chrom === 1 ? 1 : note.chromatic;
+    const octave =
+      ctx.smartOctaveEnabled === true
+        ? pickSmartOctaveForDegreeEdit(song, measureIndex, degree, nextChromatic, note)
+        : note.octave;
     ctx.onNoteEdit(measureIndex, voice, {
       type: 'update',
       noteId: selNoteId,
@@ -408,6 +417,7 @@ export function applyMelodyPitchDegreeFromEditor(ctx: EditorKeyboardContext, deg
         scaleDegree: degree,
         duration: durClamped,
         isRest: false,
+        ...(ctx.smartOctaveEnabled === true ? { octave } : {}),
         ...(chrom === 1 ? { chromatic: 1 } : {}),
       },
     });
@@ -417,9 +427,15 @@ export function applyMelodyPitchDegreeFromEditor(ctx: EditorKeyboardContext, deg
   const nb = tableInsertBeatFromSelection(selection, song, measureIndex, 'note', voice);
   if (nb == null) return false;
   const durClamped = clampDurationToMeasure(song, measureIndex, nb, ctx.currentDurationTicks);
+  const chrom = melodyDefaultChromaticOffset(ctx);
+  const smartOct =
+    ctx.smartOctaveEnabled === true
+      ? pickSmartOctaveForNewNote(song, measureIndex, voice, nb, degree, chrom)
+      : 0;
   const payload = {
     ...buildDefaultNotePayload(song, measureIndex, degree, nb, durClamped),
-    chromatic: melodyDefaultChromaticOffset(ctx),
+    chromatic: chrom,
+    octave: smartOct,
   };
   ctx.onNoteEdit(measureIndex, voice, { type: 'add', note: payload });
 
@@ -686,6 +702,11 @@ export function handleEditorKeydown(e: KeyboardEvent, ctx: EditorKeyboardContext
         ctx.textDurationArmedRef.current = false;
         const durClamped = clampDurationToMeasure(ctx.song, measureIndex, note.beat, ctx.currentDurationTicks);
         const chrom = melodyDefaultChromaticOffset(ctx);
+        const nextChromatic = chrom === 1 ? 1 : note.chromatic;
+        const octave =
+          ctx.smartOctaveEnabled === true
+            ? pickSmartOctaveForDegreeEdit(ctx.song, measureIndex, degree, nextChromatic, note)
+            : note.octave;
         ctx.onNoteEdit(measureIndex, voice, {
           type: 'update',
           noteId: selNoteId,
@@ -693,6 +714,7 @@ export function handleEditorKeydown(e: KeyboardEvent, ctx: EditorKeyboardContext
             scaleDegree: degree,
             duration: durClamped,
             isRest: false,
+            ...(ctx.smartOctaveEnabled === true ? { octave } : {}),
             ...(chrom === 1 ? { chromatic: 1 } : {}),
           },
         });
@@ -703,9 +725,15 @@ export function handleEditorKeydown(e: KeyboardEvent, ctx: EditorKeyboardContext
       if (nb == null) return;
       e.preventDefault();
       const durClamped = clampDurationToMeasure(ctx.song, measureIndex, nb, ctx.currentDurationTicks);
+      const chrom = melodyDefaultChromaticOffset(ctx);
+      const smartOct =
+        ctx.smartOctaveEnabled === true
+          ? pickSmartOctaveForNewNote(ctx.song, measureIndex, voice, nb, degree, chrom)
+          : 0;
       const payload = {
         ...buildDefaultNotePayload(ctx.song, measureIndex, degree, nb, durClamped),
-        chromatic: melodyDefaultChromaticOffset(ctx),
+        chromatic: chrom,
+        octave: smartOct,
       };
       ctx.onNoteEdit(measureIndex, voice, { type: 'add', note: payload });
 

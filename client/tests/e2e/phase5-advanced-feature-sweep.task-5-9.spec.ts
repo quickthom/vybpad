@@ -3,7 +3,7 @@
  *
  * ROADMAP Phase 5 milestone mapping:
  * - Borrowed chord: borrowed palette tab is reachable and exposes non-diatonic degree controls.
- * - Secondary chord: applied-chord inspector chrome is present in the editor shell.
+ * - Secondary chord: cycle/clear + Roman readout live in the right properties panel (UI-W7).
  * - Key change at measure 5: key/scale dialog reflects the effective overridden measure context.
  * - Meter + tempo change at measure 9: tempo/meter dialog reflects the inherited override values.
  * - Second voice: Ctrl+2 updates the observable active voice indicator.
@@ -12,6 +12,7 @@
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
 
 import { buildPhase5MilestoneSong } from '../fixtures/phase5MilestoneSong';
+import { clickFirstChordStrip } from './helpers/chordStripInteraction';
 import { waitForEditorRouteReady } from './helpers/editorReady';
 import { submitRegisterFormAndExpectProjects } from './helpers/registerFlow';
 import {
@@ -121,8 +122,10 @@ test.describe('TASK-5.9 — advanced Phase 5 milestone sweep', () => {
     await expect(page.getByTestId('chord-palette-borrowed-scale')).toHaveValue('minor');
     await expect(page.getByTestId('chord-palette-borrowed-degree-4')).toBeVisible();
 
-    await expect(page.getByRole('heading', { name: 'Applied chords' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Cycle secondary (d)' })).toBeVisible();
+    await clickFirstChordStrip(page);
+    const props = page.getByTestId('properties-region');
+    await expect(props.getByRole('heading', { name: 'Chord' })).toBeVisible();
+    await expect(props.getByTestId('properties-chord-secondary-cycle')).toBeVisible();
 
     const keyScaleTrigger = page.getByRole('button', { name: 'Key / scale' });
     const measure5Button = page.getByRole('button', { name: 'Measure 5', exact: true });
@@ -136,7 +139,7 @@ test.describe('TASK-5.9 — advanced Phase 5 milestone sweep', () => {
     await expect(keyDialog).toBeHidden();
     await expect(keyScaleTrigger).toBeFocused();
 
-    const tempoMeterTrigger = page.getByTestId('vybpad-measure-tempo-meter');
+    const tempoMeterTrigger = page.getByTestId('vybpad-tempo-meter-edit');
     const measure9Button = page.getByRole('button', { name: 'Measure 9', exact: true });
     await measure9Button.click();
     await expect(measure9Button).toHaveAttribute('aria-pressed', 'true');

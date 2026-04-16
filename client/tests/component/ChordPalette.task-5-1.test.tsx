@@ -14,7 +14,7 @@ describe('ChordPalette — TASK-5.1', () => {
     render(
       <ChordPalette currentKey="C" currentScale="major" mode="diatonic" onChordSelect={onChordSelect} />,
     );
-    expect(screen.getByRole('heading', { name: /^Chord palette$/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /^Chords in C major$/i })).toBeInTheDocument();
     expect(screen.getByRole('group', { name: /diatonic scale degrees/i })).toBeInTheDocument();
     for (let d = 1; d <= 7; d++) {
       expect(screen.getByRole('button', { name: new RegExp(`degree ${d}`, 'i') })).toBeInTheDocument();

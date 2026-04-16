@@ -17,6 +17,10 @@ export interface PersistedEditorUiSettingsV1 {
   colorScheme: 'diatonic' | 'major';
   showGuides: boolean;
   staffSpacing: StaffSpacing;
+  /** UI-W4 — optional for backward compatibility with older localStorage payloads. */
+  melodyVoiceVisible?: readonly [boolean, boolean, boolean, boolean];
+  inactiveMelodyDisplayMode?: 'outline' | 'solid' | 'alpha';
+  smartOctaveEnabled?: boolean;
 }
 
 function isEntryMode(x: unknown): x is 'table' | 'text' {
@@ -33,6 +37,18 @@ function isColorScheme(x: unknown): x is 'diatonic' | 'major' {
 
 function isStaffSpacing(x: unknown): x is StaffSpacing {
   return x === 'compact' || x === 'default' || x === 'wide';
+}
+
+function isMelodyVoiceVisibleTuple(x: unknown): x is readonly [boolean, boolean, boolean, boolean] {
+  return (
+    Array.isArray(x) &&
+    x.length === 4 &&
+    x.every((v) => typeof v === 'boolean')
+  );
+}
+
+function isInactiveMelodyDisplayMode(x: unknown): x is 'outline' | 'solid' | 'alpha' {
+  return x === 'outline' || x === 'solid' || x === 'alpha';
 }
 
 function parsePersistedV1(raw: string | null): PersistedEditorUiSettingsV1 | null {
@@ -57,7 +73,7 @@ function parsePersistedV1(raw: string | null): PersistedEditorUiSettingsV1 | nul
     ) {
       return null;
     }
-    return {
+    const base: PersistedEditorUiSettingsV1 = {
       version: 1,
       entryMode: o.entryMode,
       labelMode: o.labelMode,
@@ -65,6 +81,16 @@ function parsePersistedV1(raw: string | null): PersistedEditorUiSettingsV1 | nul
       showGuides: o.showGuides,
       staffSpacing: o.staffSpacing,
     };
+    if (o.melodyVoiceVisible !== undefined && isMelodyVoiceVisibleTuple(o.melodyVoiceVisible)) {
+      base.melodyVoiceVisible = o.melodyVoiceVisible;
+    }
+    if (o.inactiveMelodyDisplayMode !== undefined && isInactiveMelodyDisplayMode(o.inactiveMelodyDisplayMode)) {
+      base.inactiveMelodyDisplayMode = o.inactiveMelodyDisplayMode;
+    }
+    if (o.smartOctaveEnabled !== undefined && typeof o.smartOctaveEnabled === 'boolean') {
+      base.smartOctaveEnabled = o.smartOctaveEnabled;
+    }
+    return base;
   } catch {
     return null;
   }

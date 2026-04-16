@@ -429,6 +429,12 @@ interface EditorCanvasProps {
   staffSpacing?: "compact" | "default" | "wide";
   /** UI-W3 — when true, new melody placements default `NoteEvent.chromatic` to +1 (PAT-018) until changed; shell-owned. */
   melodyChromaticEntryActive?: boolean;
+  /** UI-W4 — per-voice visibility in the editor (melody indices 0–3). Omitted in tests → all voices visible. */
+  melodyVoiceVisible?: readonly [boolean, boolean, boolean, boolean];
+  /** UI-W4 — how **non-active** melody voices render when still visible (see UX §6 note blocks). Omitted → `"alpha"`. */
+  inactiveMelodyDisplayMode?: "outline" | "solid" | "alpha";
+  /** UI-W4 — Hookpad-style smart octave for new/edited melody input. Omitted → false. */
+  smartOctaveEnabled?: boolean;
   onChordEdit: (measureIndex: number, event: ChordEditAction) => void;
   onNoteEdit: (measureIndex: number, voice: number, event: NoteEditAction) => void;
   /** TASK-7.3 — optional batched note edits (split/tie); one store transaction when wired to `SongStore.editNoteBatch` (single undo step). */
@@ -493,8 +499,25 @@ interface TransportControlsProps {
   onStop: () => void;
   onRewind: () => void;
   onTempoChange: (bpm: number) => void;
+  /** UI-W6 (RA-11) — loop region controls folded into the transport row; omit when unused. */
+  loopContent?: React.ReactNode;
   /** Optional trailing slot (e.g. MIDI export / drag-to-desktop affordance); omit when unused. */
   endContent?: React.ReactNode;
+  /** UI-W8 (RA-13) — record arm toggle; omit when unused. */
+  recordArmed?: boolean;
+  onRecordToggle?: () => void;
+  /** UI-W8 (RA-14) — metronome / click toggle. */
+  metronomeEnabled?: boolean;
+  onMetronomeToggle?: () => void;
+  /** UI-W8 (RA-16/21) — zoom readout and ± / reset; `zoomPercent` is 100 at default horizontal zoom. */
+  zoomPercent?: number;
+  onZoomIn?: () => void;
+  onZoomOut?: () => void;
+  onZoomReset?: () => void;
+  /** UI-W8 (RA-20) — key + meter + tempo readouts in top band; click opens tempo/meter edit when callback set. */
+  keyLabel?: string;
+  meterLabel?: string;
+  onTempoMeterEdit?: () => void;
 }
 ```
 
@@ -506,6 +529,12 @@ interface ChordPaletteProps {
   currentScale: ScaleType;
   onChordSelect: (chord: Omit<ChordEvent, "id" | "beat" | "duration">) => void;
   mode: "diatonic" | "borrowed" | "secondary" | "search";
+  /** UI-W5 (RA-8) — discovery / library row: Magic, Popular, Search, Progressions, Bass Sets. Omitted → parent defaults to `"magic"` (backward compatible). */
+  libraryTab?: "magic" | "popular" | "search" | "progressions" | "bassSets";
+  /** UI-W5 — when parent controls the library tab, notify on change. */
+  onLibraryTabChange?: (tab: "magic" | "popular" | "search" | "progressions" | "bassSets") => void;
+  /** UI-W9 (RA-19) — parent sets browse mode to diatonic when user clicks Reset; palette clears search and may reset library tab / borrowed source. */
+  onBrowseDefaultsReset?: () => void;
 }
 ```
 
@@ -621,6 +650,12 @@ interface UIStore {
   labelMode: "degree" | "roman" | "both" | "off";
   staffSpacing: "compact" | "default" | "wide";
   activePanels: Set<string>;           // "band" | "mixer" | "keys" | "meters" | "lyrics" | "settings" | "piano"
+  /** UI-W4 — editor visibility for melody voices 0–3 (independent of mixer mute). Default all true. */
+  melodyVoiceVisible: readonly [boolean, boolean, boolean, boolean];
+  /** UI-W4 — rendering for notes whose voice is visible but not `activeVoice`. */
+  inactiveMelodyDisplayMode: "outline" | "solid" | "alpha";
+  /** UI-W4 — smart octave behavior for melody entry (see task brief). */
+  smartOctaveEnabled: boolean;
 
   setViewport: (v: Viewport) => void;
   setSelection: (s: Selection | null) => void;
@@ -632,6 +667,9 @@ interface UIStore {
   setLabelMode: (mode: "degree" | "roman" | "both" | "off") => void;
   setStaffSpacing: (staffSpacing: "compact" | "default" | "wide") => void;
   togglePanel: (panel: string) => void;
+  setMelodyVoiceVisible: (voice: 0 | 1 | 2 | 3, visible: boolean) => void;
+  setInactiveMelodyDisplayMode: (mode: "outline" | "solid" | "alpha") => void;
+  setSmartOctaveEnabled: (enabled: boolean) => void;
 }
 
 type ShortcutScope = "global" | "editor" | "panel" | "input";
@@ -713,6 +751,10 @@ interface PlaybackStore {
   loopEnd: number;                     // tick
   initStatus: PlaybackInitStatus;      // user-gesture audio unlock lifecycle
   initErrorCode: PlaybackInitErrorCode | null;
+  /** UI-W8 (RA-14) — audible metronome / click during playback when engine supports it. */
+  metronomeEnabled: boolean;
+  /** UI-W8 (RA-13) — record arm UI; disk capture is out of scope until pipeline exists. */
+  recordArmed: boolean;
 
   play: () => void;
   pause: () => void;
@@ -726,6 +768,8 @@ interface PlaybackStore {
   // Sets isLooping = false; calls engine.setLoop(false). No-op if engine not ready.
   initializeAudio: () => Promise<void>; // must be invoked from a user gesture; idempotent
   clearInitError: () => void;
+  setMetronomeEnabled: (enabled: boolean) => void;
+  setRecordArmed: (armed: boolean) => void;
 }
 
 type PlaybackInitStatus = "locked" | "initializing" | "ready" | "error";
@@ -833,6 +877,8 @@ interface AudioEngine {
   dispose(): void;
 }
 ```
+
+**Playback scheduling (client implementation detail — UI-W5):** `buildScheduledPlayEvents` in `client/src/engine/audio/songScheduler.ts` accepts an optional third argument `{ melodyVoiceVisible?: readonly [boolean, boolean, boolean, boolean] }`. When provided, melody lanes marked **false** are omitted from scheduling (editor lane visibility, distinct from mixer mute in `BandConfig`). When omitted, all melody voices schedule. See module JSDoc for the exported options type.
 
 ---
 

@@ -33,9 +33,9 @@ Phases 0 (7/7), 1A (7/7), 1B (6/6), Phase 2 (15/15), Phase 3 (10/10), Phase 4 (1
 
 ---
 
-## UI Remediation — REF_AUDIT_1 (Waves 1–3)
+## UI Remediation — REF_AUDIT_1 (Waves 1–9)
 
-> Sequencing: [ui_remediation_sequencing_ec8db0c2.plan.md](ui_remediation_sequencing_ec8db0c2.plan.md); Wave 2–3 detail: [docs/audit/UI_REMEDIATION_WAVES_2_3.md](docs/audit/UI_REMEDIATION_WAVES_2_3.md).
+> Sequencing: [ui_remediation_sequencing_ec8db0c2.plan.md](ui_remediation_sequencing_ec8db0c2.plan.md); Waves 2–3: [docs/audit/UI_REMEDIATION_WAVES_2_3.md](docs/audit/UI_REMEDIATION_WAVES_2_3.md); Waves 4–6: [docs/audit/UI_REMEDIATION_WAVES_4_6.md](docs/audit/UI_REMEDIATION_WAVES_4_6.md); Waves 7–9: [docs/audit/UI_REMEDIATION_WAVES_7_9.md](docs/audit/UI_REMEDIATION_WAVES_7_9.md).
 
 | Task | Role | Branch | Status | PR | Depends | Notes |
 |---|---|---|---|---|---|---|
@@ -45,5 +45,17 @@ Phases 0 (7/7), 1A (7/7), 1B (6/6), Phase 2 (15/15), Phase 3 (10/10), Phase 4 (1
 | UI-W2 | QA | — | merged | — | UI-W1 | chordStrip.ui-w2 tests |
 | UI-W3 | Builder | — | merged | — (local merge) | UI-W2 | RA-5 + RA-6; branch `phase-8/ui-remediation-wave3` @5fdd283 + INTERFACES `melodyChromaticEntryActive` |
 | UI-W3 | QA | — | merged | — | UI-W2 | Component tests + chromatic remediation |
+| UI-W4 | Builder | — | merged | — (local f6d4cf9) | UI-W3 | RA-4 right properties; artifact `docs/pull-requests/UI-W4.md`; `phase-8/ui-right-properties` merged to develop |
+| UI-W4 | QA | — | merged | — | UI-W3 | Pre-written tests landed with UI-W4 |
+| UI-W5 | Builder | — | merged | — (local 43721fe) | UI-W4 | RA-7 + RA-8; `docs/pull-requests/UI-W5.md`; `phase-8/ui-voices-discovery` merged to develop |
+| UI-W5 | QA | — | merged | — | UI-W4 | Tests with UI-W5 |
+| UI-W6 | Builder | — | merged | — (local 2f40e28 + INTERFACES dd97eb3) | UI-W5 | RA-9/11/18 + RA-15 stubs; `docs/pull-requests/UI-W6.md`; `phase-8/ui-shell-consolidation` merged to develop |
+| UI-W6 | QA | — | merged | — | UI-W5 | Playwright `ui-shell-consolidation.ui-w6.spec.ts` |
+| UI-W7 | Builder | — | merged | — (local 6b2fd46) | UI-W6 | RA-10 + RA-12; `docs/pull-requests/UI-W7.md` |
+| UI-W7 | QA | — | merged | — | UI-W6 | `ChordPalette.EditorLayout.ui-w7.ra10-ra12.test.tsx` |
+| UI-W8 | Builder | — | merged | — (local 9b0ba8c) | UI-W7 | RA-13–16,20–21; `docs/pull-requests/UI-W8.md` |
+| UI-W8 | QA | — | merged | — | UI-W7 | Transport + playbackStore tests |
+| UI-W9 | Builder | — | merged | — (local b424761 + INTERFACES 907cac6) | UI-W8 | RA-17 + RA-19; `docs/pull-requests/UI-W9.md` |
+| UI-W9 | QA | — | merged | — | UI-W8 | `ChordPalette.EditorLayout.ui-w9.ra17-ra19.test.tsx` |
 
 ---
