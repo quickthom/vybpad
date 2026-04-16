@@ -427,6 +427,8 @@ interface EditorCanvasProps {
   /** TASK-7.6 — optional; shell passes `UIStore` chrome. Omitted in tests / legacy callers → defaults match store. */
   labelMode?: "degree" | "roman" | "both" | "off";
   staffSpacing?: "compact" | "default" | "wide";
+  /** UI-W3 — when true, new melody placements default `NoteEvent.chromatic` to +1 (PAT-018) until changed; shell-owned. */
+  melodyChromaticEntryActive?: boolean;
   onChordEdit: (measureIndex: number, event: ChordEditAction) => void;
   onNoteEdit: (measureIndex: number, voice: number, event: NoteEditAction) => void;
   /** TASK-7.3 — optional batched note edits (split/tie); one store transaction when wired to `SongStore.editNoteBatch` (single undo step). */
