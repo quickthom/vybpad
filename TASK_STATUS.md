@@ -47,7 +47,7 @@ Phases 0 (7/7), 1A (7/7), 1B (6/6), Phase 2 (15/15), Phase 3 (10/10), Phase 4 (1
 | UI-W3 | QA | — | merged | — | UI-W2 | Component tests + chromatic remediation |
 | UI-W4 | Builder | — | merged | — (local f6d4cf9) | UI-W3 | RA-4 right properties; artifact `docs/pull-requests/UI-W4.md`; `phase-8/ui-right-properties` merged to develop |
 | UI-W4 | QA | — | merged | — | UI-W3 | Pre-written tests landed with UI-W4 |
-| UI-W5 | Builder | phase-8/ui-voices-discovery | in-progress | — | UI-W4 | RA-7 + RA-8; INTERFACES libraryTab gate |
-| UI-W5 | QA | phase-8/ui-voices-discovery | in-progress | — | UI-W4 | Failing tests before Builder PR |
+| UI-W5 | Builder | — | merged | — (local 43721fe) | UI-W4 | RA-7 + RA-8; `docs/pull-requests/UI-W5.md`; `phase-8/ui-voices-discovery` merged to develop |
+| UI-W5 | QA | — | merged | — | UI-W4 | Tests with UI-W5 |
 
 ---

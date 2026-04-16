@@ -853,6 +853,8 @@ interface AudioEngine {
 }
 ```
 
+**Playback scheduling (client implementation detail — UI-W5):** `buildScheduledPlayEvents` in `client/src/engine/audio/songScheduler.ts` accepts an optional third argument `{ melodyVoiceVisible?: readonly [boolean, boolean, boolean, boolean] }`. When provided, melody lanes marked **false** are omitted from scheduling (editor lane visibility, distinct from mixer mute in `BandConfig`). When omitted, all melody voices schedule. See module JSDoc for the exported options type.
+
 ---
 
 ## MIDI Export Interface
