@@ -1,14 +1,35 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { lazy, Suspense, useEffect, useState, type ReactNode } from 'react';
 import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 
-import { LoginForm } from '../components/auth/LoginForm';
-import { RegisterForm } from '../components/auth/RegisterForm';
 import { ToastHost } from '../components/common/ToastHost';
-import { ProjectListPage } from '../components/projects/ProjectListPage';
 import { useAuthStore } from '../store/authStore';
 import { AuthViewportGate } from './AuthViewportGate';
-import { EditorViewportGate } from './EditorViewportGate';
 import { ensureSessionBootstrapped } from './sessionBootstrap';
+
+const LoginForm = lazy(() =>
+  import('../components/auth/LoginForm').then((m) => ({ default: m.LoginForm })),
+);
+const RegisterForm = lazy(() =>
+  import('../components/auth/RegisterForm').then((m) => ({ default: m.RegisterForm })),
+);
+const ProjectListPage = lazy(() =>
+  import('../components/projects/ProjectListPage').then((m) => ({ default: m.ProjectListPage })),
+);
+const EditorViewportGate = lazy(() =>
+  import('./EditorViewportGate').then((m) => ({ default: m.EditorViewportGate })),
+);
+
+/** Light-theme loading gate; matches session bootstrap styling (UX: minimal shell). */
+function RouteLoadingFallback() {
+  return (
+    <div
+      className="flex min-h-screen items-center justify-center bg-[var(--color-app-bg,#F3F4F6)] text-sm text-[var(--color-text-secondary,#4B5563)]"
+      aria-busy="true"
+    >
+      Loading…
+    </div>
+  );
+}
 
 /**
  * Run cookie refresh before routing so `RequireAuth` does not redirect to `/login` on full reload
@@ -107,54 +128,56 @@ export function AppRoutes() {
   return (
     <AuthBootstrap>
       <ToastHost />
-      <Routes>
-        <Route
-          path="/login"
-          element={
-            <AuthViewportGate>
-              <div className="flex min-h-screen items-center justify-center bg-[var(--color-app-bg,#F3F4F6)] px-4 py-12 font-[ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe_UI',Roboto,'Helvetica_Neue',Arial,'Noto_Sans',sans-serif]">
-                <LoginForm />
-              </div>
-            </AuthViewportGate>
-          }
-        />
-        <Route
-          path="/register"
-          element={
-            <AuthViewportGate>
-              <div className="flex min-h-screen items-center justify-center bg-[var(--color-app-bg,#F3F4F6)] px-4 py-12 font-[ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe_UI',Roboto,'Helvetica_Neue',Arial,'Noto_Sans',sans-serif]">
-                <RegisterForm />
-              </div>
-            </AuthViewportGate>
-          }
-        />
-        <Route
-          path="/editor/:projectId"
-          element={
-            <RequireAuth>
-              <EditorViewportGate />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/editor"
-          element={
-            <RequireAuth>
-              <EditorViewportGate />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/projects"
-          element={
-            <RequireAuth>
-              <ProjectListPage />
-            </RequireAuth>
-          }
-        />
-        <Route path="/" element={<RootRedirect />} />
-        <Route path="*" element={<RootRedirect />} />
-      </Routes>
+      <Suspense fallback={<RouteLoadingFallback />}>
+        <Routes>
+          <Route
+            path="/login"
+            element={
+              <AuthViewportGate>
+                <div className="flex min-h-screen items-center justify-center bg-[var(--color-app-bg,#F3F4F6)] px-4 py-12 font-[ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe_UI',Roboto,'Helvetica_Neue',Arial,'Noto_Sans',sans-serif]">
+                  <LoginForm />
+                </div>
+              </AuthViewportGate>
+            }
+          />
+          <Route
+            path="/register"
+            element={
+              <AuthViewportGate>
+                <div className="flex min-h-screen items-center justify-center bg-[var(--color-app-bg,#F3F4F6)] px-4 py-12 font-[ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe_UI',Roboto,'Helvetica_Neue',Arial,'Noto_Sans',sans-serif]">
+                  <RegisterForm />
+                </div>
+              </AuthViewportGate>
+            }
+          />
+          <Route
+            path="/editor/:projectId"
+            element={
+              <RequireAuth>
+                <EditorViewportGate />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/editor"
+            element={
+              <RequireAuth>
+                <EditorViewportGate />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/projects"
+            element={
+              <RequireAuth>
+                <ProjectListPage />
+              </RequireAuth>
+            }
+          />
+          <Route path="/" element={<RootRedirect />} />
+          <Route path="*" element={<RootRedirect />} />
+        </Routes>
+      </Suspense>
     </AuthBootstrap>
   );
 }
