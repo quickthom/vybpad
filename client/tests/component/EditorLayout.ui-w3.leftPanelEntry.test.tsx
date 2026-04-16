@@ -22,7 +22,7 @@
  * - `left-panel-duration-ticks-48` — sets placement duration to 48 ticks (quarter)
  * - `melody-entry-pitch-E` — inserts / arms degree 3 in C major (same as keyboard `3` in note-entry context)
  * - `melody-entry-rest` — rest entry (isRest: true per INTERFACES NoteEvent)
- * - `melody-entry-chromatic-toggle` — toggle alternate spelling / chromatic rows (PAT-018); must expose `aria-pressed`
+ * - `melody-entry-chromatic-toggle` — chromatic entry default +1 semitone on new notes (PAT-018); must expose `aria-pressed`
  * - `melody-entry-raise-half` / `melody-entry-lower-half` — nudge chromatic offset on selection (−1 / +1 semitone vs diatonic)
  *
  * ⛔ INTERFACES: Do not require new `NoteEditAction` discriminants — existing `add` / `update` with Partial<NoteEvent> suffice.
@@ -234,6 +234,32 @@ describe('EditorLayout — UI-W3 — melody entry vs keyboard baseline (RA-6)', 
     while (useUIStore.getState().entryMode !== 'table') {
       useUIStore.getState().toggleEntryMode();
     }
+  });
+
+  it('with chromatic entry on, a placed melody note has non-zero chromatic (default sharp, PAT-018)', async () => {
+    const user = userEvent.setup();
+    const chordId = randomUUID();
+    const noteId = randomUUID();
+    const song = makeSongChordAndNote(chordEvent(chordId, 0, 48), noteEvent(noteId, 48, 24, 3));
+
+    useSongStore.getState().loadSong(structuredClone(song));
+    useUIStore.getState().setSelection({ type: 'note', measureIndex: 0, eventIds: [noteId] });
+
+    renderEditorAtLocalEditor();
+    await screen.findByRole('application', { name: /Song editor/i });
+
+    await user.click(screen.getByTestId('melody-entry-chromatic-toggle'));
+    expect(screen.getByTestId('melody-entry-chromatic-toggle').getAttribute('aria-pressed')).toBe('true');
+
+    await user.click(screen.getByTestId('melody-entry-pitch-E'));
+
+    await waitFor(() => {
+      const lane = useSongStore.getState().song.measures[0]!.notes[0];
+      const placed = lane[lane.length - 1];
+      expect(placed?.scaleDegree).toBe(3);
+      expect(placed?.chromatic).not.toBe(0);
+      expect(placed?.chromatic).toBe(1);
+    });
   });
 
   it('melody pitch E button yields the same new note as keyboard digit 3 with identical duration and measure context', async () => {

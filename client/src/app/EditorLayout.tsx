@@ -195,6 +195,8 @@ export function EditorLayout() {
   const keyboardTargetMeasureRef = useRef<number | null>(null);
   const textDurationArmedRef = useRef(false);
   const [currentDurationTicks, setCurrentDurationTicks] = useState(48);
+  /** UI-W3 — left-panel Chromatic toggle: new melody notes default to `chromatic: 1` when on (PAT-018). */
+  const [melodyChromaticEntryActive, setMelodyChromaticEntryActive] = useState(false);
   const [chordPaletteExpanded, setChordPaletteExpanded] = useState(true);
   const [keyScaleDialogOpen, setKeyScaleDialogOpen] = useState(false);
   const keyScaleTriggerRef = useRef<HTMLButtonElement>(null);
@@ -366,6 +368,7 @@ export function EditorLayout() {
         onSelectionChange: setSelection,
         shortcutManager,
         getShortcutContext,
+        melodyChromaticEntryActive,
       };
       applyNoteShortcutCommandFromEditor(kb, id);
       return;
@@ -392,6 +395,7 @@ export function EditorLayout() {
       onSelectionChange: setSelection,
       shortcutManager,
       getShortcutContext,
+      melodyChromaticEntryActive,
     };
     applyDurationTicksFromEditor(kb, ticks);
   };
@@ -609,6 +613,7 @@ export function EditorLayout() {
         onSelectionChange: setSelection,
         shortcutManager,
         getShortcutContext,
+        melodyChromaticEntryActive,
       };
       applyChordPalettePayloadFromEditor(ctx, chord);
     },
@@ -630,6 +635,7 @@ export function EditorLayout() {
       setSelection,
       shortcutManager,
       getShortcutContext,
+      melodyChromaticEntryActive,
     ],
   );
 
@@ -655,6 +661,7 @@ export function EditorLayout() {
         onSelectionChange: setSelection,
         shortcutManager,
         getShortcutContext,
+        melodyChromaticEntryActive,
       };
       applyDurationTicksFromEditor(ctx, ticks);
     },
@@ -676,6 +683,7 @@ export function EditorLayout() {
       setSelection,
       shortcutManager,
       getShortcutContext,
+      melodyChromaticEntryActive,
     ],
   );
 
@@ -700,6 +708,7 @@ export function EditorLayout() {
       onSelectionChange: setSelection,
       shortcutManager,
       getShortcutContext,
+      melodyChromaticEntryActive,
     };
   }, [
     song,
@@ -719,6 +728,7 @@ export function EditorLayout() {
     setSelection,
     shortcutManager,
     getShortcutContext,
+    melodyChromaticEntryActive,
   ]);
 
   const handleMelodyPitchDegree = useCallback(
@@ -1163,6 +1173,8 @@ export function EditorLayout() {
                 currentKey={paletteKey}
                 currentScale={paletteScale}
                 entryMode={entryMode}
+                melodyChromaticEntryActive={melodyChromaticEntryActive}
+                onMelodyChromaticEntryToggle={() => setMelodyChromaticEntryActive((v) => !v)}
                 onPitchDegree={handleMelodyPitchDegree}
                 onRest={handleMelodyRest}
                 onRaiseHalf={handleMelodyRaiseHalf}
@@ -1297,6 +1309,7 @@ export function EditorLayout() {
                 }}
                 shortcutManager={shortcutManager}
                 getShortcutContext={getShortcutContext}
+                melodyChromaticEntryActive={melodyChromaticEntryActive}
               />
             )}
           </main>

@@ -75,6 +75,17 @@ export interface EditorKeyboardContext {
   /** Optional PAT-027 layer; when set with {@link getShortcutContext}, runs before grid editor handling. */
   shortcutManager?: ShortcutManager | null;
   getShortcutContext?: () => ShortcutContext;
+
+  /**
+   * UI-W3 — left-panel "Chromatic" toggle. When true, new table-mode melody notes default to `chromatic: +1`
+   * (one semitone sharp vs diatonic, PAT-018); text-mode degree edits apply `chromatic: 1` when changing pitch.
+   * Omitted or false → diatonic placement (`chromatic: 0`) and text updates do not force chromatic.
+   */
+  melodyChromaticEntryActive?: boolean;
+}
+
+function melodyDefaultChromaticOffset(ctx: EditorKeyboardContext): number {
+  return ctx.melodyChromaticEntryActive === true ? 1 : 0;
 }
 
 function parseScaleDegreeKey(key: string): ScaleDegree | null {
@@ -389,10 +400,16 @@ export function applyMelodyPitchDegreeFromEditor(ctx: EditorKeyboardContext, deg
     if (!note) return false;
     ctx.textDurationArmedRef.current = false;
     const durClamped = clampDurationToMeasure(song, measureIndex, note.beat, ctx.currentDurationTicks);
+    const chrom = melodyDefaultChromaticOffset(ctx);
     ctx.onNoteEdit(measureIndex, voice, {
       type: 'update',
       noteId: selNoteId,
-      changes: { scaleDegree: degree, duration: durClamped, isRest: false },
+      changes: {
+        scaleDegree: degree,
+        duration: durClamped,
+        isRest: false,
+        ...(chrom === 1 ? { chromatic: 1 } : {}),
+      },
     });
     return true;
   }
@@ -400,7 +417,10 @@ export function applyMelodyPitchDegreeFromEditor(ctx: EditorKeyboardContext, deg
   const nb = tableInsertBeatFromSelection(selection, song, measureIndex, 'note', voice);
   if (nb == null) return false;
   const durClamped = clampDurationToMeasure(song, measureIndex, nb, ctx.currentDurationTicks);
-  const payload = buildDefaultNotePayload(song, measureIndex, degree, nb, durClamped);
+  const payload = {
+    ...buildDefaultNotePayload(song, measureIndex, degree, nb, durClamped),
+    chromatic: melodyDefaultChromaticOffset(ctx),
+  };
   ctx.onNoteEdit(measureIndex, voice, { type: 'add', note: payload });
 
   const songAfter = pickSong(ctx);
@@ -665,10 +685,16 @@ export function handleEditorKeydown(e: KeyboardEvent, ctx: EditorKeyboardContext
         e.preventDefault();
         ctx.textDurationArmedRef.current = false;
         const durClamped = clampDurationToMeasure(ctx.song, measureIndex, note.beat, ctx.currentDurationTicks);
+        const chrom = melodyDefaultChromaticOffset(ctx);
         ctx.onNoteEdit(measureIndex, voice, {
           type: 'update',
           noteId: selNoteId,
-          changes: { scaleDegree: degree, duration: durClamped, isRest: false },
+          changes: {
+            scaleDegree: degree,
+            duration: durClamped,
+            isRest: false,
+            ...(chrom === 1 ? { chromatic: 1 } : {}),
+          },
         });
         return;
       }
@@ -677,7 +703,10 @@ export function handleEditorKeydown(e: KeyboardEvent, ctx: EditorKeyboardContext
       if (nb == null) return;
       e.preventDefault();
       const durClamped = clampDurationToMeasure(ctx.song, measureIndex, nb, ctx.currentDurationTicks);
-      const payload = buildDefaultNotePayload(ctx.song, measureIndex, degree, nb, durClamped);
+      const payload = {
+        ...buildDefaultNotePayload(ctx.song, measureIndex, degree, nb, durClamped),
+        chromatic: melodyDefaultChromaticOffset(ctx),
+      };
       ctx.onNoteEdit(measureIndex, voice, { type: 'add', note: payload });
 
       const songAfter = pickSong(ctx);

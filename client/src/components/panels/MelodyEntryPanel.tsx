@@ -1,5 +1,5 @@
 import type { NoteName, ScaleDegree, ScaleType } from '@vybpad/shared';
-import { useState, type ReactElement } from 'react';
+import type { ReactElement } from 'react';
 
 import { scaleDegreeToMidi } from '../../engine/theory/scaleDegreeToMidi';
 
@@ -15,6 +15,9 @@ export interface MelodyEntryPanelProps {
   currentKey: NoteName;
   currentScale: ScaleType;
   entryMode: 'table' | 'text';
+  /** UI-W3 — shared with {@link EditorKeyboardContext.melodyChromaticEntryActive} via EditorLayout. */
+  melodyChromaticEntryActive: boolean;
+  onMelodyChromaticEntryToggle: () => void;
   onPitchDegree: (degree: ScaleDegree) => void;
   onRest: () => void;
   onRaiseHalf: () => void;
@@ -28,8 +31,17 @@ const DIATONIC_DEGREES: ScaleDegree[] = [1, 2, 3, 4, 5, 6, 7];
  * store paths as the grid keyboard via {@link applyMelodyPitchDegreeFromEditor} in the shell.
  */
 export function MelodyEntryPanel(props: MelodyEntryPanelProps): ReactElement | null {
-  const { currentKey, currentScale, entryMode, onPitchDegree, onRest, onRaiseHalf, onLowerHalf } = props;
-  const [chromaticOn, setChromaticOn] = useState(false);
+  const {
+    currentKey,
+    currentScale,
+    entryMode,
+    melodyChromaticEntryActive,
+    onMelodyChromaticEntryToggle,
+    onPitchDegree,
+    onRest,
+    onRaiseHalf,
+    onLowerHalf,
+  } = props;
 
   if (entryMode !== 'table') {
     return null;
@@ -73,11 +85,11 @@ export function MelodyEntryPanel(props: MelodyEntryPanelProps): ReactElement | n
       <button
         type="button"
         data-testid="melody-entry-chromatic-toggle"
-        aria-pressed={chromaticOn}
-        aria-label="Chromatic spelling"
-        onClick={() => setChromaticOn((v) => !v)}
+        aria-pressed={melodyChromaticEntryActive}
+        aria-label="Chromatic entry: new notes default one semitone sharp (PAT-018)"
+        onClick={onMelodyChromaticEntryToggle}
         className={
-          chromaticOn
+          melodyChromaticEntryActive
             ? 'inline-flex min-h-11 items-center justify-center rounded-lg border border-[var(--color-primary,#4F46E5)] bg-[var(--color-surface-muted,#F9FAFB)] px-3 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2'
             : 'inline-flex min-h-11 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-3 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2'
         }
