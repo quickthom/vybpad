@@ -53,9 +53,9 @@ Phases 0 (7/7), 1A (7/7), 1B (6/6), Phase 2 (15/15), Phase 3 (10/10), Phase 4 (1
 | UI-W6 | QA | — | merged | — | UI-W5 | Playwright `ui-shell-consolidation.ui-w6.spec.ts` |
 | UI-W7 | Builder | — | merged | — (local 6b2fd46) | UI-W6 | RA-10 + RA-12; `docs/pull-requests/UI-W7.md` |
 | UI-W7 | QA | — | merged | — | UI-W6 | `ChordPalette.EditorLayout.ui-w7.ra10-ra12.test.tsx` |
-| UI-W8 | Builder | phase-8/ui-transport-zoom | in-progress | — | UI-W7 | RA-13–16,20–21 + RA-15; INTERFACES gate |
-| UI-W8 | QA | phase-8/ui-transport-zoom | in-progress | — | UI-W7 | — |
-| UI-W9 | Builder | — | pending | — | UI-W8 | RA-17 + RA-19 |
-| UI-W9 | QA | — | pending | — | UI-W8 | — |
+| UI-W8 | Builder | — | merged | — (local 9b0ba8c) | UI-W7 | RA-13–16,20–21; `docs/pull-requests/UI-W8.md` |
+| UI-W8 | QA | — | merged | — | UI-W7 | Transport + playbackStore tests |
+| UI-W9 | Builder | phase-8/ui-palette-cleanup | in-progress | — | UI-W8 | RA-17 + RA-19 |
+| UI-W9 | QA | phase-8/ui-palette-cleanup | in-progress | — | UI-W8 | — |
 
 ---
