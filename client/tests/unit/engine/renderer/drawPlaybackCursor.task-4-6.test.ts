@@ -97,7 +97,7 @@ describe('drawPlaybackCursor — TASK-4.6 — tick-aligned vertical line (render
     const song = minimalSong44(2);
     const viewport = vp({ measureCount: 2 });
     const tick = 96;
-    const cssH = MEASURE_HEADER_HEIGHT + CHORD_AREA_HEIGHT + STAFF_DIATONIC_ROWS * NOTE_HEIGHT;
+    const cssH = MEASURE_HEADER_HEIGHT + STAFF_DIATONIC_ROWS * NOTE_HEIGHT + CHORD_AREA_HEIGHT;
     const expectedX = Math.round(absoluteTickToViewportX(tick, viewport, song)) + 0.5;
 
     const ctx = mockCtx();

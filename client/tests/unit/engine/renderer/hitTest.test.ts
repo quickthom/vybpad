@@ -29,6 +29,8 @@ import { describe, expect, it } from 'vitest';
 
 import {
   MEASURE_HEADER_HEIGHT,
+  MELODY_DIATONIC_ROW_COUNT,
+  NOTE_HEIGHT,
   computeNoteBlockRect,
   layoutChordBlock,
 } from '../../../../src/engine/renderer/index';
@@ -328,7 +330,8 @@ describe('hit testing (TASK-2.6) — misses return null', () => {
   it('returns null in the chord strip when there are no chords in visible measures', () => {
     const song = minimalSong([emptyMeasure('m0')]);
     const viewport = vp({ measureCount: 1 });
-    const y = MEASURE_HEADER_HEIGHT + 10;
+    const stripTop = MEASURE_HEADER_HEIGHT + MELODY_DIATONIC_ROW_COUNT * NOTE_HEIGHT;
+    const y = stripTop + 10;
 
     expect(hitTestEditorCanvas(80, y, song, viewport)).toBeNull();
   });
@@ -336,7 +339,7 @@ describe('hit testing (TASK-2.6) — misses return null', () => {
   it('returns null in the note staff when there are no notes under the point', () => {
     const song = minimalSong([emptyMeasure('m0')]);
     const viewport = vp({ measureCount: 1 });
-    const y = MEASURE_HEADER_HEIGHT + 40 + 80;
+    const y = MEASURE_HEADER_HEIGHT + 80;
 
     expect(hitTestEditorCanvas(50, y, song, viewport)).toBeNull();
   });

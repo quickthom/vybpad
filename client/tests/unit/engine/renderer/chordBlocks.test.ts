@@ -12,6 +12,9 @@ import {
   drawChordBlocks,
   effectiveDegreeForChordColor,
   layoutChordBlock,
+  MEASURE_HEADER_HEIGHT,
+  MELODY_DIATONIC_ROW_COUNT,
+  NOTE_HEIGHT,
   PAT010_DEGREE_HEX,
   pixelsPerTick,
   TPQN,
@@ -70,7 +73,7 @@ describe('chordBlocks (TASK-2.4)', () => {
     const c = song.measures[0].chords[0];
     const rect = layoutChordBlock(c, 0, song, viewport);
     expect(rect.height).toBe(CHORD_AREA_HEIGHT);
-    expect(rect.y).toBe(24);
+    expect(rect.y).toBe(MEASURE_HEADER_HEIGHT + MELODY_DIATONIC_ROW_COUNT * NOTE_HEIGHT);
     expect(rect.width).toBe(96 * pixelsPerTick(2));
     expect(rect.width).toBe((96 / TPQN) * BEAT_WIDTH * 2);
   });

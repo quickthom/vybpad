@@ -197,7 +197,7 @@ describe('noteBlocks (TASK-2.5)', () => {
   });
 
   it('note staff top matches layout for scroll tests', () => {
-    expect(noteStaffTopY()).toBe(24 + 40);
+    expect(noteStaffTopY()).toBe(24);
   });
 
   it('4/4 quarter note width at zoom 1 equals BEAT_WIDTH', () => {

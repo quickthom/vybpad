@@ -42,7 +42,7 @@ export function drawPlaybackHighlight(
       if (playbackTick < absStart || playbackTick >= absEnd) {
         continue;
       }
-      const r = layoutChordBlock(chord, mi, song, viewport);
+      const r = layoutChordBlock(chord, mi, song, viewport, melodyRowHeight);
       if (r.width <= 0) continue;
       strokeRoundRect(ctx, r.x, r.y, r.width, r.height, CHORD_BLOCK_CORNER_RADIUS);
     }

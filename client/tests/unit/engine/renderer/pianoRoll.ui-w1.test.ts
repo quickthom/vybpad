@@ -34,6 +34,7 @@ import {
   noteStaffTopY,
   pixelsPerTick,
 } from '../../../../src/engine/renderer/layout';
+import { CHORD_AREA_HEIGHT } from '../../../../src/engine/renderer/constants';
 import { computeNoteBlockRect } from '../../../../src/engine/renderer/noteBlocks';
 import { computePitchAxisLabelsInViewport } from '../../../../src/engine/renderer/pitchAxisLayout';
 import { hitTestEditorCanvas } from '../../../../src/engine/renderer/hitTest';
@@ -80,7 +81,7 @@ function note(partial: Partial<NoteEvent> & Pick<NoteEvent, 'beat' | 'duration' 
 const MELODY_DIATONIC_ROWS = 28;
 
 function defaultMelodyCanvasHeight(melodyRowHeight: number): number {
-  return noteStaffTopY() + MELODY_DIATONIC_ROWS * melodyRowHeight;
+  return noteStaffTopY() + MELODY_DIATONIC_ROWS * melodyRowHeight + CHORD_AREA_HEIGHT;
 }
 
 describe('UI-W1 — piano roll pitch gutter labels (criterion 2)', () => {

@@ -125,7 +125,7 @@ function visibleMeasuresWidthPx(song: SongData, viewport: Viewport): number {
 }
 
 function canvasHeightPx(melodyRowHeight: number): number {
-  return MEASURE_HEADER_HEIGHT + CHORD_AREA_HEIGHT + MELODY_DIATONIC_ROW_COUNT * melodyRowHeight;
+  return MEASURE_HEADER_HEIGHT + MELODY_DIATONIC_ROW_COUNT * melodyRowHeight + CHORD_AREA_HEIGHT;
 }
 
 function clampChordBeat(song: SongData, measureIndex: number, beat: number, duration: number): number {
@@ -244,7 +244,7 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
   const hitIsResizeEdge = useCallback(
     (hit: EditorCanvasHit, vx: number): boolean => {
       if (hit.kind === 'chord') {
-        const r = layoutChordBlock(hit.chord, hit.measureIndex, song, viewport);
+        const r = layoutChordBlock(hit.chord, hit.measureIndex, song, viewport, melodyRowHeight);
         const right = r.x + r.width;
         const strip = trailingResizeStripWidthPx(r.width);
         return strip > 0 && vx >= right - strip && vx <= right;
@@ -289,17 +289,17 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
     // Grid + blocks are translated past the pitch gutter; gutter labels paint afterward on the left strip.
     ctx.save();
     ctx.translate(PITCH_GUTTER_WIDTH, 0);
-    // drawGridBackground → drawChordBlocks → drawNoteBlocks → drawGuideOverlay → drawPlaybackHighlight → hover/selection → cursor.
+    // drawGridBackground → drawNoteBlocks → drawChordBlocks (RA-2 bottom strip) → drawGuideOverlay → drawPlaybackHighlight → hover/selection → cursor.
     drawGridBackground(ctx, song, viewport, h, {
       melodyRowHeight,
       gridContentWidthPx: gridContentW,
     });
-    drawChordBlocks(ctx, song, viewport, theoryEngine, { colorScheme, labelMode });
     drawNoteBlocks(ctx, song, viewport, {
       colorScheme,
       labelMode,
       melodyRowHeight,
     });
+    drawChordBlocks(ctx, song, viewport, theoryEngine, { colorScheme, labelMode, melodyRowHeight });
     if (showGuides) {
       drawGuideOverlay(ctx, song, viewport, colorScheme, { melodyRowHeight });
     }
@@ -320,7 +320,7 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
 
     const drawHoverOrSelection = (hit: EditorCanvasHit, isSelection: boolean) => {
       if (hit.kind === 'chord') {
-        const r = layoutChordBlock(hit.chord, hit.measureIndex, song, viewport);
+        const r = layoutChordBlock(hit.chord, hit.measureIndex, song, viewport, melodyRowHeight);
         strokeRect(r.x, r.y, r.width, r.height, isSelection ? SELECTION_STROKE : HOVER_STROKE, isSelection ? SELECTION_COLOR : undefined);
       } else {
         const r = computeNoteBlockRect({
@@ -490,7 +490,7 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
       keyboardTargetMeasureRef.current = null;
       // Empty chord strip: no chord rects yet, so hit-test misses — still establish a table caret
       // (collapsed range) so digit entry targets harmony (TASK-4.2 / persistence E2E).
-      const chordStripCaret = chordStripCaretSelectionFromPointer(song, viewport, vx, vy);
+      const chordStripCaret = chordStripCaretSelectionFromPointer(song, viewport, vx, vy, melodyRowHeight);
       onSelectionChange(chordStripCaret);
       sessionRef.current = {
         phase: 'pending',

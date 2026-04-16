@@ -1,6 +1,7 @@
 import type { ChordEvent, Measure, NoteEvent, NoteName, ScaleDegree, ScaleType, Selection, SongData, Viewport } from '@vybpad/shared';
 
-import { chordAreaTopY, noteStaffTopY, viewportXToAbsoluteTick } from '../../engine/renderer/layout';
+import { bottomChordStripTopY, viewportXToAbsoluteTick } from '../../engine/renderer/layout';
+import { CHORD_AREA_HEIGHT, NOTE_HEIGHT } from '../../engine/renderer/constants';
 import {
   getMeterAtMeasure,
   getScaleAtMeasure,
@@ -196,8 +197,10 @@ export function chordStripCaretSelectionFromPointer(
   viewport: Viewport,
   viewportX: number,
   viewportY: number,
+  melodyRowHeight: number = NOTE_HEIGHT,
 ): Selection | null {
-  if (viewportY < chordAreaTopY() || viewportY >= noteStaffTopY()) {
+  const stripTop = bottomChordStripTopY(melodyRowHeight);
+  if (viewportY < stripTop || viewportY >= stripTop + CHORD_AREA_HEIGHT) {
     return null;
   }
   const absoluteTick = viewportXToAbsoluteTick(viewportX, viewport, song);
