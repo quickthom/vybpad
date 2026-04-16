@@ -126,20 +126,20 @@ Major (Ionian), Minor (Aeolian), Dorian, Phrygian, Lydian, Mixolydian, Locrian, 
 
 ## Canvas Editor Architecture
 
-The grid editor currently uses a **single-canvas layered draw order** (all visual layers painted in one pass):
+The grid editor uses a **single-canvas layered draw order** (all visual layers painted in one pass). **Vertical layout** (see **PAT-012**): measure header band, then **melody / piano-roll** (diatonic pitch rows + horizontal note bars), then a **bottom chord strip** (`CHORD_AREA_HEIGHT`) that summarizes harmony on a timeline distinct from the note-editing band (REF_AUDIT_1 RA-2).
 
 | Layer order (bottom -> top) | Content | Redraw trigger |
 |---|---|---|
-| 1 | Grid background (measure/beat guides) | edit, scroll, zoom, resize |
-| 2 | Chord blocks | edit, scroll, zoom, resize |
-| 3 | Note blocks | edit, scroll, zoom, resize |
+| 1 | Grid background (measure/beat guides, melody row lines, optional muted fill in the chord strip band) | edit, scroll, zoom, resize |
+| 2 | Note blocks (melody / piano-roll area only) | edit, scroll, zoom, resize |
+| 3 | Chord blocks (bottom strip — Roman + chord name, time-aligned with ticks) | edit, scroll, zoom, resize |
 | 4 | Guide overlay (optional) | edit, scroll, zoom, resize, showGuides toggle |
 | 5 | Interaction overlays | hover/selection highlights, drag feedback, playback cursor |
 
 **Rendering pipeline:**
 1. **Viewport** defines visible measure range and vertical scroll offset
-2. **Layout engine** computes pixel positions from tick positions + viewport
-3. **Canvas renderer** paints deterministic layer order: grid -> chords -> notes -> optional guide overlay -> interaction overlays
+2. **Layout engine** computes pixel positions from tick positions + viewport (melody Y from pitch rows; chord strip Y pinned to canvas bottom per **PAT-012**)
+3. **Canvas renderer** paints deterministic layer order: grid -> **notes (melody band)** -> **chords (bottom strip)** -> optional guide overlay -> interaction overlays
 
 **Hit testing:** Computed geometry in renderer helpers and hit-test functions (rect math by visible measure/event); no Canvas `isPointInPath`.
 
