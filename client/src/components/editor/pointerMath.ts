@@ -18,6 +18,23 @@ export function trailingResizeStripWidthPx(blockWidthPx: number): number {
   return Math.min(RESIZE_EDGE_PX, Math.max(1, half));
 }
 
+/**
+ * Classify pointer `vx` (grid X, same space as layout rects) against leading/trailing resize strips.
+ * Leading uses the same strip width as trailing (UX §3 — 8px max, narrowed on small blocks).
+ */
+export function classifyHorizontalResizeEdge(
+  blockLeftPx: number,
+  blockWidthPx: number,
+  vx: number,
+): 'leading' | 'trailing' | null {
+  const strip = trailingResizeStripWidthPx(blockWidthPx);
+  if (strip <= 0) return null;
+  const right = blockLeftPx + blockWidthPx;
+  if (vx >= blockLeftPx && vx < blockLeftPx + strip) return 'leading';
+  if (vx >= right - strip && vx <= right) return 'trailing';
+  return null;
+}
+
 /** Clicks shorter than this distance (px) count as selection, not drag. */
 export const DRAG_THRESHOLD_PX = 4;
 

@@ -48,7 +48,7 @@ const DEFAULT_VIEWPORT: Viewport = {
   zoom: 1,
 };
 
-function makeSongWithChordAndNote(chordId: string, noteId: string): SongData {
+function makeSongWithChordAndNote(chordId: string, noteId: string, noteOverrides?: Partial<NoteEvent>): SongData {
   const chord: ChordEvent = {
     id: chordId,
     scaleDegree: 1,
@@ -71,6 +71,7 @@ function makeSongWithChordAndNote(chordId: string, noteId: string): SongData {
     duration: 24,
     isRest: false,
     velocity: 100,
+    ...noteOverrides,
   };
   return {
     version: '1.0',
@@ -612,6 +613,142 @@ describe('EditorCanvas — TASK-2.7 mouse interaction (interface contract)', () 
         expect(last.chordId).toBe(chordId);
         expect(last.newDuration).toBeGreaterThanOrEqual(1);
         expect(last.newDuration).toBeLessThanOrEqual(192);
+      }
+    });
+
+    it('OB-3: trailing-edge note resize dispatches NoteEditAction resize with clamped newDuration', () => {
+      const onNoteEdit = vi.fn();
+      const wideSong = makeSongWithChordAndNote(chordId, noteId, { beat: 48, duration: 96 });
+      const n0 = wideSong.measures[0]!.notes[0]![0]!;
+      vi.spyOn(hitTestModule, 'hitTestEditorCanvas').mockReturnValue({
+        kind: 'note',
+        measureIndex: 0,
+        voiceIndex: 0,
+        note: n0,
+      });
+
+      mockCanvasLayout({ left: 0, top: 0, width: 800, height: 600 });
+
+      const { container } = render(
+        <EditorCanvas
+          song={wideSong}
+          viewport={DEFAULT_VIEWPORT}
+          selection={{ type: 'note', measureIndex: 0, eventIds: [noteId] }}
+          playbackTick={null}
+          activeVoice={0}
+          entryMode="table"
+          showGuides={false}
+          colorScheme="diatonic"
+          onChordEdit={vi.fn()}
+          onNoteEdit={onNoteEdit}
+          onSelectionChange={vi.fn()}
+          onViewportChange={vi.fn()}
+        />,
+      );
+
+      const canvas = canvasIn(container);
+      /* Block starts at tick 48 → 40px; width 96 ticks → 80px; trailing strip last 8px → clientX 40+115..123 */
+      fireEvent.pointerDown(canvas, {
+        clientX: 155,
+        clientY: 120,
+        button: 0,
+        buttons: 1,
+        pointerId: 1,
+        pointerType: 'mouse',
+      });
+      fireEvent.pointerMove(canvas, {
+        clientX: 235,
+        clientY: 120,
+        button: 0,
+        buttons: 1,
+        pointerId: 1,
+        pointerType: 'mouse',
+      });
+      fireEvent.pointerUp(canvas, {
+        clientX: 235,
+        clientY: 120,
+        button: 0,
+        buttons: 0,
+        pointerId: 1,
+        pointerType: 'mouse',
+      });
+
+      const resizeCalls = onNoteEdit.mock.calls.filter(([, , ev]) => ev.type === 'resize');
+      expect(resizeCalls.length).toBeGreaterThanOrEqual(1);
+      const last = resizeCalls[resizeCalls.length - 1]![2];
+      expect(last.type).toBe('resize');
+      if (last.type === 'resize') {
+        expect(last.noteId).toBe(noteId);
+        expect(last.newDuration).toBeGreaterThanOrEqual(1);
+        expect(last.newDuration).toBeLessThanOrEqual(144);
+      }
+    });
+
+    it('OB-3: leading-edge note resize dispatches update with beat+duration (fixed end tick)', () => {
+      const onNoteEdit = vi.fn();
+      const wideSong = makeSongWithChordAndNote(chordId, noteId, { beat: 48, duration: 96 });
+      const n0 = wideSong.measures[0]!.notes[0]![0]!;
+      vi.spyOn(hitTestModule, 'hitTestEditorCanvas').mockReturnValue({
+        kind: 'note',
+        measureIndex: 0,
+        voiceIndex: 0,
+        note: n0,
+      });
+
+      mockCanvasLayout({ left: 0, top: 0, width: 800, height: 600 });
+
+      const { container } = render(
+        <EditorCanvas
+          song={wideSong}
+          viewport={DEFAULT_VIEWPORT}
+          selection={{ type: 'note', measureIndex: 0, eventIds: [noteId] }}
+          playbackTick={null}
+          activeVoice={0}
+          entryMode="table"
+          showGuides={false}
+          colorScheme="diatonic"
+          onChordEdit={vi.fn()}
+          onNoteEdit={onNoteEdit}
+          onSelectionChange={vi.fn()}
+          onViewportChange={vi.fn()}
+        />,
+      );
+
+      const canvas = canvasIn(container);
+      /* Leading strip is first 8px of block: grid vx ∈ [40, 48) → clientX 80..88 */
+      fireEvent.pointerDown(canvas, {
+        clientX: 83,
+        clientY: 120,
+        button: 0,
+        buttons: 1,
+        pointerId: 1,
+        pointerType: 'mouse',
+      });
+      fireEvent.pointerMove(canvas, {
+        clientX: 123,
+        clientY: 120,
+        button: 0,
+        buttons: 1,
+        pointerId: 1,
+        pointerType: 'mouse',
+      });
+      fireEvent.pointerUp(canvas, {
+        clientX: 123,
+        clientY: 120,
+        button: 0,
+        buttons: 0,
+        pointerId: 1,
+        pointerType: 'mouse',
+      });
+
+      const updateCalls = onNoteEdit.mock.calls.filter(([, , ev]) => ev.type === 'update');
+      expect(updateCalls.length).toBeGreaterThanOrEqual(1);
+      const last = updateCalls[updateCalls.length - 1]![2];
+      expect(last.type).toBe('update');
+      if (last.type === 'update') {
+        expect(last.noteId).toBe(noteId);
+        expect(last.changes.beat).toBe(96);
+        expect(last.changes.duration).toBe(48);
       }
     });
   });
