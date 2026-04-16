@@ -14,7 +14,7 @@ Phases 0 (7/7), 1A (7/7), 1B (6/6), Phase 2 (15/15), Phase 3 (10/10), Phase 4 (1
 
 ## Phase 8 — Final QA & Deployment
 
-**Status:** TASK-8.1–8.4 + optional Vitest coverage merged to `develop` (2026-04-15); remaining Phase 8 work is deploy / HITL; TASK-6.6 StudioOne remains **HITL manual** (row in coverage matrix).
+**Status:** TASK-8.5–8.8 executed on `develop` (2026-04-16); **8.9** is HITL walkthrough only. TASK-6.6 StudioOne remains **HITL manual** (coverage matrix).
 
 | Task | Role | Branch | Status | PR | Depends | Notes |
 |---|---|---|---|---|---|---|
@@ -27,5 +27,8 @@ Phases 0 (7/7), 1A (7/7), 1B (6/6), Phase 2 (15/15), Phase 3 (10/10), Phase 4 (1
 | 8.2 | QA | — | merged | [#78](https://github.com/quickthom/vybpad/pull/78) | None | Full workflow E2E + MIDI export/header |
 | 8.3 + 8.4 | QA | — | merged | [#79](https://github.com/quickthom/vybpad/pull/79) | None | axe chrome + `editor-shell.task-8-4` visual baselines |
 | 8.x | Tech Lead | — | merged | [#80](https://github.com/quickthom/vybpad/pull/80) | None | Optional `npm run test:coverage` (report-only); merged to `develop` |
+| 8.5 + 8.6 | Tech Lead | — | merged | — (a67453a) | 8.0–8.4 | `docker-compose.prod.yml`, prod Dockerfiles, Nginx, Prisma `migrate deploy`, `docs/PRODUCTION.md`, `docs/HTTPS.md` |
+| 8.7 | Builder | — | merged | [#81](https://github.com/quickthom/vybpad/pull/81) | 8.5 | Vite `manualChunks` + lazy route bundles (`AppRoutes.tsx`) |
+| 8.8 | Tech Lead | — | merged | — | 8.5–8.7 | `docker compose` smoke; HTTPS smoke via tunnel URL (ephemeral — rebuild client with `PUBLIC_ORIGIN` for any new public hostname) |
 
 ---
