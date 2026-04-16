@@ -32,6 +32,15 @@ You are the Tech Lead. Per HITL direction, you shall not perform any task or por
 
 ---
 
+## UI remediation (REF_AUDIT_1) — Waves 1–3 complete locally (2026-04-16)
+
+- **Authoritative rows:** `TASK_STATUS.md` § UI Remediation.
+- **Merged to `develop` (local):** **UI-W1** RA-1/RA-3 (`phase-8/ui-remediation-wave1`); **UI-W2** RA-2 + `ARCHITECTURE.md` canvas stack sync (`phase-8/ui-remediation-wave2`); **UI-W3** RA-5/RA-6 + `INTERFACES.md` `melodyChromaticEntryActive` (`phase-8/ui-remediation-wave3`, incl. chromatic-toggle remediation **5fdd283** after first Reviewer block).
+- **Remote:** `git push` / `gh pr` were not available in the coordination environment — **HITL** should push `develop` and open or retro-file PRs if required by repo policy.
+- **`./scripts/ci-local.sh`** was run green on `develop` after the Wave 3 merge + INTERFACES commit.
+
+---
+
 ## TASK-8.0 — Phase-start tech debt (**merged** 2026-04-15)
 
 Squash-merged to `develop` as **PR [#75](https://github.com/quickthom/vybpad/pull/75)** (MeasureBar `measuresPerLine` stride guard, TransportControls JSDoc, TASK-8.0 component tests, `editorUiSettingsLocalStorage` test spy fix for green `ci-local`). TASK-7.0 backlog and archive follow-ups addressed per plan; full brief text flushed — see merge commit and PR body.
