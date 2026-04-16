@@ -45,7 +45,7 @@ Phases 0 (7/7), 1A (7/7), 1B (6/6), Phase 2 (15/15), Phase 3 (10/10), Phase 4 (1
 | UI-W2 | QA | — | merged | — | UI-W1 | chordStrip.ui-w2 tests |
 | UI-W3 | Builder | — | merged | — (local merge) | UI-W2 | RA-5 + RA-6; branch `phase-8/ui-remediation-wave3` @5fdd283 + INTERFACES `melodyChromaticEntryActive` |
 | UI-W3 | QA | — | merged | — | UI-W2 | Component tests + chromatic remediation |
-| UI-W4 | Builder | phase-8/ui-right-properties | in-progress | — | UI-W3 | RA-4 right properties panel; INTERFACES gate f7047aa |
-| UI-W4 | QA | phase-8/ui-right-properties | in-progress | — | UI-W3 | Concurrent brief — commit failing tests before Builder PR |
+| UI-W4 | Builder | — | merged | — (local f6d4cf9) | UI-W3 | RA-4 right properties; artifact `docs/pull-requests/UI-W4.md`; `phase-8/ui-right-properties` merged to develop |
+| UI-W4 | QA | — | merged | — | UI-W3 | Pre-written tests landed with UI-W4 |
 
 ---
