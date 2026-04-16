@@ -55,7 +55,7 @@ Phases 0 (7/7), 1A (7/7), 1B (6/6), Phase 2 (15/15), Phase 3 (10/10), Phase 4 (1
 | UI-W7 | QA | — | merged | — | UI-W6 | `ChordPalette.EditorLayout.ui-w7.ra10-ra12.test.tsx` |
 | UI-W8 | Builder | — | merged | — (local 9b0ba8c) | UI-W7 | RA-13–16,20–21; `docs/pull-requests/UI-W8.md` |
 | UI-W8 | QA | — | merged | — | UI-W7 | Transport + playbackStore tests |
-| UI-W9 | Builder | phase-8/ui-palette-cleanup | in-progress | — | UI-W8 | RA-17 + RA-19 |
-| UI-W9 | QA | phase-8/ui-palette-cleanup | in-progress | — | UI-W8 | — |
+| UI-W9 | Builder | — | merged | — (local b424761 + INTERFACES 907cac6) | UI-W8 | RA-17 + RA-19; `docs/pull-requests/UI-W9.md` |
+| UI-W9 | QA | — | merged | — | UI-W8 | `ChordPalette.EditorLayout.ui-w9.ra17-ra19.test.tsx` |
 
 ---

@@ -41,13 +41,16 @@ You are the Tech Lead. Per HITL direction, you shall not perform any task or por
 
 ---
 
-## UI remediation (REF_AUDIT_1) — Waves 4–6 merged locally (2026-04-16)
+## UI remediation (REF_AUDIT_1) — Waves 4–9 merged locally (2026-04-16)
 
-- **Authoritative rows:** `TASK_STATUS.md` (UI-W4–UI-W6).
+- **Authoritative rows:** `TASK_STATUS.md` (UI-W4–UI-W9).
 - **UI-W4** — branch `phase-8/ui-right-properties`: RA-4 right properties panel; INTERFACES melody visibility / inactive display / smart octave; artifact `docs/pull-requests/UI-W4.md`.
 - **UI-W5** — branch `phase-8/ui-voices-discovery`: RA-7 + RA-8 chord library tabs; `ChordPaletteProps.libraryTab`; `buildScheduledPlayEvents` + `melodyVoiceVisible` (INTERFACES note under Audio scheduling); artifact `docs/pull-requests/UI-W5.md`. Remote merge initially lacked unpushed Builder tip — resolved by merging local `43721fe` into `develop`.
 - **UI-W6** — branch `phase-8/ui-shell-consolidation`: RA-9/11/18 + RA-15 disabled stubs; `TransportControlsProps.loopContent`; artifact `docs/pull-requests/UI-W6.md`; TL INTERFACES commit `loopContent` before merge to clear Reviewer block.
-- **`./scripts/ci-local.sh`** green on `develop` after Wave 6 integration.
+- **UI-W7** — branch `phase-8/ui-palette-density`: RA-10/RA-12 dense chord rows + cycle/clear in `ChordProperties`; artifact `docs/pull-requests/UI-W7.md`.
+- **UI-W8** — branch `phase-8/ui-transport-zoom`: INTERFACES `PlaybackStore` metronome/record + `TransportControls` zoom/tempo/key-meter; remediation `keyScaleTargetMeasureIndex` for TempoMeter dialog; artifact `docs/pull-requests/UI-W8.md`.
+- **UI-W9** — branch `phase-8/ui-palette-cleanup`: RA-17/RA-19 heading + Reset + inspector cleanup; INTERFACES `onBrowseDefaultsReset`; TASK-8.4 visual PNGs updated; artifact `docs/pull-requests/UI-W9.md`.
+- **`./scripts/ci-local.sh`** green on `develop` after Wave 9 (incl. snapshot commit).
 - **Remote:** local `develop` is ahead of `origin/develop` — **HITL** should `git push` when credentials allow; `gh` was **401** for PR creation during coordination.
 
 ---
