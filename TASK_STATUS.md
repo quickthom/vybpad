@@ -72,9 +72,9 @@ Phases 0 (7/7), 1A (7/7), 1B (6/6), Phase 2 (15/15), Phase 3 (10/10), Phase 4 (1
 | OB-3 | QA | — | merged | [#83](https://github.com/quickthom/vybpad/pull/83) | OB-4 | Unit tests in #83 |
 | OB-5 | Builder | — | merged | [#84](https://github.com/quickthom/vybpad/pull/84) | OB-3 | Soft magnetic snap (pointerMath + EditorCanvas) |
 | OB-5 | QA | — | merged | [#84](https://github.com/quickthom/vybpad/pull/84) | OB-3 | Unit tests in #84 |
-| OB-1+2 | Builder | `phase-8/ob-1-2-audition` | in-progress | — | OB-4 | Note + chord click audition; PAT-026 (combined) |
-| OB-1+2 | QA | `phase-8/ob-1-2-audition` | in-progress | — | OB-4 | Failing tests first |
-| OB-6 | Builder | — | pending | — | OB-1+2 | Global UI density / windowed comfort (P2); UX_GUIDELINES if tokens change |
-| OB-6 | QA | — | pending | — | OB-1+2 | — |
+| OB-1+2 | Builder | — | merged | [#85](https://github.com/quickthom/vybpad/pull/85) | OB-4 | Note + chord audition; PAT-026 |
+| OB-1+2 | QA | — | merged | [#85](https://github.com/quickthom/vybpad/pull/85) | OB-4 | Tests in #85 |
+| OB-6 | Builder | `phase-8/ob-6-ui-density` | in-progress | — | OB-1+2 | Global UI density / windowed comfort (P2) |
+| OB-6 | QA | `phase-8/ob-6-ui-density` | in-progress | — | OB-1+2 | Failing tests first |
 
 ---
