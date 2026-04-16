@@ -217,6 +217,9 @@ export function EditorLayout() {
   const [chordPaletteMode, setChordPaletteMode] = useState<
     'diatonic' | 'borrowed' | 'secondary' | 'search'
   >('diatonic');
+  const [chordPaletteLibraryTab, setChordPaletteLibraryTab] = useState<
+    'magic' | 'popular' | 'search' | 'progressions' | 'bassSets'
+  >('magic');
 
   const getShortcutContext = useCallback((): ShortcutContext => {
     return {
@@ -576,7 +579,10 @@ export function EditorLayout() {
     return playbackTick ?? starts[paletteMeasureIndex] ?? 0;
   }, [song, playbackTick, paletteMeasureIndex]);
 
-  const scheduledPlayEvents = useMemo(() => buildScheduledPlayEvents(song, theoryEngine), [song]);
+  const scheduledPlayEvents = useMemo(
+    () => buildScheduledPlayEvents(song, theoryEngine, { melodyVoiceVisible }),
+    [song, melodyVoiceVisible],
+  );
 
   const pianoHighlightedMidi = useMemo(
     () => collectActiveMidiNotesAtScheduledEvents(scheduledPlayEvents, song, pianoPlayheadTick),
@@ -778,7 +784,7 @@ export function EditorLayout() {
 
   useEffect(() => {
     syncPlaybackEngineWithSong();
-  }, [song]);
+  }, [song, melodyVoiceVisible]);
 
   // Load song for `/editor/:projectId` (GET) or hydrate from navigation state after POST /projects (no duplicate GET).
   useEffect(() => {
@@ -1244,6 +1250,8 @@ export function EditorLayout() {
                   currentScale={paletteScale}
                   mode={chordPaletteMode}
                   onChordSelect={handleChordPaletteSelect}
+                  libraryTab={chordPaletteLibraryTab}
+                  onLibraryTabChange={setChordPaletteLibraryTab}
                 />
               </div>
               <SecondaryChordInspector

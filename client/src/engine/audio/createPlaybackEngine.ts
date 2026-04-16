@@ -22,6 +22,16 @@ import { buildScheduledPlayEvents, type ScheduledPlayEvent } from './songSchedul
 
 const TPQN = TICKS_PER_QUARTER;
 
+/** Editor melody-lane visibility for scheduling (RA-7); reset when the playback engine is disposed. */
+let playbackMelodyVoiceVisible: readonly [boolean, boolean, boolean, boolean] = [true, true, true, true];
+
+/** Shell syncs this from `useUIStore` before `loadSong` so hidden melody lanes never reach Tone.Part. */
+export function setPlaybackMelodyVoiceVisibleForScheduling(
+  visible: readonly [boolean, boolean, boolean, boolean],
+): void {
+  playbackMelodyVoiceVisible = visible;
+}
+
 type MixerChannel = { volume: number; mute: boolean };
 type MixerState = Partial<Record<TrackRole, MixerChannel>>;
 
@@ -150,7 +160,9 @@ export function createPlaybackEngine(): AudioEngine {
     mixer = syncMixerFromBand(song);
     applyTransportTempoMap(song);
 
-    const flat = buildScheduledPlayEvents(song, theoryEngine);
+    const flat = buildScheduledPlayEvents(song, theoryEngine, {
+      melodyVoiceVisible: playbackMelodyVoiceVisible,
+    });
     if (flat.length === 0) {
       return;
     }
@@ -341,6 +353,7 @@ export function createPlaybackEngine(): AudioEngine {
         /* dispose is best-effort */
       }
       songRef = null;
+      playbackMelodyVoiceVisible = [true, true, true, true];
     },
   };
 }
