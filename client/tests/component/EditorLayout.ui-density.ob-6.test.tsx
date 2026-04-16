@@ -15,7 +15,7 @@
  *
  * Criterion — side rail width caps:
  *   happy: Left chord palette rail and right inspector rail do not advertise a 400px max-width
- *     token; OB-6 tightens the cap for windowed layouts (implementation may use 260px, 20rem, etc.).
+ *     token; default rail width matches UX §3 (288px default, 240px minimum when resizable).
  */
 
 import { EditorLayout } from '@/app/EditorLayout';

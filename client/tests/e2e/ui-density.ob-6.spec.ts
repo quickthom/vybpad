@@ -32,7 +32,7 @@ import { getTransportToolbar } from './helpers/transport';
 const OB6_TRANSPORT_CHROME_MAX_HEIGHT_PX = 84;
 
 /** OB-6 — each fixed side rail (chord palette expanded, right inspector column) max width. */
-const OB6_SIDE_RAIL_MAX_WIDTH_PX = 260;
+const OB6_SIDE_RAIL_MAX_WIDTH_PX = 288;
 
 async function openFreshEditor(page: Page): Promise<void> {
   const suffix = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
