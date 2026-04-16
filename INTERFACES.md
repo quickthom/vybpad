@@ -499,6 +499,8 @@ interface TransportControlsProps {
   onStop: () => void;
   onRewind: () => void;
   onTempoChange: (bpm: number) => void;
+  /** UI-W6 (RA-11) — loop region controls folded into the transport row; omit when unused. */
+  loopContent?: React.ReactNode;
   /** Optional trailing slot (e.g. MIDI export / drag-to-desktop affordance); omit when unused. */
   endContent?: React.ReactNode;
 }
