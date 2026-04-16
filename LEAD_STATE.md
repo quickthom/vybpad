@@ -20,6 +20,14 @@ You are the Tech Lead. Per HITL direction, you shall not perform any task or por
 
 ---
 
+## Operator backlog (OB-1 … OB-6) — **complete** (2026-04-16)
+
+- **Merged to `develop` (squash PRs):** [#82](https://github.com/quickthom/vybpad/pull/82) OB-4 viewport/paintRef; [#83](https://github.com/quickthom/vybpad/pull/83) OB-3 note edge resize; [#84](https://github.com/quickthom/vybpad/pull/84) OB-5 magnetic snap; [#85](https://github.com/quickthom/vybpad/pull/85) OB-1+2 audition (PAT-026); [#86](https://github.com/quickthom/vybpad/pull/86) OB-6 UI density (rails aligned to **UX §3 288px** after first Reviewer block).
+- **Authoritative rows:** `TASK_STATUS.md` § Operator backlog.
+- **Worktrees** `…/ob-*` may still exist until HITL runs `git worktree remove` after verifying no uncommitted work.
+
+---
+
 ## Recent architectural decisions
 
 **2026-04-13 — Local-only CI (GitHub Actions disabled)**
