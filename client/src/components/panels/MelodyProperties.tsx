@@ -18,7 +18,7 @@ export function MelodyProperties(): ReactElement {
   const setSmartOctaveEnabled = useUIStore((s) => s.setSmartOctaveEnabled);
 
   return (
-    <div className="flex flex-col gap-4 border-b border-[var(--color-border,#E5E7EB)] px-4 py-4">
+    <div className="flex flex-col gap-3 border-b border-[var(--color-border,#E5E7EB)] px-3 py-3">
       <h3 className="text-base font-semibold text-[var(--color-text-primary,#111827)]">Melody</h3>
 
       <div className="flex flex-col gap-2">
