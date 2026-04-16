@@ -15,6 +15,8 @@ export interface TransportControlsProps {
   onStop: () => void;
   onRewind: () => void;
   onTempoChange: (bpm: number) => void;
+  /** Loop region controls (UI-W6 — folded into transport row; RA-11). */
+  loopContent?: ReactNode;
   /** Optional trailing slot (e.g. MIDI export / drag-to-desktop affordance); omit when unused. */
   endContent?: ReactNode;
 }
@@ -30,6 +32,7 @@ export function TransportControls({
   onStop,
   onRewind,
   onTempoChange,
+  loopContent,
   endContent,
 }: TransportControlsProps) {
   const playDisabled = initStatus === 'initializing';
@@ -116,6 +119,35 @@ export function TransportControls({
         </span>
       </label>
 
+      {loopContent ? (
+        <>
+          <div
+            className="hidden h-6 w-px shrink-0 bg-[var(--color-border,#E5E7EB)] sm:block"
+            aria-hidden
+          />
+          {loopContent}
+        </>
+      ) : null}
+
+      <div className="hidden h-6 w-px shrink-0 bg-[var(--color-border,#E5E7EB)] sm:block" aria-hidden />
+      <div className="flex shrink-0 items-center gap-2" role="group" aria-label="Deferred shell features">
+        <span id="vybpad-mvp-deferred-hint" className="sr-only">
+          Not in MVP; deferred per ARCHITECTURE roadmap.
+        </span>
+        {(['Band', 'Lyrics', 'Stable'] as const).map((label) => (
+          <button
+            key={label}
+            type="button"
+            disabled
+            aria-describedby="vybpad-mvp-deferred-hint"
+            title="Not in MVP — deferred per ARCHITECTURE roadmap."
+            className="inline-flex min-h-11 min-w-11 cursor-not-allowed items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface-muted,#F9FAFB)] px-3 text-sm font-medium text-[var(--color-text-muted,#9CA3AF)] outline-none"
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
       {initStatus === 'initializing' && (
         <div
           role="status"
@@ -147,6 +179,7 @@ export function TransportControls({
 
       {endContent ? (
         <div
+          data-testid="vybpad-midi-export-cluster"
           className="ml-auto flex min-w-0 shrink-0 flex-nowrap items-center gap-2 overflow-x-auto"
           role="group"
           aria-label="MIDI export"

@@ -6,10 +6,10 @@ import { EditorPropertiesPanel } from '../components/panels/EditorPropertiesPane
 import { EditorSettingsPanel } from '../components/panels/EditorSettingsPanel';
 import { KeyScaleChangeDialog } from '../components/common/KeyScaleChangeDialog';
 import { Tooltip } from '../components/common/Tooltip';
-import { LoopBar } from '../components/controls/LoopBar';
 import { MidiExportControls } from '../components/controls/MidiExportControls';
 import { TempoMeterAtMeasureDialog } from '../components/controls/TempoMeterAtMeasureDialog';
 import { MidiDragExportControl } from '../components/controls/MidiDragExportControl';
+import { LoopBar } from '../components/controls/LoopBar';
 import { TransportControls } from '../components/controls/TransportControls';
 import { MixerPanel } from '../components/panels/MixerPanel';
 import { PianoKeyboardPanel } from '../components/panels/PianoKeyboardPanel';
@@ -1168,6 +1168,7 @@ export function EditorLayout() {
           if (!Number.isFinite(n) || n < 20 || n > 300) return;
           updateMetadata({ tempo: n });
         }}
+        loopContent={<LoopBar />}
         endContent={
           <>
             <MidiExportControls song={song} activeVoice={activeVoice} projectName={projectName} />
@@ -1175,7 +1176,6 @@ export function EditorLayout() {
           </>
         }
       />
-      <LoopBar />
       <KeyScaleChangeDialog
         open={keyScaleDialogOpen}
         measureIndex={keyScaleTargetMeasure}
