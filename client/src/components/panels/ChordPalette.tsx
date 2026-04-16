@@ -16,6 +16,11 @@ export interface ChordPaletteProps {
   /** UI-W5 — discovery row; omitted → internal default `"magic"`. */
   libraryTab?: ChordLibraryTabId;
   onLibraryTabChange?: (tab: ChordLibraryTabId) => void;
+  /**
+   * UI-W9 (RA-19) — parent resets browsing mode + library tab; ChordPalette clears parallel borrowed
+   * source + search filter. Omitted when palette is standalone (tests).
+   */
+  onBrowseDefaultsReset?: () => void;
 }
 
 export type SecondaryChordInspectorProps = {
@@ -44,14 +49,16 @@ export function SecondaryChordInspector(props: SecondaryChordInspectorProps): Re
         Press <kbd className="rounded bg-[var(--color-surface-muted,#F9FAFB)] px-1.5 py-0.5 font-mono text-xs">d</kbd> with
         a chord selected to cycle legal V/x, viio/x, and IV/x slots (see getSecondaryCycleSequence).
       </p>
-      <div className="min-h-[3rem] rounded-lg border border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface-muted,#F9FAFB)] px-3 py-2">
-        <p className="text-xs font-medium uppercase tracking-wide text-[var(--color-text-muted,#9CA3AF)]">
-          Roman
-        </p>
-        <p className="font-mono text-sm text-[var(--color-text-primary,#111827)]" aria-live="polite">
-          {hasChord ? romanLabel : '—'}
-        </p>
-      </div>
+      {hasChord ? (
+        <div className="rounded-lg border border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface-muted,#F9FAFB)] px-3 py-2">
+          <p className="text-xs font-medium uppercase tracking-wide text-[var(--color-text-muted,#9CA3AF)]">
+            Roman
+          </p>
+          <p className="font-mono text-sm text-[var(--color-text-primary,#111827)]" aria-live="polite">
+            {romanLabel}
+          </p>
+        </div>
+      ) : null}
       <div className="flex flex-col gap-2">
         <button
           type="button"
@@ -121,6 +128,22 @@ const BORROWED_SCALE_LABEL: Record<ScaleType, string> = {
   phrygianDominant: 'Phrygian dominant',
 };
 
+/** UI-W9 — primary palette title: "Chords in C major", "Chords in D dorian", etc. */
+function scaleTypeHeadingPhrase(scale: ScaleType): string {
+  const map: Record<ScaleType, string> = {
+    major: 'major',
+    minor: 'minor',
+    dorian: 'dorian',
+    phrygian: 'phrygian',
+    lydian: 'lydian',
+    mixolydian: 'mixolydian',
+    locrian: 'locrian',
+    harmonicMinor: 'harmonic minor',
+    phrygianDominant: 'phrygian dominant',
+  };
+  return map[scale];
+}
+
 function diatonicSelectPayload(degree: ScaleDegree, scale: ScaleType): Omit<ChordEvent, 'id' | 'beat' | 'duration'> {
   return {
     scaleDegree: degree,
@@ -139,7 +162,7 @@ function diatonicSelectPayload(degree: ScaleDegree, scale: ScaleType): Omit<Chor
  */
 export function ChordPalette(props: ChordPaletteProps): ReactElement {
   const { currentKey, currentScale, onChordSelect, mode } = props;
-  const { libraryTab: libraryTabProp, onLibraryTabChange } = props;
+  const { libraryTab: libraryTabProp, onLibraryTabChange, onBrowseDefaultsReset } = props;
 
   const [internalLibraryTab, setInternalLibraryTab] = useState<ChordLibraryTabId>('magic');
   const isLibraryControlled = libraryTabProp !== undefined;
@@ -156,11 +179,20 @@ export function ChordPalette(props: ChordPaletteProps): ReactElement {
 
   const [borrowedSource, setBorrowedSource] = useState<ScaleType>(() => defaultBorrowedSource(currentScale));
 
+  const [chordSearchFilter, setChordSearchFilter] = useState('');
+
   useEffect(() => {
     setBorrowedSource((prev) =>
       borrowOptions.includes(prev) ? prev : defaultBorrowedSource(currentScale),
     );
   }, [borrowOptions, currentScale]);
+
+  const handleBrowseDefaultsReset = (): void => {
+    onBrowseDefaultsReset?.();
+    setLibraryTab('magic');
+    setBorrowedSource(defaultBorrowedSource(currentScale));
+    setChordSearchFilter('');
+  };
 
   const borrowedRows = useMemo(
     () => getBorrowedChords(currentScale, borrowedSource),
@@ -426,6 +458,8 @@ export function ChordPalette(props: ChordPaletteProps): ReactElement {
               id="chord-palette-search-filter"
               data-testid="chord-palette-search-filter"
               type="search"
+              value={chordSearchFilter}
+              onChange={(e) => setChordSearchFilter(e.target.value)}
               placeholder="Type to filter…"
               className="min-h-11 w-full rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-3 py-2 text-sm text-[var(--color-text-primary,#111827)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
             />
@@ -467,6 +501,8 @@ export function ChordPalette(props: ChordPaletteProps): ReactElement {
     }
   };
 
+  const headingText = `Chords in ${currentKey} ${scaleTypeHeadingPhrase(currentScale)}`;
+
   return (
     <div
       data-testid="chord-palette-root"
@@ -474,10 +510,19 @@ export function ChordPalette(props: ChordPaletteProps): ReactElement {
       aria-label="Chord palette"
       className="flex h-full min-h-0 w-full min-w-0 max-w-full flex-col bg-[var(--color-surface,#FFFFFF)] px-4 py-3"
     >
-      <h3 className="text-base font-semibold tracking-tight text-[var(--color-text-primary,#111827)]">Chord palette</h3>
-      <p className="mt-1 text-xs text-[var(--color-text-muted,#9CA3AF)]">
-        {currentKey} · {currentScale} · {modeSubtitle}
-      </p>
+      <div className="flex min-w-0 flex-row items-start justify-between gap-2">
+        <h3 className="min-w-0 flex-1 text-base font-semibold tracking-tight text-[var(--color-text-primary,#111827)]">
+          {headingText}
+        </h3>
+        <button
+          type="button"
+          onClick={handleBrowseDefaultsReset}
+          className="inline-flex shrink-0 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-3 py-1.5 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
+        >
+          Reset
+        </button>
+      </div>
+      <p className="mt-1 text-xs capitalize text-[var(--color-text-muted,#9CA3AF)]">{modeSubtitle} mode</p>
       {tabStrip}
       <div
         role="tabpanel"
