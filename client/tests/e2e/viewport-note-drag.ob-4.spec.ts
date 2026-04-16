@@ -11,8 +11,8 @@
  * Criterion 2: Behavior is verifiable via automated test (Playwright E2E + layout-aligned pointer coords).
  *   happy: Drag sequence uses computeNoteBlockRect + pitch gutter offset matching the editor layout.
  *
- * Criterion 3: Tests fail on baseline before Builder fix; pass after.
- *   (Enforced by CI / Builder — this file encodes the contract.)
+ * Criterion 3: Automated regression — run on branch before merge; should fail if zoom jumps or canvas reads
+ *   all-white (765) / cleared (≈0) at the melody probe after drag.
  *
  * INTERFACES.md — Viewport { startMeasure, measureCount, scrollY, zoom }; observable zoom via
  * TransportControls zoom readout (data-testid vybpad-zoom-readout).
@@ -116,6 +116,8 @@ function viewportFromReadout(zoom: number): Viewport {
 }
 
 /** Canvas-relative CSS pixel coordinates for pointer actions (matches EditorCanvas viewport X + pitch gutter). */
+const DEFAULT_MELODY_ROW_HEIGHT_PX = 20;
+
 function noteDragPointerPositions(song: SongData, viewport: Viewport, note: NoteEvent): {
   startX: number;
   startY: number;
@@ -127,6 +129,7 @@ function noteDragPointerPositions(song: SongData, viewport: Viewport, note: Note
     note,
     isRest: false,
     voiceIndex: 0,
+    melodyRowHeight: DEFAULT_MELODY_ROW_HEIGHT_PX,
   });
   return {
     startX: EDITOR_CANVAS_PITCH_GUTTER_PX + rect.x + rect.width / 2,
@@ -134,14 +137,19 @@ function noteDragPointerPositions(song: SongData, viewport: Viewport, note: Note
   };
 }
 
-async function sampleCanvasPixelRgb(
+/**
+ * Min RGB sum in a coarse neighborhood — center-only sampling can hit anti-aliased edges, degree label ink,
+ * or a one-pixel miss; the note fill is always present somewhere near the block center (PAT-010).
+ */
+async function minRgbSumNearCanvasPoint(
   page: Page,
   canvasCssSelector: string,
   cssX: number,
   cssY: number,
-): Promise<[number, number, number]> {
+  radiusCssPx: number,
+): Promise<number> {
   return page.evaluate(
-    ({ sel, cssX: x, cssY: y }) => {
+    ({ sel, cssX: cx, cssY: cy, radiusCssPx: r }) => {
       const el = document.querySelector(sel) as HTMLCanvasElement | null;
       if (!el) {
         throw new Error(`Canvas not found: ${sel}`);
@@ -153,12 +161,21 @@ async function sampleCanvasPixelRgb(
       const rect = el.getBoundingClientRect();
       const scaleX = el.width / rect.width;
       const scaleY = el.height / rect.height;
-      const ix = Math.min(el.width - 1, Math.max(0, Math.floor(x * scaleX)));
-      const iy = Math.min(el.height - 1, Math.max(0, Math.floor(y * scaleY)));
-      const d = ctx.getImageData(ix, iy, 1, 1).data;
-      return [d[0]!, d[1]!, d[2]!] as [number, number, number];
+      let min = 9999;
+      for (let dy = -r; dy <= r; dy += 4) {
+        for (let dx = -r; dx <= r; dx += 4) {
+          const x = cx + dx;
+          const y = cy + dy;
+          const ix = Math.min(el.width - 1, Math.max(0, Math.floor(x * scaleX)));
+          const iy = Math.min(el.height - 1, Math.max(0, Math.floor(y * scaleY)));
+          const d = ctx.getImageData(ix, iy, 1, 1).data;
+          const s = d[0]! + d[1]! + d[2]!;
+          if (s < min) min = s;
+        }
+      }
+      return min;
     },
-    { sel: canvasCssSelector, cssX, cssY },
+    { sel: canvasCssSelector, cssX, cssY, radiusCssPx },
   );
 }
 
@@ -211,9 +228,10 @@ test.describe('OB-4 — viewport stability during note drag', () => {
     const box = await canvas.boundingBox();
     expect(box, 'canvas bounding box').toBeTruthy();
 
-    const rgbBefore = await sampleCanvasPixelRgb(page, '[aria-label^="Song editor"]', startX, startY);
-    const sumBefore = rgbBefore[0] + rgbBefore[1] + rgbBefore[2];
-    expect(sumBefore).toBeLessThan(760);
+    const minSumBefore = await minRgbSumNearCanvasPoint(page, '[aria-label^="Song editor"]', startX, startY, 10);
+    /** Cleared/unpainted buffer reads ~0; full white flash ~765; PAT-010 note fill typically mid-range. */
+    expect(minSumBefore).toBeGreaterThan(120);
+    expect(minSumBefore).toBeLessThan(750);
 
     const pageX = box!.x + startX;
     const pageY = box!.y + startY;
@@ -227,9 +245,9 @@ test.describe('OB-4 — viewport stability during note drag', () => {
 
     await expect(zoomReadout).toHaveText(readoutText);
 
-    const rgbAfter = await sampleCanvasPixelRgb(page, '[aria-label^="Song editor"]', startX, startY);
-    const sumAfter = rgbAfter[0] + rgbAfter[1] + rgbAfter[2];
-    expect(sumAfter).toBeLessThan(760);
+    const minSumAfter = await minRgbSumNearCanvasPoint(page, '[aria-label^="Song editor"]', startX, startY, 10);
+    expect(minSumAfter).toBeGreaterThan(120);
+    expect(minSumAfter).toBeLessThan(750);
 
     const afterBox = await canvas.boundingBox();
     expect(afterBox!.width).toBeGreaterThan(200);
