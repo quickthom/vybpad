@@ -503,6 +503,21 @@ interface TransportControlsProps {
   loopContent?: React.ReactNode;
   /** Optional trailing slot (e.g. MIDI export / drag-to-desktop affordance); omit when unused. */
   endContent?: React.ReactNode;
+  /** UI-W8 (RA-13) — record arm toggle; omit when unused. */
+  recordArmed?: boolean;
+  onRecordToggle?: () => void;
+  /** UI-W8 (RA-14) — metronome / click toggle. */
+  metronomeEnabled?: boolean;
+  onMetronomeToggle?: () => void;
+  /** UI-W8 (RA-16/21) — zoom readout and ± / reset; `zoomPercent` is 100 at default horizontal zoom. */
+  zoomPercent?: number;
+  onZoomIn?: () => void;
+  onZoomOut?: () => void;
+  onZoomReset?: () => void;
+  /** UI-W8 (RA-20) — key + meter + tempo readouts in top band; click opens tempo/meter edit when callback set. */
+  keyLabel?: string;
+  meterLabel?: string;
+  onTempoMeterEdit?: () => void;
 }
 ```
 
@@ -734,6 +749,10 @@ interface PlaybackStore {
   loopEnd: number;                     // tick
   initStatus: PlaybackInitStatus;      // user-gesture audio unlock lifecycle
   initErrorCode: PlaybackInitErrorCode | null;
+  /** UI-W8 (RA-14) — audible metronome / click during playback when engine supports it. */
+  metronomeEnabled: boolean;
+  /** UI-W8 (RA-13) — record arm UI; disk capture is out of scope until pipeline exists. */
+  recordArmed: boolean;
 
   play: () => void;
   pause: () => void;
@@ -747,6 +766,8 @@ interface PlaybackStore {
   // Sets isLooping = false; calls engine.setLoop(false). No-op if engine not ready.
   initializeAudio: () => Promise<void>; // must be invoked from a user gesture; idempotent
   clearInitError: () => void;
+  setMetronomeEnabled: (enabled: boolean) => void;
+  setRecordArmed: (armed: boolean) => void;
 }
 
 type PlaybackInitStatus = "locked" | "initializing" | "ready" | "error";
