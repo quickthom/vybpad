@@ -22,7 +22,7 @@ import {
   navigateSelection,
   resolveTargetMeasureIndex,
 } from '../components/editor/editorKeyboardLogic';
-import { ChordPalette, SecondaryChordInspector } from '../components/panels/ChordPalette';
+import { ChordPalette } from '../components/panels/ChordPalette';
 import { MelodyEntryPanel } from '../components/panels/MelodyEntryPanel';
 import { PlacementDurationControls } from '../components/panels/PlacementDurationControls';
 import {
@@ -995,21 +995,6 @@ export function EditorLayout() {
 
   const currentBeatDisplay = formatTransportBeat(song, playbackTick ?? 0);
 
-  const selectedChordId = selection?.type === 'chord' ? selection.eventIds?.[0] : undefined;
-  const selectedChord =
-    selectedChordId != null && selection?.type === 'chord'
-      ? (song.measures[selection.measureIndex]?.chords.find((c) => c.id === selectedChordId) ??
-        null)
-      : null;
-
-  const chordTheoryScale =
-    selectedChord != null && selection?.type === 'chord'
-      ? getScaleAtMeasure(song, selection.measureIndex)
-      : paletteScale;
-
-  const selectedChordRoman =
-    selectedChord != null ? theoryEngine.toRomanNumeral(selectedChord, chordTheoryScale) : '';
-
   const chordPropertyContext = useMemo(() => {
     if (selection?.type !== 'chord' || !selection.eventIds?.[0]) return null;
     const id = selection.eventIds[0];
@@ -1023,6 +1008,30 @@ export function EditorLayout() {
     },
     [editChord],
   );
+
+  const handleSecondaryCycle = useCallback(() => {
+    if (selection?.type !== 'chord' || !selection.eventIds?.[0]) return;
+    const id = selection.eventIds[0];
+    const ch = song.measures[selection.measureIndex]?.chords.find((c) => c.id === id);
+    if (!ch) return;
+    const k = getKeyAtMeasure(song, selection.measureIndex);
+    const sc = getScaleAtMeasure(song, selection.measureIndex);
+    const changes = cycleSecondaryChordEdit(ch, k, sc);
+    if (Object.keys(changes).length === 0) return;
+    editChord(selection.measureIndex, { type: 'update', chordId: id, changes });
+  }, [editChord, selection, song]);
+
+  const handleSecondaryClear = useCallback(() => {
+    if (selection?.type !== 'chord' || !selection.eventIds?.[0]) return;
+    const id = selection.eventIds[0];
+    const ch = song.measures[selection.measureIndex]?.chords.find((c) => c.id === id);
+    if (!ch) return;
+    const k = getKeyAtMeasure(song, selection.measureIndex);
+    const sc = getScaleAtMeasure(song, selection.measureIndex);
+    const changes = clearSecondaryChordEdit(ch, k, sc);
+    if (Object.keys(changes).length === 0) return;
+    editChord(selection.measureIndex, { type: 'update', chordId: id, changes });
+  }, [editChord, selection, song]);
 
   async function handleTransportPlay() {
     if (usePlaybackStore.getState().initStatus === 'ready') {
@@ -1254,32 +1263,6 @@ export function EditorLayout() {
                   onLibraryTabChange={setChordPaletteLibraryTab}
                 />
               </div>
-              <SecondaryChordInspector
-                chord={selectedChord}
-                romanLabel={selectedChordRoman}
-                onCycle={() => {
-                  if (selection?.type !== 'chord' || !selection.eventIds?.[0]) return;
-                  const id = selection.eventIds[0];
-                  const ch = song.measures[selection.measureIndex]?.chords.find((c) => c.id === id);
-                  if (!ch) return;
-                  const k = getKeyAtMeasure(song, selection.measureIndex);
-                  const sc = getScaleAtMeasure(song, selection.measureIndex);
-                  const changes = cycleSecondaryChordEdit(ch, k, sc);
-                  if (Object.keys(changes).length === 0) return;
-                  editChord(selection.measureIndex, { type: 'update', chordId: id, changes });
-                }}
-                onClear={() => {
-                  if (selection?.type !== 'chord' || !selection.eventIds?.[0]) return;
-                  const id = selection.eventIds[0];
-                  const ch = song.measures[selection.measureIndex]?.chords.find((c) => c.id === id);
-                  if (!ch) return;
-                  const k = getKeyAtMeasure(song, selection.measureIndex);
-                  const sc = getScaleAtMeasure(song, selection.measureIndex);
-                  const changes = clearSecondaryChordEdit(ch, k, sc);
-                  if (Object.keys(changes).length === 0) return;
-                  editChord(selection.measureIndex, { type: 'update', chordId: id, changes });
-                }}
-              />
             </div>
           ) : (
             <Tooltip label="Expand chord palette">
@@ -1370,7 +1353,17 @@ export function EditorLayout() {
           <EditorPropertiesPanel
             selectionType={selection?.type ?? null}
             chordContext={chordPropertyContext}
+            chordKey={
+              chordPropertyContext != null ? getKeyAtMeasure(song, chordPropertyContext.measureIndex) : undefined
+            }
+            chordTheoryScale={
+              chordPropertyContext != null
+                ? getScaleAtMeasure(song, chordPropertyContext.measureIndex)
+                : undefined
+            }
             onChordUpdate={handleChordPropertyUpdate}
+            onSecondaryCycle={handleSecondaryCycle}
+            onSecondaryClear={handleSecondaryClear}
           />
           {mixerOpen ? (
             <aside

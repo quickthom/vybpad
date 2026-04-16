@@ -21,6 +21,7 @@ import {
   buildShortcutSongTripletNote,
   buildShortcutSongTwoChords,
 } from '../fixtures/shortcutE2ESeedSong';
+import { clickFirstChordStrip } from './helpers/chordStripInteraction';
 import { editorChordStripCenterY, editorGridPointerX, editorMelodyRow0ApproxCenterY } from './helpers/editorCanvasCoords';
 import { waitForEditorRouteReady } from './helpers/editorReady';
 import { submitRegisterFormAndExpectProjects } from './helpers/registerFlow';
@@ -74,20 +75,6 @@ async function getSong(request: APIRequestContext, accessToken: string, projectI
 
 function editorCanvas(page: Page): Locator {
   return page.getByRole('application', { name: /Song editor/i });
-}
-
-/**
- * Chord strip hit target — RA-2 bottom strip; vertical center ≈ canvas height − CHORD_AREA_HEIGHT/2 (PAT-012).
- * See `layoutChordBlock` / `bottomChordStripTopY` (renderer).
- */
-async function clickFirstChordStrip(page: Page): Promise<void> {
-  const el = editorCanvas(page);
-  const box = await el.boundingBox();
-  expect(box, 'editor canvas bounding box').toBeTruthy();
-  /** Beat-0 chord block — use a left-ish fraction so we stay in the first harmony when multiple chords share a measure (TASK-7.5). */
-  const x = editorGridPointerX(box!.width, 0.018, 16);
-  const y = Math.min(editorChordStripCenterY(box!.height), box!.height - 8);
-  await el.click({ position: { x, y } });
 }
 
 /**
@@ -307,7 +294,7 @@ test.describe('TASK-7.10 — Phase 7 shortcut manager (E2E)', () => {
   }) => {
     await createEditorWithSong(page, request, buildShortcutSongTwoChords());
 
-    const roman = page.getByRole('region', { name: 'Secondary chords' }).locator('[aria-live="polite"]');
+    const roman = page.getByTestId('properties-chord-roman');
 
     await clickFirstChordStrip(page);
     await editorCanvas(page).focus();

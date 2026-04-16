@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
 
-import type { ChordEvent } from '@vybpad/shared';
+import type { ChordEvent, NoteName, ScaleType } from '@vybpad/shared';
 
 import { ChordProperties } from './ChordProperties';
 import { MelodyProperties } from './MelodyProperties';
@@ -8,7 +8,12 @@ import { MelodyProperties } from './MelodyProperties';
 export interface EditorPropertiesPanelProps {
   selectionType: 'chord' | 'note' | 'range' | null;
   chordContext: { measureIndex: number; chord: ChordEvent } | null;
+  /** Key/scale at the selected chord’s measure (Roman + chord name in inspector). */
+  chordKey?: NoteName;
+  chordTheoryScale?: ScaleType;
   onChordUpdate: (measureIndex: number, chordId: string, changes: Partial<ChordEvent>) => void;
+  onSecondaryCycle?: () => void;
+  onSecondaryClear?: () => void;
 }
 
 /**
@@ -17,9 +22,14 @@ export interface EditorPropertiesPanelProps {
 export function EditorPropertiesPanel({
   selectionType,
   chordContext,
+  chordKey,
+  chordTheoryScale,
   onChordUpdate,
+  onSecondaryCycle,
+  onSecondaryClear,
 }: EditorPropertiesPanelProps): ReactElement {
-  const showChord = selectionType === 'chord' && chordContext != null;
+  const showChord =
+    selectionType === 'chord' && chordContext != null && chordKey != null && chordTheoryScale != null;
 
   return (
     <section
@@ -31,7 +41,11 @@ export function EditorPropertiesPanel({
       {showChord ? (
         <ChordProperties
           chord={chordContext.chord}
+          currentKey={chordKey}
+          theoryScale={chordTheoryScale}
           onUpdate={(changes) => onChordUpdate(chordContext.measureIndex, chordContext.chord.id, changes)}
+          onSecondaryCycle={onSecondaryCycle}
+          onSecondaryClear={onSecondaryClear}
         />
       ) : (
         <MelodyProperties />
