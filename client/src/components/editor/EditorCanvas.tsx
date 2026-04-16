@@ -207,14 +207,15 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
 
   const [hoverHit, setHoverHit] = useState<EditorCanvasHit | null>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [, forceRedraw] = useState(0);
   const rafRef = useRef<number | null>(null);
+  /** Latest paint closure — resize + rAF paths must repaint without relying on stale React state (PAT-008, OB-4). */
+  const paintRef = useRef<() => void>(() => {});
 
   const scheduleRedraw = useCallback(() => {
     if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
     rafRef.current = requestAnimationFrame(() => {
       rafRef.current = null;
-      forceRedraw((n) => n + 1);
+      paintRef.current();
     });
   }, []);
 
@@ -393,6 +394,8 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
     inactiveMelodyDisplayMode,
   ]);
 
+  paintRef.current = paint;
+
   useEffect(() => {
     paint();
   }, [paint]);
@@ -411,7 +414,8 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
       canvas.style.height = `${cssH}px`;
       canvas.width = Math.floor(contentW * dpr);
       canvas.height = Math.floor(cssH * dpr);
-      scheduleRedraw();
+      // Setting width/height clears the bitmap; repaint immediately so we never flash blank (OB-4).
+      paintRef.current();
     };
 
     resize();
@@ -425,7 +429,7 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
       ro?.disconnect();
       window.removeEventListener('resize', resize);
     };
-  }, [song, viewport, scheduleRedraw, melodyRowHeight]);
+  }, [song, viewport, melodyRowHeight]);
 
   const endDrag = useCallback(
     (canvas: HTMLCanvasElement, clientX: number, clientY: number) => {

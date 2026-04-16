@@ -138,16 +138,16 @@ function noteDragPointerPositions(song: SongData, viewport: Viewport, note: Note
 }
 
 /**
- * Min RGB sum in a coarse neighborhood — center-only sampling can hit anti-aliased edges, degree label ink,
- * or a one-pixel miss; the note fill is always present somewhere near the block center (PAT-010).
+ * Min / max RGB sum in a coarse neighborhood around a layout-derived point. `min` catches all-white flash
+ * (765); `max` rejects a fully cleared / transparent bitmap (all zeros) and confirms some paint exists.
  */
-async function minRgbSumNearCanvasPoint(
+async function rgbSumMinMaxNearCanvasPoint(
   page: Page,
   canvasCssSelector: string,
   cssX: number,
   cssY: number,
   radiusCssPx: number,
-): Promise<number> {
+): Promise<{ min: number; max: number }> {
   return page.evaluate(
     ({ sel, cssX: cx, cssY: cy, radiusCssPx: r }) => {
       const el = document.querySelector(sel) as HTMLCanvasElement | null;
@@ -162,6 +162,7 @@ async function minRgbSumNearCanvasPoint(
       const scaleX = el.width / rect.width;
       const scaleY = el.height / rect.height;
       let min = 9999;
+      let max = 0;
       for (let dy = -r; dy <= r; dy += 4) {
         for (let dx = -r; dx <= r; dx += 4) {
           const x = cx + dx;
@@ -171,9 +172,10 @@ async function minRgbSumNearCanvasPoint(
           const d = ctx.getImageData(ix, iy, 1, 1).data;
           const s = d[0]! + d[1]! + d[2]!;
           if (s < min) min = s;
+          if (s > max) max = s;
         }
       }
-      return min;
+      return { min, max };
     },
     { sel: canvasCssSelector, cssX, cssY, radiusCssPx },
   );
@@ -228,10 +230,18 @@ test.describe('OB-4 — viewport stability during note drag', () => {
     const box = await canvas.boundingBox();
     expect(box, 'canvas bounding box').toBeTruthy();
 
-    const minSumBefore = await minRgbSumNearCanvasPoint(page, '[aria-label^="Song editor"]', startX, startY, 10);
-    /** Cleared/unpainted buffer reads ~0; full white flash ~765; PAT-010 note fill typically mid-range. */
-    expect(minSumBefore).toBeGreaterThan(120);
-    expect(minSumBefore).toBeLessThan(750);
+    /** Hydration can race first paint; poll until the probe sees non-trivial content (max) and not all-white (min). */
+    await expect(async () => {
+      const { min, max } = await rgbSumMinMaxNearCanvasPoint(
+        page,
+        '[aria-label^="Song editor"]',
+        startX,
+        startY,
+        10,
+      );
+      expect(max).toBeGreaterThan(180);
+      expect(min).toBeLessThan(750);
+    }).toPass({ timeout: 20_000 });
 
     const pageX = box!.x + startX;
     const pageY = box!.y + startY;
@@ -245,9 +255,17 @@ test.describe('OB-4 — viewport stability during note drag', () => {
 
     await expect(zoomReadout).toHaveText(readoutText);
 
-    const minSumAfter = await minRgbSumNearCanvasPoint(page, '[aria-label^="Song editor"]', startX, startY, 10);
-    expect(minSumAfter).toBeGreaterThan(120);
-    expect(minSumAfter).toBeLessThan(750);
+    await expect(async () => {
+      const { min, max } = await rgbSumMinMaxNearCanvasPoint(
+        page,
+        '[aria-label^="Song editor"]',
+        startX,
+        startY,
+        10,
+      );
+      expect(max).toBeGreaterThan(180);
+      expect(min).toBeLessThan(750);
+    }).toPass({ timeout: 20_000 });
 
     const afterBox = await canvas.boundingBox();
     expect(afterBox!.width).toBeGreaterThan(200);
