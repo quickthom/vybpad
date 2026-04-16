@@ -1294,6 +1294,7 @@ export function EditorLayout() {
                   onChordSelect={handleChordPaletteSelect}
                   libraryTab={chordPaletteLibraryTab}
                   onLibraryTabChange={setChordPaletteLibraryTab}
+                  onBrowseDefaultsReset={() => setChordPaletteMode('diatonic')}
                 />
               </div>
             </div>
