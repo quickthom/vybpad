@@ -40,12 +40,12 @@ function chunkMeasureIndices(measureCount: number, perLine: number): number[][] 
   return rows;
 }
 
-/** UX §9 — measure strip controls ≥44×44px */
+/** Strip actions — compact targets (UX §5.1) inside the §7 56px measure row (OB-6). */
 const secondaryButtonClass =
-  'inline-flex min-h-11 shrink-0 items-center justify-center rounded-md border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-3 text-sm font-medium text-[var(--color-primary,#4F46E5)] transition-colors hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2';
+  'inline-flex min-h-8 shrink-0 items-center justify-center rounded-md border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-3 text-sm font-medium text-[var(--color-primary,#4F46E5)] transition-colors hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2';
 
 const destructiveOutlineButtonClass =
-  'inline-flex min-h-11 shrink-0 items-center justify-center rounded-md border border-[var(--color-destructive,#DC2626)] bg-[var(--color-surface,#FFFFFF)] px-3 text-sm font-medium text-[var(--color-destructive,#DC2626)] transition-colors hover:bg-[#FEF2F2] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2';
+  'inline-flex min-h-8 shrink-0 items-center justify-center rounded-md border border-[var(--color-destructive,#DC2626)] bg-[var(--color-surface,#FFFFFF)] px-3 text-sm font-medium text-[var(--color-destructive,#DC2626)] transition-colors hover:bg-[#FEF2F2] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2';
 
 const disabledButtonClass =
   'pointer-events-none cursor-not-allowed border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface-muted,#F9FAFB)] text-[var(--color-text-muted,#9CA3AF)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-0';
@@ -199,7 +199,7 @@ export function MeasureBar({
         ) : null}
         <button
           type="button"
-          className={[secondaryButtonClass, 'min-w-11'].join(' ')}
+          className={[secondaryButtonClass, 'min-w-8'].join(' ')}
           onClick={() => onAddMeasures(1)}
         >
           Add
@@ -207,7 +207,7 @@ export function MeasureBar({
         <button
           type="button"
           disabled={deleteDisabled}
-          className={[destructiveOutlineButtonClass, 'min-w-11', deleteDisabled ? disabledButtonClass : ''].join(' ')}
+          className={[destructiveOutlineButtonClass, 'min-w-8', deleteDisabled ? disabledButtonClass : ''].join(' ')}
           onClick={() => {
             if (!selectedMeasures || deleteDisabled) return;
             onDeleteMeasures(selectedMeasures[0], selectedMeasures[1]);

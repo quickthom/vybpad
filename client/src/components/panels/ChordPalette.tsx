@@ -64,7 +64,7 @@ export function SecondaryChordInspector(props: SecondaryChordInspectorProps): Re
           type="button"
           disabled={!hasChord}
           onClick={onCycle}
-          className="inline-flex h-11 min-h-11 items-center justify-center rounded-lg bg-[var(--color-primary,#4F46E5)] px-4 text-sm font-medium text-[var(--color-text-on-primary,#FFFFFF)] outline-none transition hover:bg-[var(--color-primary-hover,#4338CA)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+          className="inline-flex h-8 min-h-8 items-center justify-center rounded-lg bg-[var(--color-primary,#4F46E5)] px-4 text-sm font-medium text-[var(--color-text-on-primary,#FFFFFF)] outline-none transition hover:bg-[var(--color-primary-hover,#4338CA)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
         >
           Cycle secondary (d)
         </button>
@@ -72,7 +72,7 @@ export function SecondaryChordInspector(props: SecondaryChordInspectorProps): Re
           type="button"
           disabled={!hasChord || chord?.secondary == null}
           onClick={onClear}
-          className="inline-flex h-11 min-h-11 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-4 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+          className="inline-flex h-8 min-h-8 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-4 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
         >
           Clear to diatonic
         </button>
@@ -245,7 +245,7 @@ export function ChordPalette(props: ChordPaletteProps): ReactElement {
           <button
             type="button"
             data-testid="chord-palette-magic-interactive"
-            className="mb-3 inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-dashed border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface-muted,#F9FAFB)] px-3 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none hover:bg-[var(--color-surface,#FFFFFF)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
+            className="mb-3 inline-flex min-h-8 w-full items-center justify-center rounded-lg border border-dashed border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface-muted,#F9FAFB)] px-3 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none hover:bg-[var(--color-surface,#FFFFFF)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
             onClick={() => {
               const first = borrowedRows[0];
               if (!first) {
@@ -276,7 +276,7 @@ export function ChordPalette(props: ChordPaletteProps): ReactElement {
             <select
               id="chord-palette-borrowed-scale"
               data-testid="chord-palette-borrowed-scale"
-              className="min-h-11 w-full rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-3 py-2 text-sm text-[var(--color-text-primary,#111827)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
+              className="min-h-8 w-full rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-3 py-2 text-sm text-[var(--color-text-primary,#111827)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
               aria-label="Borrowed scale"
               value={borrowedSource}
               onChange={(e) => setBorrowedSource(e.target.value as ScaleType)}
@@ -360,7 +360,7 @@ export function ChordPalette(props: ChordPaletteProps): ReactElement {
           <button
             type="button"
             data-testid="chord-palette-magic-interactive"
-            className="mb-3 inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-dashed border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface-muted,#F9FAFB)] px-3 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none hover:bg-[var(--color-surface,#FFFFFF)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
+            className="mb-3 inline-flex min-h-8 w-full items-center justify-center rounded-lg border border-dashed border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface-muted,#F9FAFB)] px-3 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none hover:bg-[var(--color-surface,#FFFFFF)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
             onClick={() => onChordSelect(diatonicSelectPayload(1, currentScale))}
           >
             Magic: tonic chord
@@ -418,7 +418,7 @@ export function ChordPalette(props: ChordPaletteProps): ReactElement {
         <button
           type="button"
           data-testid="chord-palette-magic-interactive"
-          className="mt-3 inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface-muted,#F9FAFB)] px-3 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none hover:bg-[var(--color-surface,#FFFFFF)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
+          className="mt-3 inline-flex min-h-8 w-full items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface-muted,#F9FAFB)] px-3 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none hover:bg-[var(--color-surface,#FFFFFF)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
           onClick={() => onChordSelect(diatonicSelectPayload(1, currentScale))}
         >
           Preview I
@@ -442,7 +442,7 @@ export function ChordPalette(props: ChordPaletteProps): ReactElement {
           <button
             type="button"
             data-testid="chord-palette-popular-interactive"
-            className="inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-[var(--color-primary,#4F46E5)] px-3 text-sm font-medium text-[var(--color-text-on-primary,#FFFFFF)] outline-none hover:bg-[var(--color-primary-hover,#4338CA)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
+            className="inline-flex min-h-8 w-full items-center justify-center rounded-lg bg-[var(--color-primary,#4F46E5)] px-3 text-sm font-medium text-[var(--color-text-on-primary,#FFFFFF)] outline-none hover:bg-[var(--color-primary-hover,#4338CA)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
             onClick={() => onChordSelect(diatonicSelectPayload(5, currentScale))}
           >
             Popular: V chord
@@ -461,7 +461,7 @@ export function ChordPalette(props: ChordPaletteProps): ReactElement {
               value={chordSearchFilter}
               onChange={(e) => setChordSearchFilter(e.target.value)}
               placeholder="Type to filter…"
-              className="min-h-11 w-full rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-3 py-2 text-sm text-[var(--color-text-primary,#111827)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
+              className="min-h-8 w-full rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-3 py-2 text-sm text-[var(--color-text-primary,#111827)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
             />
           </div>
         );
@@ -472,7 +472,7 @@ export function ChordPalette(props: ChordPaletteProps): ReactElement {
             <button
               type="button"
               data-testid="chord-palette-progression-preset-a"
-              className="inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-3 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
+              className="inline-flex min-h-8 w-full items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-3 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
               onClick={() => applyProgressionDegrees([1, 4, 5, 1])}
             >
               Preset A — I–IV–V–I
@@ -480,7 +480,7 @@ export function ChordPalette(props: ChordPaletteProps): ReactElement {
             <button
               type="button"
               data-testid="chord-palette-progression-preset-b"
-              className="inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-3 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
+              className="inline-flex min-h-8 w-full items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-3 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
               onClick={() => applyProgressionDegrees([2, 5, 1, 6])}
             >
               Preset B — ii–V–I–vi
@@ -492,7 +492,7 @@ export function ChordPalette(props: ChordPaletteProps): ReactElement {
           <button
             type="button"
             data-testid="chord-palette-bass-sets-interactive"
-            className="inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-3 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
+            className="inline-flex min-h-8 w-full items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-3 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
             onClick={() => onChordSelect(diatonicSelectPayload(5, currentScale))}
           >
             Bass set: roots on 1 & 5

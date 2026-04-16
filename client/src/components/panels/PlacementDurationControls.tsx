@@ -22,7 +22,7 @@ export function PlacementDurationControls(props: PlacementDurationControlsProps)
 
   return (
     <section
-      className="flex shrink-0 flex-col gap-2 border-b border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)] px-4 py-3"
+      className="flex shrink-0 flex-col gap-2 border-b border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)] px-3 py-2"
       aria-label="Placement duration"
     >
       <h3 className="text-base font-semibold tracking-tight text-[var(--color-text-primary,#111827)]">

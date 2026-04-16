@@ -76,15 +76,16 @@ export function TransportControls({
   return (
     <div
       data-testid="vybpad-transport-toolbar"
+      data-ui-density="compact"
       aria-busy={initStatus === 'initializing' ? true : undefined}
       data-audio-ready={initStatus === 'ready' ? 'true' : 'false'}
       className="flex min-w-0 flex-col border-b border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)] lg:flex-nowrap"
     >
       {showKeyMeterBand ? (
-        <div className="flex min-h-12 shrink-0 flex-wrap items-center gap-3 border-b border-[var(--color-border,#E5E7EB)] px-4 py-1.5">
+        <div className="flex min-h-0 shrink-0 flex-wrap items-center gap-1.5 border-b border-[var(--color-border,#E5E7EB)] px-3 py-0.5">
           <div
             data-testid="vybpad-transport-key-meter-cluster"
-            className="flex min-w-0 flex-wrap items-center gap-2 text-sm text-[var(--color-text-primary,#111827)]"
+            className="flex min-w-0 flex-wrap items-center gap-1.5 text-xs leading-tight text-[var(--color-text-primary,#111827)]"
           >
             {keyLabel ? (
               <span className="font-medium tabular-nums text-[var(--color-text-primary,#111827)]">
@@ -100,7 +101,7 @@ export function TransportControls({
               type="button"
               data-testid="vybpad-tempo-meter-edit"
               onClick={onTempoMeterEdit}
-              className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-transparent px-3 text-sm font-medium text-[var(--color-primary,#4F46E5)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
+              className="inline-flex min-h-7 shrink-0 items-center justify-center rounded-md border border-[var(--color-border-strong,#D1D5DB)] bg-transparent px-2 text-xs font-medium text-[var(--color-primary,#4F46E5)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
             >
               Tempo / meter
             </button>
@@ -113,14 +114,14 @@ export function TransportControls({
         aria-label="Transport"
         aria-busy={initStatus === 'initializing' ? true : undefined}
         data-audio-ready={initStatus === 'ready' ? 'true' : 'false'}
-        className="flex min-h-12 min-w-0 flex-wrap items-center gap-2 px-4 lg:flex-nowrap lg:overflow-x-auto"
+        className="flex min-h-12 min-w-0 flex-wrap items-center gap-2 px-3 lg:flex-nowrap lg:overflow-x-auto"
       >
         <div className="flex shrink-0 items-center gap-2" role="group" aria-label="Playback">
           {isPlaying ? (
             <button
               type="button"
               data-testid="vybpad-transport-pause"
-              className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg bg-[var(--color-primary,#4F46E5)] px-3 text-sm font-medium text-[var(--color-text-on-primary,#FFFFFF)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-primary-hover,#4338CA)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+              className="inline-flex min-h-8 min-w-8 items-center justify-center rounded-lg bg-[var(--color-primary,#4F46E5)] px-3 text-sm font-medium text-[var(--color-text-on-primary,#FFFFFF)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-primary-hover,#4338CA)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
               aria-label="Pause playback"
               aria-pressed="true"
               disabled={transportLocked}
@@ -132,7 +133,7 @@ export function TransportControls({
             <button
               type="button"
               data-testid="vybpad-transport-play"
-              className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg bg-[var(--color-primary,#4F46E5)] px-3 text-sm font-medium text-[var(--color-text-on-primary,#FFFFFF)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-primary-hover,#4338CA)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+              className="inline-flex min-h-8 min-w-8 items-center justify-center rounded-lg bg-[var(--color-primary,#4F46E5)] px-3 text-sm font-medium text-[var(--color-text-on-primary,#FFFFFF)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-primary-hover,#4338CA)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
               aria-label={initStatus === 'ready' ? 'Play' : 'Start audio and play'}
               disabled={playDisabled}
               onClick={onPlay}
@@ -142,7 +143,7 @@ export function TransportControls({
           )}
           <button
             type="button"
-            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-3 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+            className="inline-flex min-h-8 min-w-8 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-3 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
             aria-label="Stop playback"
             disabled={transportLocked}
             onClick={onStop}
@@ -151,7 +152,7 @@ export function TransportControls({
           </button>
           <button
             type="button"
-            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-3 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+            className="inline-flex min-h-8 min-w-8 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-3 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
             aria-label="Rewind to start"
             disabled={transportLocked}
             onClick={onRewind}
@@ -162,7 +163,7 @@ export function TransportControls({
 
         <div
           data-testid="vybpad-transport-current-beat"
-          className="flex min-h-11 min-w-[120px] shrink-0 items-center text-sm tabular-nums text-[var(--color-text-primary,#111827)]"
+          className="flex min-h-8 min-w-[120px] shrink-0 items-center text-sm tabular-nums text-[var(--color-text-primary,#111827)]"
           aria-live="polite"
         >
           <span className="sr-only">Current position</span>
@@ -178,7 +179,7 @@ export function TransportControls({
             max={300}
             value={tempo}
             onChange={(e) => onTempoChange(Number(e.target.value))}
-            className="h-11 w-20 rounded-lg border border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)] px-2 text-center text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none focus:border-[var(--color-primary,#4F46E5)] focus:ring-1 focus:ring-[var(--color-primary,#4F46E5)] disabled:opacity-50"
+            className="h-8 w-20 rounded-lg border border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)] px-2 text-center text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none focus:border-[var(--color-primary,#4F46E5)] focus:ring-1 focus:ring-[var(--color-primary,#4F46E5)] disabled:opacity-50"
             aria-labelledby="transport-tempo-label"
           />
           <span className="text-[var(--color-text-muted,#9CA3AF)]" aria-hidden="true">
@@ -193,7 +194,7 @@ export function TransportControls({
             aria-label="Record arm"
             aria-pressed={recordArmed ?? false}
             onClick={onRecordToggle}
-            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-3 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
+            className="inline-flex min-h-8 min-w-8 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-3 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
           >
             Rec
           </button>
@@ -206,17 +207,18 @@ export function TransportControls({
             aria-label="Metronome"
             aria-pressed={metronomeEnabled ?? false}
             onClick={onMetronomeToggle}
-            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-3 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
+            className="inline-flex min-h-8 min-w-8 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-3 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
           >
             Click
           </button>
         ) : null}
 
+        {/* Horizontal editor zoom (`viewport.zoom`) scales the grid only — not DOM / UI chrome (OB-6). */}
         {showZoomCluster ? (
           <div
             className="flex shrink-0 items-center gap-1 border-l border-[var(--color-border,#E5E7EB)] pl-2"
             role="group"
-            aria-label="Zoom"
+            aria-label="Editor canvas zoom"
           >
             <span
               data-testid="vybpad-zoom-readout"
@@ -230,7 +232,7 @@ export function TransportControls({
               aria-label="Zoom out"
               disabled={onZoomOut == null}
               onClick={onZoomOut}
-              className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-2 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40"
+              className="inline-flex min-h-8 min-w-8 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-2 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40"
             >
               −
             </button>
@@ -240,7 +242,7 @@ export function TransportControls({
               aria-label="Zoom in"
               disabled={onZoomIn == null}
               onClick={onZoomIn}
-              className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-2 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40"
+              className="inline-flex min-h-8 min-w-8 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-2 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40"
             >
               +
             </button>
@@ -250,7 +252,7 @@ export function TransportControls({
               aria-label="Reset zoom to 1:1 (100%)"
               disabled={onZoomReset == null}
               onClick={onZoomReset}
-              className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-2 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40"
+              className="inline-flex min-h-8 shrink-0 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-2 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40"
             >
               1:1
             </button>
@@ -279,7 +281,7 @@ export function TransportControls({
               disabled
               aria-describedby="vybpad-mvp-deferred-hint"
               title="Not in MVP — deferred per ARCHITECTURE roadmap."
-              className="inline-flex min-h-11 min-w-11 cursor-not-allowed items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface-muted,#F9FAFB)] px-3 text-sm font-medium text-[var(--color-text-muted,#9CA3AF)] outline-none"
+              className="inline-flex min-h-8 min-w-8 cursor-not-allowed items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface-muted,#F9FAFB)] px-3 text-sm font-medium text-[var(--color-text-muted,#9CA3AF)] outline-none"
             >
               {label}
             </button>

@@ -17,7 +17,7 @@ export interface EditorSettingsPanelProps {
 }
 
 const toggleBase =
-  'inline-flex min-h-11 flex-1 items-center justify-center rounded-md px-2 text-sm font-medium outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2';
+  'inline-flex min-h-8 flex-1 items-center justify-center rounded-md px-2 text-sm font-medium outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2';
 
 const toggleOn =
   'bg-[var(--color-surface,#FFFFFF)] text-[var(--color-text-primary,#111827)] shadow-sm';
