@@ -1,5 +1,5 @@
 import type { AudioEngine } from './audioEngineTypes';
-import { createPlaybackEngine } from './createPlaybackEngine';
+import { createPlaybackEngine, resetPlaybackMetronomePreferenceForTests } from './createPlaybackEngine';
 
 let engine: AudioEngine | null = null;
 
@@ -20,4 +20,5 @@ export function resetPlaybackEngineForTests(): void {
     engine.dispose();
     engine = null;
   }
+  resetPlaybackMetronomePreferenceForTests();
 }

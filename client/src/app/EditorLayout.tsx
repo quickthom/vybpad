@@ -28,6 +28,7 @@ import { PlacementDurationControls } from '../components/panels/PlacementDuratio
 import {
   getKeyAtMeasure,
   getMeasureStartTicks,
+  getMeterAtMeasure,
   getScaleAtMeasure,
   measureIndexFromAbsoluteTick,
 } from '../engine/renderer/tickUtils';
@@ -139,6 +140,10 @@ export function EditorLayout() {
   const playbackPause = usePlaybackStore((s) => s.pause);
   const playbackStop = usePlaybackStore((s) => s.stop);
   const playbackRewind = usePlaybackStore((s) => s.rewind);
+  const metronomeEnabled = usePlaybackStore((s) => s.metronomeEnabled);
+  const recordArmed = usePlaybackStore((s) => s.recordArmed);
+  const setMetronomeEnabled = usePlaybackStore((s) => s.setMetronomeEnabled);
+  const setRecordArmed = usePlaybackStore((s) => s.setRecordArmed);
 
   const showErrorToast = useToastStore((s) => s.showError);
   const showSuccessToast = useToastStore((s) => s.showSuccess);
@@ -220,6 +225,27 @@ export function EditorLayout() {
   const [chordPaletteLibraryTab, setChordPaletteLibraryTab] = useState<
     'magic' | 'popular' | 'search' | 'progressions' | 'bassSets'
   >('magic');
+
+  const transportKeyMeterLabels = useMemo(() => {
+    const mi = keyScaleTargetMeasure;
+    const m = getMeterAtMeasure(song, mi);
+    return {
+      keyLabel: `${getKeyAtMeasure(song, mi)} ${getScaleAtMeasure(song, mi)}`,
+      meterLabel: `${m.numerator}/${m.denominator}`,
+    };
+  }, [song, keyScaleTargetMeasure]);
+
+  const handleZoomInTransport = useCallback(() => {
+    setViewport(withZoomIn(useUIStore.getState().viewport));
+  }, [setViewport]);
+
+  const handleZoomOutTransport = useCallback(() => {
+    setViewport(withZoomOut(useUIStore.getState().viewport));
+  }, [setViewport]);
+
+  const handleZoomResetTransport = useCallback(() => {
+    setViewport(withResetZoom(useUIStore.getState().viewport));
+  }, [setViewport]);
 
   const getShortcutContext = useCallback((): ShortcutContext => {
     return {
@@ -1177,6 +1203,17 @@ export function EditorLayout() {
           if (!Number.isFinite(n) || n < 20 || n > 300) return;
           updateMetadata({ tempo: n });
         }}
+        recordArmed={recordArmed}
+        onRecordToggle={() => setRecordArmed(!recordArmed)}
+        metronomeEnabled={metronomeEnabled}
+        onMetronomeToggle={() => setMetronomeEnabled(!metronomeEnabled)}
+        zoomPercent={Math.round(viewport.zoom * 100)}
+        onZoomIn={handleZoomInTransport}
+        onZoomOut={handleZoomOutTransport}
+        onZoomReset={handleZoomResetTransport}
+        keyLabel={transportKeyMeterLabels.keyLabel}
+        meterLabel={transportKeyMeterLabels.meterLabel}
+        onTempoMeterEdit={() => setTempoMeterDialogOpen(true)}
         loopContent={<LoopBar />}
         endContent={
           <>
@@ -1346,7 +1383,6 @@ export function EditorLayout() {
               if (len - removing < 1) return;
               deleteMeasures(start, end);
             }}
-            onEditTempoMeter={() => setTempoMeterDialogOpen(true)}
           />
         </div>
         <div className="flex min-h-0 w-[288px] min-w-[240px] max-w-[400px] shrink-0 flex-col self-stretch overflow-hidden border-l border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)]">

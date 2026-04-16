@@ -9,9 +9,12 @@ import {
   getPlaybackEngine,
   getPlaybackInitErrorCode,
   setPlaybackMelodyVoiceVisibleForScheduling,
+  setPlaybackMetronomePreference,
+  takeMetronomeLastPlayResult,
   type PlaybackInitErrorCode,
   type PlaybackInitStatus,
 } from '../engine/audio';
+import { useToastStore } from './toastStore';
 import { useSongStore } from './songStore';
 import { useUIStore } from './uiStore';
 
@@ -27,6 +30,10 @@ export interface PlaybackStore {
 
   initStatus: PlaybackInitStatus;
   initErrorCode: PlaybackInitErrorCode | null;
+  /** UI-W8 — audible metronome when the engine can schedule a click. */
+  metronomeEnabled: boolean;
+  /** UI-W8 — record arm only; disk capture is not implemented yet. */
+  recordArmed: boolean;
 
   initializeAudio: () => Promise<void>;
   clearInitError: () => void;
@@ -39,6 +46,8 @@ export interface PlaybackStore {
   setLoop: (start: number, end: number) => void;
   /** Disables loop playback and clears engine loop mode. INTERFACES.md update pending (TASK-4.8). */
   clearLoop: () => void;
+  setMetronomeEnabled: (enabled: boolean) => void;
+  setRecordArmed: (armed: boolean) => void;
 }
 
 let initChain: Promise<void> | null = null;
@@ -86,6 +95,8 @@ export const usePlaybackStore = create<PlaybackStore>()(
 
     initStatus: 'locked',
     initErrorCode: null,
+    metronomeEnabled: false,
+    recordArmed: false,
 
     clearInitError: () => {
       set((draft) => {
@@ -157,9 +168,20 @@ export const usePlaybackStore = create<PlaybackStore>()(
       }
       const engine = getPlaybackEngine();
       syncEngineFromSong();
-      const { isLooping, loopStart, loopEnd } = get();
+      const { isLooping, loopStart, loopEnd, recordArmed, metronomeEnabled } = get();
       engine.setLoop(isLooping, loopStart, loopEnd);
       engine.play();
+      if (recordArmed) {
+        useToastStore.getState().showInfo('Recording to disk is not available yet.');
+      }
+      if (metronomeEnabled) {
+        const metro = takeMetronomeLastPlayResult();
+        if (metro === 'fail') {
+          useToastStore
+            .getState()
+            .showInfo('Metronome click is not available in this environment; toggle stays on for when it is.');
+        }
+      }
       set((draft) => {
         draft.isPlaying = true;
         if (draft.currentTick === null) {
@@ -226,6 +248,19 @@ export const usePlaybackStore = create<PlaybackStore>()(
         getPlaybackEngine().setLoop(false);
       }
     },
+
+    setMetronomeEnabled: (enabled: boolean) => {
+      set((draft) => {
+        draft.metronomeEnabled = enabled;
+      });
+      setPlaybackMetronomePreference(enabled);
+    },
+
+    setRecordArmed: (armed: boolean) => {
+      set((draft) => {
+        draft.recordArmed = armed;
+      });
+    },
   })),
 );
 
@@ -247,5 +282,8 @@ export function resetPlaybackStoreForTests(): void {
     loopEnd: 0,
     initStatus: 'locked',
     initErrorCode: null,
+    metronomeEnabled: false,
+    recordArmed: false,
   });
+  setPlaybackMetronomePreference(false);
 }
