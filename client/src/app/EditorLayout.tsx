@@ -28,6 +28,7 @@ import { PlacementDurationControls } from '../components/panels/PlacementDuratio
 import {
   getKeyAtMeasure,
   getMeasureStartTicks,
+  getMeterAtMeasure,
   getScaleAtMeasure,
   measureIndexFromAbsoluteTick,
 } from '../engine/renderer/tickUtils';
@@ -75,6 +76,7 @@ import {
   markEditorPostBootstrapFromNavigate,
   shouldSkipDuplicateGetAfterPostBootstrap,
 } from './editorProjectHydration';
+import { keyScaleTargetMeasureIndex } from './keyScaleTargetMeasureIndex';
 
 /** TASK-3.4: idle delay after the last edit before auto PUT (coalesces rapid edits). */
 const AUTOSAVE_DEBOUNCE_MS = 1500;
@@ -139,6 +141,10 @@ export function EditorLayout() {
   const playbackPause = usePlaybackStore((s) => s.pause);
   const playbackStop = usePlaybackStore((s) => s.stop);
   const playbackRewind = usePlaybackStore((s) => s.rewind);
+  const metronomeEnabled = usePlaybackStore((s) => s.metronomeEnabled);
+  const recordArmed = usePlaybackStore((s) => s.recordArmed);
+  const setMetronomeEnabled = usePlaybackStore((s) => s.setMetronomeEnabled);
+  const setRecordArmed = usePlaybackStore((s) => s.setRecordArmed);
 
   const showErrorToast = useToastStore((s) => s.showError);
   const showSuccessToast = useToastStore((s) => s.showSuccess);
@@ -205,21 +211,37 @@ export function EditorLayout() {
   const [keyScaleDialogOpen, setKeyScaleDialogOpen] = useState(false);
   const keyScaleTriggerRef = useRef<HTMLButtonElement>(null);
 
-  const keyScaleTargetMeasure = useMemo(() => {
-    if (selectedMeasures) {
-      return Math.min(selectedMeasures[0], selectedMeasures[1]);
-    }
-    if (selection?.measureIndex != null) {
-      return selection.measureIndex;
-    }
-    return 0;
-  }, [selectedMeasures, selection]);
+  const keyScaleTargetMeasure = useMemo(
+    () => keyScaleTargetMeasureIndex(selectedMeasures, selection),
+    [selectedMeasures, selection],
+  );
   const [chordPaletteMode, setChordPaletteMode] = useState<
     'diatonic' | 'borrowed' | 'secondary' | 'search'
   >('diatonic');
   const [chordPaletteLibraryTab, setChordPaletteLibraryTab] = useState<
     'magic' | 'popular' | 'search' | 'progressions' | 'bassSets'
   >('magic');
+
+  const transportKeyMeterLabels = useMemo(() => {
+    const mi = keyScaleTargetMeasure;
+    const m = getMeterAtMeasure(song, mi);
+    return {
+      keyLabel: `${getKeyAtMeasure(song, mi)} ${getScaleAtMeasure(song, mi)}`,
+      meterLabel: `${m.numerator}/${m.denominator}`,
+    };
+  }, [song, keyScaleTargetMeasure]);
+
+  const handleZoomInTransport = useCallback(() => {
+    setViewport(withZoomIn(useUIStore.getState().viewport));
+  }, [setViewport]);
+
+  const handleZoomOutTransport = useCallback(() => {
+    setViewport(withZoomOut(useUIStore.getState().viewport));
+  }, [setViewport]);
+
+  const handleZoomResetTransport = useCallback(() => {
+    setViewport(withResetZoom(useUIStore.getState().viewport));
+  }, [setViewport]);
 
   const getShortcutContext = useCallback((): ShortcutContext => {
     return {
@@ -1177,6 +1199,17 @@ export function EditorLayout() {
           if (!Number.isFinite(n) || n < 20 || n > 300) return;
           updateMetadata({ tempo: n });
         }}
+        recordArmed={recordArmed}
+        onRecordToggle={() => setRecordArmed(!recordArmed)}
+        metronomeEnabled={metronomeEnabled}
+        onMetronomeToggle={() => setMetronomeEnabled(!metronomeEnabled)}
+        zoomPercent={Math.round(viewport.zoom * 100)}
+        onZoomIn={handleZoomInTransport}
+        onZoomOut={handleZoomOutTransport}
+        onZoomReset={handleZoomResetTransport}
+        keyLabel={transportKeyMeterLabels.keyLabel}
+        meterLabel={transportKeyMeterLabels.meterLabel}
+        onTempoMeterEdit={() => setTempoMeterDialogOpen(true)}
         loopContent={<LoopBar />}
         endContent={
           <>
@@ -1346,7 +1379,6 @@ export function EditorLayout() {
               if (len - removing < 1) return;
               deleteMeasures(start, end);
             }}
-            onEditTempoMeter={() => setTempoMeterDialogOpen(true)}
           />
         </div>
         <div className="flex min-h-0 w-[288px] min-w-[240px] max-w-[400px] shrink-0 flex-col self-stretch overflow-hidden border-l border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)]">
@@ -1420,12 +1452,11 @@ export function EditorLayout() {
       </div>
       <TempoMeterAtMeasureDialog
         open={tempoMeterDialogOpen}
-        measureIndex={selectedMeasures?.[0] ?? 0}
+        measureIndex={keyScaleTargetMeasure}
         song={song}
         onDismiss={() => setTempoMeterDialogOpen(false)}
         onApply={(changes) => {
-          const idx = selectedMeasures?.[0] ?? 0;
-          setMeasureChanges(idx, changes);
+          setMeasureChanges(keyScaleTargetMeasure, changes);
         }}
       />
     </div>

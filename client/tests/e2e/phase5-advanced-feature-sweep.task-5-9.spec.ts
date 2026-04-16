@@ -139,7 +139,7 @@ test.describe('TASK-5.9 — advanced Phase 5 milestone sweep', () => {
     await expect(keyDialog).toBeHidden();
     await expect(keyScaleTrigger).toBeFocused();
 
-    const tempoMeterTrigger = page.getByTestId('vybpad-measure-tempo-meter');
+    const tempoMeterTrigger = page.getByTestId('vybpad-tempo-meter-edit');
     const measure9Button = page.getByRole('button', { name: 'Measure 9', exact: true });
     await measure9Button.click();
     await expect(measure9Button).toHaveAttribute('aria-pressed', 'true');
