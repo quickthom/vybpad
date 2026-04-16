@@ -2,8 +2,8 @@
 /*
  * QA COVERAGE PLAN — TASK-7.8 (UI polish — UX_GUIDELINES touch targets, settings heading, dev strings)
  *
- * Criterion — P0/P1: toolbar controls meet minimum touch dimensions (44×44px) in header + LoopBar.
- *   happy: header chrome buttons use Tailwind min-h-11 (44px); compact Loop actions use min-h-11 + min-w-11.
+ * Criterion — P0/P1: toolbar controls meet UX compact chrome (OB-6 / §5.1) in header + LoopBar.
+ *   happy: header + loop actions use Tailwind min-h-8 (32px) or legacy min-h-11 (44px); rows stay min-h-12 where specified.
  *   error: n/a
  *   edges: class-token contract (avoids brittle pixel CSS in jsdom where Tailwind is not fully resolved).
  *
@@ -26,10 +26,10 @@ import { resetPlaybackStoreForTests } from '@/store/playbackStore';
 import { buildDefaultSong, useSongStore } from '@/store/songStore';
 import { useUIStore } from '@/store/uiStore';
 
-/** Tailwind `min-h-11` / arbitrary 44px — UX minimum touch height. */
-const MIN_H_TOUCH = /\bmin-h-11\b|\bmin-h-\[44px\]/;
-/** Tailwind `min-w-11` / arbitrary 44px — paired with height for compact icon-like controls. */
-const MIN_W_TOUCH = /\bmin-w-11\b|\bmin-w-\[44px\]/;
+/** OB-6: UX §5.1 compact (`min-h-8`) or legacy 44px (`min-h-11`) on dense chrome. */
+const MIN_H_TOUCH = /\bmin-h-8\b|\bmin-h-9\b|\bmin-h-10\b|\bmin-h-11\b|\bmin-h-\[(3[2-9]|4[0-4])px\]/;
+/** Paired width for square-ish controls (compact min-w-8 … or legacy min-w-11). */
+const MIN_W_TOUCH = /\bmin-w-8\b|\bmin-w-9\b|\bmin-w-10\b|\bmin-w-11\b|\bmin-w-\[(3[2-9]|4[0-4])px\]/;
 
 function expectMinHeightTouchClass(el: HTMLElement, hint?: string): void {
   const c = typeof el.className === 'string' ? el.className : '';
@@ -144,8 +144,8 @@ describe('EditorLayout — TASK-7.8 — no internal TASK id string in user-visib
   });
 });
 
-describe('EditorLayout — TASK-7.8 — header cluster touch targets (min-h-11 / 44px)', () => {
-  it('uses min-h-11 (or min-h-[44px]) on primary chrome buttons (Projects, panels, Key/scale, log out)', () => {
+describe('EditorLayout — TASK-7.8 — header cluster touch targets (compact or 44px)', () => {
+  it('uses min-h-8+ (or min-h-[32–44px]) on primary chrome buttons (Projects, panels, Key/scale, log out)', () => {
     renderEditorShell();
 
     const projects = screen.getByRole('button', { name: /^projects$/i });
@@ -162,8 +162,8 @@ describe('EditorLayout — TASK-7.8 — header cluster touch targets (min-h-11 /
   });
 });
 
-describe('EditorLayout — TASK-7.8 — LoopBar action buttons touch targets (44px box)', () => {
-  it('uses min-h-11 and min-w-11 (or 44px arbitrary) on Set loop and Clear loop buttons', () => {
+describe('EditorLayout — TASK-7.8 — LoopBar action buttons touch targets (compact box)', () => {
+  it('uses min-h-8+ and min-w-8+ on Set loop and Clear loop buttons', () => {
     renderEditorShell();
 
     const group = screen.getByRole('group', { name: /loop/i });

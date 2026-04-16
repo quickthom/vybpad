@@ -85,7 +85,7 @@ export function ChordProperties({
   const romanLabel = theoryEngine.toRomanNumeral(chord, theoryScale);
 
   return (
-    <div className="flex flex-col gap-4 px-4 py-4">
+    <div className="flex flex-col gap-3 px-3 py-3">
       <h3 className="text-base font-semibold text-[var(--color-text-primary,#111827)]">Chord</h3>
       <p
         data-testid="properties-chord-roman"

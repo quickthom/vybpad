@@ -19,6 +19,7 @@ import {
 /** Required for `activePanels: Set<string>` under zustand/middleware/immer. */
 enableMapSet();
 
+/** `zoom` is horizontal editor/canvas scale only (PAT-012); UI chrome does not scale with it (OB-6). */
 const DEFAULT_VIEWPORT: Viewport = {
   startMeasure: 0,
   measureCount: 8,

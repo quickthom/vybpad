@@ -32,7 +32,7 @@ function TrackRow({
   const fillPct = clampVolume(track.volume) * 100;
 
   return (
-    <div className="group flex min-h-11 items-center gap-3">
+    <div className="group flex min-h-8 items-center gap-3">
       <div className="w-[72px] shrink-0 text-xs font-medium text-[var(--color-text-primary,#111827)]">
         {ROLE_LABEL[track.role]}
       </div>
