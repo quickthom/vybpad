@@ -41,9 +41,9 @@ Phases 0 (7/7), 1A (7/7), 1B (6/6), Phase 2 (15/15), Phase 3 (10/10), Phase 4 (1
 |---|---|---|---|---|---|---|
 | UI-W1 | Builder | — | merged | — (local merge) | None | RA-1 + RA-3 piano roll + horizontal note bars; branch `phase-8/ui-remediation-wave1` @521e415; push/PR pending HITL credentials |
 | UI-W1 | QA | — | merged | — | None | Tests landed with UI-W1 |
-| UI-W2 | Builder | phase-8/ui-remediation-wave2 | in-progress | — | UI-W1 | RA-2: bottom chord strip |
-| UI-W2 | QA | phase-8/ui-remediation-wave2 | in-progress | — | UI-W1 | — |
-| UI-W3 | Builder | — | pending | — | UI-W2 merged | RA-5 + RA-6: left panel duration + note entry |
-| UI-W3 | QA | — | pending | — | UI-W2 | Default sequential after W2 (layout hotspot) |
+| UI-W2 | Builder | — | merged | — (local merge) | UI-W1 | RA-2 bottom chord strip; branch `phase-8/ui-remediation-wave2` @1a92b3d + ARCHITECTURE sync 015253d |
+| UI-W2 | QA | — | merged | — | UI-W1 | chordStrip.ui-w2 tests |
+| UI-W3 | Builder | phase-8/ui-remediation-wave3 | in-progress | — | UI-W2 | RA-5 + RA-6: left panel duration + note entry |
+| UI-W3 | QA | phase-8/ui-remediation-wave3 | in-progress | — | UI-W2 | — |
 
 ---
