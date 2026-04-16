@@ -5,12 +5,12 @@ import type { TheoryEngine } from '../theory/theoryEngine';
 import { noteNameToMidiBase } from '../theory/noteNames';
 import { resolveSecondaryTarget } from '../theory/secondaryChords';
 import { scaleDegreeToMidi } from '../theory/scaleDegreeToMidi';
-import { CHORD_AREA_HEIGHT } from './constants';
+import { CHORD_AREA_HEIGHT, NOTE_HEIGHT } from './constants';
 import { pat010DiatonicHex, pat010MajorCentricHex, PAT010_DIATONIC_DEGREE_HEX } from './colorMaps';
 import {
   absoluteTickFromMeasurePosition,
   absoluteTickToViewportX,
-  chordAreaTopY,
+  bottomChordStripTopY,
   getKeyAtMeasure,
   getScaleAtMeasure,
   pixelsPerTick,
@@ -165,13 +165,14 @@ export interface ChordBlockRect {
 
 /**
  * Layout for one chord block: width = duration × pixelsPerTick(zoom); height = {@link CHORD_AREA_HEIGHT};
- * X from {@link absoluteTickToViewportX}; Y = {@link chordAreaTopY}.
+ * X from {@link absoluteTickToViewportX}; Y = {@link bottomChordStripTopY} (RA-2 bottom strip).
  */
 export function layoutChordBlock(
   chord: ChordEvent,
   measureIndex: number,
   song: SongData,
   viewport: Viewport,
+  melodyRowHeight: number = NOTE_HEIGHT,
 ): ChordBlockRect {
   const absoluteTick = absoluteTickFromMeasurePosition(song, measureIndex, chord.beat);
   const x = absoluteTickToViewportX(absoluteTick, viewport, song);
@@ -180,7 +181,7 @@ export function layoutChordBlock(
     measureIndex,
     chord,
     x,
-    y: chordAreaTopY(),
+    y: bottomChordStripTopY(melodyRowHeight),
     width: w,
     height: CHORD_AREA_HEIGHT,
     absoluteTick,
@@ -209,6 +210,8 @@ export interface DrawChordBlocksOptions {
   showAbsoluteChordName?: boolean;
   /** INTERFACES.md EditorSettingsPanel — how chord blocks are labeled. */
   labelMode?: EditorLabelMode;
+  /** Melody row height from staff spacing; must match `computeNoteBlockRect` / EditorCanvas. */
+  melodyRowHeight?: number;
 }
 
 /**
@@ -224,6 +227,7 @@ export function drawChordBlocks(
 ): void {
   const colorScheme = options?.colorScheme ?? 'diatonic';
   const labelMode: EditorLabelMode = options?.labelMode ?? 'degree';
+  const melodyRowHeight = options?.melodyRowHeight ?? NOTE_HEIGHT;
   const start = viewport.startMeasure;
   const end = Math.min(start + viewport.measureCount, song.measures.length);
 
@@ -233,7 +237,7 @@ export function drawChordBlocks(
     const scale = getScaleAtMeasure(song, mi);
 
     for (const chord of measure.chords) {
-      const rect = layoutChordBlock(chord, mi, song, viewport);
+      const rect = layoutChordBlock(chord, mi, song, viewport, melodyRowHeight);
       if (rect.width <= 0) {
         continue;
       }

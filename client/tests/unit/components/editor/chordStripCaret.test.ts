@@ -2,11 +2,17 @@ import type { SongData, Viewport } from '@vybpad/shared';
 import { describe, expect, it } from 'vitest';
 
 import { chordStripCaretSelectionFromPointer } from '../../../../src/components/editor/editorKeyboardLogic';
-import { CHORD_AREA_HEIGHT, MEASURE_HEADER_HEIGHT } from '../../../../src/engine/renderer/constants';
+import {
+  CHORD_AREA_HEIGHT,
+  MEASURE_HEADER_HEIGHT,
+  MELODY_DIATONIC_ROW_COUNT,
+  NOTE_HEIGHT,
+} from '../../../../src/engine/renderer/constants';
 import { buildDefaultSong } from '../../../../src/store/songStore';
 
-/** E2E `persistence.happy` — chord strip vertical center (PAT-012). */
-const E2E_CHORD_STRIP_CENTER_Y = MEASURE_HEADER_HEIGHT + CHORD_AREA_HEIGHT / 2;
+/** E2E `persistence.happy` — chord strip vertical center (PAT-012 bottom strip, RA-2). */
+const E2E_CHORD_STRIP_CENTER_Y =
+  MEASURE_HEADER_HEIGHT + MELODY_DIATONIC_ROW_COUNT * NOTE_HEIGHT + CHORD_AREA_HEIGHT / 2;
 
 const DEFAULT_VIEWPORT: Viewport = {
   startMeasure: 0,
@@ -38,6 +44,6 @@ describe('chordStripCaretSelectionFromPointer', () => {
 
   it('returns null in the staff area', () => {
     const song = buildDefaultSong();
-    expect(chordStripCaretSelectionFromPointer(song, DEFAULT_VIEWPORT, 80, MEASURE_HEADER_HEIGHT + CHORD_AREA_HEIGHT + 10)).toBeNull();
+    expect(chordStripCaretSelectionFromPointer(song, DEFAULT_VIEWPORT, 80, MEASURE_HEADER_HEIGHT + 80)).toBeNull();
   });
 });

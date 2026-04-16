@@ -20,7 +20,7 @@ import { expect, test, type APIRequestContext, type Locator, type Page } from '@
 import type { NoteEvent, SongData } from '@vybpad/shared';
 
 import { parseSmfHeader } from '../helpers/smfTestUtils';
-import { EDITOR_CANVAS_PITCH_GUTTER_PX } from './helpers/editorCanvasCoords';
+import { EDITOR_CANVAS_PITCH_GUTTER_PX, editorChordStripCenterY } from './helpers/editorCanvasCoords';
 import { waitForEditorRouteReady } from './helpers/editorReady';
 import { submitRegisterFormAndExpectProjects } from './helpers/registerFlow';
 import {
@@ -50,9 +50,6 @@ function editorCanvas(page: Page): Locator {
   return page.getByRole('application', { name: /Song editor/i });
 }
 
-/** PAT-012 — chord strip; x ~10% matches persistence.happy. */
-const CHORD_STRIP_CLICK_Y = 24 + 40 / 2;
-
 async function focusChordStripForDigitEntry(canvas: Locator): Promise<void> {
   const box = await canvas.boundingBox();
   expect(box, 'editor canvas should have a layout box').toBeTruthy();
@@ -60,7 +57,7 @@ async function focusChordStripForDigitEntry(canvas: Locator): Promise<void> {
   const h = box!.height;
   const g = EDITOR_CANVAS_PITCH_GUTTER_PX;
   const x = Math.min(Math.max(g + 40, g + (w - g) * 0.1), w - 4);
-  const y = Math.min(Math.max(28, CHORD_STRIP_CLICK_Y), h - 4);
+  const y = Math.min(Math.max(28, editorChordStripCenterY(h)), h - 4);
   await canvas.click({ position: { x, y } });
   await expect(canvas).toBeFocused({ timeout: 15_000 });
 }

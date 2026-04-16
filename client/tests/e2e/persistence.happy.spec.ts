@@ -10,14 +10,11 @@
 
 import { expect, test, type APIRequestContext, type Locator, type Page } from '@playwright/test';
 
-import { EDITOR_CANVAS_PITCH_GUTTER_PX } from './helpers/editorCanvasCoords';
+import { EDITOR_CANVAS_PITCH_GUTTER_PX, editorChordStripCenterY } from './helpers/editorCanvasCoords';
 import { waitForEditorRouteReady } from './helpers/editorReady';
 import { submitRegisterFormAndExpectProjects } from './helpers/registerFlow';
 
 const API_BASE = (process.env.PLAYWRIGHT_API_URL ?? 'http://127.0.0.1:3001').replace(/\/+$/, '');
-
-/** PAT-012 — chord strip vertical center below measure header. */
-const CHORD_STRIP_CLICK_Y = 24 + 40 / 2;
 
 function uniqueSuffix(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
@@ -40,7 +37,7 @@ async function focusChordStripForDigitEntry(canvas: Locator): Promise<void> {
   const h = box!.height;
   const g = EDITOR_CANVAS_PITCH_GUTTER_PX;
   const x = Math.min(Math.max(g + 40, g + (w - g) * 0.1), w - 4);
-  const y = Math.min(Math.max(28, CHORD_STRIP_CLICK_Y), h - 4);
+  const y = Math.min(Math.max(28, editorChordStripCenterY(h)), h - 4);
   await canvas.click({ position: { x, y } });
   await expect(canvas).toBeFocused({ timeout: 15_000 });
 }

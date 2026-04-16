@@ -1,9 +1,10 @@
 import type { SongData, Viewport } from '@vybpad/shared';
 
-import { MELODY_DIATONIC_ROW_COUNT } from './constants';
+import { CHORD_AREA_HEIGHT, MELODY_DIATONIC_ROW_COUNT } from './constants';
 import {
   absoluteTickToViewportX,
   BAR_LINE_COLOR,
+  bottomChordStripTopY,
   GRID_LINE_COLOR,
   MEASURE_HEADER_HEIGHT,
   getMeasureStartTicks,
@@ -99,6 +100,14 @@ export function drawGridBackground(
 
   ctx.save();
 
+  const rowH = options?.melodyRowHeight;
+  const gridW = options?.gridContentWidthPx;
+  if (rowH != null && gridW != null && gridW > 0) {
+    const stripTop = bottomChordStripTopY(rowH);
+    ctx.fillStyle = '#F9FAFB';
+    ctx.fillRect(0, stripTop, gridW, CHORD_AREA_HEIGHT);
+  }
+
   ctx.lineWidth = 1;
   ctx.strokeStyle = GRID_LINE_COLOR;
   ctx.beginPath();
@@ -118,8 +127,6 @@ export function drawGridBackground(
   }
   ctx.stroke();
 
-  const rowH = options?.melodyRowHeight;
-  const gridW = options?.gridContentWidthPx;
   if (rowH != null && gridW != null && gridW > 0) {
     const staffTop = noteStaffTopY();
     ctx.strokeStyle = GRID_LINE_COLOR;

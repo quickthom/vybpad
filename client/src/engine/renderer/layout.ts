@@ -1,6 +1,6 @@
 import type { NoteEvent, ScaleDegree, SongData, Viewport } from '@vybpad/shared';
 
-import { CHORD_AREA_HEIGHT, BEAT_WIDTH, MEASURE_HEADER_HEIGHT, NOTE_HEIGHT } from './constants';
+import { BEAT_WIDTH, MEASURE_HEADER_HEIGHT, MELODY_DIATONIC_ROW_COUNT, NOTE_HEIGHT } from './constants';
 import { getMeasureStartTicks, getMeterAtMeasure, measureLengthInTicks, TPQN } from './tickUtils';
 
 // Re-export PAT-012 and tick helpers for the public barrel
@@ -8,6 +8,7 @@ export {
   BEAT_WIDTH,
   CHORD_AREA_HEIGHT,
   MEASURE_HEADER_HEIGHT,
+  MELODY_DIATONIC_ROW_COUNT,
   NOTE_HEIGHT,
   BAR_LINE_COLOR,
   GRID_LINE_COLOR,
@@ -118,14 +119,16 @@ export function measureWidthPixels(song: SongData, measureIndex: number, zoom: n
   return measureLengthInTicks(getMeterAtMeasure(song, measureIndex)) * pixelsPerTick(zoom);
 }
 
-/** Top Y of the chord strip (below measure header). */
-export function chordAreaTopY(): number {
+/** Top Y of the melody/note piano-roll (directly below measure header; RA-2 chord strip is at canvas bottom). */
+export function noteStaffTopY(): number {
   return MEASURE_HEADER_HEIGHT;
 }
 
-/** Top Y of the melody/note staff (below chord area). */
-export function noteStaffTopY(): number {
-  return MEASURE_HEADER_HEIGHT + CHORD_AREA_HEIGHT;
+/**
+ * Top Y of the bottom chord track strip (RA-2 / UI-W2). Height = {@link CHORD_AREA_HEIGHT} (PAT-012), flush to canvas bottom.
+ */
+export function bottomChordStripTopY(melodyRowHeight: number = NOTE_HEIGHT): number {
+  return MEASURE_HEADER_HEIGHT + MELODY_DIATONIC_ROW_COUNT * melodyRowHeight;
 }
 
 /**

@@ -39,7 +39,13 @@ function pointInBlockRect(
  * `measure.chords`. Later entries are painted later and therefore **on top**. Hit-testing walks that
  * order **in reverse** and returns the first (topmost) match.
  */
-function hitChordTopmost(x: number, y: number, song: SongData, viewport: Viewport): EditorCanvasHit | null {
+function hitChordTopmost(
+  x: number,
+  y: number,
+  song: SongData,
+  viewport: Viewport,
+  melodyRowHeight: number,
+): EditorCanvasHit | null {
   const start = viewport.startMeasure;
   const end = Math.min(start + viewport.measureCount, song.measures.length);
   for (let mi = end - 1; mi >= start; mi--) {
@@ -53,7 +59,7 @@ function hitChordTopmost(x: number, y: number, song: SongData, viewport: Viewpor
       if (!chord) {
         continue;
       }
-      const rect = layoutChordBlock(chord, mi, song, viewport);
+      const rect = layoutChordBlock(chord, mi, song, viewport, melodyRowHeight);
       if (pointInBlockRect(x, y, rect)) {
         return { kind: 'chord', measureIndex: mi, chord };
       }
@@ -114,10 +120,9 @@ function hitNoteTopmost(
  * Note geometry uses the same row math as {@link layout.noteRowYFromNoteEvent} via
  * {@link noteBlocks.computeNoteBlockRect}.
  *
- * **Global Z-order (matches {@link EditorCanvas} `paint`):** `drawGridBackground` → `drawChordBlocks` →
- * `drawNoteBlocks` → optional `drawGuideOverlay` when guides are on. Notes are painted after chords, so
- * they win when a point lies in both regions (e.g. chord strip vs staff overlap when scrolled). Guide
- * overlay is above notes and is not hit-tested. We test notes first, then chords.
+ * **Global Z-order (matches {@link EditorCanvas} `paint`):** `drawGridBackground` → `drawNoteBlocks` →
+ * `drawChordBlocks` (bottom strip) → optional `drawGuideOverlay` when guides are on. Melody and bottom
+ * chord strip do not overlap; notes are tested first, then chords.
  */
 export function hitTestEditorCanvas(
   x: number,
@@ -130,5 +135,5 @@ export function hitTestEditorCanvas(
   if (noteHit) {
     return noteHit;
   }
-  return hitChordTopmost(x, y, song, viewport);
+  return hitChordTopmost(x, y, song, viewport, melodyRowHeight);
 }

@@ -21,7 +21,7 @@ import {
   buildShortcutSongTripletNote,
   buildShortcutSongTwoChords,
 } from '../fixtures/shortcutE2ESeedSong';
-import { editorGridPointerX } from './helpers/editorCanvasCoords';
+import { editorChordStripCenterY, editorGridPointerX, editorMelodyRow0ApproxCenterY } from './helpers/editorCanvasCoords';
 import { waitForEditorRouteReady } from './helpers/editorReady';
 import { submitRegisterFormAndExpectProjects } from './helpers/registerFlow';
 import {
@@ -77,8 +77,8 @@ function editorCanvas(page: Page): Locator {
 }
 
 /**
- * Chord strip hit target — layout uses MEASURE_HEADER_HEIGHT (24) + chord strip center (~44px from canvas top).
- * See `layoutChordBlock` / `chordAreaTopY` (renderer).
+ * Chord strip hit target — RA-2 bottom strip; vertical center ≈ canvas height − CHORD_AREA_HEIGHT/2 (PAT-012).
+ * See `layoutChordBlock` / `bottomChordStripTopY` (renderer).
  */
 async function clickFirstChordStrip(page: Page): Promise<void> {
   const el = editorCanvas(page);
@@ -86,12 +86,12 @@ async function clickFirstChordStrip(page: Page): Promise<void> {
   expect(box, 'editor canvas bounding box').toBeTruthy();
   /** Beat-0 chord block — use a left-ish fraction so we stay in the first harmony when multiple chords share a measure (TASK-7.5). */
   const x = editorGridPointerX(box!.width, 0.018, 16);
-  const y = Math.min(44, box!.height - 8);
+  const y = Math.min(editorChordStripCenterY(box!.height), box!.height - 8);
   await el.click({ position: { x, y } });
 }
 
 /**
- * First melody note (scale degree 1, octave 0) — row 0 under {@link noteStaffTopY} (64px); block center ~74px.
+ * First melody note (scale degree 1, octave 0) — row 0 under {@link noteStaffTopY} (~24px); block center ~34px.
  * Matches seeded fixtures that place events at beat 0 in measure 0.
  */
 async function clickFirstMelodyNoteArea(page: Page): Promise<void> {
@@ -99,7 +99,7 @@ async function clickFirstMelodyNoteArea(page: Page): Promise<void> {
   const box = await el.boundingBox();
   expect(box, 'editor canvas bounding box').toBeTruthy();
   const x = editorGridPointerX(box!.width, 0.032, 32);
-  const y = Math.min(74, box!.height - 8);
+  const y = Math.min(editorMelodyRow0ApproxCenterY(), box!.height - 8);
   await el.click({ position: { x, y } });
 }
 
@@ -112,7 +112,7 @@ async function clickFirstMelodyNoteNearBeatZero(page: Page): Promise<void> {
   const box = await el.boundingBox();
   expect(box, 'editor canvas bounding box').toBeTruthy();
   const x = editorGridPointerX(box!.width, 0.018, 16);
-  const y = Math.min(74, box!.height - 8);
+  const y = Math.min(editorMelodyRow0ApproxCenterY(), box!.height - 8);
   await el.click({ position: { x, y } });
 }
 
@@ -261,13 +261,13 @@ test.describe('TASK-7.10 — Phase 7 shortcut manager (E2E)', () => {
     expect(box).toBeTruthy();
     /**
      * Empty m1 has no note rect — staff clicks are misses and `chordStripCaretSelectionFromPointer` returns null
-     * for y on the staff (needs chord-strip Y). Use chord strip (~44px). X must fall in measure 1, not m3+:
+     * for y on the staff (needs bottom chord-strip Y). Use chord strip center. X must fall in measure 1, not m3+:
      * with several measures visible, ~50% canvas maps past the second bar — use ~14% (just after m0).
      */
     await canvas.click({
       position: {
         x: editorGridPointerX(box!.width, 0.14, 48),
-        y: Math.min(44, box!.height - 8),
+        y: Math.min(editorChordStripCenterY(box!.height), box!.height - 8),
       },
     });
     await canvas.focus();
