@@ -1,5 +1,6 @@
 import type { SongData, Viewport } from '@vybpad/shared';
 
+import { MELODY_DIATONIC_ROW_COUNT } from './constants';
 import {
   absoluteTickToViewportX,
   BAR_LINE_COLOR,
@@ -8,6 +9,7 @@ import {
   getMeasureStartTicks,
   getMeterAtMeasure,
   measureLengthInTicks,
+  noteStaffTopY,
   TPQN,
 } from './layout';
 
@@ -75,14 +77,23 @@ export function computeGridBackgroundLayout(song: SongData, viewport: Viewport):
   return { barLines, gridLines, measureNumbers };
 }
 
+export interface DrawGridBackgroundOptions {
+  /** When set with {@link gridContentWidthPx}, draws horizontal melody staff row lines (RA-1). */
+  melodyRowHeight?: number;
+  /** Width of the translated grid region (not including any left pitch gutter). */
+  gridContentWidthPx?: number;
+}
+
 /**
- * Paints the grid background: light quarter-note lines, stronger measure bars, measure numbers in the header.
+ * Paints the grid background: light quarter-note lines, stronger measure bars, measure numbers in the header,
+ * and optional horizontal row lines in the melody band (piano roll).
  */
 export function drawGridBackground(
   ctx: CanvasRenderingContext2D,
   song: SongData,
   viewport: Viewport,
   canvasHeight: number,
+  options?: DrawGridBackgroundOptions,
 ): void {
   const { barLines, gridLines, measureNumbers } = computeGridBackgroundLayout(song, viewport);
 
@@ -106,6 +117,23 @@ export function drawGridBackground(
     ctx.lineTo(xi, canvasHeight);
   }
   ctx.stroke();
+
+  const rowH = options?.melodyRowHeight;
+  const gridW = options?.gridContentWidthPx;
+  if (rowH != null && gridW != null && gridW > 0) {
+    const staffTop = noteStaffTopY();
+    ctx.strokeStyle = GRID_LINE_COLOR;
+    ctx.beginPath();
+    for (let r = 0; r <= MELODY_DIATONIC_ROW_COUNT; r++) {
+      const y = Math.round(staffTop + r * rowH - viewport.scrollY) + 0.5;
+      if (y < 0 || y > canvasHeight) {
+        continue;
+      }
+      ctx.moveTo(0, y);
+      ctx.lineTo(gridW, y);
+    }
+    ctx.stroke();
+  }
 
   ctx.fillStyle = MEASURE_NUMBER_COLOR;
   ctx.font = MEASURE_NUMBER_FONT;

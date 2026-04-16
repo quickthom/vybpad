@@ -218,7 +218,8 @@ describe('EditorCanvas — TASK-2.7 mouse interaction (interface contract)', () 
       });
 
       expect(hitSpy).toHaveBeenCalled();
-      const downCall = hitSpy.mock.calls.find(([x, y]) => x === 100 && y === 50);
+      /* Viewport x/y subtract canvas rect and the pitch gutter (40px) so grid space starts at 0. */
+      const downCall = hitSpy.mock.calls.find(([x, y]) => x === 60 && y === 50);
       expect(downCall).toBeDefined();
       const [, , argSong, argViewport] = downCall!;
       expect(argSong).toBe(song);
@@ -577,9 +578,9 @@ describe('EditorCanvas — TASK-2.7 mouse interaction (interface contract)', () 
 
       const canvas = canvasIn(container);
 
-      /* TPQN=48 → ~80px-wide block at 1×; trailing resize strip is the last 8px [72,80]. */
+      /* TPQN=48 → ~80px-wide block at 1×; trailing resize strip is the last 8px [72,80] in grid space (+40px pitch gutter in client X). */
       fireEvent.pointerDown(canvas, {
-        clientX: 76,
+        clientX: 116,
         clientY: 40,
         button: 0,
         buttons: 1,
@@ -587,7 +588,7 @@ describe('EditorCanvas — TASK-2.7 mouse interaction (interface contract)', () 
         pointerType: 'mouse',
       });
       fireEvent.pointerMove(canvas, {
-        clientX: 156,
+        clientX: 196,
         clientY: 40,
         button: 0,
         buttons: 1,
@@ -595,7 +596,7 @@ describe('EditorCanvas — TASK-2.7 mouse interaction (interface contract)', () 
         pointerType: 'mouse',
       });
       fireEvent.pointerUp(canvas, {
-        clientX: 156,
+        clientX: 196,
         clientY: 40,
         button: 0,
         buttons: 0,

@@ -21,6 +21,7 @@ import {
   buildShortcutSongTripletNote,
   buildShortcutSongTwoChords,
 } from '../fixtures/shortcutE2ESeedSong';
+import { editorGridPointerX } from './helpers/editorCanvasCoords';
 import { waitForEditorRouteReady } from './helpers/editorReady';
 import { submitRegisterFormAndExpectProjects } from './helpers/registerFlow';
 import {
@@ -84,7 +85,7 @@ async function clickFirstChordStrip(page: Page): Promise<void> {
   const box = await el.boundingBox();
   expect(box, 'editor canvas bounding box').toBeTruthy();
   /** Beat-0 chord block — use a left-ish fraction so we stay in the first harmony when multiple chords share a measure (TASK-7.5). */
-  const x = Math.min(Math.max(16, box!.width * 0.018), box!.width - 8);
+  const x = editorGridPointerX(box!.width, 0.018, 16);
   const y = Math.min(44, box!.height - 8);
   await el.click({ position: { x, y } });
 }
@@ -97,7 +98,7 @@ async function clickFirstMelodyNoteArea(page: Page): Promise<void> {
   const el = editorCanvas(page);
   const box = await el.boundingBox();
   expect(box, 'editor canvas bounding box').toBeTruthy();
-  const x = Math.min(Math.max(32, box!.width * 0.032), box!.width - 8);
+  const x = editorGridPointerX(box!.width, 0.032, 32);
   const y = Math.min(74, box!.height - 8);
   await el.click({ position: { x, y } });
 }
@@ -110,7 +111,7 @@ async function clickFirstMelodyNoteNearBeatZero(page: Page): Promise<void> {
   const el = editorCanvas(page);
   const box = await el.boundingBox();
   expect(box, 'editor canvas bounding box').toBeTruthy();
-  const x = Math.min(Math.max(16, box!.width * 0.018), box!.width - 8);
+  const x = editorGridPointerX(box!.width, 0.018, 16);
   const y = Math.min(74, box!.height - 8);
   await el.click({ position: { x, y } });
 }
@@ -265,7 +266,7 @@ test.describe('TASK-7.10 — Phase 7 shortcut manager (E2E)', () => {
      */
     await canvas.click({
       position: {
-        x: Math.min(Math.max(48, box!.width * 0.14), box!.width - 8),
+        x: editorGridPointerX(box!.width, 0.14, 48),
         y: Math.min(44, box!.height - 8),
       },
     });

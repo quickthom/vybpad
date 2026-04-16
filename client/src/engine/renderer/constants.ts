@@ -13,3 +13,12 @@ export const PLAYBACK_CURSOR_WIDTH = 2;
 export const PLAYBACK_HIGHLIGHT_COLOR = '#F59E0B';
 export const PLAYBACK_HIGHLIGHT_LINE_WIDTH = 2;
 export const SELECTION_COLOR = 'rgba(59, 130, 246, 0.2)';
+
+/** Left gutter for piano-roll pitch labels (RA-1); multiple of 4px per UX §3. */
+export const PITCH_GUTTER_WIDTH = 40;
+
+/**
+ * Diatonic rows in the melody band (Hookpad-like ladder). Kept in sync with {@link EditorCanvas}
+ * staff layout — changing this requires updating the canvas height formula + QA fixtures.
+ */
+export const MELODY_DIATONIC_ROW_COUNT = 28;
