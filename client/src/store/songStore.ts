@@ -150,6 +150,7 @@ function applyChordEdit(measure: Measure, action: ChordEditAction): void {
         const { id: _ignore, ...rest } = action.changes;
         void _ignore;
         Object.assign(chord, rest, { id: chord.id });
+        sortChords(measure.chords);
       }
       break;
     }
@@ -193,6 +194,7 @@ function applyNoteEdit(measure: Measure, voice: number, action: NoteEditAction):
         const { id: _ignore, ...rest } = action.changes;
         void _ignore;
         Object.assign(note, rest, { id: note.id });
+        sortNotes(lane);
       }
       break;
     }

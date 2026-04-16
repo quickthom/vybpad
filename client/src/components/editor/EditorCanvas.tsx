@@ -1,4 +1,13 @@
-import type { ChordEditAction, NoteEditAction, ScaleDegree, Selection, SongData, Viewport } from '@vybpad/shared';
+import type {
+  ChordEditAction,
+  ChordEvent,
+  NoteEditAction,
+  NoteEvent,
+  ScaleDegree,
+  Selection,
+  SongData,
+  Viewport,
+} from '@vybpad/shared';
 import {
   useCallback,
   useEffect,
@@ -38,11 +47,11 @@ import { computeNoteBlockRect, drawNoteBlocks } from '../../engine/renderer/note
 import { getMeterAtMeasure, measureLengthInTicks } from '../../engine/renderer/tickUtils';
 import { chordStripCaretSelectionFromPointer } from './editorKeyboardLogic';
 import {
+  classifyHorizontalResizeEdge,
   DRAG_THRESHOLD_PX,
   diatonicRowToDegreeAndOctave,
   nearestPitchGridFromStaffRelY,
   pointerEventToViewportXY,
-  trailingResizeStripWidthPx,
   viewportYToStaffRelativeY,
 } from './pointerMath';
 
@@ -98,6 +107,8 @@ type DragSession =
   | {
       phase: 'drag';
       kind: 'move' | 'resize';
+      /** Start vs end edge for `resize` (melody/chord blocks). */
+      resizeEdge?: 'leading' | 'trailing';
       hit: EditorCanvasHit;
       pointerId: number;
       originClientX: number;
@@ -144,6 +155,19 @@ function clampChordDuration(song: SongData, measureIndex: number, beat: number, 
   const len = measureLengthInTicks(getMeterAtMeasure(song, measureIndex));
   const d = Math.round(duration);
   return Math.max(1, Math.min(d, len - beat));
+}
+
+/** Leading-edge resize keeps the note/chord end tick fixed (Hookpad-style). */
+function clampLeadingEdgeResizeTicks(
+  startBeat: number,
+  startDuration: number,
+  deltaTicks: number,
+): { beat: number; duration: number } {
+  const endRel = startBeat + startDuration;
+  let nb = Math.round(startBeat + deltaTicks);
+  nb = Math.max(0, Math.min(nb, endRel - 1));
+  const nd = Math.max(1, endRel - nb);
+  return { beat: nb, duration: nd };
 }
 
 function findVoiceForNote(song: SongData, measureIndex: number, noteId: string): 0 | 1 | 2 | 3 | null {
@@ -206,8 +230,12 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
   const melodyRowHeight = useMemo(() => melodyRowHeightPx(staffSpacing), [staffSpacing]);
 
   const [hoverHit, setHoverHit] = useState<EditorCanvasHit | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
+  /** `resize` uses ew-resize; `move` uses grabbing (OB-3). */
+  const [activeDragKind, setActiveDragKind] = useState<'idle' | 'move' | 'resize'>('idle');
+  const [hoverOnResizeEdge, setHoverOnResizeEdge] = useState(false);
   const rafRef = useRef<number | null>(null);
+  /** Live resize outline during trailing/leading drag (pointer-up commits to store). */
+  const dragResizePreviewRef = useRef<{ hit: EditorCanvasHit; beat: number; duration: number } | null>(null);
   /** Latest paint closure — resize + rAF paths must repaint without relying on stale React state (PAT-008, OB-4). */
   const paintRef = useRef<() => void>(() => {});
 
@@ -254,13 +282,11 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
     smartOctaveEnabled,
   });
 
-  const hitIsResizeEdge = useCallback(
-    (hit: EditorCanvasHit, vx: number): boolean => {
+  const hitResizeEdge = useCallback(
+    (hit: EditorCanvasHit, vx: number): 'leading' | 'trailing' | null => {
       if (hit.kind === 'chord') {
         const r = layoutChordBlock(hit.chord, hit.measureIndex, song, viewport, melodyRowHeight);
-        const right = r.x + r.width;
-        const strip = trailingResizeStripWidthPx(r.width);
-        return strip > 0 && vx >= right - strip && vx <= right;
+        return classifyHorizontalResizeEdge(r.x, r.width, vx);
       }
       const r = computeNoteBlockRect({
         song,
@@ -271,9 +297,7 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
         voiceIndex: hit.voiceIndex,
         melodyRowHeight,
       });
-      const right = r.x + r.width;
-      const strip = trailingResizeStripWidthPx(r.width);
-      return strip > 0 && vx >= right - strip && vx <= right;
+      return classifyHorizontalResizeEdge(r.x, r.width, vx);
     },
     [song, viewport, melodyRowHeight],
   );
@@ -376,6 +400,32 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
       }
     }
 
+    const rp = dragResizePreviewRef.current;
+    if (rp) {
+      ctx.save();
+      ctx.setLineDash([4, 4]);
+      ctx.strokeStyle = 'rgba(37, 99, 235, 0.85)';
+      ctx.lineWidth = 1;
+      if (rp.hit.kind === 'chord') {
+        const ch: ChordEvent = { ...rp.hit.chord, beat: rp.beat, duration: rp.duration };
+        const r = layoutChordBlock(ch, rp.hit.measureIndex, song, viewport, melodyRowHeight);
+        ctx.strokeRect(r.x + 0.5, r.y + 0.5, r.width - 1, r.height - 1);
+      } else {
+        const n: NoteEvent = { ...rp.hit.note, beat: rp.beat, duration: rp.duration };
+        const r = computeNoteBlockRect({
+          song,
+          viewport,
+          measureIndex: rp.hit.measureIndex,
+          note: n,
+          isRest: rp.hit.note.isRest,
+          voiceIndex: rp.hit.voiceIndex,
+          melodyRowHeight,
+        });
+        ctx.strokeRect(r.x + 0.5, r.y + 0.5, r.width - 1, r.height - 1);
+      }
+      ctx.restore();
+    }
+
     drawPlaybackCursor(ctx, song, viewport, playbackTick, h);
     ctx.restore();
 
@@ -449,8 +499,20 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
           const nb = clampChordBeat(song, mi, s.startBeat + deltaTicks, ch.duration);
           if (nb !== ch.beat) onChordEdit(mi, { type: 'move', chordId: ch.id, newBeat: nb });
         } else {
-          const nd = clampChordDuration(song, mi, ch.beat, s.startDuration + deltaTicks);
-          if (nd !== ch.duration) onChordEdit(mi, { type: 'resize', chordId: ch.id, newDuration: nd });
+          const edge = s.resizeEdge ?? 'trailing';
+          if (edge === 'trailing') {
+            const nd = clampChordDuration(song, mi, ch.beat, s.startDuration + deltaTicks);
+            if (nd !== ch.duration) onChordEdit(mi, { type: 'resize', chordId: ch.id, newDuration: nd });
+          } else {
+            const { beat: nb, duration: nd } = clampLeadingEdgeResizeTicks(s.startBeat, s.startDuration, deltaTicks);
+            if (nb !== ch.beat || nd !== ch.duration) {
+              onChordEdit(mi, {
+                type: 'update',
+                chordId: ch.id,
+                changes: { beat: nb, duration: nd },
+              });
+            }
+          }
         }
       } else {
         const note = s.hit.note;
@@ -486,8 +548,20 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
             onNoteEdit(mi, voice, { type: 'update', noteId: note.id, changes: { chromatic: newChr } });
           }
         } else {
-          const nd = clampChordDuration(song, mi, note.beat, s.startDuration + deltaTicks);
-          if (nd !== note.duration) onNoteEdit(mi, voice, { type: 'resize', noteId: note.id, newDuration: nd });
+          const edge = s.resizeEdge ?? 'trailing';
+          if (edge === 'trailing') {
+            const nd = clampChordDuration(song, mi, note.beat, s.startDuration + deltaTicks);
+            if (nd !== note.duration) onNoteEdit(mi, voice, { type: 'resize', noteId: note.id, newDuration: nd });
+          } else {
+            const { beat: nb, duration: nd } = clampLeadingEdgeResizeTicks(s.startBeat, s.startDuration, deltaTicks);
+            if (nb !== note.beat || nd !== note.duration) {
+              onNoteEdit(mi, voice, {
+                type: 'update',
+                noteId: note.id,
+                changes: { beat: nb, duration: nd },
+              });
+            }
+          }
         }
       }
       sessionRef.current = null;
@@ -531,11 +605,12 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
     keyboardTargetMeasureRef.current = null;
     onSelectionChange(selectionFromHit(hit));
 
-    const onResizeEdge = hitIsResizeEdge(hit, vx);
-    if (onResizeEdge) {
+    const resizeEdge = hitResizeEdge(hit, vx);
+    if (resizeEdge != null) {
       sessionRef.current = {
         phase: 'drag',
         kind: 'resize',
+        resizeEdge,
         hit,
         pointerId: e.pointerId,
         originClientX: cx,
@@ -550,7 +625,7 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
             }
           : {}),
       };
-      setIsDragging(true);
+      setActiveDragKind('resize');
       return;
     }
 
@@ -583,6 +658,43 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
       const { x: vx, y: vy } = pointerEventToViewportXY(canvas, mcx, mcy, PITCH_GUTTER_WIDTH);
       const hit = hitTestEditorCanvas(vx, vy, song, viewport, melodyRowHeight, melodyVoiceVisible);
       setHoverHit(hit);
+      setHoverOnResizeEdge(hit != null && hitResizeEdge(hit, vx) != null);
+      scheduleRedraw();
+      return;
+    }
+
+    if (sess.phase === 'drag' && sess.kind === 'resize') {
+      const origin = pointerEventToViewportXY(canvas, sess.originClientX, sess.originClientY, PITCH_GUTTER_WIDTH);
+      const end = pointerEventToViewportXY(canvas, mcx, mcy, PITCH_GUTTER_WIDTH);
+      const deltaTicks = horizontalPxToTicks(end.x - origin.x, viewport.zoom);
+      const edge = sess.resizeEdge ?? 'trailing';
+      if (sess.hit.kind === 'chord') {
+        const ch = sess.hit.chord;
+        const mi = sess.hit.measureIndex;
+        let beat = ch.beat;
+        let duration = ch.duration;
+        if (edge === 'trailing') {
+          duration = clampChordDuration(song, mi, ch.beat, sess.startDuration + deltaTicks);
+        } else {
+          const o = clampLeadingEdgeResizeTicks(sess.startBeat, sess.startDuration, deltaTicks);
+          beat = o.beat;
+          duration = o.duration;
+        }
+        dragResizePreviewRef.current = { hit: sess.hit, beat, duration };
+      } else {
+        const note = sess.hit.note;
+        const mi = sess.hit.measureIndex;
+        let beat = note.beat;
+        let duration = note.duration;
+        if (edge === 'trailing') {
+          duration = clampChordDuration(song, mi, note.beat, sess.startDuration + deltaTicks);
+        } else {
+          const o = clampLeadingEdgeResizeTicks(sess.startBeat, sess.startDuration, deltaTicks);
+          beat = o.beat;
+          duration = o.duration;
+        }
+        dragResizePreviewRef.current = { hit: sess.hit, beat, duration };
+      }
       scheduleRedraw();
       return;
     }
@@ -607,7 +719,7 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
           startOctave: sess.startOctave,
           startChromatic: sess.startChromatic,
         };
-        setIsDragging(true);
+        setActiveDragKind('move');
         setHoverHit(null);
       }
       return;
@@ -634,13 +746,21 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
         endDrag(canvas, ucx, ucy);
       }
       sessionRef.current = null;
-      setIsDragging(false);
+      dragResizePreviewRef.current = null;
+      setActiveDragKind('idle');
     }
     scheduleRedraw();
   };
 
   /** Real-browser drag affordance (Phase 2 archive: not “dead” in jsdom — hover hit-testing is limited in tests, but classes are live in Chromium/WebKit). */
-  const cursorClass = isDragging ? 'cursor-grabbing' : hoverHit ? 'cursor-grab' : 'cursor-default';
+  const cursorClass =
+    activeDragKind === 'resize' || hoverOnResizeEdge
+      ? 'cursor-ew-resize'
+      : activeDragKind === 'move'
+        ? 'cursor-grabbing'
+        : hoverHit
+          ? 'cursor-grab'
+          : 'cursor-default';
 
   // TODO(Designer): optional side-rail caption for chord shortcuts (F08.2); aria-label covers screen readers until then.
 
