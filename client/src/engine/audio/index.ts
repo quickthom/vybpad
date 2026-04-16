@@ -14,7 +14,7 @@ export type {
   PlaybackInitErrorCode,
   PlaybackInitStatus,
 } from './playbackErrors';
-export { createPlaybackEngine } from './createPlaybackEngine';
+export { createPlaybackEngine, setPlaybackMelodyVoiceVisibleForScheduling } from './createPlaybackEngine';
 export { formatTransportBeat } from './formatTransportBeat';
 export {
   assertValidHarmonyVoicingSong,

@@ -8,10 +8,12 @@ import { immer } from 'zustand/middleware/immer';
 import {
   getPlaybackEngine,
   getPlaybackInitErrorCode,
+  setPlaybackMelodyVoiceVisibleForScheduling,
   type PlaybackInitErrorCode,
   type PlaybackInitStatus,
 } from '../engine/audio';
 import { useSongStore } from './songStore';
+import { useUIStore } from './uiStore';
 
 export type { PlaybackInitErrorCode, PlaybackInitStatus };
 
@@ -59,6 +61,7 @@ function syncEngineFromSong(): void {
   if (!engine.isReady()) {
     return;
   }
+  setPlaybackMelodyVoiceVisibleForScheduling(useUIStore.getState().melodyVoiceVisible);
   engine.loadSong(useSongStore.getState().song);
 }
 
