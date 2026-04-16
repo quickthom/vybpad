@@ -533,6 +533,8 @@ interface ChordPaletteProps {
   libraryTab?: "magic" | "popular" | "search" | "progressions" | "bassSets";
   /** UI-W5 — when parent controls the library tab, notify on change. */
   onLibraryTabChange?: (tab: "magic" | "popular" | "search" | "progressions" | "bassSets") => void;
+  /** UI-W9 (RA-19) — parent sets browse mode to diatonic when user clicks Reset; palette clears search and may reset library tab / borrowed source. */
+  onBrowseDefaultsReset?: () => void;
 }
 ```
 
