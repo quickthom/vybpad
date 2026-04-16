@@ -13,6 +13,7 @@ import { useEffect, useRef } from 'react';
 import {
   buildDefaultNotePayload,
   buildDiatonicChordPayload,
+  buildRestNotePayload,
   clampDurationToMeasure,
   cycleSecondaryChordEdit,
   DURATION_KEYS,
@@ -354,6 +355,155 @@ export function applyChordPalettePayloadFromEditor(
   } else {
     ctx.onSelectionChange(tableModeAdvanceRange(songAfter, measureIndex, nb, durClamped));
   }
+  return true;
+}
+
+/**
+ * Left-panel melody pitch buttons (UI-W3) — same placement/selection advancement rules as digit keys in
+ * {@link handleEditorKeydown} when `shouldUseNoteEntry` is true, plus collapsed table caret (`range`) inserts at the caret beat.
+ */
+export function applyMelodyPitchDegreeFromEditor(ctx: EditorKeyboardContext, degree: ScaleDegree): boolean {
+  const selection = pickSelection(ctx);
+  if (selection?.type === 'range') {
+    const isCollapsedCaret = selection.rangeStart === selection.rangeEnd && ctx.entryMode === 'table';
+    if (!isCollapsedCaret) return false;
+  }
+
+  if (ctx.entryMode === 'text' && !ctx.textDurationArmedRef.current) return false;
+
+  const measureIndex = resolveMeasureIndexForKeyboardDigit(
+    selection,
+    ctx.viewport,
+    pickSong(ctx),
+    ctx.keyboardTargetMeasureRef,
+  );
+
+  const selNoteId = selection?.type === 'note' ? selection.eventIds?.[0] : undefined;
+  const song = pickSong(ctx);
+  const voice =
+    selNoteId != null ? (findVoiceForNote(song, measureIndex, selNoteId) ?? ctx.activeVoice) : ctx.activeVoice;
+
+  if (ctx.entryMode === 'text') {
+    if (!selNoteId) return false;
+    const note = song.measures[measureIndex]?.notes[voice]?.find((n) => n.id === selNoteId);
+    if (!note) return false;
+    ctx.textDurationArmedRef.current = false;
+    const durClamped = clampDurationToMeasure(song, measureIndex, note.beat, ctx.currentDurationTicks);
+    ctx.onNoteEdit(measureIndex, voice, {
+      type: 'update',
+      noteId: selNoteId,
+      changes: { scaleDegree: degree, duration: durClamped, isRest: false },
+    });
+    return true;
+  }
+
+  const nb = tableInsertBeatFromSelection(selection, song, measureIndex, 'note', voice);
+  if (nb == null) return false;
+  const durClamped = clampDurationToMeasure(song, measureIndex, nb, ctx.currentDurationTicks);
+  const payload = buildDefaultNotePayload(song, measureIndex, degree, nb, durClamped);
+  ctx.onNoteEdit(measureIndex, voice, { type: 'add', note: payload });
+
+  const songAfter = pickSong(ctx);
+  const m = songAfter.measures[measureIndex];
+  const nid = m ? findNoteIdByPlacement(m.notes[voice], nb, degree, durClamped) : null;
+  if (ctx.getSongAfterMutation && nid) {
+    if (entryEndsAtOrPastMeasureEnd(songAfter, measureIndex, nb, durClamped) && measureIndex + 1 < songAfter.measures.length) {
+      ctx.keyboardTargetMeasureRef.current = measureIndex + 1;
+      ctx.onSelectionChange(null);
+    } else {
+      ctx.onSelectionChange({ type: 'note', measureIndex, eventIds: [nid] });
+    }
+  } else {
+    ctx.onSelectionChange(tableModeAdvanceRange(pickSong(ctx), measureIndex, nb, durClamped));
+  }
+  return true;
+}
+
+/**
+ * Left-panel rest — inserts at table caret or appends in the active voice (same beat rules as melody pitch).
+ */
+export function applyMelodyRestFromEditor(ctx: EditorKeyboardContext): boolean {
+  const selection = pickSelection(ctx);
+  if (selection?.type === 'range') {
+    const isCollapsedCaret = selection.rangeStart === selection.rangeEnd && ctx.entryMode === 'table';
+    if (!isCollapsedCaret) return false;
+  }
+
+  if (ctx.entryMode === 'text' && !ctx.textDurationArmedRef.current) return false;
+
+  const measureIndex = resolveMeasureIndexForKeyboardDigit(
+    selection,
+    ctx.viewport,
+    pickSong(ctx),
+    ctx.keyboardTargetMeasureRef,
+  );
+
+  const selNoteId = selection?.type === 'note' ? selection.eventIds?.[0] : undefined;
+  const song = pickSong(ctx);
+  const voice =
+    selNoteId != null ? (findVoiceForNote(song, measureIndex, selNoteId) ?? ctx.activeVoice) : ctx.activeVoice;
+
+  if (ctx.entryMode === 'text') {
+    if (!selNoteId) return false;
+    const note = song.measures[measureIndex]?.notes[voice]?.find((n) => n.id === selNoteId);
+    if (!note) return false;
+    ctx.textDurationArmedRef.current = false;
+    const durClamped = clampDurationToMeasure(song, measureIndex, note.beat, ctx.currentDurationTicks);
+    ctx.onNoteEdit(measureIndex, voice, {
+      type: 'update',
+      noteId: selNoteId,
+      changes: {
+        isRest: true,
+        duration: durClamped,
+      },
+    });
+    return true;
+  }
+
+  const nb = tableInsertBeatFromSelection(selection, song, measureIndex, 'note', voice);
+  if (nb == null) return false;
+  const durClamped = clampDurationToMeasure(song, measureIndex, nb, ctx.currentDurationTicks);
+  const payload = buildRestNotePayload(nb, durClamped);
+  ctx.onNoteEdit(measureIndex, voice, { type: 'add', note: payload });
+
+  const songAfter = pickSong(ctx);
+  const m = songAfter.measures[measureIndex];
+  let nid: string | null = null;
+  if (m) {
+    const lane = m.notes[voice];
+    for (let i = lane.length - 1; i >= 0; i--) {
+      const n = lane[i];
+      if (n && n.beat === nb && n.duration === durClamped && n.isRest) {
+        nid = n.id;
+        break;
+      }
+    }
+  }
+  if (ctx.getSongAfterMutation && nid) {
+    if (entryEndsAtOrPastMeasureEnd(songAfter, measureIndex, nb, durClamped) && measureIndex + 1 < songAfter.measures.length) {
+      ctx.keyboardTargetMeasureRef.current = measureIndex + 1;
+      ctx.onSelectionChange(null);
+    } else {
+      ctx.onSelectionChange({ type: 'note', measureIndex, eventIds: [nid] });
+    }
+  } else {
+    ctx.onSelectionChange(tableModeAdvanceRange(pickSong(ctx), measureIndex, nb, durClamped));
+  }
+  return true;
+}
+
+/** Half-step chromatic nudge on a selected note (PAT-018); used by left-panel Raise/Lower (UI-W3). */
+export function applyMelodyChromaticNudgeFromEditor(ctx: EditorKeyboardContext, delta: -1 | 1): boolean {
+  const sel = pickSelection(ctx);
+  if (sel?.type !== 'note' || !sel.eventIds?.[0]) return false;
+  const song = pickSong(ctx);
+  const id = sel.eventIds[0];
+  const voice = findVoiceForNote(song, sel.measureIndex, id);
+  if (voice == null) return false;
+  const note = song.measures[sel.measureIndex]?.notes[voice].find((n) => n.id === id);
+  if (!note || note.isRest) return false;
+  const next = note.chromatic + delta;
+  ctx.onNoteEdit(sel.measureIndex, voice, { type: 'update', noteId: id, changes: { chromatic: next } });
   return true;
 }
 

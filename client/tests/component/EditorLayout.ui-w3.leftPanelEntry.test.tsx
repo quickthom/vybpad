@@ -130,6 +130,20 @@ function chordEvent(
   };
 }
 
+/** Compare placement semantics without unstable `id` values from `crypto.randomUUID()`. */
+function notesEqualSansIds(a: NoteEvent[], b: NoteEvent[]): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    const x = a[i];
+    const y = b[i];
+    if (!x || !y) return false;
+    const { id: _ix, ...xr } = x;
+    const { id: _iy, ...yr } = y;
+    if (JSON.stringify(xr) !== JSON.stringify(yr)) return false;
+  }
+  return true;
+}
+
 function noteEvent(
   id: string,
   beat: number,
@@ -240,7 +254,7 @@ describe('EditorLayout — UI-W3 — melody entry vs keyboard baseline (RA-6)', 
 
     await waitFor(() => {
       const notes = useSongStore.getState().song.measures[0]!.notes[0];
-      expect(notes).toEqual(keyboardSnapshot);
+      expect(notesEqualSansIds(notes, keyboardSnapshot)).toBe(true);
     });
   });
 

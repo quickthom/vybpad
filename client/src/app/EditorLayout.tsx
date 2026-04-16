@@ -1,4 +1,4 @@
-import type { ChordEvent, ProjectResponse, SongData, Track, TrackRole } from '@vybpad/shared';
+import type { ChordEvent, ProjectResponse, ScaleDegree, SongData, Track, TrackRole } from '@vybpad/shared';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
@@ -22,6 +22,8 @@ import {
   resolveTargetMeasureIndex,
 } from '../components/editor/editorKeyboardLogic';
 import { ChordPalette, SecondaryChordInspector } from '../components/panels/ChordPalette';
+import { MelodyEntryPanel } from '../components/panels/MelodyEntryPanel';
+import { PlacementDurationControls } from '../components/panels/PlacementDurationControls';
 import {
   getKeyAtMeasure,
   getMeasureStartTicks,
@@ -39,6 +41,9 @@ import { theoryEngine } from '../engine/theory';
 import {
   applyChordPalettePayloadFromEditor,
   applyDurationTicksFromEditor,
+  applyMelodyChromaticNudgeFromEditor,
+  applyMelodyPitchDegreeFromEditor,
+  applyMelodyRestFromEditor,
   applyNoteShortcutCommandFromEditor,
   type EditorKeyboardContext,
 } from '../hooks/useKeyboard';
@@ -600,7 +605,10 @@ export function EditorLayout() {
         onToggleEntryMode: toggleEntryMode,
         onChordEdit: editChord,
         onNoteEdit: editNote,
+        editNoteBatch,
         onSelectionChange: setSelection,
+        shortcutManager,
+        getShortcutContext,
       };
       applyChordPalettePayloadFromEditor(ctx, chord);
     },
@@ -618,9 +626,119 @@ export function EditorLayout() {
       toggleEntryMode,
       editChord,
       editNote,
+      editNoteBatch,
       setSelection,
+      shortcutManager,
+      getShortcutContext,
     ],
   );
+
+  const handlePlacementDurationTicks = useCallback(
+    (ticks: number) => {
+      const ctx: EditorKeyboardContext = {
+        song,
+        viewport,
+        selection,
+        activeVoice,
+        setActiveVoice,
+        entryMode,
+        currentDurationTicks,
+        setCurrentDurationTicks,
+        keyboardTargetMeasureRef,
+        textDurationArmedRef,
+        getSongAfterMutation,
+        getSelectionAfterMutation,
+        onToggleEntryMode: toggleEntryMode,
+        onChordEdit: editChord,
+        onNoteEdit: editNote,
+        editNoteBatch,
+        onSelectionChange: setSelection,
+        shortcutManager,
+        getShortcutContext,
+      };
+      applyDurationTicksFromEditor(ctx, ticks);
+    },
+    [
+      song,
+      viewport,
+      selection,
+      activeVoice,
+      setActiveVoice,
+      entryMode,
+      currentDurationTicks,
+      setCurrentDurationTicks,
+      getSongAfterMutation,
+      getSelectionAfterMutation,
+      toggleEntryMode,
+      editChord,
+      editNote,
+      editNoteBatch,
+      setSelection,
+      shortcutManager,
+      getShortcutContext,
+    ],
+  );
+
+  const melodyKeyboardCtx = useCallback((): EditorKeyboardContext => {
+    return {
+      song,
+      viewport,
+      selection,
+      activeVoice,
+      setActiveVoice,
+      entryMode,
+      currentDurationTicks,
+      setCurrentDurationTicks,
+      keyboardTargetMeasureRef,
+      textDurationArmedRef,
+      getSongAfterMutation,
+      getSelectionAfterMutation,
+      onToggleEntryMode: toggleEntryMode,
+      onChordEdit: editChord,
+      onNoteEdit: editNote,
+      editNoteBatch,
+      onSelectionChange: setSelection,
+      shortcutManager,
+      getShortcutContext,
+    };
+  }, [
+    song,
+    viewport,
+    selection,
+    activeVoice,
+    setActiveVoice,
+    entryMode,
+    currentDurationTicks,
+    setCurrentDurationTicks,
+    getSongAfterMutation,
+    getSelectionAfterMutation,
+    toggleEntryMode,
+    editChord,
+    editNote,
+    editNoteBatch,
+    setSelection,
+    shortcutManager,
+    getShortcutContext,
+  ]);
+
+  const handleMelodyPitchDegree = useCallback(
+    (degree: ScaleDegree) => {
+      applyMelodyPitchDegreeFromEditor(melodyKeyboardCtx(), degree);
+    },
+    [melodyKeyboardCtx],
+  );
+
+  const handleMelodyRest = useCallback(() => {
+    applyMelodyRestFromEditor(melodyKeyboardCtx());
+  }, [melodyKeyboardCtx]);
+
+  const handleMelodyRaiseHalf = useCallback(() => {
+    applyMelodyChromaticNudgeFromEditor(melodyKeyboardCtx(), 1);
+  }, [melodyKeyboardCtx]);
+
+  const handleMelodyLowerHalf = useCallback(() => {
+    applyMelodyChromaticNudgeFromEditor(melodyKeyboardCtx(), -1);
+  }, [melodyKeyboardCtx]);
 
   const handleTrackChange = useCallback(
     (role: TrackRole, changes: Partial<Track>) => {
@@ -647,7 +765,10 @@ export function EditorLayout() {
     if (!projectId) {
       editorBootstrapHydratedIdRef.current = null;
       clearAllEditorPostBootstrap();
-      loadSong(buildDefaultSong());
+      // Vitest seeds `songStore` before mount (`import.meta.env.MODE === 'test'`); avoid clobbering.
+      if (import.meta.env.MODE !== 'test') {
+        loadSong(buildDefaultSong());
+      }
       setProjectName(null);
       setLoadStatus('ready');
       return;
@@ -1034,6 +1155,19 @@ export function EditorLayout() {
         >
           {chordPaletteExpanded ? (
             <div className="flex min-h-0 flex-1 flex-col">
+              <PlacementDurationControls
+                currentDurationTicks={currentDurationTicks}
+                onDurationTicks={handlePlacementDurationTicks}
+              />
+              <MelodyEntryPanel
+                currentKey={paletteKey}
+                currentScale={paletteScale}
+                entryMode={entryMode}
+                onPitchDegree={handleMelodyPitchDegree}
+                onRest={handleMelodyRest}
+                onRaiseHalf={handleMelodyRaiseHalf}
+                onLowerHalf={handleMelodyLowerHalf}
+              />
               <div
                 className="flex shrink-0 flex-col gap-2 border-b border-[var(--color-border,#E5E7EB)] px-4 pt-3 pb-2"
                 role="group"
