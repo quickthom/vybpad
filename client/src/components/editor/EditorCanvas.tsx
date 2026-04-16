@@ -18,7 +18,13 @@ import type { EditorLabelMode, StaffSpacing } from '../../types/editorChrome';
 import { useUIStore } from '../../store/uiStore';
 import { melodyRowHeightPx } from '../../utils/staffSpacing';
 import { theoryEngine } from '../../engine/theory';
-import { CHORD_AREA_HEIGHT, MEASURE_HEADER_HEIGHT, SELECTION_COLOR } from '../../engine/renderer/constants';
+import {
+  CHORD_AREA_HEIGHT,
+  MEASURE_HEADER_HEIGHT,
+  MELODY_DIATONIC_ROW_COUNT,
+  PITCH_GUTTER_WIDTH,
+  SELECTION_COLOR,
+} from '../../engine/renderer/constants';
 import { drawPlaybackCursor } from '../../engine/renderer/drawPlaybackCursor';
 import { drawPlaybackHighlight } from '../../engine/renderer/drawPlaybackHighlight';
 import { drawChordBlocks, layoutChordBlock } from '../../engine/renderer/chordBlocks';
@@ -26,6 +32,7 @@ import { drawGridBackground } from '../../engine/renderer/gridBackground';
 import type { EditorCanvasHit } from '../../engine/renderer/hitTest';
 import { hitTestEditorCanvas } from '../../engine/renderer/hitTest';
 import { getMeasureStartTicks, horizontalPxToTicks, horizontalTicksToPx } from '../../engine/renderer/layout';
+import { computePitchAxisLabelsInViewport, drawPitchAxisGutter } from '../../engine/renderer/pitchAxisLayout';
 import { drawGuideOverlay } from '../../engine/renderer/guideOverlay';
 import { computeNoteBlockRect, drawNoteBlocks } from '../../engine/renderer/noteBlocks';
 import { getMeterAtMeasure, measureLengthInTicks } from '../../engine/renderer/tickUtils';
@@ -81,8 +88,6 @@ export interface EditorCanvasProps {
 const SELECTION_STROKE = 'rgba(37, 99, 235, 0.8)';
 const HOVER_STROKE = 'rgba(59, 130, 246, 0.7)';
 
-const STAFF_DIATONIC_ROWS = 28;
-
 type DragSession =
   | {
       phase: 'drag';
@@ -120,7 +125,7 @@ function visibleMeasuresWidthPx(song: SongData, viewport: Viewport): number {
 }
 
 function canvasHeightPx(melodyRowHeight: number): number {
-  return MEASURE_HEADER_HEIGHT + CHORD_AREA_HEIGHT + STAFF_DIATONIC_ROWS * melodyRowHeight;
+  return MEASURE_HEADER_HEIGHT + CHORD_AREA_HEIGHT + MELODY_DIATONIC_ROW_COUNT * melodyRowHeight;
 }
 
 function clampChordBeat(song: SongData, measureIndex: number, beat: number, duration: number): number {
@@ -269,6 +274,7 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
     const dpr = window.devicePixelRatio || 1;
     const w = canvas.width / dpr;
     const h = canvas.height / dpr;
+    const gridContentW = Math.max(0, w - PITCH_GUTTER_WIDTH);
 
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -277,9 +283,17 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
     ctx.fillStyle = '#FFFFFF';
     ctx.fillRect(0, 0, w, h);
 
+    const pitchLabels = computePitchAxisLabelsInViewport(song, viewport, h, melodyRowHeight);
+
     // Main canvas layer stack (bottom → top). Keep in sync with hitTest.ts global Z-order notes.
+    // Grid + blocks are translated past the pitch gutter; gutter labels paint afterward on the left strip.
+    ctx.save();
+    ctx.translate(PITCH_GUTTER_WIDTH, 0);
     // drawGridBackground → drawChordBlocks → drawNoteBlocks → drawGuideOverlay → drawPlaybackHighlight → hover/selection → cursor.
-    drawGridBackground(ctx, song, viewport, h);
+    drawGridBackground(ctx, song, viewport, h, {
+      melodyRowHeight,
+      gridContentWidthPx: gridContentW,
+    });
     drawChordBlocks(ctx, song, viewport, theoryEngine, { colorScheme, labelMode });
     drawNoteBlocks(ctx, song, viewport, {
       colorScheme,
@@ -346,6 +360,9 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
     }
 
     drawPlaybackCursor(ctx, song, viewport, playbackTick, h);
+    ctx.restore();
+
+    drawPitchAxisGutter(ctx, pitchLabels, PITCH_GUTTER_WIDTH);
   }, [
     song,
     viewport,
@@ -369,7 +386,7 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
     const resize = () => {
       const parent = canvas.parentElement;
       const cssW = parent?.clientWidth ?? 800;
-      const contentW = Math.max(visibleMeasuresWidthPx(song, viewport), cssW);
+      const contentW = PITCH_GUTTER_WIDTH + Math.max(visibleMeasuresWidthPx(song, viewport), cssW);
       const cssH = canvasHeightPx(melodyRowHeight);
       const dpr = window.devicePixelRatio || 1;
       canvas.style.width = `${contentW}px`;
@@ -397,8 +414,8 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
       const s = sessionRef.current;
       if (!s || s.phase !== 'drag') return;
 
-      const origin = pointerEventToViewportXY(canvas, s.originClientX, s.originClientY);
-      const end = pointerEventToViewportXY(canvas, clientX, clientY);
+      const origin = pointerEventToViewportXY(canvas, s.originClientX, s.originClientY, PITCH_GUTTER_WIDTH);
+      const end = pointerEventToViewportXY(canvas, clientX, clientY, PITCH_GUTTER_WIDTH);
       const dvx = end.x - origin.x;
       const deltaTicks = horizontalPxToTicks(dvx, viewport.zoom);
 
@@ -462,7 +479,7 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
     canvas.focus({ preventScroll: true });
     const cx = e.clientX ?? 0;
     const cy = e.clientY ?? 0;
-    const { x: vx, y: vy } = pointerEventToViewportXY(canvas, cx, cy);
+    const { x: vx, y: vy } = pointerEventToViewportXY(canvas, cx, cy, PITCH_GUTTER_WIDTH);
     const hit = hitTestEditorCanvas(vx, vy, song, viewport, melodyRowHeight);
 
     if (typeof canvas.setPointerCapture === 'function') {
@@ -540,7 +557,7 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
     const sess = sessionRef.current;
 
     if (!sess) {
-      const { x: vx, y: vy } = pointerEventToViewportXY(canvas, mcx, mcy);
+      const { x: vx, y: vy } = pointerEventToViewportXY(canvas, mcx, mcy, PITCH_GUTTER_WIDTH);
       const hit = hitTestEditorCanvas(vx, vy, song, viewport, melodyRowHeight);
       setHoverHit(hit);
       scheduleRedraw();

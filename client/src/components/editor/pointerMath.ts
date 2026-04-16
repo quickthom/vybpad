@@ -3,6 +3,8 @@ import type { ScaleDegree } from '@vybpad/shared';
 import { NOTE_HEIGHT } from '../../engine/renderer/constants';
 import { diatonicRowIndex, noteStaffTopY } from '../../engine/renderer/layout';
 
+export { diatonicRowToDegreeAndOctave } from '../../engine/renderer/layout';
+
 /** Trailing-edge resize hit (CSS / viewport pixels), aligned with UX §3 resize handle width. */
 export const RESIZE_EDGE_PX = 8;
 
@@ -28,12 +30,14 @@ export function pointerEventToViewportXY(
   canvas: HTMLCanvasElement,
   clientX: number,
   clientY: number,
+  /** When the canvas reserves a left strip (e.g. pitch gutter), subtract so x aligns with grid space. */
+  contentInsetLeft = 0,
 ): { x: number; y: number } {
   const rect = canvas.getBoundingClientRect();
   const left = Number.isFinite(rect.left) ? rect.left : 0;
   const top = Number.isFinite(rect.top) ? rect.top : 0;
   return {
-    x: clientX - left,
+    x: clientX - left - contentInsetLeft,
     y: clientY - top,
   };
 }
@@ -72,12 +76,6 @@ export function nearestPitchGridFromStaffRelY(
     }
   }
   return best;
-}
-
-export function diatonicRowToDegreeAndOctave(row: number): { scaleDegree: ScaleDegree; octave: number } {
-  const octave = Math.floor(row / 7);
-  const sd = (row % 7) + 1;
-  return { scaleDegree: sd as ScaleDegree, octave };
 }
 
 export function degreeOctaveToDiatonicRow(scaleDegree: ScaleDegree, octave: number): number {
