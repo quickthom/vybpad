@@ -18,7 +18,7 @@
 
   Stop/remove when done: `docker stop vybpad-ci-pg && docker rm vybpad-ci-pg`
 
-  If you use another Postgres (e.g. Docker Compose defaults), set `DATABASE_URL` accordingly and ensure the DB exists before `prisma db push`.
+  If you use another Postgres (e.g. Docker Compose defaults), set `DATABASE_URL` accordingly and ensure the DB exists before `prisma migrate deploy`. On a **fresh** database, migrations apply cleanly. If you see **P3005** (non-empty DB without migration history — e.g. previously used `db push` only), either drop/recreate the database or baseline: `node node_modules/prisma/build/index.js migrate resolve --applied 20260415120000_init --schema=prisma/schema.prisma` when the schema already matches that migration.
 
 ## Worktree setup (agents working in a git worktree)
 
@@ -47,7 +47,7 @@ Each git worktree is an **independent directory** — it does not inherit the pa
 
    ```bash
    npm run db:generate --workspace=@vybpad/server
-   node node_modules/prisma/build/index.js db push --schema=prisma/schema.prisma
+   node node_modules/prisma/build/index.js migrate deploy --schema=prisma/schema.prisma
    ```
 
 4. **Install Playwright browsers:** `npx playwright install chromium`
@@ -77,7 +77,7 @@ From the repository root:
 ```bash
 npm ci
 npm run db:generate --workspace=@vybpad/server
-node node_modules/prisma/build/index.js db push --schema=prisma/schema.prisma
+node node_modules/prisma/build/index.js migrate deploy --schema=prisma/schema.prisma
 npm run build
 npm run lint
 npm test

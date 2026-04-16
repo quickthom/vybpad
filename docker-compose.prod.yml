@@ -1,0 +1,50 @@
+# Production-shaped stack — no bind mounts (TASK-8.5). HTTP only; add TLS in front — docs/HTTPS.md
+name: vybpad-prod
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-vybpad}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-vybpad}
+      POSTGRES_DB: ${POSTGRES_DB:-vybpad}
+    volumes:
+      - pgdata_prod:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-vybpad} -d ${POSTGRES_DB:-vybpad}']
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/prod.api.Dockerfile
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      PORT: '3001'
+      NODE_ENV: production
+      CORS_ORIGIN: ${CORS_ORIGIN}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  web:
+    build:
+      context: .
+      dockerfile: docker/prod.web.Dockerfile
+      args:
+        VITE_API_URL: ${PUBLIC_ORIGIN}
+    restart: unless-stopped
+    ports:
+      - '${PUBLIC_PORT:-8080}:80'
+    depends_on:
+      - api
+
+volumes:
+  pgdata_prod:

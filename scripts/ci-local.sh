@@ -20,8 +20,8 @@ npm ci
 echo "==> prisma generate"
 # Locked Prisma 6.x at repo root (`npx prisma` may resolve Prisma 7 and break this schema).
 npm run db:generate --workspace=@vybpad/server
-echo "==> prisma db push"
-node node_modules/prisma/build/index.js db push --schema=prisma/schema.prisma
+echo "==> prisma migrate deploy"
+node node_modules/prisma/build/index.js migrate deploy --schema=prisma/schema.prisma
 echo "==> npm run build"
 npm run build
 echo "==> npm run lint"

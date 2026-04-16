@@ -193,6 +193,7 @@ Auth is infrastructure, not a feature surface. Login/register are minimal UI. No
 | **HTTPS** | Required. Web Audio API and Web MIDI API require secure context. TLS terminated at reverse proxy. |
 | **Static assets** | SPA bundle served by Nginx. Piano samples served from `/samples/` path, cached aggressively. |
 | **Database backups** | PostgreSQL `pg_dump` on schedule (provider-dependent) |
+| **Schema changes** | Prisma migrations in `prisma/migrations/`; production and CI use `prisma migrate deploy` (never `db push` on user-facing databases) — see `docs/PRODUCTION.md` |
 
 No CDN, S3, or separate file storage required for MVP. Audio exports (MIDI, future MP3) are generated client-side and downloaded directly.
 

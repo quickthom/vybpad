@@ -1,0 +1,22 @@
+node_modules
+**/node_modules
+.git
+.gitignore
+coverage
+**/*.md
+!README.md
+client/build
+client/dist
+server/dist
+shared/dist
+# Stale TS incremental state from the host makes `tsc --build` skip emit in the image
+**/tsconfig.tsbuildinfo
+**/*.tsbuildinfo
+.env
+.env.*
+!.env.example
+worktrees
+.cursor
+**/tests/e2e/snapshots
+playwright-report
+test-results
