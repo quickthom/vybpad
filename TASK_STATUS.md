@@ -32,3 +32,18 @@ Phases 0 (7/7), 1A (7/7), 1B (6/6), Phase 2 (15/15), Phase 3 (10/10), Phase 4 (1
 | 8.8 | Tech Lead | — | merged | — | 8.5–8.7 | `docker compose` smoke; HTTPS smoke via tunnel URL (ephemeral — rebuild client with `PUBLIC_ORIGIN` for any new public hostname) |
 
 ---
+
+## UI Remediation — REF_AUDIT_1 (Waves 1–3)
+
+> Sequencing: [ui_remediation_sequencing_ec8db0c2.plan.md](ui_remediation_sequencing_ec8db0c2.plan.md); Wave 2–3 detail: [docs/audit/UI_REMEDIATION_WAVES_2_3.md](docs/audit/UI_REMEDIATION_WAVES_2_3.md).
+
+| Task | Role | Branch | Status | PR | Depends | Notes |
+|---|---|---|---|---|---|---|
+| UI-W1 | Builder | — | merged | — (local merge) | None | RA-1 + RA-3 piano roll + horizontal note bars; branch `phase-8/ui-remediation-wave1` @521e415; push/PR pending HITL credentials |
+| UI-W1 | QA | — | merged | — | None | Tests landed with UI-W1 |
+| UI-W2 | Builder | phase-8/ui-remediation-wave2 | in-progress | — | UI-W1 | RA-2: bottom chord strip |
+| UI-W2 | QA | phase-8/ui-remediation-wave2 | in-progress | — | UI-W1 | — |
+| UI-W3 | Builder | — | pending | — | UI-W2 merged | RA-5 + RA-6: left panel duration + note entry |
+| UI-W3 | QA | — | pending | — | UI-W2 | Default sequential after W2 (layout hotspot) |
+
+---
