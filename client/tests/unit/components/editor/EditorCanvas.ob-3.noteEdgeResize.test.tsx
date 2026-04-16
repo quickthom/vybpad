@@ -26,10 +26,11 @@ import { cleanup, fireEvent, render } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { EditorCanvas } from '../../../../src/components/editor/EditorCanvas';
-import { trailingResizeStripWidthPx } from '../../../../src/components/editor/pointerMath';
+import { softMagneticSnapMeasureTick, trailingResizeStripWidthPx } from '../../../../src/components/editor/pointerMath';
 import { PITCH_GUTTER_WIDTH } from '../../../../src/engine/renderer/constants';
 import { computeNoteBlockRect } from '../../../../src/engine/renderer/noteBlocks';
 import { horizontalPxToTicks } from '../../../../src/engine/renderer/layout';
+import { getMeterAtMeasure, measureLengthInTicks } from '../../../../src/engine/renderer/tickUtils';
 import { useSongStore } from '../../../../src/store/songStore';
 
 const DEFAULT_VIEWPORT: Viewport = {
@@ -98,6 +99,24 @@ function canvasIn(container: HTMLElement): HTMLCanvasElement {
     throw new Error('Editor canvas not found in container');
   }
   return el as HTMLCanvasElement;
+}
+
+/** Trailing-edge resize duration — matches EditorCanvas `clampChordDuration` + OB-5 magnetic snap. */
+function expectedTrailingResizeNewDuration(
+  song: SongData,
+  measureIndex: number,
+  beat: number,
+  startDuration: number,
+  deltaTicks: number,
+): number {
+  const len = measureLengthInTicks(getMeterAtMeasure(song, measureIndex));
+  const d = Math.round(startDuration + deltaTicks);
+  let endTick = beat + d;
+  const minEnd = beat + 1;
+  endTick = Math.max(minEnd, Math.min(endTick, len));
+  const snappedEnd = softMagneticSnapMeasureTick(endTick, minEnd, len);
+  const out = snappedEnd - beat;
+  return Math.max(1, Math.min(out, len - beat));
 }
 
 function stubCanvas2d() {
@@ -259,7 +278,9 @@ describe('OB-3 — note edge resize (INTERFACES NoteEditAction via EditorCanvas)
       expect(last.type).toBe('resize');
       if (last.type === 'resize') {
         expect(last.noteId).toBe(noteId);
-        expect(last.newDuration).toBe(note.duration + deltaTicks);
+        expect(last.newDuration).toBe(
+          expectedTrailingResizeNewDuration(song, 0, note.beat, note.duration, deltaTicks),
+        );
         expect(last.newDuration).toBeLessThanOrEqual(192 - note.beat);
       }
     });
@@ -323,7 +344,9 @@ describe('OB-3 — note edge resize (INTERFACES NoteEditAction via EditorCanvas)
       expect(last.type).toBe('resize');
       if (last.type === 'resize') {
         expect(last.noteId).toBe(noteId);
-        expect(last.newDuration).toBe(note.duration + deltaTicks);
+        expect(last.newDuration).toBe(
+          expectedTrailingResizeNewDuration(song, 0, note.beat, note.duration, deltaTicks),
+        );
         expect(last.newDuration).toBeGreaterThanOrEqual(1);
       }
     });

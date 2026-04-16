@@ -52,6 +52,7 @@ import {
   diatonicRowToDegreeAndOctave,
   nearestPitchGridFromStaffRelY,
   pointerEventToViewportXY,
+  softMagneticSnapMeasureTick,
   viewportYToStaffRelativeY,
 } from './pointerMath';
 
@@ -145,19 +146,27 @@ function canvasHeightPx(melodyRowHeight: number): number {
   return MEASURE_HEADER_HEIGHT + MELODY_DIATONIC_ROW_COUNT * melodyRowHeight + CHORD_AREA_HEIGHT;
 }
 
+/** Move: clamp start beat; OB-5 soft-snaps to PAT-004 sixteenth grid before clamping. */
 function clampChordBeat(song: SongData, measureIndex: number, beat: number, duration: number): number {
   const len = measureLengthInTicks(getMeterAtMeasure(song, measureIndex));
   const maxStart = Math.max(0, len - duration);
-  return Math.max(0, Math.min(Math.round(beat), maxStart));
+  const b = softMagneticSnapMeasureTick(Math.round(beat), 0, maxStart);
+  return Math.max(0, Math.min(b, maxStart));
 }
 
+/** Trailing resize: snap trailing edge tick, then derive duration (OB-5). */
 function clampChordDuration(song: SongData, measureIndex: number, beat: number, duration: number): number {
   const len = measureLengthInTicks(getMeterAtMeasure(song, measureIndex));
   const d = Math.round(duration);
-  return Math.max(1, Math.min(d, len - beat));
+  let endTick = beat + d;
+  const minEnd = beat + 1;
+  endTick = Math.max(minEnd, Math.min(endTick, len));
+  const snappedEnd = softMagneticSnapMeasureTick(endTick, minEnd, len);
+  const out = snappedEnd - beat;
+  return Math.max(1, Math.min(out, len - beat));
 }
 
-/** Leading-edge resize keeps the note/chord end tick fixed (Hookpad-style). */
+/** Leading-edge resize keeps the note/chord end tick fixed (Hookpad-style); OB-5 snaps leading edge. */
 function clampLeadingEdgeResizeTicks(
   startBeat: number,
   startDuration: number,
@@ -166,6 +175,7 @@ function clampLeadingEdgeResizeTicks(
   const endRel = startBeat + startDuration;
   let nb = Math.round(startBeat + deltaTicks);
   nb = Math.max(0, Math.min(nb, endRel - 1));
+  nb = softMagneticSnapMeasureTick(nb, 0, endRel - 1);
   const nd = Math.max(1, endRel - nb);
   return { beat: nb, duration: nd };
 }
