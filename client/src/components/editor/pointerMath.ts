@@ -98,3 +98,71 @@ export function nearestPitchGridFromStaffRelY(
 export function degreeOctaveToDiatonicRow(scaleDegree: ScaleDegree, octave: number): number {
   return diatonicRowIndex(scaleDegree, octave);
 }
+
+// --- OB-5 — soft magnetic snap (tick space; PAT-004 grid) ---
+
+/**
+ * Sixteenth-note step: beats (48) and even subdivisions (24, 12) align to this grid.
+ * Matches PAT-004 “sixteenth note = 12 ticks”.
+ */
+export const MAGNETIC_SNAP_GRID_STEP_TICKS = 12;
+
+/**
+ * Pull toward the nearest grid line only when this close (ticks). Keeps motion free outside the band
+ * (“gentle bump”, not hard grid lock). Chosen so {@link MAGNETIC_SNAP_GRID_STEP_TICKS} > 2 × threshold
+ * (QA OB-5 — dead zone between snap lines).
+ */
+export const MAGNETIC_SNAP_THRESHOLD_TICKS = 4;
+
+/**
+ * Soft magnetic snap in measure-local tick space: if `tick` lies within {@link MAGNETIC_SNAP_THRESHOLD_TICKS}
+ * of a multiple of {@link MAGNETIC_SNAP_GRID_STEP_TICKS} inside `[min, max]`, return that grid point; otherwise
+ * return `tick` clamped to `[min, max]`.
+ */
+export function softMagneticSnapMeasureTick(
+  tick: number,
+  min: number,
+  max: number,
+  step: number = MAGNETIC_SNAP_GRID_STEP_TICKS,
+  threshold: number = MAGNETIC_SNAP_THRESHOLD_TICKS,
+): number {
+  if (max < min) {
+    return Math.round(tick);
+  }
+  let v = Math.round(tick);
+  v = Math.max(min, Math.min(max, v));
+  const kMin = Math.ceil(min / step);
+  const kMax = Math.floor(max / step);
+  if (kMin > kMax) {
+    return v;
+  }
+  let best = v;
+  let bestDist = Infinity;
+  for (let k = kMin; k <= kMax; k++) {
+    const s = k * step;
+    const d = Math.abs(v - s);
+    if (d < bestDist) {
+      bestDist = d;
+      best = s;
+    }
+  }
+  if (bestDist <= threshold) {
+    return best;
+  }
+  return v;
+}
+
+/**
+ * Measure-local beat / tick offset (0 … measureLengthTicks − 1): soft snap for QA contract and
+ * move gestures. Invalid inputs yield a safe integer (0) so callers never propagate NaN.
+ */
+export function snapBeatMagnetically(beat: number, measureLengthTicks: number): number {
+  if (!Number.isFinite(measureLengthTicks) || measureLengthTicks <= 0) {
+    return 0;
+  }
+  if (!Number.isFinite(beat)) {
+    return 0;
+  }
+  const maxTick = Math.max(0, Math.floor(measureLengthTicks) - 1);
+  return softMagneticSnapMeasureTick(beat, 0, maxTick);
+}
