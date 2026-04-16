@@ -685,6 +685,68 @@ describe('EditorCanvas — TASK-2.7 mouse interaction (interface contract)', () 
     });
   });
 
+  describe('OB-4 — viewport stable during pointer drag', () => {
+    it('does not call onViewportChange during a completed note move drag (shell-owned viewport must not churn per tick)', () => {
+      const onViewportChange = vi.fn();
+      const onNoteEdit = vi.fn();
+      vi.spyOn(hitTestModule, 'hitTestEditorCanvas').mockReturnValue({
+        kind: 'note',
+        measureIndex: 0,
+        voiceIndex: 0,
+        note: song.measures[0]!.notes[0]![0]!,
+      });
+
+      mockCanvasLayout({ left: 0, top: 0, width: 800, height: 600 });
+
+      const { container } = render(
+        <EditorCanvas
+          song={song}
+          viewport={DEFAULT_VIEWPORT}
+          selection={{ type: 'note', measureIndex: 0, eventIds: [noteId] }}
+          playbackTick={null}
+          activeVoice={0}
+          entryMode="table"
+          showGuides={false}
+          colorScheme="diatonic"
+          onChordEdit={vi.fn()}
+          onNoteEdit={onNoteEdit}
+          onSelectionChange={vi.fn()}
+          onViewportChange={onViewportChange}
+        />,
+      );
+
+      const canvas = canvasIn(container);
+
+      fireEvent.pointerDown(canvas, {
+        clientX: 200,
+        clientY: 120,
+        button: 0,
+        buttons: 1,
+        pointerId: 1,
+        pointerType: 'mouse',
+      });
+      fireEvent.pointerMove(canvas, {
+        clientX: 260,
+        clientY: 80,
+        button: 0,
+        buttons: 1,
+        pointerId: 1,
+        pointerType: 'mouse',
+      });
+      fireEvent.pointerUp(canvas, {
+        clientX: 260,
+        clientY: 80,
+        button: 0,
+        buttons: 0,
+        pointerId: 1,
+        pointerType: 'mouse',
+      });
+
+      expect(onNoteEdit.mock.calls.some(([, , ev]) => ev.type === 'move')).toBe(true);
+      expect(onViewportChange).not.toHaveBeenCalled();
+    });
+  });
+
   describe('viewport / selection props (TASK-2.11 note)', () => {
     it('accepts Viewport and Selection | null props and renders without throwing so parent can own state per INTERFACES.md', () => {
       const { container, rerender } = render(
