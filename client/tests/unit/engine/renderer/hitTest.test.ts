@@ -28,6 +28,8 @@ import type { ChordEvent, Measure, NoteEvent, SongData, Viewport } from '@vybpad
 import { describe, expect, it } from 'vitest';
 
 import {
+  CHORD_AREA_HEIGHT,
+  CHORD_LETTER_STRIP_HEIGHT,
   MEASURE_HEADER_HEIGHT,
   MELODY_DIATONIC_ROW_COUNT,
   NOTE_HEIGHT,
@@ -165,6 +167,34 @@ describe('hit testing (TASK-2.6) — chord Z-order', () => {
     expect(hit?.kind).toBe('chord');
     const ch = hit as Extract<EditorCanvasHit, { kind: 'chord' }>;
     expect(ch.chord.id).toBe(cEarly.id);
+  });
+
+  it('still hits a chord when clicking inside its letter-name rail below the Roman band', () => {
+    const c = chord({
+      id: 'eeeeeeee-eeee-4eee-eeee-eeeeeeeeee11',
+      scaleDegree: 1,
+      quality: 'major',
+      beat: 0,
+      duration: 192,
+    });
+    const song = minimalSong([
+      {
+        ...emptyMeasure('m0'),
+        chords: [c],
+      },
+    ]);
+    const viewport = vp({ measureCount: 1 });
+    const rect = layoutChordBlock(c, 0, song, viewport);
+    const p = {
+      x: rect.x + rect.width / 2,
+      y: rect.y + CHORD_AREA_HEIGHT + CHORD_LETTER_STRIP_HEIGHT / 2,
+    };
+
+    const hit = hitTestEditorCanvas(p.x, p.y, song, viewport);
+    expect(hit).not.toBeNull();
+    expect(hit?.kind).toBe('chord');
+    const ch = hit as Extract<EditorCanvasHit, { kind: 'chord' }>;
+    expect(ch.chord.id).toBe(c.id);
   });
 });
 

@@ -21,7 +21,13 @@ import type { ChordEvent, SongData, Viewport } from '@vybpad/shared';
 import { describe, expect, it, vi } from 'vitest';
 
 import { theoryEngine } from '../../../../src/engine/theory/theoryEngine';
-import { CHORD_AREA_HEIGHT, MELODY_DIATONIC_ROW_COUNT, MEASURE_HEADER_HEIGHT, NOTE_HEIGHT } from '../../../../src/engine/renderer/constants';
+import {
+  CHORD_AREA_HEIGHT,
+  CHORD_LETTER_STRIP_HEIGHT,
+  MELODY_DIATONIC_ROW_COUNT,
+  MEASURE_HEADER_HEIGHT,
+  NOTE_HEIGHT,
+} from '../../../../src/engine/renderer/constants';
 import { drawChordBlocks, layoutChordBlock, pixelsPerTick } from '../../../../src/engine/renderer/index';
 import { absoluteTickFromMeasurePosition, absoluteTickToViewportX, noteStaffTopY } from '../../../../src/engine/renderer/layout';
 
@@ -67,7 +73,7 @@ function songTwoMeasuresTwoChords(): SongData {
 
 /** Matches EditorCanvas `canvasHeightPx` / Wave 1 melody stack with default staff spacing. */
 function editorCanvasContentHeightPx(rowHeight: number = NOTE_HEIGHT): number {
-  return MEASURE_HEADER_HEIGHT + MELODY_DIATONIC_ROW_COUNT * rowHeight + CHORD_AREA_HEIGHT;
+  return MEASURE_HEADER_HEIGHT + MELODY_DIATONIC_ROW_COUNT * rowHeight + CHORD_AREA_HEIGHT + CHORD_LETTER_STRIP_HEIGHT;
 }
 
 /** Top Y of the bottom chord strip (below the full piano-roll diatonic grid). */
@@ -87,6 +93,7 @@ function createChordBlocksDrawContext(): {
     restore: vi.fn(),
     beginPath: vi.fn(),
     roundRect,
+    fillRect: vi.fn(),
     fill: vi.fn(),
     stroke: vi.fn(),
     fillText,
@@ -114,7 +121,7 @@ describe('UI-W2 — bottom chord track strip (RA-2)', () => {
     it('lays chord blocks in the bottom CHORD_AREA_HEIGHT band flush to the editor canvas bottom (distinct from melody)', () => {
       const h = editorCanvasContentHeightPx(NOTE_HEIGHT);
       const stripTop = expectedBottomChordStripTopY(NOTE_HEIGHT);
-      expect(stripTop + CHORD_AREA_HEIGHT).toBe(h);
+      expect(stripTop + CHORD_AREA_HEIGHT + CHORD_LETTER_STRIP_HEIGHT).toBe(h);
 
       const song = songTwoMeasuresTwoChords();
       const viewport: Viewport = { startMeasure: 0, measureCount: 2, scrollY: 0, zoom: 1 };
@@ -158,7 +165,7 @@ describe('UI-W2 — bottom chord track strip (RA-2)', () => {
       for (const call of fillText.mock.calls) {
         const y = call[2] as number;
         expect(y).toBeGreaterThanOrEqual(stripTop);
-        expect(y).toBeLessThanOrEqual(stripTop + CHORD_AREA_HEIGHT);
+        expect(y).toBeLessThanOrEqual(stripTop + CHORD_AREA_HEIGHT + CHORD_LETTER_STRIP_HEIGHT);
       }
     });
   });

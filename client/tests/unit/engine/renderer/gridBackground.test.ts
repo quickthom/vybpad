@@ -18,8 +18,11 @@ import {
   MEASURE_HEADER_HEIGHT,
   MEASURE_NUMBER_COLOR,
   MEASURE_NUMBER_FONT,
+  NOTE_HEIGHT,
   TPQN,
 } from '../../../../src/engine/renderer/index';
+import { pat010DiatonicHex } from '../../../../src/engine/renderer/colorMaps';
+import { noteStaffTopY } from '../../../../src/engine/renderer/layout';
 
 function emptyMeasure(id: string): Measure {
   return { id, chords: [], notes: [[], [], [], []] };
@@ -242,6 +245,16 @@ function gridDrawCtxStub(
   } as unknown as CanvasRenderingContext2D;
 }
 
+function blendPat010Fill(hex: string, alpha: number): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  const br = Math.round(255 * (1 - alpha) + r * alpha);
+  const bg = Math.round(255 * (1 - alpha) + g * alpha);
+  const bb = Math.round(255 * (1 - alpha) + b * alpha);
+  return `rgb(${br},${bg},${bb})`;
+}
+
 describe('grid background — canvas draw calls (TASK-2.14)', () => {
   it('calls fillText with measure number labels at label X and header midline Y', () => {
     const song = minimalSong44(3);
@@ -356,5 +369,59 @@ describe('grid background — canvas draw calls (TASK-2.14)', () => {
       layout.measureNumbers[0]!.x,
       MEASURE_HEADER_HEIGHT / 2,
     );
+  });
+
+  it('fills melody rows with subtle PAT-010 tint in the row band', () => {
+    const song = minimalSong44(1);
+    const view = vp({ measureCount: 1, zoom: 1, scrollY: 0 });
+    const fillRectCalls: { x: number; y: number; w: number; h: number; color: string }[] = [];
+    const fillStyleLog: string[] = [];
+    let currentFillStyle = '';
+
+    const ctx = {
+      save: vi.fn(),
+      restore: vi.fn(),
+      beginPath: vi.fn(),
+      moveTo: vi.fn(),
+      lineTo: vi.fn(),
+      stroke: vi.fn(),
+      fillText: vi.fn(),
+      fillRect: vi.fn((x: number, y: number, w: number, h: number) => {
+        fillRectCalls.push({ x, y, w, h, color: currentFillStyle });
+      }),
+      lineWidth: 1,
+      set fillStyle(v: string) {
+        currentFillStyle = v;
+        fillStyleLog.push(v);
+      },
+      get fillStyle() {
+        return currentFillStyle;
+      },
+      set font(_v: string) {
+        /* no-op */
+      },
+      get font() {
+        return '';
+      },
+      set strokeStyle(_v: string) {
+        /* no-op */
+      },
+      get strokeStyle() {
+        return '';
+      },
+      textBaseline: 'alphabetic' as CanvasTextBaseline,
+      textAlign: 'start' as CanvasTextAlign,
+    } as unknown as CanvasRenderingContext2D;
+
+    drawGridBackground(ctx, song, view, 200, { melodyRowHeight: NOTE_HEIGHT, gridContentWidthPx: 320 });
+
+    const staffTop = noteStaffTopY();
+    const expectedFirstRowTint = blendPat010Fill(pat010DiatonicHex(1), 0.08);
+    const firstRowFill = fillRectCalls.find(
+      (c) => c.x === 0 && c.y >= staffTop && c.y < staffTop + NOTE_HEIGHT && c.w === 320 && c.h === NOTE_HEIGHT,
+    );
+    expect(firstRowFill).toBeDefined();
+    expect(firstRowFill?.color).toBe(expectedFirstRowTint);
+    expect(fillStyleLog.some((c) => c.startsWith('rgb('))).toBe(true);
   });
 });

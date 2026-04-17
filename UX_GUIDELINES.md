@@ -96,9 +96,15 @@ ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monosp
 | --- | --- | --- | --- | --- |
 | Measure numbers | UI stack | 11px | 600 | `#374151` |
 | Beat subdivision labels (if shown) | UI stack | 10px | 400 | `#9CA3AF` |
-| Chord symbol in block | UI stack | 12px | 600 | `#111827` (ensure contrast vs PAT-010 fills; if insufficient, use white `#FFFFFF` with 1px subtle shadow — see §6) |
+| **Chord strip — Roman numeral** (function symbol: I, V, vi, °, etc.) | UI stack | **22px** | **700** | `#111827` or `#FFFFFF` per §6 contrast rule |
+| **Chord strip — letter name below band** (C, G7, am, …) | UI stack | 12px | 400 | `#4B5563` |
+| Piano-roll **pitch gutter** (letter only: C, D, E, … — **no octave**) | UI stack | 12px | 600 | `#374151` |
 | Scale degree in note block | UI stack | 11px | 600 | `#111827` or `#FFFFFF` per contrast |
-| Roman numeral / small chord hint (if displayed) | UI stack | 10px | 500 | `#1F2937` |
+| Roman numeral / small chord hint *(palette micro-labels, not chord strip)* | UI stack | 10px | 500 | `#1F2937` |
+
+**Chord strip vs melody:** The **Roman numeral** in the bottom chord band is the **dominant canvas label** (largest type in the editor canvas). Melody/note labels remain smaller so harmony function reads at a glance.
+
+*Single-line chord blocks (if any legacy renderer path remains outside the main strip) use 12px / 600 chord symbol per the chord-block contrast rule in §6 — prefer the Roman + letter two-line strip for the editor.*
 
 ---
 
@@ -275,7 +281,8 @@ Values align with **PAT-012**; this section is the UX authority for Builders (su
 | --- | --- | --- |
 | `BEAT_WIDTH` | 40px | At zoom 1.0 |
 | `NOTE_HEIGHT` | 20px | One diatonic row |
-| `CHORD_AREA_HEIGHT` | 40px | Chord staff band |
+| `CHORD_AREA_HEIGHT` | **96px** | Chord staff band (~4.8× `NOTE_HEIGHT`; REF_AUDIT_2 Wave 1) |
+| `CHORD_LETTER_STRIP_HEIGHT` | **20px** | Space for letter names (C, G7, …) **below** the Roman band; stack under `CHORD_AREA_HEIGHT` |
 | `MEASURE_HEADER_HEIGHT` | 24px | Measure numbers / change markers |
 | `GRID_LINE_COLOR` | `#E5E7EB` | Beat subdivisions |
 | `BAR_LINE_COLOR` | `#6B7280` | Measure boundaries |
@@ -283,13 +290,24 @@ Values align with **PAT-012**; this section is the UX authority for Builders (su
 | `PLAYBACK_CURSOR_WIDTH` | 2px | |
 | `SELECTION_COLOR` | `rgba(59, 130, 246, 0.2)` | Range / multi-select fill |
 
-**Chord blocks**
+**Chord blocks (bottom strip — REF_AUDIT_2 / RA-201)**
 
 - **Geometry:** height = `CHORD_AREA_HEIGHT`; width from tick duration × `BEAT_WIDTH` × zoom.
 - **Corners:** **6px** radius (proportional feel with Hookpad-like blocks).
-- **Fill:** PAT-010 degree color at **85%** opacity over white `#FFFFFF` base **or** solid with slightly lightened hex — preserve hue from PAT-010.
+- **Interior:** **Low-opacity** PAT-010 tonic hue over white — target **≤20%** opacity so the grid reads as “mostly clear” (white/light shows through). **Do not** use a fully opaque block fill for the main interior.
+- **Tonic rails:** **4px** solid strips along the **top** and **bottom** inner edges of the block, color = PAT-010 **tonic** (root) degree color at **full opacity** (same hue family as the chord’s tonal center). Rails are inside the block’s rounded rect (clipped), not outside the strip.
 - **Border:** **1px** `#000000` at **12%** opacity (or `#D1D5DB` if higher contrast needed on light fills).
-- **Text:** centered horizontally and vertically; chord symbol §2 canvas typography; if contrast < 4.5:1 against fill, switch label to **white** with `text-shadow: 0 1px 2px rgba(0,0,0,0.35)`.
+- **Roman numeral:** centered in the **interior** (between the rails), §2 **22px / 700**; if contrast < 4.5:1 against the local background, switch to **white** with `text-shadow: 0 1px 2px rgba(0,0,0,0.35)`.
+- **Letter name:** rendered in **`CHORD_LETTER_STRIP_HEIGHT`** immediately **below** the Roman band (below the `CHORD_AREA_HEIGHT` rect), centered under each block — §2 **12px / 400 / `#4B5563`**.
+
+**Pitch gutter (RA-206)**
+
+- **Content:** **Note letter only** (C, D, E, F, G, A, B; include `♯`/`♭` when the row is non-natural). **No octave** digits and no scientific pitch (e.g. disallow `D4`, `F#5`).
+- **Typography:** §2 piano-roll gutter row. If product adds a “scale degree numbers” mode later, that mode is exempt from this letter-only rule — document in `INTERFACES` when introduced.
+
+**Row background tint (RA-208)**
+
+- **Melody grid rows:** optional very subtle fill per diatonic row — PAT-010 degree hue at **6–10%** opacity over `#FFFFFF` (same row as the pitch). Must stay **below** note blocks visually; do not exceed **12%** or grid lines become hard to read.
 
 **Note blocks**
 
@@ -441,4 +459,4 @@ Values align with **PAT-012**; this section is the UX authority for Builders (su
 
 ---
 
-*Document version: 1.4 — TASK-7.8 design review: §9 touch-target exception for modal close (§5.6).*
+*Document version: 1.5 — REF_AUDIT_2 Wave 1: chord strip typography/layout (RA-201), pitch gutter letter-only (RA-206), row tint (RA-208); `CHORD_AREA_HEIGHT` / `CHORD_LETTER_STRIP_HEIGHT` in §6.*

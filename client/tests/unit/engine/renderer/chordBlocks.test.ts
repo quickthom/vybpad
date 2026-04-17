@@ -6,9 +6,13 @@ import {
   BEAT_WIDTH,
   CHORD_AREA_HEIGHT,
   CHORD_BLOCK_CORNER_RADIUS,
+  CHORD_BLOCK_BORDER,
   chordBlockLabelLines,
   chordBlockTextStyle,
   CHORD_FILL_BLEND_ALPHA,
+  CHORD_LETTER_STRIP_HEIGHT,
+  CHORD_TONIC_RAIL_HEIGHT,
+  blendPat010Fill,
   drawChordBlocks,
   effectiveDegreeForChordColor,
   layoutChordBlock,
@@ -16,6 +20,7 @@ import {
   MELODY_DIATONIC_ROW_COUNT,
   NOTE_HEIGHT,
   PAT010_DEGREE_HEX,
+  pat010DiatonicHex,
   pixelsPerTick,
   TPQN,
 } from '../../../../src/engine/renderer/index';
@@ -65,14 +70,14 @@ function chord(partial: Partial<ChordEvent> & Pick<ChordEvent, 'scaleDegree' | '
 }
 
 describe('chordBlocks (TASK-2.4)', () => {
-  it('criterion 1: block width = duration × pixelsPerTick(zoom); height = CHORD_AREA_HEIGHT; Y = chord strip', () => {
+  it('criterion 1: block width = duration × pixelsPerTick(zoom); height = CHORD_AREA_HEIGHT + CHORD_LETTER_STRIP_HEIGHT; Y = chord strip', () => {
     const song = minimalSong([
       { chords: [chord({ scaleDegree: 1, quality: 'major', duration: 96 })] },
     ]);
     const viewport: Viewport = { startMeasure: 0, measureCount: 1, scrollY: 0, zoom: 2 };
     const c = song.measures[0].chords[0];
     const rect = layoutChordBlock(c, 0, song, viewport);
-    expect(rect.height).toBe(CHORD_AREA_HEIGHT);
+    expect(rect.height).toBe(CHORD_AREA_HEIGHT + CHORD_LETTER_STRIP_HEIGHT);
     expect(rect.y).toBe(MEASURE_HEADER_HEIGHT + MELODY_DIATONIC_ROW_COUNT * NOTE_HEIGHT);
     expect(rect.width).toBe(96 * pixelsPerTick(2));
     expect(rect.width).toBe((96 / TPQN) * BEAT_WIDTH * 2);
@@ -125,27 +130,58 @@ function createChordBlocksDrawContext(): {
   ctx: CanvasRenderingContext2D;
   roundRect: ReturnType<typeof vi.fn>;
   fillText: ReturnType<typeof vi.fn>;
-  fill: ReturnType<typeof vi.fn>;
+  fillRect: ReturnType<typeof vi.fn>;
   stroke: ReturnType<typeof vi.fn>;
+  fillStyleLog: string[];
+  fillRectCalls: Array<{ x: number; y: number; w: number; h: number; color: string }>;
+  fillTextCalls: Array<{ text: string; x: number; y: number; font: string; color: string }>;
 } {
   const roundRect = vi.fn();
-  const fillText = vi.fn();
-  const fill = vi.fn();
   const stroke = vi.fn();
   const beginPath = vi.fn();
+
+  const fillStyleLog: string[] = [];
+  const fillRectCalls: Array<{ x: number; y: number; w: number; h: number; color: string }> = [];
+  const fillTextCalls: Array<{ text: string; x: number; y: number; font: string; color: string }> = [];
+
+  let fillStyle = '';
+  let font = '';
+  const fillText = vi.fn((text: string, x: number, y: number) => {
+    fillTextCalls.push({ text, x, y, font, color: fillStyle });
+  });
   const ctx = {
     save: vi.fn(),
     restore: vi.fn(),
     beginPath,
     roundRect,
-    fill,
+    clip: vi.fn(),
+    fillRect: vi.fn((x: number, y: number, w: number, h: number) => {
+      fillRectCalls.push({ x, y, w, h, color: fillStyle });
+    }),
     stroke,
     fillText,
     measureText: vi.fn(() => ({ width: 0 })),
     lineWidth: 1,
-    strokeStyle: '',
-    fillStyle: '',
-    font: '',
+    set strokeStyle(v: string) {
+      /* no-op for assertions */
+      v; // keep signature for TS
+    },
+    get strokeStyle() {
+      return CHORD_BLOCK_BORDER;
+    },
+    set fillStyle(v: string) {
+      fillStyle = v;
+      fillStyleLog.push(v);
+    },
+    get fillStyle() {
+      return fillStyle;
+    },
+    set font(v: string) {
+      font = v;
+    },
+    get font() {
+      return font;
+    },
     textAlign: 'center' as CanvasTextAlign,
     textBaseline: 'middle' as CanvasTextBaseline,
     shadowColor: '',
@@ -153,7 +189,7 @@ function createChordBlocksDrawContext(): {
     shadowOffsetY: 0,
     shadowBlur: 0,
   } as unknown as CanvasRenderingContext2D;
-  return { ctx, roundRect, fillText, fill, stroke };
+  return { ctx, roundRect, fillText, fillRect: ctx.fillRect, stroke, fillStyleLog, fillRectCalls, fillTextCalls };
 }
 
 describe('chordBlocks — canvas draw calls (TASK-2.14)', () => {
@@ -174,7 +210,7 @@ describe('chordBlocks — canvas draw calls (TASK-2.14)', () => {
       CHORD_BLOCK_CORNER_RADIUS,
     );
     expect(rect.width).toBe(96 * pixelsPerTick(1));
-    expect(rect.height).toBe(CHORD_AREA_HEIGHT);
+    expect(rect.height).toBe(CHORD_AREA_HEIGHT + CHORD_LETTER_STRIP_HEIGHT);
   });
 
   it('calls fillText with the Roman numeral line from theoryEngine for the chord label', () => {
@@ -182,15 +218,73 @@ describe('chordBlocks — canvas draw calls (TASK-2.14)', () => {
     const viewport: Viewport = { startMeasure: 0, measureCount: 1, scrollY: 0, zoom: 1 };
     const ch = song.measures[0].chords[0];
     const expectedRoman = theoryEngine.toRomanNumeral(ch, 'major');
-    const { ctx, fillText } = createChordBlocksDrawContext();
+    const expectedName = theoryEngine.toChordName(ch, 'C', 'major');
+    const rect = layoutChordBlock(ch, 0, song, viewport);
+    const { ctx, fillTextCalls } = createChordBlocksDrawContext();
 
     drawChordBlocks(ctx, song, viewport, theoryEngine, { labelMode: 'roman' });
 
     expect(expectedRoman).toBe('I');
-    expect(fillText).toHaveBeenCalledWith(
-      expectedRoman,
-      expect.any(Number),
-      expect.any(Number),
+    expect(fillTextCalls).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          text: expectedRoman,
+          x: expect.closeTo(rect.x + rect.width / 2, 6),
+          y: expect.closeTo(rect.y + CHORD_TONIC_RAIL_HEIGHT + (CHORD_AREA_HEIGHT - CHORD_TONIC_RAIL_HEIGHT * 2) / 2, 6),
+          font: expect.stringContaining('700 22px'),
+          color: expect.stringMatching(/^#111827$|^#FFFFFF$/),
+        }),
+      ]),
+    );
+    expect(fillTextCalls).toContainEqual(
+      expect.objectContaining({
+        text: expectedName,
+        x: expect.closeTo(rect.x + rect.width / 2, 6),
+        y: expect.closeTo(rect.y + CHORD_AREA_HEIGHT + CHORD_LETTER_STRIP_HEIGHT / 2, 6),
+        font: '400 12px ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+        color: '#4B5563',
+      }),
+    );
+    expect(fillTextCalls).toHaveLength(2);
+  });
+
+  it('draws fill wash and 4px tonic rails in the required colors', () => {
+    const song = minimalSong([{ chords: [chord({ scaleDegree: 1, quality: 'major', beat: 0, duration: 96 })] }]);
+    const viewport: Viewport = { startMeasure: 0, measureCount: 1, scrollY: 0, zoom: 1 };
+    const ch = song.measures[0].chords[0];
+    const baseHex = pat010DiatonicHex(ch.scaleDegree);
+    const expectedFill = blendPat010Fill(baseHex, CHORD_FILL_BLEND_ALPHA);
+    const rect = layoutChordBlock(ch, 0, song, viewport);
+    const { ctx, fillStyleLog, fillRectCalls } = createChordBlocksDrawContext();
+
+    drawChordBlocks(ctx, song, viewport, theoryEngine, { labelMode: 'degree' });
+
+    expect(fillStyleLog).toContain(expectedFill);
+    expect(fillStyleLog).toContain(baseHex);
+    expect(fillRectCalls).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          x: rect.x,
+          y: rect.y,
+          w: rect.width,
+          h: rect.height,
+          color: expectedFill,
+        }),
+        expect.objectContaining({
+          x: rect.x + 1,
+          y: rect.y + 1,
+          w: rect.width - 2,
+          h: CHORD_TONIC_RAIL_HEIGHT,
+          color: baseHex,
+        }),
+        expect.objectContaining({
+          x: rect.x + 1,
+          y: rect.y + rect.height - CHORD_TONIC_RAIL_HEIGHT - 1,
+          w: rect.width - 2,
+          h: CHORD_TONIC_RAIL_HEIGHT,
+          color: baseHex,
+        }),
+      ]),
     );
   });
 

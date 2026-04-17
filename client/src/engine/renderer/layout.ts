@@ -1,12 +1,20 @@
 import type { NoteEvent, ScaleDegree, SongData, Viewport } from '@vybpad/shared';
 
-import { BEAT_WIDTH, MEASURE_HEADER_HEIGHT, MELODY_DIATONIC_ROW_COUNT, NOTE_HEIGHT } from './constants';
+import {
+  BEAT_WIDTH,
+  CHORD_AREA_HEIGHT,
+  CHORD_LETTER_STRIP_HEIGHT,
+  MEASURE_HEADER_HEIGHT,
+  MELODY_DIATONIC_ROW_COUNT,
+  NOTE_HEIGHT,
+} from './constants';
 import { getMeasureStartTicks, getMeterAtMeasure, measureLengthInTicks, TPQN } from './tickUtils';
 
 // Re-export PAT-012 and tick helpers for the public barrel
 export {
   BEAT_WIDTH,
   CHORD_AREA_HEIGHT,
+  CHORD_LETTER_STRIP_HEIGHT,
   MEASURE_HEADER_HEIGHT,
   MELODY_DIATONIC_ROW_COUNT,
   NOTE_HEIGHT,
@@ -125,11 +133,16 @@ export function noteStaffTopY(): number {
 }
 
 /**
- * Top Y of the bottom chord track strip (RA-2 / UI-W2). Height = {@link CHORD_AREA_HEIGHT} (PAT-012), flush to canvas bottom.
+ * Top Y of the bottom chord track band (RA-2 / UI-W2). The roman band is
+ * {@link CHORD_AREA_HEIGHT} tall, with a dedicated {@link CHORD_LETTER_STRIP_HEIGHT}
+ * label strip beneath it.
  */
 export function bottomChordStripTopY(melodyRowHeight: number = NOTE_HEIGHT): number {
   return MEASURE_HEADER_HEIGHT + MELODY_DIATONIC_ROW_COUNT * melodyRowHeight;
 }
+
+/** Combined height for the roman band plus label strip (PAT-012 + UX §6). */
+export const CHORD_STRIP_TOTAL_HEIGHT = CHORD_AREA_HEIGHT + CHORD_LETTER_STRIP_HEIGHT;
 
 /**
  * PAT-018: chromatic alteration shifts the note vertically by half a row per semitone step.

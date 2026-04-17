@@ -1,8 +1,10 @@
-import type { SongData, Viewport } from '@vybpad/shared';
+import type { NoteName, ScaleType, SongData, Viewport } from '@vybpad/shared';
 
 import { MELODY_DIATONIC_ROW_COUNT, NOTE_HEIGHT, PITCH_GUTTER_WIDTH } from './constants';
 import { diatonicRowToDegreeAndOctave, noteStaffTopY } from './layout';
 import { scaleDegreeToMidi } from '../theory/scaleDegreeToMidi';
+import { getScaleIntervals } from '../theory/scales';
+import { noteNameToMidiBase } from '../theory/noteNames';
 import { getKeyAtMeasure, getScaleAtMeasure } from './tickUtils';
 
 /**
@@ -24,16 +26,89 @@ export interface PitchAxisViewportLabel {
   secondary?: string;
 }
 
+const LETTER_RING = ['C', 'D', 'E', 'F', 'G', 'A', 'B'] as const;
+type Letter = (typeof LETTER_RING)[number];
+const NATURAL_PC_BY_LETTER: Record<Letter, number> = {
+  C: 0,
+  D: 2,
+  E: 4,
+  F: 5,
+  G: 7,
+  A: 9,
+  B: 11,
+};
+
+const ACCIDENTAL_SYMBOLS: Record<-2 | -1 | 0 | 1 | 2, string> = {
+  0: '',
+  1: '♯',
+  '-1': '♭',
+  2: '##',
+  '-2': 'bb',
+};
+
+function diatonicLettersForKey(key: NoteName): readonly string[] {
+  const start = LETTER_RING.indexOf(key[0] as Letter);
+  const out: string[] = [];
+  for (let i = 0; i < LETTER_RING.length; i++) {
+    out.push(LETTER_RING[(start + i) % LETTER_RING.length]);
+  }
+  return out;
+}
+
+function spellPitchWithAccidentalPreference(
+  letter: string,
+  targetPc: number,
+  accidentalOrder: ReadonlyArray<-2 | -1 | 0 | 1 | 2>,
+): string | null {
+  const natural = NATURAL_PC_BY_LETTER[letter as Letter];
+  const normalized = ((targetPc % 12) + 12) % 12;
+  for (const delta of accidentalOrder) {
+    if (((natural + delta + 1200) % 12) === normalized) {
+      return `${letter}${ACCIDENTAL_SYMBOLS[delta]}`;
+    }
+  }
+  return null;
+}
+
+function fallbackPitchLabelFromPc(pc: number): string {
+  const normalized = ((pc % 12) + 12) % 12;
+  const accidentalPreference: Array<-2 | -1 | 0 | 1 | 2> = [-1, 0, 1, -2, 2];
+  for (const delta of accidentalPreference) {
+    for (const letter of LETTER_RING) {
+      const spelled = spellPitchWithAccidentalPreference(letter, normalized, [delta]);
+      if (spelled != null) return spelled;
+    }
+  }
+  return 'C';
+}
+
+function contextAwarePitchLabel(pc: number, key: NoteName, scale: ScaleType): string {
+  const tonic = noteNameToMidiBase(key) % 12;
+  const intervals = getScaleIntervals(scale);
+  const letters = diatonicLettersForKey(key);
+  for (let i = 0; i < intervals.length; i++) {
+    if (i >= letters.length) break;
+    const targetPc = ((tonic + intervals[i]) % 12 + 12) % 12;
+    if (targetPc !== pc) continue;
+    const spelled = spellPitchWithAccidentalPreference(letters[i], targetPc, [0, -1, 1, -2, 2]);
+    if (spelled != null) return spelled;
+  }
+  return fallbackPitchLabelFromPc(pc);
+}
+
 /** Width of the left pitch gutter in CSS px (re-export for shell layout). */
 export { PITCH_GUTTER_WIDTH };
 
-/** Scientific pitch label from MIDI (0–127); uses Unicode ♯ for accidentals. */
-export function midiToScientificPitchLabel(midi: number): string {
+/** Letter-only pitch label from MIDI (0–127); uses Unicode ♯/♭ for accidentals.
+ * Context-aware when key/scale are provided.
+ */
+export function midiToScientificPitchLabel(midi: number, key?: NoteName, scale?: ScaleType): string {
   const m = Math.max(0, Math.min(127, Math.round(midi)));
-  const names = ['C', 'C♯', 'D', 'D♯', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'A♯', 'B'] as const;
   const pc = ((m % 12) + 12) % 12;
-  const octave = Math.floor(m / 12) - 1;
-  return `${names[pc]}${octave}`;
+  if (key != null && scale != null) {
+    return contextAwarePitchLabel(pc, key, scale);
+  }
+  return fallbackPitchLabelFromPc(pc);
 }
 
 /**
@@ -60,7 +135,7 @@ export function computePitchAxisLabelsInViewport(
 
     const { scaleDegree, octave } = diatonicRowToDegreeAndOctave(r);
     const midi = scaleDegreeToMidi(scaleDegree, octave, 0, key, scale, 4);
-    const primary = midiToScientificPitchLabel(midi);
+    const primary = midiToScientificPitchLabel(midi, key, scale);
     const centerY = staffTop + r * melodyRowHeight + melodyRowHeight / 2 - viewport.scrollY;
 
     out.push({ diatonicRowIndex: r, centerY, primary });

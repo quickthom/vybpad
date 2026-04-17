@@ -1,6 +1,7 @@
-import type { SongData, Viewport } from '@vybpad/shared';
+import type { ScaleDegree, SongData, Viewport } from '@vybpad/shared';
 
-import { CHORD_AREA_HEIGHT, MELODY_DIATONIC_ROW_COUNT } from './constants';
+import { CHORD_LETTER_STRIP_HEIGHT, MELODY_DIATONIC_ROW_COUNT } from './constants';
+import { pat010DiatonicHex } from './colorMaps';
 import {
   absoluteTickToViewportX,
   BAR_LINE_COLOR,
@@ -85,6 +86,16 @@ export interface DrawGridBackgroundOptions {
   gridContentWidthPx?: number;
 }
 
+function blendPat010Fill(hex: string, alpha: number): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  const br = Math.round(255 * (1 - alpha) + r * alpha);
+  const bg = Math.round(255 * (1 - alpha) + g * alpha);
+  const bb = Math.round(255 * (1 - alpha) + b * alpha);
+  return `rgb(${br},${bg},${bb})`;
+}
+
 /**
  * Paints the grid background: light quarter-note lines, stronger measure bars, measure numbers in the header,
  * and optional horizontal row lines in the melody band (piano roll).
@@ -104,8 +115,8 @@ export function drawGridBackground(
   const gridW = options?.gridContentWidthPx;
   if (rowH != null && gridW != null && gridW > 0) {
     const stripTop = bottomChordStripTopY(rowH);
-    ctx.fillStyle = '#F9FAFB';
-    ctx.fillRect(0, stripTop, gridW, CHORD_AREA_HEIGHT);
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, stripTop, gridW, CHORD_LETTER_STRIP_HEIGHT);
   }
 
   ctx.lineWidth = 1;
@@ -140,6 +151,18 @@ export function drawGridBackground(
       ctx.lineTo(gridW, y);
     }
     ctx.stroke();
+
+    for (let r = 0; r < MELODY_DIATONIC_ROW_COUNT; r++) {
+      const degree = (((r % 7) + 1) as unknown) as ScaleDegree;
+      const yTop = staffTop + r * rowH - viewport.scrollY;
+      const yBottom = yTop + rowH;
+      if (yBottom <= 0 || yTop >= canvasHeight) {
+        continue;
+      }
+      const tintFill = blendPat010Fill(pat010DiatonicHex(degree), 0.08);
+      ctx.fillStyle = tintFill;
+      ctx.fillRect(0, yTop, gridW, rowH);
+    }
   }
 
   ctx.fillStyle = MEASURE_NUMBER_COLOR;
