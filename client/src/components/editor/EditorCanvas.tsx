@@ -32,6 +32,7 @@ import { melodyRowHeightPx } from '../../utils/staffSpacing';
 import { theoryEngine } from '../../engine/theory';
 import {
   CHORD_AREA_HEIGHT,
+  CHORD_LETTER_STRIP_HEIGHT,
   MEASURE_HEADER_HEIGHT,
   MELODY_DIATONIC_ROW_COUNT,
   PITCH_GUTTER_WIDTH,
@@ -145,7 +146,7 @@ function visibleMeasuresWidthPx(song: SongData, viewport: Viewport): number {
 }
 
 function canvasHeightPx(melodyRowHeight: number): number {
-  return MEASURE_HEADER_HEIGHT + MELODY_DIATONIC_ROW_COUNT * melodyRowHeight + CHORD_AREA_HEIGHT;
+  return MEASURE_HEADER_HEIGHT + MELODY_DIATONIC_ROW_COUNT * melodyRowHeight + CHORD_AREA_HEIGHT + CHORD_LETTER_STRIP_HEIGHT;
 }
 
 /** Move: clamp start beat; OB-5 soft-snaps to PAT-004 sixteenth grid before clamping. */

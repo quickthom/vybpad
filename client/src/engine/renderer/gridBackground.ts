@@ -1,6 +1,7 @@
-import type { SongData, Viewport } from '@vybpad/shared';
+import type { ScaleDegree, SongData, Viewport } from '@vybpad/shared';
 
-import { MELODY_DIATONIC_ROW_COUNT } from './constants';
+import { CHORD_LETTER_STRIP_HEIGHT, MELODY_DIATONIC_ROW_COUNT } from './constants';
+import { pat010DiatonicHex } from './colorMaps';
 import {
   absoluteTickToViewportX,
   BAR_LINE_COLOR,
@@ -13,7 +14,6 @@ import {
   noteStaffTopY,
   TPQN,
 } from './layout';
-import { pat010DiatonicHex } from './colorMaps';
 
 /** UX_GUIDELINES.md §2 — Measure numbers on canvas */
 export const MEASURE_NUMBER_COLOR = '#374151';
@@ -86,13 +86,14 @@ export interface DrawGridBackgroundOptions {
   gridContentWidthPx?: number;
 }
 
-function blendPat010OverWhite(hex: string, alpha: number): string {
-  const h = hex.startsWith('#') ? hex.slice(1) : hex;
-  const r = parseInt(h.slice(0, 2), 16);
-  const g = parseInt(h.slice(2, 4), 16);
-  const b = parseInt(h.slice(4, 6), 16);
-  const toWhite = (channel: number): number => Math.round(255 * (1 - alpha) + channel * alpha);
-  return `rgb(${toWhite(r)},${toWhite(g)},${toWhite(b)})`;
+function blendPat010Fill(hex: string, alpha: number): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  const br = Math.round(255 * (1 - alpha) + r * alpha);
+  const bg = Math.round(255 * (1 - alpha) + g * alpha);
+  const bb = Math.round(255 * (1 - alpha) + b * alpha);
+  return `rgb(${br},${bg},${bb})`;
 }
 
 /**
@@ -113,19 +114,9 @@ export function drawGridBackground(
   const rowH = options?.melodyRowHeight;
   const gridW = options?.gridContentWidthPx;
   if (rowH != null && gridW != null && gridW > 0) {
-    const staffTop = noteStaffTopY();
-    const staffBottom = bottomChordStripTopY(rowH);
-    const rowAlpha = 0.08;
-    for (let r = 0; r < MELODY_DIATONIC_ROW_COUNT; r++) {
-      const y = staffTop + r * rowH - viewport.scrollY;
-      if (y + rowH <= staffTop || y >= staffBottom) {
-        continue;
-      }
-      const deg = ((r % 7) + 1) as 1 | 2 | 3 | 4 | 5 | 6 | 7;
-      const fill = blendPat010OverWhite(pat010DiatonicHex(deg), rowAlpha);
-      ctx.fillStyle = fill;
-      ctx.fillRect(0, y, gridW, rowH);
-    }
+    const stripTop = bottomChordStripTopY(rowH);
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, stripTop, gridW, CHORD_LETTER_STRIP_HEIGHT);
   }
 
   ctx.lineWidth = 1;
@@ -160,6 +151,18 @@ export function drawGridBackground(
       ctx.lineTo(gridW, y);
     }
     ctx.stroke();
+
+    for (let r = 0; r < MELODY_DIATONIC_ROW_COUNT; r++) {
+      const degree = (((r % 7) + 1) as unknown) as ScaleDegree;
+      const yTop = staffTop + r * rowH - viewport.scrollY;
+      const yBottom = yTop + rowH;
+      if (yBottom <= 0 || yTop >= canvasHeight) {
+        continue;
+      }
+      const tintFill = blendPat010Fill(pat010DiatonicHex(degree), 0.08);
+      ctx.fillStyle = tintFill;
+      ctx.fillRect(0, yTop, gridW, rowH);
+    }
   }
 
   ctx.fillStyle = MEASURE_NUMBER_COLOR;

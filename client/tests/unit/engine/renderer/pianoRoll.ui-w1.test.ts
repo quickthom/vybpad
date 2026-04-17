@@ -34,7 +34,7 @@ import {
   noteStaffTopY,
   pixelsPerTick,
 } from '../../../../src/engine/renderer/layout';
-import { CHORD_AREA_HEIGHT } from '../../../../src/engine/renderer/constants';
+import { CHORD_AREA_HEIGHT, CHORD_LETTER_STRIP_HEIGHT } from '../../../../src/engine/renderer/constants';
 import { computeNoteBlockRect } from '../../../../src/engine/renderer/noteBlocks';
 import { computePitchAxisLabelsInViewport, midiToScientificPitchLabel } from '../../../../src/engine/renderer/pitchAxisLayout';
 import { hitTestEditorCanvas } from '../../../../src/engine/renderer/hitTest';
@@ -81,7 +81,7 @@ function note(partial: Partial<NoteEvent> & Pick<NoteEvent, 'beat' | 'duration' 
 const MELODY_DIATONIC_ROWS = 28;
 
 function defaultMelodyCanvasHeight(melodyRowHeight: number): number {
-  return noteStaffTopY() + MELODY_DIATONIC_ROWS * melodyRowHeight + CHORD_AREA_HEIGHT;
+  return noteStaffTopY() + MELODY_DIATONIC_ROWS * melodyRowHeight + CHORD_AREA_HEIGHT + CHORD_LETTER_STRIP_HEIGHT;
 }
 
 describe('UI-W1 — piano roll pitch gutter labels (criterion 2)', () => {
@@ -113,6 +113,7 @@ describe('UI-W1 — piano roll pitch gutter labels (criterion 2)', () => {
       for (const row of labels) {
         expect(row.primary.length).toBeGreaterThan(0);
         expect(row.primary.length).toBeLessThanOrEqual(16);
+        expect(row.primary).not.toMatch(/\d/);
         expect(row.centerY).toBeGreaterThanOrEqual(noteStaffTopY());
         expect(row.centerY).toBeLessThan(defaultMelodyCanvasHeight(NOTE_HEIGHT));
       }
@@ -126,6 +127,18 @@ describe('UI-W1 — piano roll pitch gutter labels (criterion 2)', () => {
   });
   });
 
+  it('uses flat spellings from active key/scale context (RA-206)', () => {
+    const song = minimalSong(1);
+    song.measures[0] = {
+      ...song.measures[0],
+      changes: { key: 'C', scale: 'minor' },
+    };
+    const viewport: Viewport = { startMeasure: 0, measureCount: 1, scrollY: 0, zoom: 1 };
+    const labels = computePitchAxisLabelsInViewport(song, viewport, defaultMelodyCanvasHeight(NOTE_HEIGHT), NOTE_HEIGHT);
+    const degree3Row = labels.find((row) => row.diatonicRowIndex === 2);
+    expect(degree3Row?.primary).toBe('E♭');
+  });
+
   describe('edge cases', () => {
     it('after vertical scroll, still exposes labels for rows intersecting the melody viewport', () => {
       const song = minimalSong(1);
@@ -133,6 +146,13 @@ describe('UI-W1 — piano roll pitch gutter labels (criterion 2)', () => {
       const labels = computePitchAxisLabelsInViewport(song, viewport, defaultMelodyCanvasHeight(NOTE_HEIGHT), NOTE_HEIGHT);
       expect(labels.length).toBeGreaterThan(0);
     });
+  });
+});
+
+describe('UI-W1 — pitch label spelling helpers (RA-206)', () => {
+  it('prefers non-sharp naming when context is unavailable (default flat-first spelling)', () => {
+    expect(midiToScientificPitchLabel(1)).toBe('D♭');
+    expect(midiToScientificPitchLabel(3)).toBe('E♭');
   });
 });
 

@@ -15,14 +15,14 @@ import {
   BEAT_WIDTH,
   computeGridBackgroundLayout,
   drawGridBackground,
-  CHORD_AREA_HEIGHT,
-  NOTE_HEIGHT,
   MEASURE_HEADER_HEIGHT,
   MEASURE_NUMBER_COLOR,
   MEASURE_NUMBER_FONT,
-  MELODY_DIATONIC_ROW_COUNT,
+  NOTE_HEIGHT,
   TPQN,
 } from '../../../../src/engine/renderer/index';
+import { pat010DiatonicHex } from '../../../../src/engine/renderer/colorMaps';
+import { noteStaffTopY } from '../../../../src/engine/renderer/layout';
 
 function emptyMeasure(id: string): Measure {
   return { id, chords: [], notes: [[], [], [], []] };
@@ -245,6 +245,16 @@ function gridDrawCtxStub(
   } as unknown as CanvasRenderingContext2D;
 }
 
+function blendPat010Fill(hex: string, alpha: number): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  const br = Math.round(255 * (1 - alpha) + r * alpha);
+  const bg = Math.round(255 * (1 - alpha) + g * alpha);
+  const bb = Math.round(255 * (1 - alpha) + b * alpha);
+  return `rgb(${br},${bg},${bb})`;
+}
+
 describe('grid background — canvas draw calls (TASK-2.14)', () => {
   it('calls fillText with measure number labels at label X and header midline Y', () => {
     const song = minimalSong44(3);
@@ -361,14 +371,12 @@ describe('grid background — canvas draw calls (TASK-2.14)', () => {
     );
   });
 
-  it('draws melody row tint bands using PAT-010-inspired hues instead of one flat background band', () => {
+  it('fills melody rows with subtle PAT-010 tint in the row band', () => {
     const song = minimalSong44(1);
-    const view = vp({ measureCount: 1, zoom: 1 });
-    const rowWidth = 260;
-    const melodyHeight = NOTE_HEIGHT;
-    const canvasHeight = MEASURE_HEADER_HEIGHT + MELODY_DIATONIC_ROW_COUNT * melodyHeight + CHORD_AREA_HEIGHT;
-    const rowCalls: Array<{ x: number; y: number; w: number; h: number; fillStyle: string }> = [];
-    let fillStyle = '';
+    const view = vp({ measureCount: 1, zoom: 1, scrollY: 0 });
+    const fillRectCalls: { x: number; y: number; w: number; h: number; color: string }[] = [];
+    const fillStyleLog: string[] = [];
+    let currentFillStyle = '';
 
     const ctx = {
       save: vi.fn(),
@@ -377,22 +385,17 @@ describe('grid background — canvas draw calls (TASK-2.14)', () => {
       moveTo: vi.fn(),
       lineTo: vi.fn(),
       stroke: vi.fn(),
-      fillRect: vi.fn((x: number, y: number, w: number, h: number) => {
-        rowCalls.push({ x, y, w, h, fillStyle });
-      }),
       fillText: vi.fn(),
+      fillRect: vi.fn((x: number, y: number, w: number, h: number) => {
+        fillRectCalls.push({ x, y, w, h, color: currentFillStyle });
+      }),
       lineWidth: 1,
-      set strokeStyle(_v: string) {
-        /* no-op */
-      },
-      get strokeStyle() {
-        return '';
-      },
       set fillStyle(v: string) {
-        fillStyle = v;
+        currentFillStyle = v;
+        fillStyleLog.push(v);
       },
       get fillStyle() {
-        return fillStyle;
+        return currentFillStyle;
       },
       set font(_v: string) {
         /* no-op */
@@ -400,25 +403,25 @@ describe('grid background — canvas draw calls (TASK-2.14)', () => {
       get font() {
         return '';
       },
+      set strokeStyle(_v: string) {
+        /* no-op */
+      },
+      get strokeStyle() {
+        return '';
+      },
       textBaseline: 'alphabetic' as CanvasTextBaseline,
       textAlign: 'start' as CanvasTextAlign,
     } as unknown as CanvasRenderingContext2D;
 
-    drawGridBackground(ctx, song, view, canvasHeight, {
-      melodyRowHeight: melodyHeight,
-      gridContentWidthPx: rowWidth,
-    });
+    drawGridBackground(ctx, song, view, 200, { melodyRowHeight: NOTE_HEIGHT, gridContentWidthPx: 320 });
 
-    const melodyTop = MEASURE_HEADER_HEIGHT;
-    const stripTop = melodyTop + MELODY_DIATONIC_ROW_COUNT * melodyHeight;
-    const rowBandCalls = rowCalls.filter(
-      (c) => c.h === melodyHeight && c.w === rowWidth && c.y >= melodyTop && c.y + c.h <= stripTop && c.x === 0,
+    const staffTop = noteStaffTopY();
+    const expectedFirstRowTint = blendPat010Fill(pat010DiatonicHex(1), 0.08);
+    const firstRowFill = fillRectCalls.find(
+      (c) => c.x === 0 && c.y >= staffTop && c.y < staffTop + NOTE_HEIGHT && c.w === 320 && c.h === NOTE_HEIGHT,
     );
-
-    expect(rowBandCalls.length).toBe(MELODY_DIATONIC_ROW_COUNT);
-    expect(rowBandCalls.every((c) => c.fillStyle !== '#FFFFFF')).toBe(true);
-    expect(rowBandCalls.every((c) => c.fillStyle !== '#F9FAFB')).toBe(true);
-    const uniqueStyles = new Set(rowBandCalls.map((c) => c.fillStyle));
-    expect(uniqueStyles.size).toBeGreaterThan(1);
+    expect(firstRowFill).toBeDefined();
+    expect(firstRowFill?.color).toBe(expectedFirstRowTint);
+    expect(fillStyleLog.some((c) => c.startsWith('rgb('))).toBe(true);
   });
 });

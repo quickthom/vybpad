@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { chordStripCaretSelectionFromPointer } from '../../../../src/components/editor/editorKeyboardLogic';
 import {
   CHORD_AREA_HEIGHT,
+  CHORD_LETTER_STRIP_HEIGHT,
   MEASURE_HEADER_HEIGHT,
   MELODY_DIATONIC_ROW_COUNT,
   NOTE_HEIGHT,
@@ -12,7 +13,7 @@ import { buildDefaultSong } from '../../../../src/store/songStore';
 
 /** E2E `persistence.happy` — chord strip vertical center (PAT-012 bottom strip, RA-2). */
 const E2E_CHORD_STRIP_CENTER_Y =
-  MEASURE_HEADER_HEIGHT + MELODY_DIATONIC_ROW_COUNT * NOTE_HEIGHT + CHORD_AREA_HEIGHT / 2;
+  MEASURE_HEADER_HEIGHT + MELODY_DIATONIC_ROW_COUNT * NOTE_HEIGHT + (CHORD_AREA_HEIGHT + CHORD_LETTER_STRIP_HEIGHT / 2);
 
 const DEFAULT_VIEWPORT: Viewport = {
   startMeasure: 0,

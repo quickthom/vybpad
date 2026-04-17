@@ -60,6 +60,15 @@ Phases 0 (7/7), 1A (7/7), 1B (6/6), Phase 2 (15/15), Phase 3 (10/10), Phase 4 (1
 
 ---
 
+## UI Remediation — REF_AUDIT_2 (Waves 1–8)
+
+| Task | Role | Branch | Status | PR | Depends | Notes |
+|---|---|---|---|---|---|---|
+| UI-R2-W1 | Builder | phase-8/ui-r2-wave1 | in-review | — | None | Implemented on `ea5079b`: RA-201/206/208 in renderer source + tests baseline from `32b14b9`. |
+| UI-R2-W1 | QA | phase-8/ui-r2-wave1 | qa | — | UI-R2-W1 | `test(UI-R2-W1): add chord strip visibility and label-mode test baseline` (`32b14b9`) on same scope. QA baseline now in place. |
+
+---
+
 ## Operator backlog — OB-1 … OB-6
 
 > Source: [docs/audit/UI_REMEDIATION_OPERATOR_BACKLOG.md](docs/audit/UI_REMEDIATION_OPERATOR_BACKLOG.md); sequencing: operator plan `ob_backlog_sequencing_75df398e.plan.md` (Cursor plans dir).

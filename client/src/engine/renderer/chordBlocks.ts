@@ -10,6 +10,7 @@ import { pat010DiatonicHex, pat010MajorCentricHex, PAT010_DIATONIC_DEGREE_HEX } 
 import {
   absoluteTickFromMeasurePosition,
   absoluteTickToViewportX,
+  CHORD_STRIP_TOTAL_HEIGHT,
   bottomChordStripTopY,
   getKeyAtMeasure,
   getScaleAtMeasure,
@@ -22,13 +23,13 @@ export const CHORD_BLOCK_CORNER_RADIUS = 6;
 /** UX §6 — 1px stroke at ~12% black. */
 export const CHORD_BLOCK_BORDER = 'rgba(0, 0, 0, 0.12)';
 
-/** RA-201 — tonic rails sit on the top and bottom edges of each block at full opacity. */
-const CHORD_RAIL_HEIGHT = 4;
+/** Inner tonic rails (top/bottom) for each chord block. */
+export const CHORD_TONIC_RAIL_HEIGHT = 4;
 
 /** Same as {@link PAT010_DIATONIC_DEGREE_HEX} — exported under this name for existing tests. */
 export const PAT010_DEGREE_HEX = PAT010_DIATONIC_DEGREE_HEX;
 
-/** UX §6 — fill is PAT-010 at 85% over white. */
+/** UX §6 — fill is PAT-010 at ≤20% over white (low-opacity wash). */
 export const CHORD_FILL_BLEND_ALPHA = 0.2;
 
 export type ChordColorScheme = 'diatonic' | 'major';
@@ -167,7 +168,8 @@ export interface ChordBlockRect {
 }
 
 /**
- * Layout for one chord block: width = duration × pixelsPerTick(zoom); height = {@link CHORD_AREA_HEIGHT};
+ * Layout for one chord block: width = duration × pixelsPerTick(zoom); height = roman band plus label strip
+ * (the total of {@link CHORD_AREA_HEIGHT} and {@link CHORD_LETTER_STRIP_HEIGHT}).
  * X from {@link absoluteTickToViewportX}; Y = {@link bottomChordStripTopY} (RA-2 bottom strip).
  */
 export function layoutChordBlock(
@@ -186,7 +188,7 @@ export function layoutChordBlock(
     x,
     y: bottomChordStripTopY(melodyRowHeight),
     width: w,
-    height: CHORD_AREA_HEIGHT,
+    height: CHORD_STRIP_TOTAL_HEIGHT,
     absoluteTick,
   };
 }
@@ -209,7 +211,7 @@ export function chordBlockLabelLines(
 
 export interface DrawChordBlocksOptions {
   colorScheme?: ChordColorScheme;
-  /** When false, only the Roman line is drawn (narrow blocks). Default true when width ≥ 56px. */
+  /** When false, suppress the secondary chord-name line under Roman/degree labels. */
   showAbsoluteChordName?: boolean;
   /** INTERFACES.md EditorSettingsPanel — how chord blocks are labeled. */
   labelMode?: EditorLabelMode;
@@ -255,38 +257,44 @@ export function drawChordBlocks(
       const fill = blendPat010Fill(baseHex, CHORD_FILL_BLEND_ALPHA);
 
       const { x, y, width: w, height: h } = rect;
-      ctx.save();
-      const railColor = baseHex;
-
-      ctx.beginPath();
-      ctx.roundRect(x, y, w, h, CHORD_BLOCK_CORNER_RADIUS);
-      ctx.fillStyle = fill;
-      ctx.fill();
-      ctx.strokeStyle = CHORD_BLOCK_BORDER;
-      ctx.lineWidth = 1;
-      ctx.stroke();
-
-      ctx.fillStyle = railColor;
-      ctx.fillRect(x, y, w, CHORD_RAIL_HEIGHT);
-      ctx.fillRect(x, y + h - CHORD_RAIL_HEIGHT, w, CHORD_RAIL_HEIGHT);
-
       const { romanLine, absoluteLine } = chordBlockLabelLines(chord, key, scale, theory);
       const degreeLine = String(chord.scaleDegree);
       const wantAbsoluteLine = options?.showAbsoluteChordName !== false;
 
       if (labelMode === 'off') {
-        ctx.restore();
         continue;
       }
 
+      const romanBandHeight = CHORD_AREA_HEIGHT;
+      const interiorRailHeight = Math.max(1, romanBandHeight - CHORD_TONIC_RAIL_HEIGHT * 2);
       const primaryStyle = chordBlockTextStyle(fill, DARK_LABEL);
+      const primaryFont = labelMode === 'degree' ? '700 20px ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' : '700 22px ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      const primaryText = labelMode === 'degree' ? degreeLine : romanLine;
+      const primaryBaselineY = y + CHORD_TONIC_RAIL_HEIGHT + interiorRailHeight / 2;
+      const showSecondaryLine = wantAbsoluteLine && (labelMode === 'roman' || labelMode === 'both') && absoluteLine.length > 0;
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.roundRect(x, y, w, h, CHORD_BLOCK_CORNER_RADIUS);
+      if (typeof ctx.clip === 'function') {
+        ctx.clip();
+      }
+
+      const railColor = baseHex;
+      ctx.fillStyle = fill;
+      ctx.fillRect(x, y, w, h);
+      ctx.fillStyle = railColor;
+      ctx.fillRect(x + 1, y + 1, w - 2, CHORD_TONIC_RAIL_HEIGHT);
+      ctx.fillRect(x + 1, y + h - CHORD_TONIC_RAIL_HEIGHT - 1, w - 2, CHORD_TONIC_RAIL_HEIGHT);
+      ctx.fillStyle = fill;
+      ctx.strokeStyle = CHORD_BLOCK_BORDER;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      ctx.font = primaryFont;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.font = '700 22px ui-sans-serif, system-ui, sans-serif';
-      const hasLetterStrip = h >= CHORD_LETTER_STRIP_HEIGHT * 2;
-      const romanAreaHeight = hasLetterStrip ? h - CHORD_LETTER_STRIP_HEIGHT : h;
-      const romanY = y + romanAreaHeight / 2;
-      const letterY = y + romanAreaHeight + CHORD_LETTER_STRIP_HEIGHT / 2;
+      ctx.fillStyle = primaryStyle.fill;
 
       if (primaryStyle.shadow) {
         ctx.shadowColor = 'rgba(0,0,0,0.35)';
@@ -294,46 +302,19 @@ export function drawChordBlocks(
         ctx.shadowOffsetY = 1;
         ctx.shadowBlur = 2;
       }
-      ctx.fillStyle = primaryStyle.fill;
 
-      if (labelMode === 'degree') {
-        ctx.fillText(degreeLine, x + w / 2, y + h / 2);
-      } else if (labelMode === 'roman') {
-        const showRomanPlusAbsolute =
-          wantAbsoluteLine && w >= 56 && h >= CHORD_LETTER_STRIP_HEIGHT + CHORD_RAIL_HEIGHT * 2 && absoluteLine.length > 0;
-        if (showRomanPlusAbsolute) {
-          ctx.fillText(romanLine, x + w / 2, romanY);
-          ctx.shadowBlur = 0;
-          ctx.font = '400 12px ui-sans-serif, system-ui, sans-serif';
-          const absStyle = chordBlockTextStyle(fill, SECONDARY_LABEL);
-          ctx.fillStyle = absStyle.fill;
-          if (absStyle.shadow) {
-            ctx.shadowColor = 'rgba(0,0,0,0.35)';
-            ctx.shadowOffsetY = 1;
-            ctx.shadowBlur = 2;
-          }
-          ctx.fillText(absoluteLine, x + w / 2, letterY);
-        } else {
-          ctx.fillText(romanLine, x + w / 2, y + h / 2);
-        }
-      } else if (labelMode === 'both') {
-        const showTwo = w >= 40 && h >= 32;
-        if (showTwo) {
-          ctx.fillText(romanLine, x + w / 2, romanY);
-          ctx.shadowBlur = 0;
-          ctx.font = '400 12px ui-sans-serif, system-ui, sans-serif';
-          const degStyle = chordBlockTextStyle(fill, SECONDARY_LABEL);
-          ctx.fillStyle = degStyle.fill;
-          if (degStyle.shadow) {
-            ctx.shadowColor = 'rgba(0,0,0,0.35)';
-            ctx.shadowOffsetY = 1;
-            ctx.shadowBlur = 2;
-          }
-          ctx.fillText(degreeLine, x + w / 2, letterY);
-        } else {
-          ctx.font = '600 11px ui-sans-serif, system-ui, sans-serif';
-          ctx.fillText(`${romanLine} · ${degreeLine}`, x + w / 2, y + h / 2);
-        }
+      if (labelMode === 'both' || labelMode === 'roman') {
+        ctx.fillText(romanLine, x + w / 2, primaryBaselineY);
+      } else {
+        ctx.fillText(primaryText, x + w / 2, y + h / 2);
+      }
+
+      if (showSecondaryLine) {
+        ctx.shadowBlur = 0;
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#4B5563';
+        ctx.font = '400 12px ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        ctx.fillText(absoluteLine, x + w / 2, y + CHORD_AREA_HEIGHT + CHORD_LETTER_STRIP_HEIGHT / 2);
       }
 
       ctx.restore();
