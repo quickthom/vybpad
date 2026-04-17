@@ -68,10 +68,15 @@ function getBaseUrl(): string {
   } else {
     base = DEFAULT_API_BASE;
   }
-  if (import.meta.env.PROD && typeof window !== 'undefined' && window.location?.origin) {
+
+  if (typeof window !== 'undefined' && window.location?.origin) {
     const pageO = window.location.origin;
     /** Prefer the URL bar origin when it only differs from the baked API host by loopback alias. */
     if (shouldPreferPageOriginOverApiBase(base, pageO)) {
+      return pageO;
+    }
+    /** Remote-hosted frontend with loopback-baked API (e.g. `localhost`/`127.0.0.1`) should use same-origin. */
+    if (isLoopbackApiBaseUrl(base) && !isLoopbackApiBaseUrl(pageO)) {
       return pageO;
     }
     /** Non-blank but loopback (e.g. Dockerfile `ARG VITE_API_URL=http://127.0.0.1`) — hit page origin. */
@@ -172,11 +177,16 @@ function toTypedApiError(
 
 async function parseErrorResponse(response: Response): Promise<never> {
   let body: unknown;
+  let bodyText = '';
   try {
-    body = await response.json();
+    bodyText = await response.text();
+    body = bodyText ? JSON.parse(bodyText) : undefined;
   } catch {
     body = undefined;
   }
+  // #region agent log
+  void fetch('http://127.0.0.1:7650/ingest/aaf3daa6-f526-4232-9c7d-8a68657f2780',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'2f4ced'},body:JSON.stringify({sessionId:'2f4ced',runId:'pre-fix',hypothesisId:'C',location:'client/src/utils/apiClient.ts:173',message:'Parsing error response',data:{status:response.status,contentType:response.headers.get('content-type') || 'unknown',bodyPreview:bodyText.slice(0, 240)},timestamp:Date.now()})}).catch(()=>{});
+  // #endregion
   throwApiError(toTypedApiError(response.status, body));
 }
 
@@ -207,7 +217,11 @@ async function requestJson<T>(
   init: RequestInit,
   options: { attachBearer: boolean; retryOn401: boolean; timeoutMs?: number },
 ): Promise<T> {
-  const url = `${getBaseUrl()}${path}`;
+  const baseUrl = getBaseUrl();
+  const url = `${baseUrl}${path}`;
+  // #region agent log
+  void fetch('http://127.0.0.1:7650/ingest/aaf3daa6-f526-4232-9c7d-8a68657f2780',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'2f4ced'},body:JSON.stringify({sessionId:'2f4ced',runId:'pre-fix',hypothesisId:'B',location:'client/src/utils/apiClient.ts:209',message:'RequestJson preparing request',data:{path,method:init.method ?? 'GET',baseUrl,options:{attachBearer:options.attachBearer,retryOn401:options.retryOn401}},timestamp:Date.now()})}).catch(()=>{});
+  // #endregion
   const headers = new Headers(init.headers);
   if (init.body !== undefined && init.body !== null && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
@@ -248,6 +262,9 @@ async function requestJson<T>(
   };
 
   let response: Response = await exec(null);
+  // #region agent log
+  void fetch('http://127.0.0.1:7650/ingest/aaf3daa6-f526-4232-9c7d-8a68657f2780',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'2f4ced'},body:JSON.stringify({sessionId:'2f4ced',runId:'pre-fix',hypothesisId:'D',location:'client/src/utils/apiClient.ts:250',message:'RequestJson received response',data:{path,status:response.status,url,statusText:response.statusText,contentType:response.headers.get('content-type') || 'unknown'},timestamp:Date.now()})}).catch(()=>{});
+  // #endregion
 
   if (response.status === 401 && options.retryOn401) {
     const refreshed = await refreshAccessTokenLocked();

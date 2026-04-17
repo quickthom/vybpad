@@ -54,11 +54,17 @@ export function LoginForm() {
       return;
     }
 
+    // #region agent log
+    void fetch('http://127.0.0.1:7650/ingest/aaf3daa6-f526-4232-9c7d-8a68657f2780',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'2f4ced'},body:JSON.stringify({sessionId:'2f4ced',runId:'pre-fix',hypothesisId:'A',location:'client/src/components/auth/LoginForm.tsx:54',message:'Login form submit started',data:{email:email.trim(), hasPassword:Boolean(password)},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
     setSubmitting(true);
     try {
       await login(email.trim(), password);
       navigate('/projects', { replace: true });
     } catch (err) {
+      // #region agent log
+      void fetch('http://127.0.0.1:7650/ingest/aaf3daa6-f526-4232-9c7d-8a68657f2780',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'2f4ced'},body:JSON.stringify({sessionId:'2f4ced',runId:'pre-fix',hypothesisId:'E',location:'client/src/components/auth/LoginForm.tsx:61',message:'Login form submit failed',data:{errorCode:(err as { code?: string }).code ?? 'unknown'},timestamp:Date.now()})}).catch(()=>{});
+      // #endregion
       setFormError(getApiErrorMessage(err));
     } finally {
       setSubmitting(false);

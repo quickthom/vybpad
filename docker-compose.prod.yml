@@ -30,6 +30,15 @@ services:
       PORT: '3001'
       NODE_ENV: production
       CORS_ORIGIN: ${CORS_ORIGIN}
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >
+          node -e "const http=require('http'); const req=http.request({ method: 'GET', host: '127.0.0.1', port: 3001, path: '/api/health' }, (res) => process.exit(res.statusCode >= 200 && res.statusCode < 300 ? 0 : 1)); req.on('error', () => process.exit(1)); req.end();"
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 15s
     depends_on:
       postgres:
         condition: service_healthy
@@ -44,7 +53,8 @@ services:
     ports:
       - '${PUBLIC_PORT:-8080}:80'
     depends_on:
-      - api
+      api:
+        condition: service_healthy
 
 volumes:
   pgdata_prod:
