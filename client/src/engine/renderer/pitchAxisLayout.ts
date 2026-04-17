@@ -19,7 +19,7 @@ export interface PitchAxisViewportLabel {
   centerY: number;
   /**
    * Primary gutter text (UX_GUIDELINES.md §2 canvas labels — structure not pixels).
-   * Absolute pitch: note name + scientific octave (e.g. `C4`, `F♯5`); ♯ from PAT-018 glyph style.
+   * RA-206: note label text only (`C`, `D♭`, `F♯`) without octave digits.
    */
   primary: string;
   /** Optional caption-tier line (UX §2 `caption`). */
@@ -70,6 +70,10 @@ function spellPitchWithAccidentalPreference(
   return null;
 }
 
+/**
+ * Fallback for no key/scale context.
+ * Kept flat-first for equal-altitude ambiguities (for example C♯/D♭), matching existing project convention in RA-206 coverage.
+ */
 function fallbackPitchLabelFromPc(pc: number): string {
   const normalized = ((pc % 12) + 12) % 12;
   const accidentalPreference: Array<-2 | -1 | 0 | 1 | 2> = [0, -1, 1, -2, 2];
@@ -101,6 +105,7 @@ export { PITCH_GUTTER_WIDTH };
 
 /** Letter-only pitch label from MIDI (0–127); uses Unicode ♯/♭ for accidentals.
  * Context-aware when key/scale are provided.
+ * No-context fallback uses flat-first preference.
  */
 export function midiToScientificPitchLabel(midi: number, key?: NoteName, scale?: ScaleType): string {
   const m = Math.max(0, Math.min(127, Math.round(midi)));

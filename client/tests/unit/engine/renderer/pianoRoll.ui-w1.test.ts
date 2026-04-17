@@ -150,7 +150,7 @@ describe('UI-W1 — piano roll pitch gutter labels (criterion 2)', () => {
 });
 
 describe('UI-W1 — pitch label spelling helpers (RA-206)', () => {
-  it('prefers non-sharp naming when context is unavailable (default flat-first spelling)', () => {
+  it('preserves the explicit no-context flat-first fallback spelling convention (RA-206)', () => {
     expect(midiToScientificPitchLabel(1)).toBe('D♭');
     expect(midiToScientificPitchLabel(3)).toBe('E♭');
   });
