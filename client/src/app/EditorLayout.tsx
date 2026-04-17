@@ -42,8 +42,11 @@ import {
 import { theoryEngine } from '../engine/theory';
 import {
   applyChordPalettePayloadFromEditor,
+  applyMelodyAddFromEditor,
   applyDurationTicksFromEditor,
   applyMelodyChromaticNudgeFromEditor,
+  applyMelodyDegreeNudgeFromEditor,
+  applyMelodyOctaveNudgeFromEditor,
   applyMelodyPitchDegreeFromEditor,
   applyMelodyRestFromEditor,
   applyNoteShortcutCommandFromEditor,
@@ -790,6 +793,34 @@ export function EditorLayout() {
     applyMelodyChromaticNudgeFromEditor(melodyKeyboardCtx(), -1);
   }, [melodyKeyboardCtx]);
 
+  const handleMelodyRaise = useCallback(() => {
+    applyMelodyDegreeNudgeFromEditor(melodyKeyboardCtx(), 1);
+  }, [melodyKeyboardCtx]);
+
+  const handleMelodyRaiseOctave = useCallback(() => {
+    applyMelodyOctaveNudgeFromEditor(melodyKeyboardCtx(), 1);
+  }, [melodyKeyboardCtx]);
+
+  const handleMelodyLower = useCallback(() => {
+    applyMelodyDegreeNudgeFromEditor(melodyKeyboardCtx(), -1);
+  }, [melodyKeyboardCtx]);
+
+  const handleMelodyLowerOctave = useCallback(() => {
+    applyMelodyOctaveNudgeFromEditor(melodyKeyboardCtx(), -1);
+  }, [melodyKeyboardCtx]);
+
+  const handleMelodyAdd = useCallback(() => {
+    applyMelodyAddFromEditor(melodyKeyboardCtx());
+  }, [melodyKeyboardCtx]);
+
+  const handleMelodySplit = useCallback(() => {
+    applyNoteShortcutCommandFromEditor(melodyKeyboardCtx(), 'splitSelection');
+  }, [melodyKeyboardCtx]);
+
+  const handleMelodyTie = useCallback(() => {
+    applyNoteShortcutCommandFromEditor(melodyKeyboardCtx(), 'tieSelection');
+  }, [melodyKeyboardCtx]);
+
   const handleTrackChange = useCallback(
     (role: TrackRole, changes: Partial<Track>) => {
       // Runtime merge is by role (songStore); partial patches are valid — assert for `Partial<BandConfig>` typing.
@@ -1252,7 +1283,14 @@ export function EditorLayout() {
                 onPitchDegree={handleMelodyPitchDegree}
                 onRest={handleMelodyRest}
                 onRaiseHalf={handleMelodyRaiseHalf}
+                onRaise={handleMelodyRaise}
+                onRaiseOctave={handleMelodyRaiseOctave}
                 onLowerHalf={handleMelodyLowerHalf}
+                onLower={handleMelodyLower}
+                onLowerOctave={handleMelodyLowerOctave}
+                onAdd={handleMelodyAdd}
+                onSplit={handleMelodySplit}
+                onTie={handleMelodyTie}
               />
               <div
                 className="flex shrink-0 flex-col gap-2 border-b border-[var(--color-border,#E5E7EB)] px-3 pt-2 pb-2"

@@ -1,6 +1,7 @@
 import type {
   ChordEditAction,
   ChordEvent,
+  NoteEvent,
   NoteEditAction,
   ScaleDegree,
   Selection,
@@ -528,18 +529,157 @@ export function applyMelodyRestFromEditor(ctx: EditorKeyboardContext): boolean {
   return true;
 }
 
+type SelectedMelodyNoteState = {
+  noteId: string;
+  note: NoteEvent;
+  measureIndex: number;
+  voice: 0 | 1 | 2 | 3;
+};
+
+function pickSelectedMelodyNote(ctx: EditorKeyboardContext): SelectedMelodyNoteState | null {
+  const sel = pickSelection(ctx);
+  if (sel?.type !== 'note' || !sel.eventIds?.[0]) return null;
+
+  const song = pickSong(ctx);
+  const measureIndex = sel.measureIndex;
+  const noteId = sel.eventIds[0];
+  const voice = findVoiceForNote(song, measureIndex, noteId);
+  if (voice == null) return null;
+  const note = song.measures[measureIndex]?.notes[voice].find((n) => n.id === noteId);
+  if (!note) return null;
+
+  return { noteId, note, measureIndex, voice };
+}
+
+function applyDiatonicStep(degree: ScaleDegree, delta: -1 | 1): { degree: ScaleDegree; octaveDelta: number } {
+  let next = (degree + delta) as number;
+  let octaveDelta = 0;
+  if (next === 8) {
+    next = 1;
+    octaveDelta = 1;
+  } else if (next === 0) {
+    next = 7;
+    octaveDelta = -1;
+  }
+  return { degree: next as ScaleDegree, octaveDelta };
+}
+
 /** Half-step chromatic nudge on a selected note (PAT-018); used by left-panel Raise/Lower (UI-W3). */
 export function applyMelodyChromaticNudgeFromEditor(ctx: EditorKeyboardContext, delta: -1 | 1): boolean {
-  const sel = pickSelection(ctx);
-  if (sel?.type !== 'note' || !sel.eventIds?.[0]) return false;
-  const song = pickSong(ctx);
-  const id = sel.eventIds[0];
-  const voice = findVoiceForNote(song, sel.measureIndex, id);
-  if (voice == null) return false;
-  const note = song.measures[sel.measureIndex]?.notes[voice].find((n) => n.id === id);
-  if (!note || note.isRest) return false;
+  const sel = pickSelectedMelodyNote(ctx);
+  if (!sel || sel.note.isRest) return false;
+  const note = sel.note;
   const next = note.chromatic + delta;
-  ctx.onNoteEdit(sel.measureIndex, voice, { type: 'update', noteId: id, changes: { chromatic: next } });
+  ctx.onNoteEdit(sel.measureIndex, sel.voice, { type: 'update', noteId: sel.noteId, changes: { chromatic: next } });
+  return true;
+}
+
+/**
+ * Diatonic (scale-degree) nudge on a selected note.
+ * A wrap from degree 7 to 1 raises by one octave, and from 1 to 7 lowers by one octave.
+ */
+export function applyMelodyDegreeNudgeFromEditor(ctx: EditorKeyboardContext, delta: -1 | 1): boolean {
+  const sel = pickSelectedMelodyNote(ctx);
+  if (!sel || sel.note.isRest) return false;
+  const next = applyDiatonicStep(sel.note.scaleDegree, delta);
+  ctx.onNoteEdit(sel.measureIndex, sel.voice, {
+    type: 'update',
+    noteId: sel.noteId,
+    changes: {
+      scaleDegree: next.degree,
+      ...(next.octaveDelta !== 0 ? { octave: sel.note.octave + next.octaveDelta } : {}),
+    },
+  });
+  return true;
+}
+
+/** Octave nudge on a selected note. */
+export function applyMelodyOctaveNudgeFromEditor(ctx: EditorKeyboardContext, delta: -1 | 1): boolean {
+  const sel = pickSelectedMelodyNote(ctx);
+  if (!sel || sel.note.isRest) return false;
+  ctx.onNoteEdit(sel.measureIndex, sel.voice, {
+    type: 'update',
+    noteId: sel.noteId,
+    changes: { octave: sel.note.octave + delta },
+  });
+  return true;
+}
+
+/**
+ * Add a note (duplicate of selected note degree/octave/chromatic) or a rest when selection is non-note.
+ * Used by left-panel ADD control; follows table-mode insertion rules for table-mode workflows.
+ */
+export function applyMelodyAddFromEditor(ctx: EditorKeyboardContext): boolean {
+  const selection = pickSelection(ctx);
+  if (selection?.type === 'range') {
+    const isCollapsedCaret = selection.rangeStart === selection.rangeEnd && ctx.entryMode === 'table';
+    if (!isCollapsedCaret) return false;
+  }
+
+  const song = pickSong(ctx);
+  const measureIndex = resolveMeasureIndexForKeyboardDigit(
+    selection,
+    ctx.viewport,
+    song,
+    ctx.keyboardTargetMeasureRef,
+  );
+  const selectedNoteId = selection?.type === 'note' ? selection.eventIds?.[0] : undefined;
+  let sourceVoice = ctx.activeVoice;
+  let sourceNote: NoteEvent | null = null;
+
+  if (selectedNoteId != null) {
+    const noteVoice = findVoiceForNote(song, measureIndex, selectedNoteId);
+    sourceVoice = noteVoice ?? ctx.activeVoice;
+    sourceNote =
+      song.measures[measureIndex]?.notes[sourceVoice]?.find((n) => n.id === selectedNoteId) ?? null;
+  }
+
+  const nb = tableInsertBeatFromSelection(selection, song, measureIndex, 'note', sourceVoice);
+  if (nb == null) return false;
+  const durClamped = clampDurationToMeasure(song, measureIndex, nb, ctx.currentDurationTicks);
+
+  if (sourceNote != null && !sourceNote.isRest) {
+    const payload = {
+      ...buildDefaultNotePayload(song, measureIndex, sourceNote.scaleDegree, nb, durClamped),
+      chromatic: sourceNote.chromatic,
+      octave: sourceNote.octave,
+    };
+    ctx.onNoteEdit(measureIndex, sourceVoice, { type: 'add', note: payload });
+  } else {
+    const payload = buildRestNotePayload(nb, durClamped);
+    ctx.onNoteEdit(measureIndex, sourceVoice, { type: 'add', note: payload });
+  }
+
+  const songAfter = pickSong(ctx);
+  const lane = songAfter.measures[measureIndex]?.notes[sourceVoice];
+  const isRestInsert = sourceNote == null || sourceNote.isRest;
+  let insertedId: string | null = null;
+
+  if (lane) {
+    if (!isRestInsert && sourceNote != null) {
+      insertedId = findNoteIdByPlacement(lane, nb, sourceNote.scaleDegree, durClamped);
+    } else {
+      for (let i = lane.length - 1; i >= 0; i--) {
+        const n = lane[i];
+        if (!n) continue;
+        if (n.beat === nb && n.duration === durClamped && n.isRest) {
+          insertedId = n.id;
+          break;
+        }
+      }
+    }
+  }
+
+  if (ctx.getSongAfterMutation && insertedId) {
+    if (entryEndsAtOrPastMeasureEnd(songAfter, measureIndex, nb, durClamped) && measureIndex + 1 < songAfter.measures.length) {
+      ctx.keyboardTargetMeasureRef.current = measureIndex + 1;
+      ctx.onSelectionChange(null);
+    } else {
+      ctx.onSelectionChange({ type: 'note', measureIndex, eventIds: [insertedId] });
+    }
+  } else {
+    ctx.onSelectionChange(tableModeAdvanceRange(songAfter, measureIndex, nb, durClamped));
+  }
   return true;
 }
 
