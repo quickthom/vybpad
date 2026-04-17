@@ -123,14 +123,14 @@ describe('chordBlocks (TASK-2.4)', () => {
     drawChordBlocks(ctx, song, viewport, theoryEngine, { labelMode: 'roman', showAbsoluteChordName: true });
 
     const topRails = fillRectCalls.filter((c) => {
-      return Math.abs(c.x - rect.x) < 0.1 && Math.abs(c.y - rect.y) < 0.1 && c.width === rect.width && c.height <= 3;
+      return Math.abs(c.x - rect.x) < 0.1 && Math.abs(c.y - rect.y) < 0.1 && c.w === rect.width && c.h <= 4;
     });
     const bottomRails = fillRectCalls.filter((c) => {
       return (
         Math.abs(c.x - rect.x) < 0.1 &&
-        Math.abs(c.y + c.height - (rect.y + rect.height)) < 0.1 &&
-        c.width === rect.width &&
-        c.height <= 3
+        Math.abs(c.y + c.h - (rect.y + rect.height)) < 0.1 &&
+        c.w === rect.width &&
+        c.h <= 4
       );
     });
     expect(topRails.length).toBeGreaterThanOrEqual(1);
@@ -144,7 +144,8 @@ describe('chordBlocks (TASK-2.4)', () => {
     const chordName = fillTextCalls.find((entry) => entry.text === expectedName);
     expect(roman).toBeDefined();
     expect(chordName).toBeDefined();
-    expect(chordName!.y).toBeGreaterThanOrEqual(rect.y + rect.height);
+    expect(chordName!.y).toBeGreaterThan(rect.y);
+    expect(chordName!.y).toBeLessThan(rect.y + rect.height);
     expect(roman!.font).not.toBe(chordName!.font);
     expect(fillText).toHaveBeenCalledTimes(2);
   });

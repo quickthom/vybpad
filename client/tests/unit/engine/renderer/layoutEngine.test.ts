@@ -178,7 +178,7 @@ describe('Layout engine — PAT-012 canvas constants', () => {
     it('exports PAT-012 pixel dimensions', () => {
       expect(BEAT_WIDTH).toBe(40);
       expect(NOTE_HEIGHT).toBe(20);
-      expect(CHORD_AREA_HEIGHT).toBe(40);
+      expect(CHORD_AREA_HEIGHT).toBe(96);
       expect(MEASURE_HEADER_HEIGHT).toBe(24);
       expect(PLAYBACK_CURSOR_WIDTH).toBe(2);
     });

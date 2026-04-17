@@ -17,7 +17,7 @@ export interface PitchAxisViewportLabel {
   centerY: number;
   /**
    * Primary gutter text (UX_GUIDELINES.md §2 canvas labels — structure not pixels).
-   * Absolute pitch: note name + scientific octave (e.g. `C4`, `F♯5`); ♯ from PAT-018 glyph style.
+   * Absolute pitch: note letter only with PAT-018 accidentals (e.g. `C`, `F♯`).
    */
   primary: string;
   /** Optional caption-tier line (UX §2 `caption`). */
@@ -32,8 +32,7 @@ export function midiToScientificPitchLabel(midi: number): string {
   const m = Math.max(0, Math.min(127, Math.round(midi)));
   const names = ['C', 'C♯', 'D', 'D♯', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'A♯', 'B'] as const;
   const pc = ((m % 12) + 12) % 12;
-  const octave = Math.floor(m / 12) - 1;
-  return `${names[pc]}${octave}`;
+  return names[pc];
 }
 
 /**

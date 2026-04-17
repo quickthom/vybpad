@@ -3,7 +3,8 @@
  */
 export const BEAT_WIDTH = 40;
 export const NOTE_HEIGHT = 20;
-export const CHORD_AREA_HEIGHT = 40;
+export const CHORD_AREA_HEIGHT = 96;
+export const CHORD_LETTER_STRIP_HEIGHT = 20;
 export const MEASURE_HEADER_HEIGHT = 24;
 export const GRID_LINE_COLOR = '#E5E7EB';
 export const BAR_LINE_COLOR = '#6B7280';

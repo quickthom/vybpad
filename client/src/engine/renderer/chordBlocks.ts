@@ -5,7 +5,7 @@ import type { TheoryEngine } from '../theory/theoryEngine';
 import { noteNameToMidiBase } from '../theory/noteNames';
 import { resolveSecondaryTarget } from '../theory/secondaryChords';
 import { scaleDegreeToMidi } from '../theory/scaleDegreeToMidi';
-import { CHORD_AREA_HEIGHT, NOTE_HEIGHT } from './constants';
+import { CHORD_AREA_HEIGHT, CHORD_LETTER_STRIP_HEIGHT, NOTE_HEIGHT } from './constants';
 import { pat010DiatonicHex, pat010MajorCentricHex, PAT010_DIATONIC_DEGREE_HEX } from './colorMaps';
 import {
   absoluteTickFromMeasurePosition,
@@ -22,11 +22,14 @@ export const CHORD_BLOCK_CORNER_RADIUS = 6;
 /** UX §6 — 1px stroke at ~12% black. */
 export const CHORD_BLOCK_BORDER = 'rgba(0, 0, 0, 0.12)';
 
+/** RA-201 — tonic rails sit on the top and bottom edges of each block at full opacity. */
+const CHORD_RAIL_HEIGHT = 4;
+
 /** Same as {@link PAT010_DIATONIC_DEGREE_HEX} — exported under this name for existing tests. */
 export const PAT010_DEGREE_HEX = PAT010_DIATONIC_DEGREE_HEX;
 
 /** UX §6 — fill is PAT-010 at 85% over white. */
-export const CHORD_FILL_BLEND_ALPHA = 0.85;
+export const CHORD_FILL_BLEND_ALPHA = 0.2;
 
 export type ChordColorScheme = 'diatonic' | 'major';
 
@@ -253,6 +256,8 @@ export function drawChordBlocks(
 
       const { x, y, width: w, height: h } = rect;
       ctx.save();
+      const railColor = baseHex;
+
       ctx.beginPath();
       ctx.roundRect(x, y, w, h, CHORD_BLOCK_CORNER_RADIUS);
       ctx.fillStyle = fill;
@@ -260,6 +265,10 @@ export function drawChordBlocks(
       ctx.strokeStyle = CHORD_BLOCK_BORDER;
       ctx.lineWidth = 1;
       ctx.stroke();
+
+      ctx.fillStyle = railColor;
+      ctx.fillRect(x, y, w, CHORD_RAIL_HEIGHT);
+      ctx.fillRect(x, y + h - CHORD_RAIL_HEIGHT, w, CHORD_RAIL_HEIGHT);
 
       const { romanLine, absoluteLine } = chordBlockLabelLines(chord, key, scale, theory);
       const degreeLine = String(chord.scaleDegree);
@@ -273,7 +282,11 @@ export function drawChordBlocks(
       const primaryStyle = chordBlockTextStyle(fill, DARK_LABEL);
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.font = '600 12px ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.font = '700 22px ui-sans-serif, system-ui, sans-serif';
+      const hasLetterStrip = h >= CHORD_LETTER_STRIP_HEIGHT * 2;
+      const romanAreaHeight = hasLetterStrip ? h - CHORD_LETTER_STRIP_HEIGHT : h;
+      const romanY = y + romanAreaHeight / 2;
+      const letterY = y + romanAreaHeight + CHORD_LETTER_STRIP_HEIGHT / 2;
 
       if (primaryStyle.shadow) {
         ctx.shadowColor = 'rgba(0,0,0,0.35)';
@@ -287,12 +300,11 @@ export function drawChordBlocks(
         ctx.fillText(degreeLine, x + w / 2, y + h / 2);
       } else if (labelMode === 'roman') {
         const showRomanPlusAbsolute =
-          wantAbsoluteLine && w >= 48 && h >= 36 && absoluteLine.length > 0;
+          wantAbsoluteLine && w >= 56 && h >= CHORD_LETTER_STRIP_HEIGHT + CHORD_RAIL_HEIGHT * 2 && absoluteLine.length > 0;
         if (showRomanPlusAbsolute) {
-          ctx.fillText(romanLine, x + w / 2, y + 14);
+          ctx.fillText(romanLine, x + w / 2, romanY);
           ctx.shadowBlur = 0;
-          ctx.font =
-            '500 10px ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+          ctx.font = '400 12px ui-sans-serif, system-ui, sans-serif';
           const absStyle = chordBlockTextStyle(fill, SECONDARY_LABEL);
           ctx.fillStyle = absStyle.fill;
           if (absStyle.shadow) {
@@ -300,17 +312,16 @@ export function drawChordBlocks(
             ctx.shadowOffsetY = 1;
             ctx.shadowBlur = 2;
           }
-          ctx.fillText(absoluteLine, x + w / 2, y + 30);
+          ctx.fillText(absoluteLine, x + w / 2, letterY);
         } else {
           ctx.fillText(romanLine, x + w / 2, y + h / 2);
         }
       } else if (labelMode === 'both') {
         const showTwo = w >= 40 && h >= 32;
         if (showTwo) {
-          ctx.fillText(romanLine, x + w / 2, y + 14);
+          ctx.fillText(romanLine, x + w / 2, romanY);
           ctx.shadowBlur = 0;
-          ctx.font =
-            '500 10px ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+          ctx.font = '400 12px ui-sans-serif, system-ui, sans-serif';
           const degStyle = chordBlockTextStyle(fill, SECONDARY_LABEL);
           ctx.fillStyle = degStyle.fill;
           if (degStyle.shadow) {
@@ -318,7 +329,7 @@ export function drawChordBlocks(
             ctx.shadowOffsetY = 1;
             ctx.shadowBlur = 2;
           }
-          ctx.fillText(degreeLine, x + w / 2, y + 30);
+          ctx.fillText(degreeLine, x + w / 2, letterY);
         } else {
           ctx.font = '600 11px ui-sans-serif, system-ui, sans-serif';
           ctx.fillText(`${romanLine} · ${degreeLine}`, x + w / 2, y + h / 2);
