@@ -72,7 +72,7 @@ function spellPitchWithAccidentalPreference(
 
 function fallbackPitchLabelFromPc(pc: number): string {
   const normalized = ((pc % 12) + 12) % 12;
-  const accidentalPreference: Array<-2 | -1 | 0 | 1 | 2> = [-1, 0, 1, -2, 2];
+  const accidentalPreference: Array<-2 | -1 | 0 | 1 | 2> = [0, -1, 1, -2, 2];
   for (const delta of accidentalPreference) {
     for (const letter of LETTER_RING) {
       const spelled = spellPitchWithAccidentalPreference(letter, normalized, [delta]);

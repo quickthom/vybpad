@@ -121,7 +121,7 @@ describe('UI-W1 — piano roll pitch gutter labels (criterion 2)', () => {
 
   it('RA-206: midiToScientificPitchLabel returns note text without octave numbers', () => {
     expect(midiToScientificPitchLabel(60)).toBe('C');
-    expect(midiToScientificPitchLabel(61)).toBe('C♯');
+    expect(midiToScientificPitchLabel(61)).toBe('D♭');
     expect(midiToScientificPitchLabel(62)).toBe('D');
     expect(midiToScientificPitchLabel(71)).toBe('B');
   });
