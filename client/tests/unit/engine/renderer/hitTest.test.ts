@@ -267,6 +267,65 @@ describe('hit testing (TASK-2.6) — note row math vs noteRowYFromNoteEvent', ()
     expect(hit?.kind).toBe('note');
     expect((hit as Extract<EditorCanvasHit, { kind: 'note' }>).note.id).toBe(sharp.id);
   });
+
+  it('stays geometrically aligned with layoutChordBlock when custom melody row heights are used', () => {
+    const c = chord({
+      id: 'f0f0f0f0-f0f0-4f0f-f0f0-f0f0f0f0f0f0',
+      scaleDegree: 4,
+      quality: 'minor',
+      beat: 24,
+      duration: 96,
+    });
+    const song = minimalSong([
+      {
+        ...emptyMeasure('m0'),
+        chords: [c],
+      },
+    ]);
+    const viewport = vp({ measureCount: 1 });
+    const rowHeight = 34;
+
+    const rect = layoutChordBlock(c, 0, song, viewport, rowHeight);
+    const hitInside = hitTestEditorCanvas(rect.x + rect.width / 2, rect.y + rect.height / 2, song, viewport, rowHeight);
+    expect(hitInside).not.toBeNull();
+    expect(hitInside?.kind).toBe('chord');
+    expect((hitInside as Extract<EditorCanvasHit, { kind: 'chord' }>).chord.id).toBe(c.id);
+
+    const hitEdge = hitTestEditorCanvas(rect.x + rect.width / 2, rect.y + rect.height, song, viewport, rowHeight);
+    expect(hitEdge).toBeNull();
+  });
+
+  it('requires matching melodyRowHeight for stable chord-strip hit semantics', () => {
+    const c = chord({
+      id: 'h0h0h0h0-h0h0-4h0h-h0h0-h0h0h0h0h0h0',
+      scaleDegree: 2,
+      quality: 'major',
+      beat: 24,
+      duration: 96,
+    });
+    const song = minimalSong([
+      {
+        ...emptyMeasure('m0'),
+        chords: [c],
+      },
+    ]);
+    const viewport = vp({ measureCount: 1 });
+    const rowHeight = 34;
+    const rect = layoutChordBlock(c, 0, song, viewport, rowHeight);
+
+    const hitDefaultRowHeight = hitTestEditorCanvas(rect.x + rect.width / 2, rect.y + rect.height / 2, song, viewport);
+    expect(hitDefaultRowHeight).toBeNull();
+
+    const hitAligned = hitTestEditorCanvas(
+      rect.x + rect.width / 2,
+      rect.y + rect.height / 2,
+      song,
+      viewport,
+      rowHeight,
+    );
+    expect(hitAligned).not.toBeNull();
+    expect((hitAligned as Extract<EditorCanvasHit, { kind: 'chord' }>).chord.id).toBe(c.id);
+  });
 });
 
 describe('hit testing (TASK-2.6) — note voice overlap Z-order', () => {

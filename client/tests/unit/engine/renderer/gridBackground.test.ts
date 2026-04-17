@@ -15,9 +15,12 @@ import {
   BEAT_WIDTH,
   computeGridBackgroundLayout,
   drawGridBackground,
+  CHORD_AREA_HEIGHT,
+  NOTE_HEIGHT,
   MEASURE_HEADER_HEIGHT,
   MEASURE_NUMBER_COLOR,
   MEASURE_NUMBER_FONT,
+  MELODY_DIATONIC_ROW_COUNT,
   TPQN,
 } from '../../../../src/engine/renderer/index';
 
@@ -356,5 +359,66 @@ describe('grid background — canvas draw calls (TASK-2.14)', () => {
       layout.measureNumbers[0]!.x,
       MEASURE_HEADER_HEIGHT / 2,
     );
+  });
+
+  it('draws melody row tint bands using PAT-010-inspired hues instead of one flat background band', () => {
+    const song = minimalSong44(1);
+    const view = vp({ measureCount: 1, zoom: 1 });
+    const rowWidth = 260;
+    const melodyHeight = NOTE_HEIGHT;
+    const canvasHeight = MEASURE_HEADER_HEIGHT + MELODY_DIATONIC_ROW_COUNT * melodyHeight + CHORD_AREA_HEIGHT;
+    const rowCalls: Array<{ x: number; y: number; w: number; h: number; fillStyle: string }> = [];
+    let fillStyle = '';
+
+    const ctx = {
+      save: vi.fn(),
+      restore: vi.fn(),
+      beginPath: vi.fn(),
+      moveTo: vi.fn(),
+      lineTo: vi.fn(),
+      stroke: vi.fn(),
+      fillRect: vi.fn((x: number, y: number, w: number, h: number) => {
+        rowCalls.push({ x, y, w, h, fillStyle });
+      }),
+      fillText: vi.fn(),
+      lineWidth: 1,
+      set strokeStyle(_v: string) {
+        /* no-op */
+      },
+      get strokeStyle() {
+        return '';
+      },
+      set fillStyle(v: string) {
+        fillStyle = v;
+      },
+      get fillStyle() {
+        return fillStyle;
+      },
+      set font(_v: string) {
+        /* no-op */
+      },
+      get font() {
+        return '';
+      },
+      textBaseline: 'alphabetic' as CanvasTextBaseline,
+      textAlign: 'start' as CanvasTextAlign,
+    } as unknown as CanvasRenderingContext2D;
+
+    drawGridBackground(ctx, song, view, canvasHeight, {
+      melodyRowHeight: melodyHeight,
+      gridContentWidthPx: rowWidth,
+    });
+
+    const melodyTop = MEASURE_HEADER_HEIGHT;
+    const stripTop = melodyTop + MELODY_DIATONIC_ROW_COUNT * melodyHeight;
+    const rowBandCalls = rowCalls.filter(
+      (c) => c.h === melodyHeight && c.w === rowWidth && c.y >= melodyTop && c.y + c.h <= stripTop && c.x === 0,
+    );
+
+    expect(rowBandCalls.length).toBe(MELODY_DIATONIC_ROW_COUNT);
+    expect(rowBandCalls.every((c) => c.fillStyle !== '#FFFFFF')).toBe(true);
+    expect(rowBandCalls.every((c) => c.fillStyle !== '#F9FAFB')).toBe(true);
+    const uniqueStyles = new Set(rowBandCalls.map((c) => c.fillStyle));
+    expect(uniqueStyles.size).toBeGreaterThan(1);
   });
 });

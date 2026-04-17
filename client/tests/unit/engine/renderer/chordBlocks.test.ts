@@ -1,3 +1,32 @@
+/*
+ * QA COVERAGE PLAN — UI-R2-W1
+ *
+ * Criterion 1 — chord strip geometry and opacity
+ *   happy: CHORD_AREA_HEIGHT is approximately 4–5 note rows (4*NOTE_HEIGHT .. 5*NOTE_HEIGHT)
+ *   happy: CHORD_FILL_BLEND_ALPHA remains translucent for non-opaque strip fill
+ *   happy: hitTest + layout stay aligned when melodyRowHeight is passed through
+ *
+ * Criterion 2 — RA-201 visuals
+ *   happy: chord blocks fill an expanded strip; tonic rails are rendered at both block edges
+ *   happy: Roman label is visually prominent and chord-name text is a second, separate line
+ *   edges: short chords may omit the second chord-name line when geometry is constrained
+ *
+ * Criterion 3 — RA-206 visuals
+ *   happy: pitch axis labels in renderer/pitch axis path contain no octave digits (covered in pianoRoll.ui-w1.test.ts)
+ *   edges: accidentals in note names still render using ♯/♭ where needed
+ *
+ * Criterion 4 — RA-208 visuals
+ *   happy: grid row tinting is validated in gridBackground.test.ts and uses PAT-010 hues
+ *   edges: tint remains readable with low alpha
+ *
+ * Criterion 5 — hit-testing alignment
+ *   happy: custom staff spacing used for layout remains identical to the hit test target math
+ *   edges: mismatched strip sizes now miss to avoid false hits
+ *
+ * Criterion 6 — snapshot / expectation updates
+ *   happy: existing chord-strip assertions are updated to expect the new geometry + roman naming semantics.
+ */
+
 import type { ChordEvent, SongData, Viewport } from '@vybpad/shared';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -65,17 +94,59 @@ function chord(partial: Partial<ChordEvent> & Pick<ChordEvent, 'scaleDegree' | '
 }
 
 describe('chordBlocks (TASK-2.4)', () => {
-  it('criterion 1: block width = duration × pixelsPerTick(zoom); height = CHORD_AREA_HEIGHT; Y = chord strip', () => {
+  it('criterion 1: CHORD_AREA_HEIGHT aligns with ~4-5 melody rows and strip paint is translucent', () => {
     const song = minimalSong([
       { chords: [chord({ scaleDegree: 1, quality: 'major', duration: 96 })] },
     ]);
     const viewport: Viewport = { startMeasure: 0, measureCount: 1, scrollY: 0, zoom: 2 };
     const c = song.measures[0].chords[0];
     const rect = layoutChordBlock(c, 0, song, viewport);
+    expect(CHORD_AREA_HEIGHT).toBeGreaterThanOrEqual(4 * NOTE_HEIGHT);
+    expect(CHORD_AREA_HEIGHT).toBeLessThanOrEqual(5 * NOTE_HEIGHT);
+    expect(CHORD_FILL_BLEND_ALPHA).toBeLessThan(1);
+    expect(CHORD_FILL_BLEND_ALPHA).toBeGreaterThan(0);
     expect(rect.height).toBe(CHORD_AREA_HEIGHT);
     expect(rect.y).toBe(MEASURE_HEADER_HEIGHT + MELODY_DIATONIC_ROW_COUNT * NOTE_HEIGHT);
     expect(rect.width).toBe(96 * pixelsPerTick(2));
     expect(rect.width).toBe((96 / TPQN) * BEAT_WIDTH * 2);
+  });
+
+  it('criterion 2: RA-201 rail strip + prominent Roman + chord-name line below strip', () => {
+    const song = minimalSong([
+      { chords: [chord({ scaleDegree: 5, quality: 'major', beat: 0, duration: 192 })] },
+    ]);
+    const viewport: Viewport = { startMeasure: 0, measureCount: 1, scrollY: 0, zoom: 1 };
+    const ch = song.measures[0].chords[0];
+    const rect = layoutChordBlock(ch, 0, song, viewport);
+    const { ctx, fillRectCalls, fillTextCalls, fillText } = createChordBlocksDrawContext();
+
+    drawChordBlocks(ctx, song, viewport, theoryEngine, { labelMode: 'roman', showAbsoluteChordName: true });
+
+    const topRails = fillRectCalls.filter((c) => {
+      return Math.abs(c.x - rect.x) < 0.1 && Math.abs(c.y - rect.y) < 0.1 && c.width === rect.width && c.height <= 3;
+    });
+    const bottomRails = fillRectCalls.filter((c) => {
+      return (
+        Math.abs(c.x - rect.x) < 0.1 &&
+        Math.abs(c.y + c.height - (rect.y + rect.height)) < 0.1 &&
+        c.width === rect.width &&
+        c.height <= 3
+      );
+    });
+    expect(topRails.length).toBeGreaterThanOrEqual(1);
+    expect(bottomRails.length).toBeGreaterThanOrEqual(1);
+    expect(topRails.some((c) => c.fillStyle !== '#FFFFFF')).toBe(true);
+    expect(bottomRails.some((c) => c.fillStyle !== '#FFFFFF')).toBe(true);
+
+    const expectedRoman = theoryEngine.toRomanNumeral(ch, 'major');
+    const expectedName = theoryEngine.toChordName(ch, 'C', 'major');
+    const roman = fillTextCalls.find((entry) => entry.text === expectedRoman);
+    const chordName = fillTextCalls.find((entry) => entry.text === expectedName);
+    expect(roman).toBeDefined();
+    expect(chordName).toBeDefined();
+    expect(chordName!.y).toBeGreaterThanOrEqual(rect.y + rect.height);
+    expect(roman!.font).not.toBe(chordName!.font);
+    expect(fillText).toHaveBeenCalledTimes(2);
   });
 
   it('criterion 2: fill blends PAT-010 hue at UX opacity; text style picks dark when contrast suffices', () => {
@@ -127,12 +198,25 @@ function createChordBlocksDrawContext(): {
   fillText: ReturnType<typeof vi.fn>;
   fill: ReturnType<typeof vi.fn>;
   stroke: ReturnType<typeof vi.fn>;
+  fillRect: ReturnType<typeof vi.fn>;
+  fillRectCalls: Array<{ x: number; y: number; w: number; h: number; fillStyle: string }>;
+  fillTextCalls: Array<{ text: string; x: number; y: number; fillStyle: string; font: string }>;
 } {
   const roundRect = vi.fn();
-  const fillText = vi.fn();
+  const fillRectCalls: Array<{ x: number; y: number; w: number; h: number; fillStyle: string }> = [];
+  const fillTextCalls: Array<{ text: string; x: number; y: number; fillStyle: string; font: string }> = [];
+  const fillText = vi.fn((text: string, x: number, y: number) => {
+    const currentText = String(text);
+    fillTextCalls.push({ text: currentText, x, y, fillStyle, font });
+  });
   const fill = vi.fn();
   const stroke = vi.fn();
+  const fillRect = vi.fn((x: number, y: number, w: number, h: number) => {
+    fillRectCalls.push({ x, y, w, h, fillStyle });
+  });
   const beginPath = vi.fn();
+  let fillStyle = '';
+  let font = '';
   const ctx = {
     save: vi.fn(),
     restore: vi.fn(),
@@ -144,16 +228,28 @@ function createChordBlocksDrawContext(): {
     measureText: vi.fn(() => ({ width: 0 })),
     lineWidth: 1,
     strokeStyle: '',
-    fillStyle: '',
+    set fillStyle(v: string) {
+      fillStyle = v;
+    },
+    get fillStyle() {
+      return fillStyle;
+    },
     font: '',
+    set font(v: string) {
+      font = v;
+    },
+    get font() {
+      return font;
+    },
     textAlign: 'center' as CanvasTextAlign,
     textBaseline: 'middle' as CanvasTextBaseline,
     shadowColor: '',
     shadowOffsetX: 0,
     shadowOffsetY: 0,
+    fillRect,
     shadowBlur: 0,
   } as unknown as CanvasRenderingContext2D;
-  return { ctx, roundRect, fillText, fill, stroke };
+  return { ctx, roundRect, fillText, fill, stroke, fillRect, fillRectCalls, fillTextCalls };
 }
 
 describe('chordBlocks — canvas draw calls (TASK-2.14)', () => {

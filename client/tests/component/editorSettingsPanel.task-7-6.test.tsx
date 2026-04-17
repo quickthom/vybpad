@@ -76,6 +76,13 @@ describe('EditorSettingsPanel — TASK-7.6 — INTERFACES EditorSettingsPanelPro
       const guides = screen.getByTestId('editor-settings-show-guides');
       expect(guides).toBeChecked();
     });
+
+    it('reflects labelMode "degree" as the active label-mode control', () => {
+      render(<EditorSettingsPanel {...defaultProps({ labelMode: 'degree' })} />);
+
+      const degree = screen.getByTestId('editor-settings-label-degree');
+      expect(degree.getAttribute('aria-pressed')).toBe('true');
+    });
   });
 
   describe('happy path — callbacks', () => {
@@ -98,6 +105,16 @@ describe('EditorSettingsPanel — TASK-7.6 — INTERFACES EditorSettingsPanelPro
       await user.click(screen.getByTestId('editor-settings-label-roman'));
 
       expect(onLabelModeChange).toHaveBeenCalledWith('roman');
+    });
+
+    it('calls onLabelModeChange with "degree" when the user selects the degree label control', async () => {
+      const user = userEvent.setup();
+      const onLabelModeChange = vi.fn();
+      render(<EditorSettingsPanel {...defaultProps({ onLabelModeChange })} />);
+
+      await user.click(screen.getByTestId('editor-settings-label-degree'));
+
+      expect(onLabelModeChange).toHaveBeenCalledWith('degree');
     });
 
     it('calls onColorSchemeChange with "major" when the user selects the major color scheme control', async () => {

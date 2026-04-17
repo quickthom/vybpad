@@ -193,6 +193,26 @@ describe('UIStore — TASK-2.11 / INTERFACES.md', () => {
     });
   });
 
+  describe('setLabelMode', () => {
+    beforeEach(() => {
+      baselineUIState();
+    });
+
+    it('accepts each EditorLabelMode option and persists the current value', () => {
+      useUIStore.getState().setLabelMode('degree');
+      expect(useUIStore.getState().labelMode).toBe('degree');
+
+      useUIStore.getState().setLabelMode('roman');
+      expect(useUIStore.getState().labelMode).toBe('roman');
+
+      useUIStore.getState().setLabelMode('both');
+      expect(useUIStore.getState().labelMode).toBe('both');
+
+      useUIStore.getState().setLabelMode('off');
+      expect(useUIStore.getState().labelMode).toBe('off');
+    });
+  });
+
   describe('togglePanel', () => {
     beforeEach(() => {
       baselineUIState();
