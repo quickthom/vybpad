@@ -22,7 +22,7 @@
  *   error/edges: output has no mutation effects on the input song object
  *
  * Ambiguous case documented:
- *   for voices with no non-rest notes, this suite expects `null` (instead of +/-Infinity).
+ *   for voices with no non-rest notes, this suite expects the neutral fallback range.
  */
 
 import type { NoteEvent, SongData, Measure } from '@vybpad/shared';
@@ -30,9 +30,15 @@ import { describe, expect, it } from 'vitest';
 
 import { scaleDegreeToMidi } from '../../../../src/engine/theory/scaleDegreeToMidi';
 import { computeMelodyVoicePitchRanges } from '../../../../src/engine/renderer/layout';
+import { EMPTY_VOICE_PITCH_RANGE } from '../../../../src/engine/renderer/voicePitchRange';
 
-type PitchRange = { minMidi: number; maxMidi: number } | null;
-type VoiceRangeByIndex = readonly (PitchRange | null)[];
+type PitchRange = { minPitch: number; maxPitch: number; hasNotes: boolean };
+type VoiceRangeByIndex = readonly [
+  PitchRange,
+  PitchRange,
+  PitchRange,
+  PitchRange,
+];
 
 function note(options: {
   id: string;
@@ -95,7 +101,7 @@ function song(measures: Measure[]): SongData {
 }
 
 function rangeFor(voiceRanges: VoiceRangeByIndex, voice: 0 | 1 | 2 | 3): PitchRange {
-  return voiceRanges[voice] ?? null;
+  return voiceRanges[voice];
 }
 
 function asMidi(n: NoteEvent): number {
@@ -186,26 +192,26 @@ describe('layout — melody pitch ranges (UI-R2-W5.1)', () => {
     const v2Range = rangeFor(result, 2);
     const v3Range = rangeFor(result, 3);
 
-    expect(v0Range).not.toBeNull();
-    expect(v1Range).not.toBeNull();
-    expect(v2Range).toBeNull();
-    expect(v3Range).toBeNull();
+    expect(v0Range.hasNotes).toBe(true);
+    expect(v1Range.hasNotes).toBe(true);
+    expect(v2Range).toEqual(EMPTY_VOICE_PITCH_RANGE);
+    expect(v3Range).toEqual(EMPTY_VOICE_PITCH_RANGE);
 
     const nonRestPitchesVoice0 = [asMidi(low), asMidi(low2)];
-    expect(v0Range?.minMidi).toBeLessThanOrEqual(Math.min(...nonRestPitchesVoice0));
-    expect(v0Range?.maxMidi).toBeGreaterThanOrEqual(Math.max(...nonRestPitchesVoice0));
-    expect(v0Range?.maxMidi).toBeLessThan(asMidi(highRest));
-    expect(v0Range?.minMidi).toBeGreaterThanOrEqual(0);
-    expect(v0Range?.maxMidi).toBeLessThanOrEqual(127);
+    expect(v0Range.minPitch).toBeLessThanOrEqual(Math.min(...nonRestPitchesVoice0));
+    expect(v0Range.maxPitch).toBeGreaterThanOrEqual(Math.max(...nonRestPitchesVoice0));
+    expect(v0Range.maxPitch).toBeLessThan(asMidi(highRest));
+    expect(v0Range.minPitch).toBeGreaterThanOrEqual(0);
+    expect(v0Range.maxPitch).toBeLessThanOrEqual(127);
 
     const nonRestPitchV1 = [asMidi(v1note)];
-    expect(v1Range?.minMidi).toBeLessThanOrEqual(nonRestPitchV1[0]);
-    expect(v1Range?.maxMidi).toBeGreaterThanOrEqual(nonRestPitchV1[0]);
-    expect(v1Range?.minMidi).toBeFinite();
-    expect(v1Range?.maxMidi).toBeFinite();
+    expect(v1Range.minPitch).toBeLessThanOrEqual(nonRestPitchV1[0]);
+    expect(v1Range.maxPitch).toBeGreaterThanOrEqual(nonRestPitchV1[0]);
+    expect(v1Range.minPitch).toBeFinite();
+    expect(v1Range.maxPitch).toBeFinite();
   });
 
-  it('returns null for all-rest/no-note voices (documented default for empty ranges)', () => {
+  it('returns neutral fallback for all-rest/no-note voices', () => {
     const r0 = note({
       id: '00000000-0000-0000-0000-000000000101',
       scaleDegree: 1,
@@ -232,7 +238,7 @@ describe('layout — melody pitch ranges (UI-R2-W5.1)', () => {
 
     const result = computeMelodyVoicePitchRanges(s) as VoiceRangeByIndex;
     for (const r of result) {
-      expect(r).toBeNull();
+      expect(r).toEqual(EMPTY_VOICE_PITCH_RANGE);
     }
   });
 
@@ -252,12 +258,12 @@ describe('layout — melody pitch ranges (UI-R2-W5.1)', () => {
     const result = computeMelodyVoicePitchRanges(s) as VoiceRangeByIndex;
     const v0Range = rangeFor(result, 0);
 
-    expect(v0Range).not.toBeNull();
-    expect(v0Range?.maxMidi).toBeGreaterThanOrEqual(asMidi(center));
-    expect(v0Range?.minMidi).toBeLessThanOrEqual(asMidi(center));
-    expect(v0Range?.maxMidi - v0Range?.minMidi).toBeGreaterThanOrEqual(12);
-    expect(v0Range?.minMidi).toBeGreaterThanOrEqual(0);
-    expect(v0Range?.maxMidi).toBeLessThanOrEqual(127);
+    expect(v0Range.hasNotes).toBe(true);
+    expect(v0Range.maxPitch).toBeGreaterThanOrEqual(asMidi(center));
+    expect(v0Range.minPitch).toBeLessThanOrEqual(asMidi(center));
+    expect(v0Range.maxPitch - v0Range.minPitch).toBeGreaterThanOrEqual(12);
+    expect(v0Range.minPitch).toBeGreaterThanOrEqual(0);
+    expect(v0Range.maxPitch).toBeLessThanOrEqual(127);
   });
 
   it('uses wide intervallic leaps to set span so both extremes remain enclosed', () => {
@@ -288,10 +294,10 @@ describe('layout — melody pitch ranges (UI-R2-W5.1)', () => {
     const lowMidi = asMidi(low);
     const highMidi = asMidi(high);
 
-    expect(v1Range).not.toBeNull();
-    expect(v1Range?.minMidi).toBeLessThanOrEqual(lowMidi);
-    expect(v1Range?.maxMidi).toBeGreaterThanOrEqual(highMidi);
-    expect(v1Range?.maxMidi - v1Range?.minMidi).toBeGreaterThanOrEqual(highMidi - lowMidi);
+    expect(v1Range.hasNotes).toBe(true);
+    expect(v1Range.minPitch).toBeLessThanOrEqual(lowMidi);
+    expect(v1Range.maxPitch).toBeGreaterThanOrEqual(highMidi);
+    expect(v1Range.maxPitch - v1Range.minPitch).toBeGreaterThanOrEqual(highMidi - lowMidi);
   });
 
   it('includes chromatic offsets in min/max pitch metric (non-zero chromatic test)', () => {
@@ -322,12 +328,12 @@ describe('layout — melody pitch ranges (UI-R2-W5.1)', () => {
     const flatMidi = asMidi(flat);
     const sharpMidi = asMidi(sharp);
 
-    expect(v2Range).not.toBeNull();
-    expect(v2Range?.minMidi).toBeLessThanOrEqual(Math.min(flatMidi, sharpMidi));
-    expect(v2Range?.maxMidi).toBeGreaterThanOrEqual(Math.max(flatMidi, sharpMidi));
-    expect(v2Range?.minMidi).not.toBe(asMidi({ ...flat, chromatic: 0 }));
-    expect(v2Range?.maxMidi).not.toBe(asMidi({ ...flat, chromatic: 0 }));
-    expect(v2Range?.maxMidi - v2Range?.minMidi).toBeGreaterThanOrEqual(12);
+    expect(v2Range.hasNotes).toBe(true);
+    expect(v2Range.minPitch).toBeLessThanOrEqual(Math.min(flatMidi, sharpMidi));
+    expect(v2Range.maxPitch).toBeGreaterThanOrEqual(Math.max(flatMidi, sharpMidi));
+    expect(v2Range.minPitch).not.toBe(asMidi({ ...flat, chromatic: 0 }));
+    expect(v2Range.maxPitch).not.toBe(asMidi({ ...flat, chromatic: 0 }));
+    expect(v2Range.maxPitch - v2Range.minPitch).toBeGreaterThanOrEqual(12);
   });
 
   it('keeps distinct ranges for two voices with disjoint pitch material', () => {
@@ -375,9 +381,9 @@ describe('layout — melody pitch ranges (UI-R2-W5.1)', () => {
     const v0Range = rangeFor(result, 0);
     const v1Range = rangeFor(result, 1);
 
-    expect(v0Range).not.toBeNull();
-    expect(v1Range).not.toBeNull();
-    expect(v0Range?.maxMidi).toBeLessThan(v1Range?.minMidi);
+    expect(v0Range.hasNotes).toBe(true);
+    expect(v1Range.hasNotes).toBe(true);
+    expect(v0Range.maxPitch).toBeLessThan(v1Range.minPitch);
   });
 
   it('is a pure function: deterministic result and no SongData mutation', () => {
