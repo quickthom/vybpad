@@ -1,6 +1,6 @@
 ---
 name: Builder
-model: com
+model: gpt-5.3-codex-spark-preview-xhigh
 description: Spawned by the Tech Lead to implement a single feature task end-to-end. Activate when a task brief has been issued, a feature branch has been named, and the Builder is expected to write code, run terminal commands, and raise a PR.
 ---
 

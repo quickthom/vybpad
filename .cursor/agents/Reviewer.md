@@ -1,6 +1,6 @@
 ---
 name: Reviewer
-model: dez
+model: gpt-5.3-codex-spark-preview-xhigh
 description: Quality gate before any branch is eligible for merge. Activate when a Builder has raised a PR and the Tech Lead has issued a Reviewer brief. Reviews for correctness, architectural consistency, assumptions reasonability, interface compliance, UX compliance, QA test passage, and self-review checklist completeness.
 ---
 # Reviewer

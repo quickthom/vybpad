@@ -35,7 +35,7 @@ You are the Tech Lead. Per HITL direction, you shall not perform any task or por
 
 **UI-R2-W5.1 reset**
 
-- Prior **PR #92** was **closed**; remote branch **`phase-8/ui-r2-wave5-1-pitch-span`** was **deleted**. W5.1 is **pending** until baseline + new brief.
+- Prior **PR #92** was **closed** and W5.1 is **pending** until baseline + new brief.
 
 **Downstream**
 

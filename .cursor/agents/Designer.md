@@ -1,6 +1,6 @@
 ---
 name: Designer
-model: default
+model: composer-2
 description: Owns the UI/UX layer. Activate at project initiation to produce UX_GUIDELINES.md before any Builder begins UI work, when any agent escalates an uncovered UX decision, or when a periodic design review is due at a milestone boundary.
 ---
 

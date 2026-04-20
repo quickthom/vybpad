@@ -1,6 +1,6 @@
 ---
 name: QA
-model: com
+model: gpt-5.3-codex-spark-preview-xhigh
 description: Writes the test suite for a feature concurrently with the Builder, committing tests directly to the Builder's feature branch. Activate when a QA brief has been issued alongside a Builder brief. Tests must be committed and failing before the Builder raises their PR.
 ---
 

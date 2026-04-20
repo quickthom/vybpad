@@ -14,12 +14,14 @@ Phases 0 (7/7), 1A (7/7), 1B (6/6), Phase 2 (15/15), Phase 3 (10/10), Phase 4 (1
 |---|---|---|---|---|---|---|
 | UI-R2-W1 | Builder | — | merged | — (f1139b1) | None | RA-201/206/208; merged to `develop`. |
 | UI-R2-W1 | QA | — | merged | — | UI-R2-W1 | Tests landed with W1. |
-| UI-R2-W2 | Builder | phase-8/ui-r2-wave2 | merged | — (61a9734) | UI-R2-W1 | RA-203/204/207/214; melody transposition matrix + palette affordances. |
+| UI-R2-W2 | Builder | — | merged | — (61a9734) | UI-R2-W1 | RA-203/204/207/214; melody transposition matrix + palette affordances. |
 | UI-R2-W2 | QA | — | merged | — | UI-R2-W2 | Component tests included in W2 implementation changes. |
-| UI-R2-W4.1 | Builder | phase-8/ui-r2-wave4-drag | merged | #89 | UI-R2-W1 | Cross-measure remap + live preview. |
-| UI-R2-W4.1 | QA | phase-8/ui-r2-wave4-drag | merged | #89 | UI-R2-W1 | QA on branch. |
-| UI-R2-W4.2 | Builder | phase-8/ui-r2-wave4-caret | merged | #90 | UI-R2-W4.1 | OB-8 + OB-13. |
-| UI-R2-W4.2 | QA | phase-8/ui-r2-wave4-caret | merged | #90 | UI-R2-W4.1 | QA on branch. |
+| UI-R2-W3 | Builder | — | merged | — (d1840b4) | UI-R2-W2 | RA-202/205; chord inspector + duration control presets/controls. |
+| UI-R2-W3 | QA | — | merged | — | UI-R2-W3 | Component tests included in W3 implementation changes. |
+| UI-R2-W4.1 | Builder | — | merged | #89 | UI-R2-W1 | Cross-measure remap + live preview. |
+| UI-R2-W4.1 | QA | — | merged | #89 | UI-R2-W1 | QA on branch. |
+| UI-R2-W4.2 | Builder | — | merged | #90 | UI-R2-W4.1 | OB-8 + OB-13. |
+| UI-R2-W4.2 | QA | — | merged | #90 | UI-R2-W4.1 | QA on branch. |
 | UI-R2-W4.3 | Builder | — | merged | [#91](https://github.com/quickthom/vybpad/pull/91) | UI-R2-W4.2 | OB-10 undo/redo. |
 | TECH-BASELINE-CI | TaskCoord | TBD | in-progress | — | None | **`develop` must pass `./scripts/ci-local.sh`** (root-cause fixes; no test deletion). Blocks new **UI-R2-W5.1**. |
 | UI-R2-W5.1 | Builder | — | pending | — | UI-R2-W4.3, TECH-BASELINE-CI | **Restart:** PR **#92** closed; branch deleted. Fresh branch/brief after baseline green. OB-14. |

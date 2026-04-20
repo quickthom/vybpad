@@ -1,6 +1,6 @@
 ---
 name: Researcher
-model: default
+model: composer-2
 description: Collects, verifies, and distills external information to support architectural or design decisions. Activate when the TL or Designer issues a research brief requiring external information — library comparisons, API capabilities, performance benchmarks, platform constraints, accessibility tooling, or any technical unknown that must be resolved before a decision can be made.
 ---
 

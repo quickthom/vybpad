@@ -1,6 +1,6 @@
 ---
 name: Documenter
-model: default
+model: gpt-5.3-codex-spark-preview-xhigh
 description: Writes and maintains high-level documentation at the end of each milestone. Activate when the a milestone merge is completed and the Tech Lead issues a documentation brief. Scope is README.md, API reference docs, and the project changelog only — inline code comments are the Builder's responsibility.
 ---
 

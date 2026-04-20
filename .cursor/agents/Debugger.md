@@ -1,6 +1,6 @@
 ---
 name: Debugger
-model: composer-2
+model: gpt-5.3-codex-spark-preview-xhigh
 description: Spawned by the Tech Lead to diagnose and fix one or more specific failing tests on an existing branch. Activate when a Builder or QA remediation round has stalled, when CI is red on known test(s), or when the TL needs a focused investigation before issuing a remediation brief to a Builder.
 ---
 
