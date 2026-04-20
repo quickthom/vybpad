@@ -44,9 +44,17 @@ function projectForSong(songData: SongData) {
 
 function makeSong(measureCount: number): SongData {
   const base = buildDefaultSong();
+  const sourceMeasures = base.measures;
   return {
     ...base,
-    measures: base.measures.slice(0, measureCount),
+    measures: Array.from({ length: measureCount }, (_, index) => {
+      const sourceMeasure = sourceMeasures[index % sourceMeasures.length];
+      return {
+        id: sourceMeasure.id + `-${index}`,
+        chords: [],
+        notes: [[], [], [], []],
+      };
+    }),
   };
 }
 
