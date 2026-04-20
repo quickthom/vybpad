@@ -69,4 +69,4 @@ Edge cases considered                     [ ✔ ]
 - [x] TypeScript build (`npx tsc --build`): PASS (exit 0)
 - [x] ESLint (`npx eslint .`): PASS (exit 0)
 - [x] Tests (`npm test`): PASS (exit 0)
-- [ ] Scope: pointer math clamp removal + negative-row regression test + PR checklist doc
+- [x] Scope: pointer math clamp removal + negative-row regression test + PR checklist doc

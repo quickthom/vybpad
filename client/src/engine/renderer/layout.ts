@@ -253,7 +253,7 @@ export function diatonicRowIndex(scaleDegree: ScaleDegree, octave: number): numb
 /** Inverse of {@link diatonicRowIndex}: ladder row → scale degree + relative octave. */
 export function diatonicRowToDegreeAndOctave(row: number): { scaleDegree: ScaleDegree; octave: number } {
   const octave = Math.floor(row / 7);
-  const sd = (row % 7) + 1;
+  const sd = (((row % 7) + 7) % 7) + 1;
   return { scaleDegree: sd as ScaleDegree, octave };
 }
 
