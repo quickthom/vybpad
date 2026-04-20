@@ -9,8 +9,9 @@
  *   happy: natural >= 12 semitone span keeps raw bounds and `minSpanApplied` false.
  *   edges: measure-local key/scale changes keep computed bounds stable.
  *
- * Criterion 3: `client/tests/unit/engine/renderer/voicePitchSpan.test.ts` has one deduplicated spec structure.
- *   happy: shared helpers and imports are declared once and reused by all tests.
+* Criterion 3: malformed `changes.scale` on a selected-voice measure does not throw.
+*   happy: no throw and deterministic fallback output are returned when conversion fails.
+*   edges: selected-voice usability remains true under fallback.
  */
 import type { Measure, NoteEvent, SongData } from '@vybpad/shared';
 import { describe, expect, it } from 'vitest';
@@ -272,6 +273,40 @@ describe('computeVoicePitchSpan — UI-R2-W5.1', () => {
           {
             ...emptyMeasure('next'),
             notes: [[note({ id: 'ok', scaleDegree: 1, beat: 0, duration: 24 })]],
+          },
+        ],
+        bandConfig: { tracks: [] },
+      } as unknown as SongData;
+
+      expect(() => computeVoicePitchSpan(malformedSong, 0)).not.toThrow();
+      const result = computeVoicePitchSpan(malformedSong, 0);
+
+      expect(result).toMatchObject({
+        voiceIndex: 0,
+        hasNotes: true,
+        minSpanApplied: true,
+        minMidi: 60,
+        maxMidi: 72,
+        pitchSpanSemitones: MIN_VOICE_PITCH_SPAN_SEMITONES,
+      });
+    });
+
+    it('returns deterministic fallback with hasNotes true when selected-voice conversion fails due to malformed changes.scale', () => {
+      const malformedSong = {
+        version: '1.0',
+        metadata: {
+          title: 'scale-malformed',
+          key: 'C',
+          scale: 'major',
+          tempo: 120,
+          meter: { numerator: 4, denominator: 4 },
+        },
+        measures: [
+          {
+            id: 'bad-scale',
+            chords: [],
+            notes: [[note({ id: 'selected', scaleDegree: 6, beat: 0, duration: 24 })], [], [], []],
+            changes: { key: 'C', scale: 'not-a-real-scale' as unknown as 'major' },
           },
         ],
         bandConfig: { tracks: [] },
