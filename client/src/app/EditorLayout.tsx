@@ -1193,7 +1193,7 @@ export function EditorLayout() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-[var(--color-app-bg,#F3F4F6)] text-sm text-[var(--color-text-primary,#111827)]">
+    <div className="flex h-screen min-h-screen overflow-hidden flex-col bg-[var(--color-app-bg,#F3F4F6)] text-sm text-[var(--color-text-primary,#111827)]">
       <header className="flex min-h-[48px] min-w-0 flex-wrap items-start justify-between gap-2 border-b border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)] px-3 py-2 lg:flex-nowrap lg:overflow-x-auto">
         <div>
           <h1 className="text-2xl font-semibold leading-tight tracking-tight">{headerTitle}</h1>
@@ -1353,13 +1353,13 @@ export function EditorLayout() {
           queueMicrotask(() => keyScaleTriggerRef.current?.focus());
         }}
       />
-      <div className="flex min-h-0 min-w-0 flex-1 flex-row">
-        <aside
+      <div className="flex min-h-0 min-w-0 flex-1 flex-row overflow-hidden">
+          <aside
           id="vybpad-panel-chords"
           className={
             chordPaletteExpanded
-              ? 'flex w-[288px] min-w-[240px] max-w-[288px] shrink-0 flex-col border-r border-[var(--color-border,#E5E7EB)] bg-[var(--color-app-bg,#F3F4F6)]'
-              : 'flex w-12 shrink-0 flex-col items-center border-r border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)] py-2'
+                ? 'flex min-h-0 w-[288px] min-w-60 max-w-[288px] shrink-0 flex-col border-r border-[var(--color-border,#E5E7EB)] bg-[var(--color-app-bg,#F3F4F6)] overflow-hidden'
+                : 'flex min-h-0 w-12 shrink-0 flex-col items-center border-r border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)] overflow-hidden py-2'
           }
           role="complementary"
           aria-label="Chord palette panel"
@@ -1447,7 +1447,7 @@ export function EditorLayout() {
             </Tooltip>
           )}
         </aside>
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
           <main
             ref={editorCanvasHostRef}
             className="min-h-0 flex-1 overflow-x-auto p-3"
@@ -1517,7 +1517,7 @@ export function EditorLayout() {
             }}
           />
         </div>
-        <div className="flex min-h-0 w-[288px] min-w-[240px] max-w-[288px] shrink-0 flex-col self-stretch overflow-hidden border-l border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)]">
+        <div className="flex min-h-0 w-72 max-w-[288px] shrink-0 flex-col self-stretch overflow-x-hidden overflow-y-auto border-l border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)]">
           <EditorPropertiesPanel
             selectionType={selection?.type ?? null}
             chordContext={chordPropertyContext}

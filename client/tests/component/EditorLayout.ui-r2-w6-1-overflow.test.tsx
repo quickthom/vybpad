@@ -124,7 +124,7 @@ describe('UI-R2-W6.1 — criterion 2: rail overflow must stay inside side rails'
     const leftClass = leftRail?.getAttribute('class') ?? '';
     expect(leftClass).toMatch(/\bshrink-0\b/);
     expect(leftClass).toMatch(/\bmin-h-0\b/);
-    expect(leftClass).toMatch(/\bmin-w-\[240px\]\b/);
+    expect(leftClass).toMatch(/\bmin-w-60\b/);
 
     const leftScroller = leftRail?.querySelector('div.overflow-y-auto');
     expect(leftScroller).toBeTruthy();
@@ -133,7 +133,7 @@ describe('UI-R2-W6.1 — criterion 2: rail overflow must stay inside side rails'
     const rightRail = document.querySelector('section[role="region"][aria-label="Editor properties"]')?.closest('div');
     expect(rightRail).toBeTruthy();
     const rightRailClass = rightRail?.className ?? '';
-    expect(rightRailClass).toMatch(/\bw-\[288px\]\b/);
+    expect(rightRailClass).toMatch(/\bw-72\b/);
     expect(rightRailClass).toMatch(/\bself-stretch\b/);
     expect(rightRailClass).toMatch(/\bmin-h-0\b/);
 
