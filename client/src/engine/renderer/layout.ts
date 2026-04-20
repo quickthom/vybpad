@@ -8,7 +8,17 @@ import {
   MELODY_DIATONIC_ROW_COUNT,
   NOTE_HEIGHT,
 } from './constants';
-import { getMeasureStartTicks, getMeterAtMeasure, measureIndexFromAbsoluteTick, measureLengthInTicks, TPQN } from './tickUtils';
+import {
+  getKeyAtMeasure,
+  getMeasureStartTicks,
+  getMeterAtMeasure,
+  getScaleAtMeasure,
+  measureIndexFromAbsoluteTick,
+  measureLengthInTicks,
+  TPQN,
+} from './tickUtils';
+import { clampSpanToMinOctave } from './voicePitchRange';
+import { scaleDegreeToMidi } from '../theory/scaleDegreeToMidi';
 
 // Re-export PAT-012 and tick helpers for the public barrel
 export {
@@ -200,4 +210,56 @@ export function noteRowY(
 /** Layout Y for a {@link NoteEvent} (callers skip rests). */
 export function noteRowYFromNoteEvent(note: NoteEvent, scrollY: number, rowHeight: number = NOTE_HEIGHT): number {
   return noteRowY(note.scaleDegree, note.octave, note.chromatic, scrollY, rowHeight);
+}
+
+/**
+ * Patched in from OB-14 baseline tests for pitch-range extraction.
+ */
+type MelodyVoicePitchRange = { minMidi: number; maxMidi: number };
+type MelodyVoicePitchRangeByIndex = readonly (MelodyVoicePitchRange | null)[];
+
+function computeSingleVoiceRange(song: SongData, voiceIndex: number): MelodyVoicePitchRange | null {
+  let minMidi = Number.POSITIVE_INFINITY;
+  let maxMidi = Number.NEGATIVE_INFINITY;
+
+  for (let measureIndex = 0; measureIndex < song.measures.length; measureIndex += 1) {
+    const measure = song.measures[measureIndex];
+    if (measure == null) continue;
+
+    const notes = measure.notes[voiceIndex];
+    if (notes == null) continue;
+
+    const key = getKeyAtMeasure(song, measureIndex);
+    const scale = getScaleAtMeasure(song, measureIndex);
+    for (const note of notes) {
+      if (note.isRest) continue;
+      const midi = scaleDegreeToMidi(note.scaleDegree, note.octave, note.chromatic, key, scale);
+      if (midi < minMidi) minMidi = midi;
+      if (midi > maxMidi) maxMidi = midi;
+    }
+  }
+
+  if (!Number.isFinite(minMidi) || !Number.isFinite(maxMidi)) {
+    return null;
+  }
+
+  const span = clampSpanToMinOctave({ minPitch: minMidi, maxPitch: maxMidi, hasNotes: true });
+  return { minMidi: span.minPitch, maxMidi: span.maxPitch };
+}
+
+/**
+ * OB-14: returns per-voice min/max MIDI pitch bounds for melody voices 0..3.
+ *
+ * - Rests are ignored.
+ * - Chromatic offsets are part of the pitch metric.
+ * - Voices with no non-rest notes return `null`.
+ * - Spans with material are expanded to at least one octave.
+ */
+export function computeMelodyVoicePitchRanges(song: SongData): MelodyVoicePitchRangeByIndex {
+  return [
+    computeSingleVoiceRange(song, 0),
+    computeSingleVoiceRange(song, 1),
+    computeSingleVoiceRange(song, 2),
+    computeSingleVoiceRange(song, 3),
+  ];
 }

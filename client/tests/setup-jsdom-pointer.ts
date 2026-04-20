@@ -1,6 +1,7 @@
 import '@testing-library/jest-dom/vitest';
 import { cleanup } from '@testing-library/react';
 import { afterEach, beforeEach } from 'vitest';
+import { expect } from 'vitest';
 
 import { useToastStore } from '@/store/toastStore';
 
@@ -11,6 +12,19 @@ import { useToastStore } from '@/store/toastStore';
  */
 
 export {};
+
+expect.extend({
+  toBeFinite(received: unknown) {
+    const pass = typeof received === 'number' && Number.isFinite(received);
+    return {
+      pass,
+      message: () =>
+        pass
+          ? `expected ${String(received)} not to be finite`
+          : `expected ${String(received)} to be a finite number`,
+    };
+  },
+});
 
 beforeEach(() => {
   useToastStore.getState().dismiss();
