@@ -141,6 +141,20 @@ export function computeVoicePitchSpan(song: SongData, voiceIndex: 0 | 1 | 2 | 3)
   }
 
   if (!Number.isFinite(minMidi) || !Number.isFinite(maxMidi)) {
+    if (validNoteCount > 0) {
+      // A structurally valid selected-voice note exists, but malformed key/scale
+      // or corrupted values made MIDI conversion unusable. Preserve resilient output
+      // by returning the deterministic minimum span marker.
+      return {
+        voiceIndex,
+        hasNotes: true,
+        minMidi: MIN_PITCH_SPAN_FALLBACK.min,
+        maxMidi: MIN_PITCH_SPAN_FALLBACK.max,
+        pitchSpanSemitones: MIN_VOICE_PITCH_SPAN_SEMITONES,
+        minSpanApplied: true,
+      };
+    }
+
     return fallback;
   }
 
