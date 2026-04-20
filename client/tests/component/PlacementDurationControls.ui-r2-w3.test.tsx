@@ -44,11 +44,21 @@ describe('PlacementDurationControls — UI-R2-W3 — RA-205', () => {
     const presetGroup = screen.getByRole('group', { name: /Duration presets/i });
     const buttons = within(presetGroup).getAllByRole('button');
     expect(buttons.length).toBeGreaterThanOrEqual(5);
+    let previousWidth = Number.POSITIVE_INFINITY;
 
     for (const button of buttons) {
       const compactLabel = button.textContent?.replace(/\([^)]*\)/g, '').trim();
       expect(compactLabel).toBeTruthy();
       expect(compactLabel).toMatch(/^\d+(?:\/\d+)?(?:\.\d+)?$/);
+
+      const barContainer = button.querySelector('span[aria-hidden="true"]');
+      const bar = barContainer?.querySelector('span');
+      expect(bar).toBeTruthy();
+      const width = Number(bar?.getAttribute('style')?.match(/width:\s*([0-9.]+)%/)?.[1]);
+      expect(width).toBeGreaterThan(0);
+      expect(width).toBeLessThanOrEqual(100);
+      expect(width).toBeLessThanOrEqual(previousWidth);
+      previousWidth = width;
     }
   });
 

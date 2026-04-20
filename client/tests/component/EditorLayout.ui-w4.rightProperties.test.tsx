@@ -363,7 +363,7 @@ describe('EditorLayout — UI-W4 — blocked chord edit (no silent failure)', ()
     await screen.findByRole('application', { name: /Song editor/i });
 
     const inversionGroup = screen.getByTestId('properties-chord-inversion');
-    const opt3 = within(inversionGroup).queryByRole('button', { name: /^3$/ });
+    const opt3 = within(inversionGroup).queryByRole('button', { name: /inversion 3/i });
 
     if (!opt3) {
       expect(useSongStore.getState().song.measures[0].chords.find((c) => c.id === cid)?.inversion).toBe(0);

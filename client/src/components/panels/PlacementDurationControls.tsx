@@ -8,6 +8,7 @@ const PRESETS: ReadonlyArray<{ ticks: number; label: string }> = [
   { ticks: 24, label: '1/2' },
   { ticks: 12, label: '1/4' },
 ];
+const MAX_PRESET_TICKS = PRESETS[0]?.ticks ?? 192;
 
 function ticksToBeatLabel(ticks: number): string {
   const found = PRESETS.find((preset) => preset.ticks === ticks);
@@ -33,6 +34,11 @@ export function PlacementDurationControls(props: PlacementDurationControlsProps)
   const { currentDurationTicks, onDurationTicks } = props;
   const activeLabel = ticksToBeatLabel(currentDurationTicks);
 
+  const barWidthPercent = (ticks: number): number => {
+    const pct = (ticks / MAX_PRESET_TICKS) * 100;
+    return Math.max(8, Math.min(100, Math.round(pct)));
+  };
+
   return (
     <section
       className="flex shrink-0 flex-col gap-2 border-b border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)] px-3 py-2"
@@ -52,11 +58,17 @@ export function PlacementDurationControls(props: PlacementDurationControlsProps)
             onClick={() => onDurationTicks(ticks)}
             className={
               currentDurationTicks === ticks
-                ? 'inline-flex min-h-9 items-center justify-center rounded-lg border border-[var(--color-primary,#4F46E5)] bg-[var(--color-surface-muted,#F9FAFB)] px-3 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2'
-                : 'inline-flex min-h-9 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-3 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2'
+                ? 'inline-flex w-full min-h-9 flex-col items-start justify-center gap-1 rounded-lg border border-[var(--color-primary,#4F46E5)] bg-[var(--color-surface-muted,#F9FAFB)] px-3 py-2 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2'
+                : 'inline-flex w-full min-h-9 flex-col items-start justify-center gap-1 rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-3 py-2 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2'
             }
           >
-            {label}
+            <span>{label}</span>
+            <span aria-hidden="true" className="h-1.5 w-full rounded-full bg-[var(--color-surface-muted,#F9FAFB)]">
+              <span
+                className="h-1.5 rounded-full bg-[var(--color-primary,#4F46E5)] transition-[width] duration-150"
+                style={{ width: `${barWidthPercent(ticks)}%` }}
+              />
+            </span>
           </button>
         ))}
       </div>
