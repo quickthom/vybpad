@@ -39,6 +39,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { EditorCanvas } from '../../../../src/components/editor/EditorCanvas';
 import * as hitTestModule from '../../../../src/engine/renderer/hitTest';
+import { horizontalTicksToPx } from '../../../../src/engine/renderer/layout';
+import { MEASURE_HEADER_HEIGHT, NOTE_HEIGHT, PITCH_GUTTER_WIDTH } from '../../../../src/engine/renderer/constants';
 import { useSongStore } from '../../../../src/store/songStore';
 
 const DEFAULT_VIEWPORT: Viewport = {
@@ -322,7 +324,7 @@ describe('EditorCanvas — TASK-2.7 mouse interaction (interface contract)', () 
       });
     });
 
-    it('calls onSelectionChange(null) when hitTestEditorCanvas returns null (miss)', () => {
+    it('establishes a collapsed range caret on empty melody-grid click (viewport x maps to beat)', () => {
       const onSelectionChange = vi.fn();
       vi.spyOn(hitTestModule, 'hitTestEditorCanvas').mockReturnValue(null);
 
@@ -346,16 +348,24 @@ describe('EditorCanvas — TASK-2.7 mouse interaction (interface contract)', () 
       );
 
       const canvas = canvasIn(container);
+      const targetBeat = 96;
+      const targetX = PITCH_GUTTER_WIDTH + horizontalTicksToPx(targetBeat, DEFAULT_VIEWPORT.zoom);
+      const targetY = MEASURE_HEADER_HEIGHT + NOTE_HEIGHT;
       fireEvent.pointerDown(canvas, {
-        clientX: 5,
-        clientY: 5,
+        clientX: targetX,
+        clientY: targetY,
         button: 0,
         buttons: 1,
         pointerId: 1,
         pointerType: 'mouse',
       });
 
-      expect(onSelectionChange).toHaveBeenCalledWith(null);
+      expect(onSelectionChange).toHaveBeenCalledWith({
+        type: 'range',
+        measureIndex: 0,
+        rangeStart: targetBeat,
+        rangeEnd: targetBeat,
+      });
     });
   });
 

@@ -23,7 +23,8 @@ import { randomUUID } from 'node:crypto';
 import { clampDurationToMeasure } from '@/components/editor/editorKeyboardLogic';
 import { chordFromKeyboardEvent, createShortcutManager } from '@/engine/keyboard/shortcutManager';
 import type { ShortcutCommandId, ShortcutContext, ShortcutDefinition, ShortcutManager } from '@/engine/keyboard/shortcutTypes';
-import { type EditorKeyboardContext, handleEditorKeydown } from '@/hooks/useKeyboard';
+import { applyMelodyPitchDegreeFromEditor, type EditorKeyboardContext, handleEditorKeydown } from '@/hooks/useKeyboard';
+import { buildDefaultSong } from '@/store/songStore';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const viewport: Viewport = { startMeasure: 0, measureCount: 8, scrollY: 0, zoom: 1 };
@@ -312,5 +313,74 @@ describe('TASK-7.2 — note duration shortcuts (useKeyboard + ShortcutContext)',
 
     handleEditorKeydown(keydown({ key: 'k', code: 'KeyK' }), ctx);
     expect(setCurrentDurationTicks).not.toHaveBeenCalled();
+  });
+});
+
+describe('OB-13 — table-mode caret drives insert beat for chord and melody payloads', () => {
+  it('adds a chord from keyboard digit at the collapsed range beat (96)', () => {
+    const onChordEdit = vi.fn();
+    const canvas = document.createElement('canvas');
+    canvas.tabIndex = 0;
+    document.body.append(canvas);
+    canvas.focus();
+
+    const ctx = makeCtx({
+      selection: { type: 'range', measureIndex: 0, rangeStart: 96, rangeEnd: 96 },
+      onChordEdit,
+    });
+    handleEditorKeydown(new KeyboardEvent('keydown', { key: '5', bubbles: true }), ctx);
+
+    expect(onChordEdit).toHaveBeenCalledTimes(1);
+    const action = onChordEdit.mock.calls[0]?.[1];
+    expect(action).toMatchObject({ type: 'add', chord: expect.objectContaining({ beat: 96 }) });
+    if (action && action.type === 'add') {
+      expect(action.chord.scaleDegree).toBe(5);
+    }
+  });
+
+  it('adds a melody note payload at the collapsed range beat (96) when selection is table caret', () => {
+    const onNoteEdit = vi.fn();
+    const selection = { type: 'range', measureIndex: 0, rangeStart: 96, rangeEnd: 96 };
+
+    const ok = applyMelodyPitchDegreeFromEditor(
+      makeCtx({ selection, onNoteEdit, onChordEdit: vi.fn(), onSelectionChange: vi.fn() }),
+      3,
+    );
+    expect(ok).toBe(true);
+    const action = onNoteEdit.mock.calls[0]?.[2];
+    expect(action).toMatchObject({
+      type: 'add',
+      note: expect.objectContaining({ scaleDegree: 3, beat: 96, duration: 48 }),
+    });
+  });
+
+  it('uses caret measure and beat even when viewport startMeasure differs', () => {
+    const onChordEdit = vi.fn();
+    const onNoteEdit = vi.fn();
+    const selection = { type: 'range', measureIndex: 2, rangeStart: 96, rangeEnd: 96 };
+    const song = buildDefaultSong();
+
+    const ok = applyMelodyPitchDegreeFromEditor(
+      makeCtx({
+        song,
+        selection,
+        viewport: { ...viewport, startMeasure: 5 },
+        onChordEdit,
+        onNoteEdit,
+      }),
+      3,
+    );
+    expect(ok).toBe(true);
+
+    const call = onNoteEdit.mock.calls[0]?.[2];
+    expect(call).toMatchObject({
+      type: 'add',
+      note: expect.objectContaining({ beat: 96 }),
+    });
+    expect(call).toBeTruthy();
+    if (call && call.type === 'add') {
+      expect(call.note.scaleDegree).toBe(3);
+    }
+    expect(onNoteEdit.mock.calls[0]?.[0]).toBe(2);
   });
 });
