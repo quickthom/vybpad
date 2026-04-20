@@ -14,6 +14,8 @@ Phases 0 (7/7), 1A (7/7), 1B (6/6), Phase 2 (15/15), Phase 3 (10/10), Phase 4 (1
 |---|---|---|---|---|---|---|
 | UI-R2-W1 | Builder | — | merged | — (f1139b1) | None | RA-201/206/208; merged to `develop`. |
 | UI-R2-W1 | QA | — | merged | — | UI-R2-W1 | Tests landed with W1. |
+| UI-R2-W2 | Builder | phase-8/ui-r2-wave2 | merged | — (61a9734) | UI-R2-W1 | RA-203/204/207/214; melody transposition matrix + palette affordances. |
+| UI-R2-W2 | QA | — | merged | — | UI-R2-W2 | Component tests included in W2 implementation changes. |
 | UI-R2-W4.1 | Builder | phase-8/ui-r2-wave4-drag | merged | #89 | UI-R2-W1 | Cross-measure remap + live preview. |
 | UI-R2-W4.1 | QA | phase-8/ui-r2-wave4-drag | merged | #89 | UI-R2-W1 | QA on branch. |
 | UI-R2-W4.2 | Builder | phase-8/ui-r2-wave4-caret | merged | #90 | UI-R2-W4.1 | OB-8 + OB-13. |
