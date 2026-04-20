@@ -57,6 +57,10 @@ function isFiniteInt(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value);
 }
 
+function isScaleDegree(value: unknown): value is ScaleDegree {
+  return isFiniteInt(value) && Number.isInteger(value) && value >= 1 && value <= 7;
+}
+
 function safeKeyScaleForMeasure(song: SongData, measureIndex: number): { key: NoteName; scale: ScaleType } {
   let key = song?.metadata?.key ?? 'C';
   let scale = song?.metadata?.scale ?? 'major';
@@ -127,15 +131,16 @@ export function computeVoicePitchSpan(song: SongData, voiceIndex: 0 | 1 | 2 | 3)
         continue;
       }
 
-      if (!isFiniteInt(note.scaleDegree) || !Number.isInteger(note.scaleDegree) || note.scaleDegree < 1 || note.scaleDegree > 7) {
+      if (!isScaleDegree(note.scaleDegree)) {
         continue;
       }
 
-      const octave = isFiniteInt(note.octave) ? Math.trunc(note.octave as number) : 0;
-      const chromatic = isFiniteInt(note.chromatic) ? Math.trunc(note.chromatic as number) : 0;
+      const octave = isFiniteInt(note.octave) ? Math.trunc(note.octave) : 0;
+      const chromatic = isFiniteInt(note.chromatic) ? Math.trunc(note.chromatic) : 0;
       validNoteCount += 1;
       try {
-        const midi = scaleDegreeToMidi(note.scaleDegree, octave, chromatic, key, scale, 4);
+        const scaleDegree = note.scaleDegree;
+        const midi = scaleDegreeToMidi(scaleDegree, octave, chromatic, key, scale, 4);
         minMidi = Math.min(minMidi, midi);
         maxMidi = Math.max(maxMidi, midi);
       } catch {
