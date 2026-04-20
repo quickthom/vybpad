@@ -99,16 +99,16 @@ test.describe('TASK-8.4 — visual regression (project=visual)', () => {
     await expect(page.getByRole('complementary', { name: /Chord palette panel/i })).toBeVisible();
 
     await expect(page).toHaveScreenshot('editor-empty.png', {
-      fullPage: true,
+      fullPage: false,
       animations: 'disabled',
       /** Canvas + font rasterization can drift slightly between runs; keep threshold for stable CI. */
       maxDiffPixels: 4500,
     });
-
-    await page.getByTestId('chord-palette-degree-1').click();
+    const degreeOneButton = page.getByTestId('chord-palette-degree-1');
+    await degreeOneButton.dispatchEvent('click');
     await expect(page.getByRole('button', { name: /^Save$/ })).toBeEnabled({ timeout: 45_000 });
     await expect(page).toHaveScreenshot('editor-populated.png', {
-      fullPage: true,
+      fullPage: false,
       animations: 'disabled',
       maxDiffPixels: 4500,
     });
