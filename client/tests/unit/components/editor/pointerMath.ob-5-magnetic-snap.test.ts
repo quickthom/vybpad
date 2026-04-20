@@ -15,9 +15,11 @@ import { describe, expect, it } from 'vitest';
 import {
   MAGNETIC_SNAP_GRID_STEP_TICKS,
   MAGNETIC_SNAP_THRESHOLD_TICKS,
+  nearestPitchGridFromStaffRelY,
   snapBeatMagnetically,
   softMagneticSnapMeasureTick,
 } from '../../../../src/components/editor/pointerMath';
+import { NOTE_HEIGHT } from '../../../../src/engine/renderer/constants';
 
 describe('OB-5 magnetic snap — snapBeatMagnetically', () => {
   describe('happy path', () => {
@@ -98,5 +100,14 @@ describe('OB-5 magnetic snap — softMagneticSnapMeasureTick (EditorCanvas move 
 
   it('with threshold 6, snaps beat 42 to 36 because distance 6 is within the snap band (override vs default 4)', () => {
     expect(softMagneticSnapMeasureTick(42, 0, 191, 12, 6)).toBe(36);
+  });
+});
+
+describe('pitch snapping — negative-row support for active voice ranges', () => {
+  it('maps negative staff-relative Y to negative diatonic rows instead of clamping at 0', () => {
+    expect(nearestPitchGridFromStaffRelY(-280, NOTE_HEIGHT)).toEqual({
+      diatonicRow: -14,
+      chromatic: 0,
+    });
   });
 });

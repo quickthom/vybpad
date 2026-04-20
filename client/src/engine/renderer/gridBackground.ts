@@ -82,6 +82,8 @@ export function computeGridBackgroundLayout(song: SongData, viewport: Viewport):
 export interface DrawGridBackgroundOptions {
   /** When set with {@link gridContentWidthPx}, draws horizontal melody staff row lines (RA-1). */
   melodyRowHeight?: number;
+  /** Number of melody staff rows to render before the chord strip. */
+  melodyRowCount?: number;
   /** Width of the translated grid region (not including any left pitch gutter). */
   gridContentWidthPx?: number;
 }
@@ -112,9 +114,10 @@ export function drawGridBackground(
   ctx.save();
 
   const rowH = options?.melodyRowHeight;
+  const melodyRows = options?.melodyRowCount ?? MELODY_DIATONIC_ROW_COUNT;
   const gridW = options?.gridContentWidthPx;
   if (rowH != null && gridW != null && gridW > 0) {
-    const stripTop = bottomChordStripTopY(rowH);
+    const stripTop = bottomChordStripTopY(rowH, melodyRows);
     ctx.fillStyle = 'white';
     ctx.fillRect(0, stripTop, gridW, CHORD_LETTER_STRIP_HEIGHT);
   }
@@ -142,7 +145,7 @@ export function drawGridBackground(
     const staffTop = noteStaffTopY();
     ctx.strokeStyle = GRID_LINE_COLOR;
     ctx.beginPath();
-    for (let r = 0; r <= MELODY_DIATONIC_ROW_COUNT; r++) {
+    for (let r = 0; r <= melodyRows; r++) {
       const y = Math.round(staffTop + r * rowH - viewport.scrollY) + 0.5;
       if (y < 0 || y > canvasHeight) {
         continue;
@@ -152,7 +155,7 @@ export function drawGridBackground(
     }
     ctx.stroke();
 
-    for (let r = 0; r < MELODY_DIATONIC_ROW_COUNT; r++) {
+    for (let r = 0; r < melodyRows; r++) {
       const degree = (((r % 7) + 1) as unknown) as ScaleDegree;
       const yTop = staffTop + r * rowH - viewport.scrollY;
       const yBottom = yTop + rowH;

@@ -1,11 +1,17 @@
 import type { NoteName, ScaleType, SongData, Viewport } from '@vybpad/shared';
 
 import { MELODY_DIATONIC_ROW_COUNT, NOTE_HEIGHT, PITCH_GUTTER_WIDTH } from './constants';
-import { diatonicRowToDegreeAndOctave, noteStaffTopY } from './layout';
-import { scaleDegreeToMidi } from '../theory/scaleDegreeToMidi';
+import {
+  noteStaffTopY,
+  melodyPitchRangeRowCount,
+  midiToStaffRowOffset,
+  diatonicRowToDegreeAndOctave,
+} from './layout';
+import type { VoicePitchRange } from './voicePitchRange';
 import { getScaleIntervals } from '../theory/scales';
 import { noteNameToMidiBase } from '../theory/noteNames';
 import { getKeyAtMeasure, getScaleAtMeasure } from './tickUtils';
+import { scaleDegreeToMidi } from '../theory/scaleDegreeToMidi';
 
 /**
  * One Y-axis pitch label for the melody piano-roll gutter (RA-1 / UI-W1).
@@ -125,21 +131,24 @@ export function computePitchAxisLabelsInViewport(
   viewport: Viewport,
   canvasHeight: number,
   melodyRowHeight: number = NOTE_HEIGHT,
+  melodyPitchRange?: Pick<VoicePitchRange, 'minPitch' | 'maxPitch'>,
 ): readonly PitchAxisViewportLabel[] {
   const staffTop = noteStaffTopY();
   const key = getKeyAtMeasure(song, viewport.startMeasure);
   const scale = getScaleAtMeasure(song, viewport.startMeasure);
+  const rowCount = melodyPitchRange ? melodyPitchRangeRowCount(melodyPitchRange) : MELODY_DIATONIC_ROW_COUNT;
+  const topRowOffset = melodyPitchRange ? midiToStaffRowOffset(melodyPitchRange.minPitch) : 0;
 
   const out: PitchAxisViewportLabel[] = [];
-  for (let r = 0; r < MELODY_DIATONIC_ROW_COUNT; r++) {
+  for (let r = 0; r < rowCount; r++) {
+    const absoluteRow = topRowOffset + r;
+    const { scaleDegree, octave } = diatonicRowToDegreeAndOctave(absoluteRow);
+    const midi = scaleDegreeToMidi(scaleDegree, octave, 0, key, scale, 4);
     const rowTop = staffTop + r * melodyRowHeight - viewport.scrollY;
     const rowBottom = rowTop + melodyRowHeight;
     if (rowBottom <= 0 || rowTop >= canvasHeight) {
       continue;
     }
-
-    const { scaleDegree, octave } = diatonicRowToDegreeAndOctave(r);
-    const midi = scaleDegreeToMidi(scaleDegree, octave, 0, key, scale, 4);
     const primary = midiToScientificPitchLabel(midi, key, scale);
     const centerY = staffTop + r * melodyRowHeight + melodyRowHeight / 2 - viewport.scrollY;
 

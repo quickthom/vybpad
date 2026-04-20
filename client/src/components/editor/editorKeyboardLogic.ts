@@ -6,7 +6,12 @@ import {
   noteStaffTopY,
   viewportXToAbsoluteTick,
 } from '../../engine/renderer/layout';
-import { CHORD_AREA_HEIGHT, CHORD_LETTER_STRIP_HEIGHT, NOTE_HEIGHT } from '../../engine/renderer/constants';
+import {
+  CHORD_AREA_HEIGHT,
+  CHORD_LETTER_STRIP_HEIGHT,
+  MELODY_DIATONIC_ROW_COUNT,
+  NOTE_HEIGHT,
+} from '../../engine/renderer/constants';
 import {
   getMeterAtMeasure,
   getScaleAtMeasure,
@@ -206,8 +211,9 @@ export function chordStripCaretSelectionFromPointer(
   viewportX: number,
   viewportY: number,
   melodyRowHeight: number = NOTE_HEIGHT,
+  melodyRowCount: number = MELODY_DIATONIC_ROW_COUNT,
 ): Selection | null {
-  const stripTop = bottomChordStripTopY(melodyRowHeight);
+  const stripTop = bottomChordStripTopY(melodyRowHeight, melodyRowCount);
   if (viewportY < stripTop || viewportY >= stripTop + CHORD_AREA_HEIGHT + CHORD_LETTER_STRIP_HEIGHT) {
     return null;
   }
@@ -231,11 +237,12 @@ export function melodyGridCaretSelectionFromPointer(
   viewportX: number,
   viewportY: number,
   melodyRowHeight: number = NOTE_HEIGHT,
+  melodyRowCount: number = MELODY_DIATONIC_ROW_COUNT,
 ): Selection | null {
   if (song.measures.length === 0) return null;
 
   const staffTop = noteStaffTopY();
-  const chordStripTop = bottomChordStripTopY(melodyRowHeight);
+  const chordStripTop = bottomChordStripTopY(melodyRowHeight, melodyRowCount);
   if (viewportY < staffTop || viewportY >= chordStripTop) {
     return null;
   }

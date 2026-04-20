@@ -39,10 +39,11 @@ import { DRAG_THRESHOLD_PX } from '@/components/editor/pointerMath';
 import { buildHarmonyVoicingSequence } from '@/engine/audio/harmonyVoicing';
 import { getPlaybackEngine, resetPlaybackEngineForTests } from '@/engine/audio';
 import { layoutChordBlock } from '@/engine/renderer/chordBlocks';
-import { PITCH_GUTTER_WIDTH } from '@/engine/renderer/constants';
+import { NOTE_HEIGHT, PITCH_GUTTER_WIDTH } from '@/engine/renderer/constants';
 import { computeNoteBlockRect } from '@/engine/renderer/noteBlocks';
 import { theoryEngine } from '@/engine/theory/theoryEngine';
 import { resetPlaybackStoreForTests, usePlaybackStore } from '@/store/playbackStore';
+import { computeMelodyVoicePitchRanges, melodyPitchRangeRowCount } from '@/engine/renderer/layout';
 
 const { toneStart, pianoStart } = vi.hoisted(() => ({
   toneStart: vi.fn<[], Promise<void>>(),
@@ -122,6 +123,25 @@ function canvasIn(container: HTMLElement): HTMLCanvasElement {
     throw new Error('Editor canvas not found in container');
   }
   return el as HTMLCanvasElement;
+}
+
+function chordRect(song: SongData, chord: ChordEvent): ReturnType<typeof layoutChordBlock> {
+  const [activeVoicePitchRange] = computeMelodyVoicePitchRanges(song);
+  const melodyRowCount = melodyPitchRangeRowCount(activeVoicePitchRange);
+  return layoutChordBlock(chord, 0, song, DEFAULT_VIEWPORT, NOTE_HEIGHT, melodyRowCount);
+}
+
+function noteRect(song: SongData, note: NoteEvent): ReturnType<typeof computeNoteBlockRect> {
+  const [activeVoicePitchRange] = computeMelodyVoicePitchRanges(song);
+  return computeNoteBlockRect({
+    song,
+    viewport: DEFAULT_VIEWPORT,
+    measureIndex: 0,
+    note,
+    isRest: note.isRest,
+    voiceIndex: 0,
+    melodyVoicePitchRange: activeVoicePitchRange,
+  });
 }
 
 function stubCanvas2d() {
@@ -255,14 +275,7 @@ describe('OB-1 + OB-2 — note and chord click audition (PAT-026 gesture path)',
     it('calls initializeAudio and previews a single piano note when the user taps a melody note block (no drag)', async () => {
       mockCanvasLayout({ left: 0, top: 0, width: 1200, height: 800 });
 
-      const nr = computeNoteBlockRect({
-        song,
-        viewport: DEFAULT_VIEWPORT,
-        measureIndex: 0,
-        note,
-        isRest: false,
-        voiceIndex: 0,
-      });
+      const nr = noteRect(song, note);
       const vx = nr.x + nr.width / 2;
       const vy = nr.y + nr.height / 2;
       const clientX = PITCH_GUTTER_WIDTH + vx;
@@ -328,7 +341,7 @@ describe('OB-1 + OB-2 — note and chord click audition (PAT-026 gesture path)',
     it('calls initializeAudio and previews every chord voicing MIDI note when the user taps a chord block', async () => {
       mockCanvasLayout({ left: 0, top: 0, width: 1200, height: 800 });
 
-      const cr = layoutChordBlock(chord, 0, song, DEFAULT_VIEWPORT);
+      const cr = chordRect(song, chord);
       const vx = cr.x + cr.width / 2;
       const vy = cr.y + cr.height / 2;
       const clientX = PITCH_GUTTER_WIDTH + vx;
@@ -393,14 +406,7 @@ describe('OB-1 + OB-2 — note and chord click audition (PAT-026 gesture path)',
     it('does not invoke engine.initialize more than once when two auditions run after audio is already ready', async () => {
       mockCanvasLayout({ left: 0, top: 0, width: 1200, height: 800 });
 
-      const nr = computeNoteBlockRect({
-        song,
-        viewport: DEFAULT_VIEWPORT,
-        measureIndex: 0,
-        note,
-        isRest: false,
-        voiceIndex: 0,
-      });
+      const nr = noteRect(song, note);
       const vx = nr.x + nr.width / 2;
       const vy = nr.y + nr.height / 2;
       const clientX = PITCH_GUTTER_WIDTH + vx;
@@ -461,14 +467,7 @@ describe('OB-1 + OB-2 — note and chord click audition (PAT-026 gesture path)',
     it('treats pointer movement below the drag threshold as a tap (audition), not a move drag', async () => {
       mockCanvasLayout({ left: 0, top: 0, width: 1200, height: 800 });
 
-      const nr = computeNoteBlockRect({
-        song,
-        viewport: DEFAULT_VIEWPORT,
-        measureIndex: 0,
-        note,
-        isRest: false,
-        voiceIndex: 0,
-      });
+      const nr = noteRect(song, note);
       const vx = nr.x + nr.width / 2;
       const vy = nr.y + nr.height / 2;
       const baseX = PITCH_GUTTER_WIDTH + vx;

@@ -1,8 +1,9 @@
 import type { ChordEvent, NoteEvent, SongData, Viewport } from '@vybpad/shared';
 
-import { NOTE_HEIGHT } from './constants';
+import { MELODY_DIATONIC_ROW_COUNT, NOTE_HEIGHT } from './constants';
 import { layoutChordBlock } from './chordBlocks';
 import { computeNoteBlockRect } from './noteBlocks';
+import type { VoicePitchRange } from './voicePitchRange';
 
 /**
  * Result of {@link hitTestEditorCanvas}: which musical event (if any) sits under a viewport point.
@@ -45,6 +46,7 @@ function hitChordTopmost(
   song: SongData,
   viewport: Viewport,
   melodyRowHeight: number,
+  melodyRowCount: number = MELODY_DIATONIC_ROW_COUNT,
 ): EditorCanvasHit | null {
   const start = viewport.startMeasure;
   const end = Math.min(start + viewport.measureCount, song.measures.length);
@@ -59,7 +61,7 @@ function hitChordTopmost(
       if (!chord) {
         continue;
       }
-      const rect = layoutChordBlock(chord, mi, song, viewport, melodyRowHeight);
+      const rect = layoutChordBlock(chord, mi, song, viewport, melodyRowHeight, melodyRowCount);
       if (pointInBlockRect(x, y, rect)) {
         return { kind: 'chord', measureIndex: mi, chord };
       }
@@ -81,6 +83,7 @@ function hitNoteTopmost(
   viewport: Viewport,
   melodyRowHeight: number,
   melodyVoiceVisible: readonly [boolean, boolean, boolean, boolean] = [true, true, true, true],
+  melodyVoicePitchRange?: Pick<VoicePitchRange, 'minPitch'>,
 ): EditorCanvasHit | null {
   const start = viewport.startMeasure;
   const end = Math.min(start + viewport.measureCount, song.measures.length);
@@ -107,6 +110,7 @@ function hitNoteTopmost(
           isRest: note.isRest,
           voiceIndex: v,
           melodyRowHeight,
+          melodyVoicePitchRange,
         });
         if (pointInBlockRect(x, y, rect)) {
           return { kind: 'note', measureIndex: mi, voiceIndex: v, note };
@@ -135,10 +139,20 @@ export function hitTestEditorCanvas(
   viewport: Viewport,
   melodyRowHeight: number = NOTE_HEIGHT,
   melodyVoiceVisible: readonly [boolean, boolean, boolean, boolean] = [true, true, true, true],
+  melodyVoicePitchRange?: Pick<VoicePitchRange, 'minPitch'>,
+  melodyRowCount: number = MELODY_DIATONIC_ROW_COUNT,
 ): EditorCanvasHit | null {
-  const noteHit = hitNoteTopmost(x, y, song, viewport, melodyRowHeight, melodyVoiceVisible);
+  const noteHit = hitNoteTopmost(
+    x,
+    y,
+    song,
+    viewport,
+    melodyRowHeight,
+    melodyVoiceVisible,
+    melodyVoicePitchRange,
+  );
   if (noteHit) {
     return noteHit;
   }
-  return hitChordTopmost(x, y, song, viewport, melodyRowHeight);
+  return hitChordTopmost(x, y, song, viewport, melodyRowHeight, melodyRowCount);
 }

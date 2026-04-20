@@ -10,6 +10,7 @@ import {
   noteRowY,
   pixelsPerTick,
 } from './layout';
+import type { VoicePitchRange } from './voicePitchRange';
 import { noteNameToMidiBase } from '../theory/noteNames';
 import { scaleDegreeToMidi } from '../theory/scaleDegreeToMidi';
 
@@ -189,13 +190,14 @@ export const REST_VERTICAL_ANCHOR: Pick<NoteEvent, 'scaleDegree' | 'octave' | 'c
   chromatic: 0,
 };
 
-function restTopY(scrollY: number, rowHeight: number): number {
+function restTopY(scrollY: number, rowHeight: number, melodyVoicePitchRange?: Pick<VoicePitchRange, 'minPitch'>): number {
   return noteRowY(
     REST_VERTICAL_ANCHOR.scaleDegree,
     REST_VERTICAL_ANCHOR.octave,
     REST_VERTICAL_ANCHOR.chromatic,
     scrollY,
     rowHeight,
+    melodyVoicePitchRange,
   );
 }
 
@@ -225,6 +227,8 @@ export interface ComputeNoteBlockRectParams {
   voiceIndex?: 0 | 1 | 2 | 3;
   /** Staff spacing row height (defaults to PAT-012 {@link NOTE_HEIGHT}). */
   melodyRowHeight?: number;
+  /** Optional per-active-voice pitch anchor for OB-14 staff alignment. */
+  melodyVoicePitchRange?: Pick<VoicePitchRange, 'minPitch'>;
 }
 
 /**
@@ -239,8 +243,8 @@ export function computeNoteBlockRect(params: ComputeNoteBlockRectParams): NoteBl
   const x = absoluteTickToViewportX(absTick, viewport, song);
   const w = note.duration * pixelsPerTick(viewport.zoom);
   const rowTop = isRest
-    ? restTopY(viewport.scrollY, rowHeight)
-    : noteRowYFromNoteEvent(note, viewport.scrollY, rowHeight);
+    ? restTopY(viewport.scrollY, rowHeight, params.melodyVoicePitchRange)
+    : noteRowYFromNoteEvent(note, viewport.scrollY, rowHeight, params.melodyVoicePitchRange);
   const y = rowTop + inset + voiceLaneOffsetY(voice, rowHeight);
   const height = rowHeight - 2 * inset;
   return { x, y, width: w, height };
@@ -356,6 +360,8 @@ export interface DrawNoteBlocksOptions {
   labelMode?: EditorLabelMode;
   /** Vertical pitch ladder step from staff spacing (defaults to {@link NOTE_HEIGHT}). */
   melodyRowHeight?: number;
+  /** Optional per-active-voice pitch anchor for OB-14 staff alignment. */
+  melodyVoicePitchRange?: Pick<VoicePitchRange, 'minPitch'>;
   /** UI-W4 — defaults all true (INTERFACES: omitted → all visible). */
   melodyVoiceVisible?: readonly [boolean, boolean, boolean, boolean];
   /** UI-W4 — active melody lane; required when using visibility / inactive styling. */
@@ -413,6 +419,7 @@ export function drawNoteBlocks(
           isRest: note.isRest,
           voiceIndex: v,
           melodyRowHeight,
+          melodyVoicePitchRange: options.melodyVoicePitchRange,
         });
         if (note.isRest) {
           if (isInactiveLane && inactiveMode === 'alpha') {

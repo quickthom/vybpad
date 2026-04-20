@@ -66,6 +66,7 @@ import { useAuthStore } from '../store/authStore';
 import { syncPlaybackEngineWithSong, usePlaybackStore } from '../store/playbackStore';
 import { withResetZoom, withScrollYDelta, withZoomIn, withZoomOut } from '../utils/viewportNavigation';
 import { melodyRowHeightPx } from '../utils/staffSpacing';
+import { computeMelodyVoicePitchRanges, melodyPitchRangeRowCount } from '../engine/renderer/layout';
 import { readPlainTextFromClipboard, writePlainTextToClipboard } from '../utils/clipboardTransport';
 import { parseSelectionClipboardPayloadJson } from '../utils/selectionClipboard';
 import { buildDefaultSong, useSongStore } from '../store/songStore';
@@ -295,13 +296,21 @@ export function EditorLayout() {
       return;
     }
     if (id === 'scrollUp') {
-      const step = melodyRowHeightPx(useUIStore.getState().staffSpacing);
-      setViewport(withScrollYDelta(useUIStore.getState().viewport, -step));
+      const ui = useUIStore.getState();
+      const songNow = useSongStore.getState().song;
+      const activeRange = computeMelodyVoicePitchRanges(songNow)[ui.activeVoice];
+      const melodyRowCount = melodyPitchRangeRowCount(activeRange);
+      const step = melodyRowHeightPx(ui.staffSpacing);
+      setViewport(withScrollYDelta(ui.viewport, -step, melodyRowCount, step));
       return;
     }
     if (id === 'scrollDown') {
-      const step = melodyRowHeightPx(useUIStore.getState().staffSpacing);
-      setViewport(withScrollYDelta(useUIStore.getState().viewport, step));
+      const ui = useUIStore.getState();
+      const songNow = useSongStore.getState().song;
+      const activeRange = computeMelodyVoicePitchRanges(songNow)[ui.activeVoice];
+      const melodyRowCount = melodyPitchRangeRowCount(activeRange);
+      const step = melodyRowHeightPx(ui.staffSpacing);
+      setViewport(withScrollYDelta(ui.viewport, step, melodyRowCount, step));
       return;
     }
     if (id === 'moveSelectionLeft' || id === 'moveSelectionRight') {

@@ -1,7 +1,8 @@
 import type { ScaleDegree } from '@vybpad/shared';
 
 import { NOTE_HEIGHT } from '../../engine/renderer/constants';
-import { diatonicRowIndex, noteStaffTopY } from '../../engine/renderer/layout';
+import { diatonicRowIndex, melodyPitchRangeTopRowOffset, noteStaffTopY } from '../../engine/renderer/layout';
+import type { VoicePitchRange } from '../../engine/renderer/voicePitchRange';
 
 export { diatonicRowToDegreeAndOctave } from '../../engine/renderer/layout';
 
@@ -62,8 +63,14 @@ export function pointerEventToViewportXY(
 /**
  * `viewportY` on the canvas → staff-relative Y used by {@link noteRowY} (before subtracting scroll).
  */
-export function viewportYToStaffRelativeY(viewportY: number, scrollY: number): number {
-  return viewportY - noteStaffTopY() + scrollY;
+export function viewportYToStaffRelativeY(
+  viewportY: number,
+  scrollY: number,
+  melodyVoicePitchRange?: Pick<VoicePitchRange, 'minPitch'>,
+  melodyRowHeight: number = NOTE_HEIGHT,
+): number {
+  const rowHeight = Number.isFinite(melodyRowHeight) && melodyRowHeight > 0 ? melodyRowHeight : NOTE_HEIGHT;
+  return viewportY - noteStaffTopY() + scrollY + melodyPitchRangeTopRowOffset(melodyVoicePitchRange) * rowHeight;
 }
 
 /**
@@ -80,7 +87,7 @@ export function nearestPitchGridFromStaffRelY(
   const g = rowHeight / 2;
   let bestD = Infinity;
   let best = { diatonicRow: 0, chromatic: 0 };
-  const rowLo = Math.max(0, Math.floor(relY / rowHeight) - 1);
+  const rowLo = Math.floor(relY / rowHeight) - 1;
   const rowHi = Math.ceil(relY / rowHeight) + 4;
   for (let row = rowLo; row <= rowHi; row++) {
     for (const chromatic of [-1, 0, 1] as const) {

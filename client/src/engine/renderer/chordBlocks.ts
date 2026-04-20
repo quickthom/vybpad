@@ -5,7 +5,7 @@ import type { TheoryEngine } from '../theory/theoryEngine';
 import { noteNameToMidiBase } from '../theory/noteNames';
 import { resolveSecondaryTarget } from '../theory/secondaryChords';
 import { scaleDegreeToMidi } from '../theory/scaleDegreeToMidi';
-import { CHORD_AREA_HEIGHT, CHORD_LETTER_STRIP_HEIGHT, NOTE_HEIGHT } from './constants';
+import { CHORD_AREA_HEIGHT, CHORD_LETTER_STRIP_HEIGHT, MELODY_DIATONIC_ROW_COUNT, NOTE_HEIGHT } from './constants';
 import { pat010DiatonicHex, pat010MajorCentricHex, PAT010_DIATONIC_DEGREE_HEX } from './colorMaps';
 import {
   absoluteTickFromMeasurePosition,
@@ -177,6 +177,7 @@ export function layoutChordBlock(
   song: SongData,
   viewport: Viewport,
   melodyRowHeight: number = NOTE_HEIGHT,
+  melodyRowCount: number = MELODY_DIATONIC_ROW_COUNT,
 ): ChordBlockRect {
   const absoluteTick = absoluteTickFromMeasurePosition(song, measureIndex, chord.beat);
   const x = absoluteTickToViewportX(absoluteTick, viewport, song);
@@ -185,7 +186,7 @@ export function layoutChordBlock(
     measureIndex,
     chord,
     x,
-    y: bottomChordStripTopY(melodyRowHeight),
+    y: bottomChordStripTopY(melodyRowHeight, melodyRowCount),
     width: w,
     height: CHORD_STRIP_TOTAL_HEIGHT,
     absoluteTick,
@@ -216,6 +217,8 @@ export interface DrawChordBlocksOptions {
   labelMode?: EditorLabelMode;
   /** Melody row height from staff spacing; must match `computeNoteBlockRect` / EditorCanvas. */
   melodyRowHeight?: number;
+  /** Explicit row count used when active voice pitch range is narrower than defaults. */
+  melodyRowCount?: number;
 }
 
 /**
@@ -232,6 +235,7 @@ export function drawChordBlocks(
   const colorScheme = options?.colorScheme ?? 'diatonic';
   const labelMode: EditorLabelMode = options?.labelMode ?? 'degree';
   const melodyRowHeight = options?.melodyRowHeight ?? NOTE_HEIGHT;
+  const melodyRowCount = options?.melodyRowCount ?? MELODY_DIATONIC_ROW_COUNT;
   const start = viewport.startMeasure;
   const end = Math.min(start + viewport.measureCount, song.measures.length);
 
@@ -241,7 +245,14 @@ export function drawChordBlocks(
     const scale = getScaleAtMeasure(song, mi);
 
     for (const chord of measure.chords) {
-      const rect = layoutChordBlock(chord, mi, song, viewport, melodyRowHeight);
+      const rect = layoutChordBlock(
+        chord,
+        mi,
+        song,
+        viewport,
+        melodyRowHeight,
+        melodyRowCount,
+      );
       if (rect.width <= 0) {
         continue;
       }
