@@ -23,11 +23,12 @@ Phases 0 (7/7), 1A (7/7), 1B (6/6), Phase 2 (15/15), Phase 3 (10/10), Phase 4 (1
 | UI-R2-W4.2 | Builder | — | merged | #90 | UI-R2-W4.1 | OB-8 + OB-13. |
 | UI-R2-W4.2 | QA | — | merged | #90 | UI-R2-W4.1 | QA on branch. |
 | UI-R2-W4.3 | Builder | — | merged | [#91](https://github.com/quickthom/vybpad/pull/91) | UI-R2-W4.2 | OB-10 undo/redo. |
-| TECH-BASELINE-CI | TaskCoord | TBD | in-progress | — | None | **`develop` must pass `./scripts/ci-local.sh`** (root-cause fixes; no test deletion). Blocks new **UI-R2-W5.1**. |
-| UI-R2-W5.1 | Builder | — | pending | — | UI-R2-W4.3, TECH-BASELINE-CI | **Restart:** PR **#92** closed; branch deleted. Fresh branch/brief after baseline green. OB-14. |
-| UI-R2-W5.1 | QA | — | pending | — | UI-R2-W5.1 | Concurrent brief when Builder starts. |
-| UI-R2-W5.2 | Builder | — | blocked | — | UI-R2-W5.1 | OB-14 render/hit-test. |
-| UI-R2-W5.2 | QA | — | blocked | — | UI-R2-W5.2 | — |
+| UI-R2-W4.3 | QA | — | merged | [#91](https://github.com/quickthom/vybpad/pull/91) | UI-R2-W4.3 | QA on branch. |
+| TECH-BASELINE-CI | TaskCoord | — | merged | — | None | **`develop` green:** TL verified `./scripts/ci-local.sh` before W5.1 restart; superseded by ongoing `develop` health. |
+| UI-R2-W5.1 | Builder | — | merged | [#94](https://github.com/quickthom/vybpad/pull/94), [#95](https://github.com/quickthom/vybpad/pull/95) | UI-R2-W4.3 | OB-14 slice 1: `voicePitchRange` + tests; #94 squash + #95 ESLint hotfix on `develop` (`63c4841`). |
+| UI-R2-W5.1 | QA | — | merged | [#94](https://github.com/quickthom/vybpad/pull/94) | UI-R2-W5.1 | Tests on branch; merged with W5.1. |
+| UI-R2-W5.2 | Builder | `phase-ui-r2/w5-2-ob14-render-hit` | in-progress | — | UI-R2-W5.1 | OB-14 renderer + hit-test; TaskCoordinator spawned post-#94. |
+| UI-R2-W5.2 | QA | `phase-ui-r2/w5-2-ob14-render-hit` | in-progress | — | UI-R2-W5.2 | Concurrent QA on same branch per PAT-017. |
 | UI-R2-W5.3 | Builder | — | blocked | — | UI-R2-W5.2 | OB-15 measure packing. |
 | UI-R2-W5.3 | QA | — | blocked | — | UI-R2-W5.3 | — |
 | UI-R2-W5.4 | Builder | — | blocked | — | UI-R2-W5.3 | OB-15 integration. |
