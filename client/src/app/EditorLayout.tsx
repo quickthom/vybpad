@@ -129,6 +129,10 @@ export function EditorLayout() {
   const editChord = useSongStore((s) => s.editChord);
   const editNote = useSongStore((s) => s.editNote);
   const editNoteBatch = useSongStore((s) => s.editNoteBatch);
+  const undo = useSongStore((s) => s.undo);
+  const redo = useSongStore((s) => s.redo);
+  const canUndo = useSongStore((s) => s.canUndo);
+  const canRedo = useSongStore((s) => s.canRedo);
   const addMeasures = useSongStore((s) => s.addMeasures);
   const deleteMeasures = useSongStore((s) => s.deleteMeasures);
   const setMeasureChanges = useSongStore((s) => s.setMeasureChanges);
@@ -318,6 +322,14 @@ export function EditorLayout() {
 
     // TASK-7.5 — transport: `playPause` / `stopPlayback` / `rewindPlayback` use global scope (justified: Hookpad-style
     // transport from the shell without canvas focus). Still gated by modal + text editing in ShortcutManager.
+    if (id === 'undo') {
+      undo();
+      return;
+    }
+    if (id === 'redo') {
+      redo();
+      return;
+    }
     if (id === 'playPause') {
       void (async () => {
         const before = usePlaybackStore.getState();
@@ -585,6 +597,30 @@ export function EditorLayout() {
       shortcutManager.registerShortcut({
         id: 'rewindPlayback',
         chord: TASK75_TRANSPORT_SHORTCUT_CHORDS.rewindPlayback,
+        scope: 'global',
+        conflictPolicy: 'replace',
+      }),
+      shortcutManager.registerShortcut({
+        id: 'undo',
+        chord: TASK75_TRANSPORT_SHORTCUT_CHORDS.undo,
+        scope: 'global',
+        conflictPolicy: 'replace',
+      }),
+      shortcutManager.registerShortcut({
+        id: 'undo',
+        chord: TASK75_TRANSPORT_SHORTCUT_CHORDS.undoMac,
+        scope: 'global',
+        conflictPolicy: 'replace',
+      }),
+      shortcutManager.registerShortcut({
+        id: 'redo',
+        chord: TASK75_TRANSPORT_SHORTCUT_CHORDS.redo,
+        scope: 'global',
+        conflictPolicy: 'replace',
+      }),
+      shortcutManager.registerShortcut({
+        id: 'redo',
+        chord: TASK75_TRANSPORT_SHORTCUT_CHORDS.redoMac,
         scope: 'global',
         conflictPolicy: 'replace',
       }),
@@ -1225,6 +1261,10 @@ export function EditorLayout() {
         onPause={playbackPause}
         onStop={playbackStop}
         onRewind={playbackRewind}
+        canUndo={canUndo}
+        canRedo={canRedo}
+        onUndo={undo}
+        onRedo={redo}
         onTempoChange={(bpm) => {
           const n = Math.round(bpm);
           if (!Number.isFinite(n) || n < 20 || n > 300) return;
