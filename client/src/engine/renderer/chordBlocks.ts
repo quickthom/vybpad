@@ -38,6 +38,7 @@ const IONIAN_PC_FROM_TONIC = [0, 2, 4, 5, 7, 9, 11] as const;
 
 const DARK_LABEL = '#111827';
 const LIGHT_LABEL = '#FFFFFF';
+const SECONDARY_LABEL = '#1F2937';
 
 function clampDegree(d: number): ScaleDegree {
   const x = Math.max(1, Math.min(7, Math.round(d)));

@@ -552,7 +552,7 @@ function pickSelectedMelodyNote(ctx: EditorKeyboardContext): SelectedMelodyNoteS
 }
 
 function applyDiatonicStep(degree: ScaleDegree, delta: -1 | 1): { degree: ScaleDegree; octaveDelta: number } {
-  let next = degree + delta;
+  let next = (degree + delta) as number;
   let octaveDelta = 0;
   if (next === 8) {
     next = 1;
