@@ -58,6 +58,13 @@ function authHeader(init: RequestInit | undefined): string | null {
   return record.Authorization ?? record.authorization ?? null;
 }
 
+function assertNoDebugIngestCalls(): void {
+  const debugPrefix = '127.0.0.1:7650/ingest';
+  for (const [url] of vi.mocked(fetch).mock.calls) {
+    expect(String(url)).not.toContain(debugPrefix);
+  }
+}
+
 type ApiModule = typeof import('../../../src/utils/apiClient');
 
 let authApi: ApiModule['authApi'];
@@ -557,5 +564,39 @@ describe('apiClient — fetch transport (PAT-007)', () => {
     await authApi.register({ email: 'e@e.com', password: '12345678', displayName: 'E' });
 
     expect(globalThis.fetch).toHaveBeenCalled();
+  });
+});
+
+describe('apiClient — debug telemetry side effects (baseline regression: TASK-1B.5 #3)', () => {
+  it('does not call local /ingest debug endpoint during auth request flow', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(
+      jsonResponse(
+        {
+          user: {
+            id: 'u1',
+            email: 'a@b.com',
+            displayName: 'Ada',
+            createdAt: '2026-01-01T00:00:00.000Z',
+          },
+          accessToken: 'jwt-1',
+        },
+        { status: 200 },
+      ),
+    );
+
+    await authApi.login({ email: 'a@b.com', password: 'password12' });
+
+    expect(vi.mocked(fetch)).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(fetch).mock.calls[0]![0]).toBe('http://api.test/api/auth/login');
+    assertNoDebugIngestCalls();
+
+    vi.mocked(fetch).mockReset();
+    vi.mocked(fetch).mockResolvedValueOnce(jsonResponse({ projects: [] }, { status: 200 }));
+
+    await projectsApi.list();
+
+    expect(vi.mocked(fetch)).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(fetch).mock.calls[0]![0]).toBe('http://api.test/api/projects');
+    assertNoDebugIngestCalls();
   });
 });
