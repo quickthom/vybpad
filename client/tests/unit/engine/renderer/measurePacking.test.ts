@@ -12,11 +12,15 @@
  *
  * Criterion 3: TASK-8.0 stride safety compatibility (for MeasureBar callers)
  *   happy: output is always at least 1 so chunking loops using i += measuresPerLine remain safe
+ *
+ * Criterion 4: Barrel contract for renderer exports
+ *   happy: `computeMeasuresPerLine` is exported from `src/engine/renderer/index`
  */
 
 import type { Measure, SongData } from '@vybpad/shared';
 import { beforeAll, describe, expect, it } from 'vitest';
 
+import * as rendererBarrel from '../../../../src/engine/renderer/index';
 import { BEAT_WIDTH, MEASURE_HEADER_HEIGHT } from '../../../../src/engine/renderer/constants';
 import { measureWidthPixels } from '../../../../src/engine/renderer/layout';
 
@@ -29,26 +33,6 @@ type ComputeMeasuresPerLine = (args: {
 }) => number;
 
 let computeMeasuresPerLine!: ComputeMeasuresPerLine;
-
-async function resolveComputeMeasuresPerLine(): Promise<ComputeMeasuresPerLine> {
-  try {
-    const packing = await import('../../../../src/engine/renderer/measurePacking');
-    const fn = (packing as { computeMeasuresPerLine?: unknown }).computeMeasuresPerLine;
-    if (typeof fn === 'function') {
-      return fn as ComputeMeasuresPerLine;
-    }
-  } catch {
-    // Optional module path used by other builders; continue with fallback.
-  }
-
-  const barrel = await import('../../../../src/engine/renderer/layout');
-  const fn = (barrel as { computeMeasuresPerLine?: unknown }).computeMeasuresPerLine;
-  if (typeof fn === 'function') {
-    return fn as ComputeMeasuresPerLine;
-  }
-
-  throw new Error('computeMeasuresPerLine was not found in renderer sources.');
-}
 
 function emptyMeasure(id: string): Measure {
   return {
@@ -77,8 +61,19 @@ function minimalSong44(measureCount: number): SongData {
   };
 }
 
-beforeAll(async () => {
-  computeMeasuresPerLine = await resolveComputeMeasuresPerLine();
+function minimalSongWithMeter(measureCount: number, meter: { numerator: number; denominator: number }): SongData {
+  const song = minimalSong44(measureCount);
+  song.metadata.meter = meter;
+  return song;
+}
+
+beforeAll(() => {
+  const fn = (rendererBarrel as { computeMeasuresPerLine?: unknown }).computeMeasuresPerLine;
+  if (typeof fn === 'function') {
+    computeMeasuresPerLine = fn as ComputeMeasuresPerLine;
+    return;
+  }
+  throw new Error('computeMeasuresPerLine was not exported from client/src/engine/renderer/index.ts');
 });
 
 function safeCompute(args: { canvasWidthPx: number; zoom: number; measureHeaderHeightPx?: number; beatsPerMeasure?: number }): number {
@@ -89,6 +84,13 @@ function safeCompute(args: { canvasWidthPx: number; zoom: number; measureHeaderH
 }
 
 describe('measure packing (OB-15)', () => {
+  describe('barrel contract', () => {
+    it('exports computeMeasuresPerLine from client/src/engine/renderer/index.ts', () => {
+      expect(Object.hasOwn(rendererBarrel, 'computeMeasuresPerLine')).toBe(true);
+      expect(typeof (rendererBarrel as { computeMeasuresPerLine?: unknown }).computeMeasuresPerLine).toBe('function');
+    });
+  });
+
   describe('happy path', () => {
     it('returns an integer number of measures matching measureWidthPixels-based packing at zoom 1 and zoom 2', () => {
       const song = minimalSong44(12);
@@ -106,6 +108,20 @@ describe('measure packing (OB-15)', () => {
       expect(atZoom1).toBe(3);
       expect(atZoom2).toBe(1);
       expect(atZoom2).toBeLessThanOrEqual(atZoom1);
+    });
+
+    it('packs whole measures for fractional meters with widths aligned to measureWidthPixels', () => {
+      const song = minimalSongWithMeter(12, { numerator: 5, denominator: 8 });
+      const measureWidth = measureWidthPixels(song, 0, 1);
+      const twoAndHalfMeasureWidth = measureWidth * 2.5;
+      const threeMeasureWidth = measureWidth * 3;
+
+      const packedAtTwoAndHalfMeasures = safeCompute({ canvasWidthPx: twoAndHalfMeasureWidth, zoom: 1, measureHeaderHeightPx: 0 });
+      const packedAtThreeMeasures = safeCompute({ canvasWidthPx: threeMeasureWidth, zoom: 1, measureHeaderHeightPx: 0 });
+
+      expect(packedAtTwoAndHalfMeasures).toBe(2);
+      expect(packedAtTwoAndHalfMeasures).toBe(Math.floor(twoAndHalfMeasureWidth / measureWidth));
+      expect(packedAtThreeMeasures).toBe(3);
     });
 
     it('returns fewer measures when canvas width shrinks for the same zoom', () => {
