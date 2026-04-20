@@ -87,7 +87,7 @@ export function nearestPitchGridFromStaffRelY(
   const g = rowHeight / 2;
   let bestD = Infinity;
   let best = { diatonicRow: 0, chromatic: 0 };
-  const rowLo = Math.max(0, Math.floor(relY / rowHeight) - 1);
+  const rowLo = Math.floor(relY / rowHeight) - 1;
   const rowHi = Math.ceil(relY / rowHeight) + 4;
   for (let row = rowLo; row <= rowHi; row++) {
     for (const chromatic of [-1, 0, 1] as const) {
