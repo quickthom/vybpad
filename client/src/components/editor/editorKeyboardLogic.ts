@@ -1,6 +1,11 @@
 import type { ChordEvent, Measure, NoteEvent, NoteName, ScaleDegree, ScaleType, Selection, SongData, Viewport } from '@vybpad/shared';
 
-import { bottomChordStripTopY, viewportXToAbsoluteTick } from '../../engine/renderer/layout';
+import {
+  bottomChordStripTopY,
+  measureIndexAndBeatFromAbsoluteTick,
+  noteStaffTopY,
+  viewportXToAbsoluteTick,
+} from '../../engine/renderer/layout';
 import { CHORD_AREA_HEIGHT, CHORD_LETTER_STRIP_HEIGHT, NOTE_HEIGHT } from '../../engine/renderer/constants';
 import {
   getMeterAtMeasure,
@@ -17,6 +22,7 @@ import {
 } from '../../engine/theory';
 import { getKeyScaleAtMeasure } from '../../engine/renderer/noteBlocks';
 import { scaleDegreeToMidi } from '../../engine/theory/scaleDegreeToMidi';
+import { snapBeatMagnetically } from './pointerMath';
 
 /**
  * INTERFACES.md `ChordEvent` field order: seventh → suspension → addition.
@@ -212,6 +218,35 @@ export function chordStripCaretSelectionFromPointer(
     return null;
   }
   return { type: 'range', measureIndex, rangeStart: nb, rangeEnd: nb };
+}
+
+/**
+ * Empty-cell click in the melody staff maps viewport (x, y) to a deterministic collapsed range caret.
+ * This keeps table-mode keyboard insertion deterministic without requiring a chord/note hit.
+ * Only staff-region clicks produce a caret; header/chord-strip clicks are ignored here.
+ */
+export function melodyGridCaretSelectionFromPointer(
+  song: SongData,
+  viewport: Viewport,
+  viewportX: number,
+  viewportY: number,
+  melodyRowHeight: number = NOTE_HEIGHT,
+): Selection | null {
+  if (song.measures.length === 0) return null;
+
+  const staffTop = noteStaffTopY();
+  const chordStripTop = bottomChordStripTopY(melodyRowHeight);
+  if (viewportY < staffTop || viewportY >= chordStripTop) {
+    return null;
+  }
+
+  const absoluteTick = viewportXToAbsoluteTick(viewportX, viewport, song);
+  const { measureIndex, beat: rawBeat } = measureIndexAndBeatFromAbsoluteTick(song, absoluteTick);
+  const measureLength = measureLengthInTicks(getMeterAtMeasure(song, measureIndex));
+  if (measureLength <= 0) return null;
+
+  const beat = snapBeatMagnetically(rawBeat, measureLength);
+  return { type: 'range', measureIndex, rangeStart: beat, rangeEnd: beat };
 }
 
 export function shouldUseNoteEntry(selection: Selection | null): boolean {

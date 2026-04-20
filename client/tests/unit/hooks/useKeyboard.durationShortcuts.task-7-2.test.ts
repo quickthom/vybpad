@@ -24,6 +24,7 @@ import { clampDurationToMeasure } from '@/components/editor/editorKeyboardLogic'
 import { chordFromKeyboardEvent, createShortcutManager } from '@/engine/keyboard/shortcutManager';
 import type { ShortcutCommandId, ShortcutContext, ShortcutDefinition, ShortcutManager } from '@/engine/keyboard/shortcutTypes';
 import { applyMelodyPitchDegreeFromEditor, type EditorKeyboardContext, handleEditorKeydown } from '@/hooks/useKeyboard';
+import { buildDefaultSong } from '@/store/songStore';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const viewport: Viewport = { startMeasure: 0, measureCount: 8, scrollY: 0, zoom: 1 };
@@ -351,5 +352,35 @@ describe('OB-13 — table-mode caret drives insert beat for chord and melody pay
       type: 'add',
       note: expect.objectContaining({ scaleDegree: 3, beat: 96, duration: 48 }),
     });
+  });
+
+  it('uses caret measure and beat even when viewport startMeasure differs', () => {
+    const onChordEdit = vi.fn();
+    const onNoteEdit = vi.fn();
+    const selection = { type: 'range', measureIndex: 2, rangeStart: 96, rangeEnd: 96 };
+    const song = buildDefaultSong();
+
+    const ok = applyMelodyPitchDegreeFromEditor(
+      makeCtx({
+        song,
+        selection,
+        viewport: { ...viewport, startMeasure: 5 },
+        onChordEdit,
+        onNoteEdit,
+      }),
+      3,
+    );
+    expect(ok).toBe(true);
+
+    const call = onNoteEdit.mock.calls[0]?.[2];
+    expect(call).toMatchObject({
+      type: 'add',
+      note: expect.objectContaining({ beat: 96 }),
+    });
+    expect(call).toBeTruthy();
+    if (call && call.type === 'add') {
+      expect(call.note.scaleDegree).toBe(3);
+    }
+    expect(onNoteEdit.mock.calls[0]?.[0]).toBe(2);
   });
 });

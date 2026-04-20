@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   chordStripCaretSelectionFromPointer,
+  melodyGridCaretSelectionFromPointer,
   tableInsertBeatFromSelection,
 } from '../../../../src/components/editor/editorKeyboardLogic';
 import {
@@ -12,11 +13,15 @@ import {
   MELODY_DIATONIC_ROW_COUNT,
   NOTE_HEIGHT,
 } from '../../../../src/engine/renderer/constants';
+import { horizontalTicksToPx } from '../../../../src/engine/renderer/layout';
 import { buildDefaultSong } from '../../../../src/store/songStore';
 
 /** E2E `persistence.happy` — chord strip vertical center (PAT-012 bottom strip, RA-2). */
 const E2E_CHORD_STRIP_CENTER_Y =
-  MEASURE_HEADER_HEIGHT + MELODY_DIATONIC_ROW_COUNT * NOTE_HEIGHT + (CHORD_AREA_HEIGHT + CHORD_LETTER_STRIP_HEIGHT / 2);
+  MEASURE_HEADER_HEIGHT +
+  MELODY_DIATONIC_ROW_COUNT * NOTE_HEIGHT +
+  CHORD_AREA_HEIGHT +
+  CHORD_LETTER_STRIP_HEIGHT / 2;
 
 const DEFAULT_VIEWPORT: Viewport = {
   startMeasure: 0,
@@ -49,6 +54,42 @@ describe('chordStripCaretSelectionFromPointer', () => {
   it('returns null in the staff area', () => {
     const song = buildDefaultSong();
     expect(chordStripCaretSelectionFromPointer(song, DEFAULT_VIEWPORT, 80, MEASURE_HEADER_HEIGHT + 80)).toBeNull();
+  });
+});
+
+describe('melodyGridCaretSelectionFromPointer', () => {
+  it('returns a snapped collapsed range caret on staff-area click', () => {
+    const song = buildDefaultSong();
+    const viewport = DEFAULT_VIEWPORT;
+    const sel = melodyGridCaretSelectionFromPointer(
+      song,
+      viewport,
+      horizontalTicksToPx(95, viewport.zoom),
+      MEASURE_HEADER_HEIGHT + 1,
+    );
+    expect(sel).toEqual({
+      type: 'range',
+      measureIndex: 0,
+      rangeStart: 96,
+      rangeEnd: 96,
+    });
+  });
+
+  it('maps viewport X with startMeasure offset to the expected measure beat pair', () => {
+    const song = buildDefaultSong();
+    const viewport = { ...DEFAULT_VIEWPORT, startMeasure: 2 };
+    const sel = melodyGridCaretSelectionFromPointer(
+      song,
+      viewport,
+      horizontalTicksToPx(96, viewport.zoom),
+      MEASURE_HEADER_HEIGHT + 1,
+    );
+    expect(sel).toEqual({
+      type: 'range',
+      measureIndex: 2,
+      rangeStart: 96,
+      rangeEnd: 96,
+    });
   });
 });
 

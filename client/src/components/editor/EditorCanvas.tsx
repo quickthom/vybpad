@@ -52,7 +52,7 @@ import {
 import { computePitchAxisLabelsInViewport, drawPitchAxisGutter } from '../../engine/renderer/pitchAxisLayout';
 import { drawGuideOverlay } from '../../engine/renderer/guideOverlay';
 import { computeNoteBlockRect, drawNoteBlocks } from '../../engine/renderer/noteBlocks';
-import { chordStripCaretSelectionFromPointer } from './editorKeyboardLogic';
+import { chordStripCaretSelectionFromPointer, melodyGridCaretSelectionFromPointer } from './editorKeyboardLogic';
 import {
   classifyHorizontalResizeEdge,
   DRAG_THRESHOLD_PX,
@@ -707,10 +707,10 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
 
     if (!hit) {
       keyboardTargetMeasureRef.current = null;
-      // Empty chord strip: no chord rects yet, so hit-test misses — still establish a table caret
-      // (collapsed range) so digit entry targets harmony (TASK-4.2 / persistence E2E).
-      const chordStripCaret = chordStripCaretSelectionFromPointer(song, viewport, vx, vy, melodyRowHeight);
-      onSelectionChange(chordStripCaret);
+      // Empty staff click: place a deterministic collapsed caret for table-mode inserts.
+      // Empty chord-strip click still uses chord-append caret semantics.
+      const melodyCaret = melodyGridCaretSelectionFromPointer(song, viewport, vx, vy, melodyRowHeight);
+      onSelectionChange(melodyCaret ?? chordStripCaretSelectionFromPointer(song, viewport, vx, vy, melodyRowHeight));
       sessionRef.current = {
         phase: 'pending',
         hit: null,
