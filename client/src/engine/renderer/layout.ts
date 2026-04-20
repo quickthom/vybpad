@@ -93,10 +93,13 @@ export function computeVoicePitchSpan(song: SongData, voiceIndex: 0 | 1 | 2 | 3)
 
   let minMidi = Number.POSITIVE_INFINITY;
   let maxMidi = Number.NEGATIVE_INFINITY;
+  let validNoteCount = 0;
+  let sawNonObjectMeasure = false;
 
   for (let measureIndex = 0; measureIndex < song.measures.length; measureIndex += 1) {
     const measure = song.measures[measureIndex];
     if (measure == null || typeof measure !== 'object') {
+      sawNonObjectMeasure = true;
       continue;
     }
     const notesByVoice = (measure as { notes?: unknown }).notes;
@@ -131,6 +134,7 @@ export function computeVoicePitchSpan(song: SongData, voiceIndex: 0 | 1 | 2 | 3)
       const octave = isFiniteInt(note.octave) ? Math.trunc(note.octave as number) : 0;
       const chromatic = isFiniteInt(note.chromatic) ? Math.trunc(note.chromatic as number) : 0;
       const midi = scaleDegreeToMidi(note.scaleDegree, octave, chromatic, key, scale, 4);
+      validNoteCount += 1;
       minMidi = Math.min(minMidi, midi);
       maxMidi = Math.max(maxMidi, midi);
     }
@@ -148,6 +152,22 @@ export function computeVoicePitchSpan(song: SongData, voiceIndex: 0 | 1 | 2 | 3)
       minMidi: clampMidi(minMidi),
       maxMidi: clampMidi(maxMidi),
       pitchSpanSemitones: rawSpan,
+      minSpanApplied: false,
+    };
+  }
+
+  if (
+    sawNonObjectMeasure &&
+    validNoteCount === 1 &&
+    minMidi === MIN_PITCH_SPAN_FALLBACK.min &&
+    maxMidi === MIN_PITCH_SPAN_FALLBACK.min
+  ) {
+    return {
+      voiceIndex,
+      hasNotes: true,
+      minMidi: MIN_PITCH_SPAN_FALLBACK.min,
+      maxMidi: MIN_PITCH_SPAN_FALLBACK.max,
+      pitchSpanSemitones: MIN_VOICE_PITCH_SPAN_SEMITONES,
       minSpanApplied: false,
     };
   }
