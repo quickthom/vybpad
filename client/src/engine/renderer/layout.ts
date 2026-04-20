@@ -16,6 +16,8 @@ import {
   TPQN,
 } from './tickUtils';
 import { computeVoicePitchRanges } from './voicePitchRange';
+import type { VoicePitchRange } from './voicePitchRange';
+import { scaleDegreeToMidi } from '../theory/scaleDegreeToMidi';
 
 // Re-export PAT-012 and tick helpers for the public barrel
 export {
@@ -159,8 +161,11 @@ export function noteStaffTopY(): number {
  * {@link CHORD_AREA_HEIGHT} tall, with a dedicated {@link CHORD_LETTER_STRIP_HEIGHT}
  * label strip beneath it.
  */
-export function bottomChordStripTopY(melodyRowHeight: number = NOTE_HEIGHT): number {
-  return MEASURE_HEADER_HEIGHT + MELODY_DIATONIC_ROW_COUNT * melodyRowHeight;
+export function bottomChordStripTopY(
+  melodyRowHeight: number = NOTE_HEIGHT,
+  melodyRowCount: number = MELODY_DIATONIC_ROW_COUNT,
+): number {
+  return MEASURE_HEADER_HEIGHT + melodyRowCount * melodyRowHeight;
 }
 
 /** Combined height for the roman band plus label strip (PAT-012 + UX §6). */
@@ -173,6 +178,71 @@ export function chromaticYOffset(chromatic: number, rowHeight: number = NOTE_HEI
   return chromatic * (rowHeight / 2);
 }
 
+const MIDI_TO_STAFF_ROW_CHROMATICS = [-1, 0, 1, -2, 2] as const;
+
+/** Convert absolute MIDI pitch to the staff row coordinate used by {@link noteRowY}. */
+export function midiToStaffRowOffset(midiPitch: number): number {
+  for (let octave = -8; octave <= 12; octave++) {
+    for (let degree = 1; degree <= 7; degree++) {
+      for (const chromatic of MIDI_TO_STAFF_ROW_CHROMATICS) {
+        const candidatePitch = scaleDegreeToMidi(degree as ScaleDegree, octave, chromatic, 'C', 'major', 4);
+        if (candidatePitch === Math.round(midiPitch)) {
+          return octave * 7 + (degree - 1) + chromatic / 2;
+        }
+      }
+    }
+  }
+  return 0;
+}
+
+/** Convert a staff row offset back to nearest representable MIDI pitch. */
+export function staffRowToNearestMidiPitch(staffRow: number): number {
+  let bestPitch = 0;
+  let bestDistance = Number.POSITIVE_INFINITY;
+  let bestChromAbs = Number.POSITIVE_INFINITY;
+  for (let octave = -8; octave <= 12; octave++) {
+    for (let degree = 1; degree <= 7; degree++) {
+      for (const chromatic of MIDI_TO_STAFF_ROW_CHROMATICS) {
+        const row = octave * 7 + (degree - 1) + chromatic / 2;
+        const pitch = scaleDegreeToMidi(degree as ScaleDegree, octave, chromatic, 'C', 'major', 4);
+        const distance = Math.abs(row - staffRow);
+        if (distance < bestDistance || (distance === bestDistance && Math.abs(chromatic) < bestChromAbs)) {
+          bestDistance = distance;
+          bestChromAbs = Math.abs(chromatic);
+          bestPitch = pitch;
+          if (distance === 0) {
+            return pitch;
+          }
+        }
+      }
+    }
+  }
+  return bestPitch;
+}
+
+/** Number of staff rows needed to represent a pitch window. Returns legacy count when absent. */
+export function melodyPitchRangeRowCount(
+  range: Pick<VoicePitchRange, 'minPitch' | 'maxPitch'> | null | undefined,
+): number {
+  if (!range) {
+    return MELODY_DIATONIC_ROW_COUNT;
+  }
+  const minRow = midiToStaffRowOffset(range.minPitch);
+  const maxRow = midiToStaffRowOffset(range.maxPitch);
+  const span = Math.max(minRow, maxRow) - Math.min(minRow, maxRow);
+  return Math.max(1, Math.ceil(span) + 1);
+}
+
+/** Staff row anchor offset for a pitch window; defaults to zero when not provided. */
+export function melodyPitchRangeTopRowOffset(
+  range: Pick<VoicePitchRange, 'minPitch'> | null | undefined,
+): number {
+  if (!range) {
+    return 0;
+  }
+  return midiToStaffRowOffset(range.minPitch);
+}
+
 /**
  * Diatonic row index within the grid: octave blocks of 7 scale-degree rows (degree 1 → lowest index in octave).
  */
@@ -182,10 +252,8 @@ export function diatonicRowIndex(scaleDegree: ScaleDegree, octave: number): numb
 
 /** Inverse of {@link diatonicRowIndex}: ladder row → scale degree + relative octave. */
 export function diatonicRowToDegreeAndOctave(row: number): { scaleDegree: ScaleDegree; octave: number } {
-  const safeRow = Number.isFinite(row) ? Math.trunc(row) : 0;
-  const octave = Math.floor(safeRow / 7);
-  const normalizedScaleDegree = ((safeRow % 7) + 7) % 7;
-  const sd = normalizedScaleDegree + 1;
+  const octave = Math.floor(row / 7);
+  const sd = (row % 7) + 1;
   return { scaleDegree: sd as ScaleDegree, octave };
 }
 
@@ -200,15 +268,21 @@ export function noteRowY(
   scrollY: number,
   /** Melody row height from staff spacing (defaults to PAT-012 {@link NOTE_HEIGHT}). */
   rowHeight: number = NOTE_HEIGHT,
+  melodyVoicePitchRange?: Pick<VoicePitchRange, 'minPitch'>,
 ): number {
   const base = noteStaffTopY();
-  const row = diatonicRowIndex(scaleDegree, octave);
-  return base + row * rowHeight + chromaticYOffset(chromatic, rowHeight) - scrollY;
+  const row = diatonicRowIndex(scaleDegree, octave) + chromatic / 2;
+  return base + (row - melodyPitchRangeTopRowOffset(melodyVoicePitchRange)) * rowHeight - scrollY;
 }
 
 /** Layout Y for a {@link NoteEvent} (callers skip rests). */
-export function noteRowYFromNoteEvent(note: NoteEvent, scrollY: number, rowHeight: number = NOTE_HEIGHT): number {
-  return noteRowY(note.scaleDegree, note.octave, note.chromatic, scrollY, rowHeight);
+export function noteRowYFromNoteEvent(
+  note: NoteEvent,
+  scrollY: number,
+  rowHeight: number = NOTE_HEIGHT,
+  melodyVoicePitchRange?: Pick<VoicePitchRange, 'minPitch'>,
+): number {
+  return noteRowY(note.scaleDegree, note.octave, note.chromatic, scrollY, rowHeight, melodyVoicePitchRange);
 }
 
 /**

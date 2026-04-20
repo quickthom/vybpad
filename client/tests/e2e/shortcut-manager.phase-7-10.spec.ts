@@ -12,6 +12,7 @@
  */
 
 import { expect, test, type APIRequestContext, type Locator, type Page } from '@playwright/test';
+import type { NoteEvent, SongData, Viewport } from '@vybpad/shared';
 
 import {
   buildShortcutSongChordDuration,
@@ -21,8 +22,10 @@ import {
   buildShortcutSongTripletNote,
   buildShortcutSongTwoChords,
 } from '../fixtures/shortcutE2ESeedSong';
+import { computeMelodyVoicePitchRanges } from '../../src/engine/renderer/layout';
+import { computeNoteBlockRect } from '../../src/engine/renderer/noteBlocks';
 import { clickFirstChordStrip } from './helpers/chordStripInteraction';
-import { editorChordStripCenterY, editorGridPointerX, editorMelodyRow0ApproxCenterY } from './helpers/editorCanvasCoords';
+import { editorChordStripCenterY, editorGridPointerX } from './helpers/editorCanvasCoords';
 import { waitForEditorRouteReady } from './helpers/editorReady';
 import { submitRegisterFormAndExpectProjects } from './helpers/registerFlow';
 import {
@@ -32,9 +35,38 @@ import {
   getTransportToolbar,
 } from './helpers/transport';
 
-import type { SongData } from '@vybpad/shared';
-
 const API_BASE = (process.env.PLAYWRIGHT_API_URL ?? 'http://127.0.0.1:3001').replace(/\/+$/, '');
+const BASE_VIEWPORT: Viewport = {
+  startMeasure: 0,
+  measureCount: 8,
+  scrollY: 0,
+  zoom: 1,
+};
+
+function activeVoiceFirstMelodyNote(song: SongData, activeVoice: 0 | 1 | 2 | 3): NoteEvent {
+  const measureZero = song.measures[0];
+  const candidates = measureZero?.notes?.[activeVoice] ?? [];
+  const note = candidates.find((candidate) => !candidate.isRest);
+  if (!note) {
+    throw new Error('Expected at least one non-rest melody note in fixture seed song for this E2E path');
+  }
+  return note;
+}
+
+function melodyNoteCenterYInEditor(song: SongData, activeVoice: 0 | 1 | 2 | 3): number {
+  const note = activeVoiceFirstMelodyNote(song, activeVoice);
+  const ranges = computeMelodyVoicePitchRanges(song);
+  const rect = computeNoteBlockRect({
+    song,
+    viewport: BASE_VIEWPORT,
+    measureIndex: 0,
+    note,
+    isRest: note.isRest,
+    voiceIndex: activeVoice,
+    melodyVoicePitchRange: ranges[activeVoice],
+  });
+  return rect.y + rect.height / 2;
+}
 
 function uniqueSuffix(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
@@ -81,12 +113,12 @@ function editorCanvas(page: Page): Locator {
  * First melody note (scale degree 1, octave 0) — row 0 under {@link noteStaffTopY} (~24px); block center ~34px.
  * Matches seeded fixtures that place events at beat 0 in measure 0.
  */
-async function clickFirstMelodyNoteArea(page: Page): Promise<void> {
+async function clickFirstMelodyNoteArea(page: Page, song: SongData): Promise<void> {
   const el = editorCanvas(page);
   const box = await el.boundingBox();
   expect(box, 'editor canvas bounding box').toBeTruthy();
   const x = editorGridPointerX(box!.width, 0.032, 32);
-  const y = Math.min(editorMelodyRow0ApproxCenterY(), box!.height - 8);
+  const y = Math.min(melodyNoteCenterYInEditor(song, 0), box!.height - 8);
   await el.click({ position: { x, y } });
 }
 
@@ -94,12 +126,12 @@ async function clickFirstMelodyNoteArea(page: Page): Promise<void> {
  * Narrow short notes (e.g. 48-tick quarter): at default zoom many measures may be visible, so a ~3% canvas
  * click can map past tick 48 and miss the note rect while a half note (96) still hits — see TASK-7.3 triplet E2E.
  */
-async function clickFirstMelodyNoteNearBeatZero(page: Page): Promise<void> {
+async function clickFirstMelodyNoteNearBeatZero(page: Page, song: SongData): Promise<void> {
   const el = editorCanvas(page);
   const box = await el.boundingBox();
   expect(box, 'editor canvas bounding box').toBeTruthy();
   const x = editorGridPointerX(box!.width, 0.018, 16);
-  const y = Math.min(editorMelodyRow0ApproxCenterY(), box!.height - 8);
+  const y = Math.min(melodyNoteCenterYInEditor(song, 0), box!.height - 8);
   await el.click({ position: { x, y } });
 }
 
@@ -175,25 +207,27 @@ test.describe('TASK-7.10 — Phase 7 shortcut manager (E2E)', () => {
   });
 
   test('Slash splits selected half note into two quarter notes (TASK-7.3 split)', async ({ page, request }) => {
-    const { projectId, accessToken } = await createEditorWithSong(page, request, buildShortcutSongSplitNote());
+    const splitSong = buildShortcutSongSplitNote();
+    const { projectId, accessToken } = await createEditorWithSong(page, request, splitSong);
 
-    await clickFirstMelodyNoteArea(page);
+    await clickFirstMelodyNoteArea(page, splitSong);
     await editorCanvas(page).focus();
 
     const put = waitForProjectPut(page, projectId);
     await page.keyboard.press('Slash');
     await put;
 
-    const song = await getSong(request, accessToken, projectId);
-    const lane = song.measures[0]?.notes[0] ?? [];
+    const updatedSong = await getSong(request, accessToken, projectId);
+    const lane = updatedSong.measures[0]?.notes[0] ?? [];
     expect(lane, 'split produces two notes').toHaveLength(2);
     expect(lane.map((n) => n.duration).sort((a, b) => a - b)).toEqual([48, 48]);
   });
 
   test('T ties adjacent same-pitch eighth notes into one quarter (TASK-7.3 tie)', async ({ page, request }) => {
-    const { projectId, accessToken } = await createEditorWithSong(page, request, buildShortcutSongTieNotes());
+    const tieSong = buildShortcutSongTieNotes();
+    const { projectId, accessToken } = await createEditorWithSong(page, request, tieSong);
 
-    await clickFirstMelodyNoteArea(page);
+    await clickFirstMelodyNoteArea(page, tieSong);
     await editorCanvas(page).focus();
     /** Move to the later eighth so `planTieNote` merges backward (same as Hookpad tie gesture). */
     await page.keyboard.press('ArrowRight');
@@ -214,8 +248,9 @@ test.describe('TASK-7.10 — Phase 7 shortcut manager (E2E)', () => {
   }) => {
     const { projectId, accessToken } = await createEditorWithSong(page, request, buildShortcutSongTripletNote());
 
+    const tripletSong = buildShortcutSongTripletNote();
     const canvas = editorCanvas(page);
-    await clickFirstMelodyNoteNearBeatZero(page);
+    await clickFirstMelodyNoteNearBeatZero(page, tripletSong);
     await canvas.focus();
     await expect(canvas).toBeFocused();
 
@@ -224,15 +259,15 @@ test.describe('TASK-7.10 — Phase 7 shortcut manager (E2E)', () => {
     await page.keyboard.press('Shift+KeyT');
     await put;
 
-    const song = await getSong(request, accessToken, projectId);
-    expect(song.measures[0]?.notes[0][0]?.duration).toBe(32);
+    const updatedSong = await getSong(request, accessToken, projectId);
+    expect(updatedSong.measures[0]?.notes[0][0]?.duration).toBe(32);
   });
 
   test('Ctrl+C then Ctrl+V pastes copied note into another measure (TASK-7.4)', async ({ page, request }) => {
     const { projectId, accessToken } = await createEditorWithSong(page, request, buildShortcutSongClipboard());
 
     const canvas = editorCanvas(page);
-    await clickFirstMelodyNoteNearBeatZero(page);
+    await clickFirstMelodyNoteNearBeatZero(page, buildShortcutSongClipboard());
     await canvas.focus();
 
     await page.keyboard.press('Control+c');

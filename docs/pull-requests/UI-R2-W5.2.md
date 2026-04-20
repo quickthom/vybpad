@@ -1,42 +1,72 @@
-# [UI-R2-W5.2] OB-14 render/hit rect alignment follow-up
+# [UI-R2-W5.2] Active melody range drag mapping (OB-14 range anchor)
 
 **Base branch:** `develop`  
 **Feature branch:** `phase-ui-r2/w5-2-ob14-render-hit`
 
 ---
 
-### What was fixed this pass
+### What was built
 
-- `diatonicRowToDegreeAndOctave` now maps negative diatonic rows without producing out-of-range `ScaleDegree` values.
-- Added focused regression coverage in `client/tests/unit/engine/renderer/layout.test.ts` for negative row conversion.
-- Kept drag conversion call sites unchanged so they use the now-safe canonical converter.
+This PR remediates the blocker where active melody pitch ranges could still clamp vertical pointer mapping to non-negative rows during drag/edit interactions. It removes the `Math.max(0, ...)` row-floor in `nearestPitchGridFromStaffRelY` so negative staff-relative Y values (from low/negative active pitch anchors) can resolve to negative diatonic rows.
+
+It also adds regression coverage for the fixed path in `client/tests/unit/components/editor/pointerMath.ob-5-magnetic-snap.test.ts` to ensure negative-row snapping remains supported.
 
 ---
 
 ### ASSUMPTIONS
 
-- Row-to-degree math is expected to preserve the existing forward mapping (`row = octave * 7 + (scaleDegree - 1)`).
-- Only renderer math paths can be negative; song model validation and note data constraints remain unchanged.
-- No additional UX behavior changes are part of this follow-up.
+- `ARCHITECTURE.md`, `INTERFACES.md`, and existing OB-14 layout work already define the active-voice pitch range contract used by `EditorCanvas`.
+- The `EditorCanvas` pointer flow already passes `activeVoicePitchRange` and a song-derived `melodyRowHeight` into the staff coordinate conversion path.
 
 ---
 
-### Self-review checklist status
+### Deviations from task brief
 
-Status format: **PASS / FAIL / PENDING**.
-
-- PASS: `ARCHITECTURE.md` alignment (Canvas renderer + pitch-axis math contract unchanged).
-- PASS: `INTERFACES.md` alignment (no interface changes; only private layout helper behavior updated).
-- PASS: `UX_GUIDELINES.md` alignment (no UI behavior/label copy/path changed).
-- PASS: `layout.test.ts` regression coverage added and passing (`npm test -- client/tests/unit/engine/renderer/layout.test.ts`).
-- PENDING: `tsc --build` — not run in this follow-up pass (deferred to CI/reviewer).
-- PENDING: `eslint` — not run in this follow-up pass (deferred to CI/reviewer).
-- PENDING: `npm test` full suite — not run in this follow-up pass (deferred to CI/reviewer).
-- PASS: Checklist entries updated to reflect executed checks for this handoff.
+None.
 
 ---
 
 ### Blocking flags
 
-- None.
+#### INTERFACES.md change required?
 
+No — no shared interface contract changes in this blocker-only pass.
+
+#### UX_GUIDELINES.md change required?
+
+No — this is behavioral bugfix + test only.
+
+---
+
+### SELF-REVIEW CHECKLIST
+
+```
+SELF-REVIEW CHECKLIST
+─────────────────────────────────────────────────────
+Matches ARCHITECTURE.md patterns          [ ✔ ]
+  Notes: EditorCanvas geometry and note hit path remain unchanged aside from unclamped row span.
+
+Respects INTERFACES.md                    [ ✔ ]
+  Notes: `EditorCanvasProps` usage is unchanged; only math path in pointer mapping is updated.
+
+Respects UX_GUIDELINES.md (if UI task)   [ ✔ ]
+  Notes: Input and drag behavior unchanged; only edge-row accessibility corrected.
+
+Error handling present                    [ ✔ ]
+  Notes: No new throw paths; function remains finite-safe by caller invariants and existing guards.
+
+Edge cases considered                     [ ✔ ]
+  Notes: Negative `relY` now yields negative rows for active ranges with negative anchors.
+─────────────────────────────────────────────────────
+```
+
+**Patterns applied:** PAT-018 (chromatic staff-row offsets), PAT-012 (canvas spacing constants).
+
+---
+
+### Pre-flight (raise-pr)
+
+- [x] TypeScript build (`npx tsc --build`): PASS (exit 0)
+- [x] ESLint (`npx eslint .`): PASS (exit 0)
+- [x] Tests (`npm test`): PASS (exit 0)
+- [ ] Scope: pointer math clamp removal + negative-row regression test + PR checklist doc

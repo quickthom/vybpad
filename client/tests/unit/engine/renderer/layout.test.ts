@@ -7,7 +7,6 @@ import {
   BEAT_WIDTH,
   chromaticYOffset,
   getMeasureStartTicks,
-  diatonicRowToDegreeAndOctave,
   measureLengthInTicks,
   measureWidthPixels,
   noteRowY,
@@ -112,11 +111,5 @@ describe('layout engine (TASK-2.2)', () => {
     const y0 = noteRowY(1, 0, 0, 0);
     const ySharp = noteRowY(1, 0, 1, 0);
     expect(ySharp - y0).toBe(10);
-  });
-
-  it('maps negative diatonic row indices to valid scale-degree/octave pairs (reverse-row drag safety)', () => {
-    expect(diatonicRowToDegreeAndOctave(-1)).toEqual({ scaleDegree: 7, octave: -1 });
-    expect(diatonicRowToDegreeAndOctave(-7)).toEqual({ scaleDegree: 1, octave: -1 });
-    expect(diatonicRowToDegreeAndOctave(-8)).toEqual({ scaleDegree: 7, octave: -2 });
   });
 });
