@@ -248,7 +248,10 @@ export function EditorLayout() {
      * This can under-pack by design when future measures are wider than the start measure.
      */
     const m = getMeterAtMeasure(song, viewport.startMeasure);
-    const beatsPerMeasure = Number.isFinite(m.numerator) ? Math.max(1, Math.round(m.numerator)) : 4;
+    const denominator = Number.isFinite(m.denominator) && m.denominator > 0 ? m.denominator : 4;
+    const numerator = Number.isFinite(m.numerator) ? m.numerator : 4;
+    // Convert meter to quarter-beat width so mixed signatures (like 6/8) use quarter-equivalent beats per measure.
+    const beatsPerMeasure = Math.max(1, (numerator / denominator) * 4);
     return computeMeasuresPerLine({
       canvasWidthPx: editorCanvasContentWidth,
       zoom: viewport.zoom,

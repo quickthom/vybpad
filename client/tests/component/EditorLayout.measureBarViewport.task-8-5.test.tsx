@@ -58,6 +58,25 @@ function makeSong(measureCount: number): SongData {
   };
 }
 
+function withMeter(songData: SongData, numerator: number, denominator: number): SongData {
+  return {
+    ...songData,
+    metadata: {
+      ...songData.metadata,
+      meter: {
+        numerator,
+        denominator,
+      },
+    },
+  };
+}
+
+function quarterBeatsPerMeasure(numerator: number, denominator: number): number {
+  const validDenominator = Number.isFinite(denominator) && denominator > 0 ? denominator : 4;
+  const validNumerator = Number.isFinite(numerator) ? numerator : 4;
+  return Math.max(1, (validNumerator / validDenominator) * 4);
+}
+
 function setWindowWidth(widthPx: number): void {
   Object.defineProperty(window, 'innerWidth', {
     configurable: true,
@@ -66,11 +85,17 @@ function setWindowWidth(widthPx: number): void {
   });
 }
 
-function expectedRows(measureCount: number, canvasWidthPx: number, zoom: number): number {
+function expectedRows(
+  measureCount: number,
+  canvasWidthPx: number,
+  zoom: number,
+  beatsPerMeasure = 4,
+): number {
   const perLine = computeMeasuresPerLine({
     canvasWidthPx,
     zoom,
     beatWidthPx: BEAT_WIDTH,
+    beatsPerMeasure,
   });
   return Math.max(1, Math.ceil(measureCount / perLine));
 }
@@ -175,6 +200,33 @@ describe('EditorLayout - responsive MeasureBar viewport wiring (UI-R2-W5.4)', ()
     const expected = expectedRows(songData.measures.length, WIDE_VIEWPORT_PX, 1);
 
     expect(expectedPerLine).toBeGreaterThanOrEqual(2);
+    expect(expected).toBeGreaterThan(1);
+
+    renderEditor(songData, WIDE_VIEWPORT_PX);
+    await screen.findAllByRole('region', { name: 'Measures' });
+    await waitFor(() => expect(measuredRows()).toBe(expected));
+  });
+
+  it('computes measures-per-line with meter denominator awareness for 6/8 (quarter-equivalent beats)', async () => {
+    const songData = withMeter(makeSong(18), 6, 8);
+    useSongStore.getState().loadSong(songData);
+
+    const beatsPerMeasure = quarterBeatsPerMeasure(6, 8);
+    const expectedPerLine = computeMeasuresPerLine({
+      canvasWidthPx: WIDE_VIEWPORT_PX,
+      zoom: 1,
+      beatWidthPx: BEAT_WIDTH,
+      beatsPerMeasure,
+    });
+    const wrongPerLine = computeMeasuresPerLine({
+      canvasWidthPx: WIDE_VIEWPORT_PX,
+      zoom: 1,
+      beatWidthPx: BEAT_WIDTH,
+      beatsPerMeasure: 6,
+    });
+    const expected = expectedRows(songData.measures.length, WIDE_VIEWPORT_PX, 1, beatsPerMeasure);
+
+    expect(expectedPerLine).toBeGreaterThan(wrongPerLine);
     expect(expected).toBeGreaterThan(1);
 
     renderEditor(songData, WIDE_VIEWPORT_PX);
