@@ -133,10 +133,14 @@ export function computeVoicePitchSpan(song: SongData, voiceIndex: 0 | 1 | 2 | 3)
 
       const octave = isFiniteInt(note.octave) ? Math.trunc(note.octave as number) : 0;
       const chromatic = isFiniteInt(note.chromatic) ? Math.trunc(note.chromatic as number) : 0;
-      const midi = scaleDegreeToMidi(note.scaleDegree, octave, chromatic, key, scale, 4);
       validNoteCount += 1;
-      minMidi = Math.min(minMidi, midi);
-      maxMidi = Math.max(maxMidi, midi);
+      try {
+        const midi = scaleDegreeToMidi(note.scaleDegree, octave, chromatic, key, scale, 4);
+        minMidi = Math.min(minMidi, midi);
+        maxMidi = Math.max(maxMidi, midi);
+      } catch {
+        // Skip malformed note/scale combinations and keep layout resilient.
+      }
     }
   }
 
