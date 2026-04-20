@@ -1,4 +1,4 @@
-import type { NoteEvent, ScaleDegree, SongData, Viewport } from '@vybpad/shared';
+import type { NoteEvent, NoteName, ScaleDegree, ScaleType, SongData, Viewport } from '@vybpad/shared';
 
 import {
   BEAT_WIDTH,
@@ -8,7 +8,9 @@ import {
   MELODY_DIATONIC_ROW_COUNT,
   NOTE_HEIGHT,
 } from './constants';
-import { getMeasureStartTicks, getMeterAtMeasure, measureIndexFromAbsoluteTick, measureLengthInTicks, TPQN } from './tickUtils';
+import { getMeasureStartTicks, getKeyAtMeasure, getMeterAtMeasure, getScaleAtMeasure, measureIndexFromAbsoluteTick, measureLengthInTicks, TPQN } from './tickUtils';
+import { scaleDegreeToMidi } from '../theory/scaleDegreeToMidi';
+ 
 
 // Re-export PAT-012 and tick helpers for the public barrel
 export {
@@ -33,6 +35,152 @@ export {
   measureLengthInTicks,
   TPQN,
 } from './tickUtils';
+
+export interface VoicePitchSpan {
+  voiceIndex: 0 | 1 | 2 | 3;
+  hasNotes: boolean;
+  minMidi: number;
+  maxMidi: number;
+  pitchSpanSemitones: number;
+  minSpanApplied: boolean;
+}
+
+export const MIN_VOICE_PITCH_SPAN_SEMITONES = 12;
+
+const MIN_PITCH_SPAN_FALLBACK = { min: 60, max: 72 };
+
+function clampMidi(value: number): number {
+  return Math.max(0, Math.min(127, value));
+}
+
+function isFiniteInt(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value);
+}
+
+function safeKeyScaleForMeasure(song: SongData, measureIndex: number): { key: NoteName; scale: ScaleType } {
+  let key = song?.metadata?.key ?? 'C';
+  let scale = song?.metadata?.scale ?? 'major';
+
+  try {
+    const scopedKey = getKeyAtMeasure(song, measureIndex);
+    const scopedScale = getScaleAtMeasure(song, measureIndex);
+    key = scopedKey;
+    scale = scopedScale;
+  } catch {
+    // Keep safe defaults to avoid throwing for malformed input sequences.
+  }
+
+  return { key, scale };
+}
+
+/**
+ * Computes pitch bounds (MIDI semitones) for a single melody voice across all measures.
+ * No side effects, no DOM access, and deterministic default handling for empty data.
+ */
+export function computeVoicePitchSpan(song: SongData, voiceIndex: 0 | 1 | 2 | 3): VoicePitchSpan {
+  const fallback: VoicePitchSpan = {
+    voiceIndex,
+    hasNotes: false,
+    minMidi: MIN_PITCH_SPAN_FALLBACK.min,
+    maxMidi: MIN_PITCH_SPAN_FALLBACK.max,
+    pitchSpanSemitones: MIN_VOICE_PITCH_SPAN_SEMITONES,
+    minSpanApplied: false,
+  };
+
+  if (!song || !Array.isArray(song.measures)) {
+    return fallback;
+  }
+
+  let minMidi = Number.POSITIVE_INFINITY;
+  let maxMidi = Number.NEGATIVE_INFINITY;
+
+  for (let measureIndex = 0; measureIndex < song.measures.length; measureIndex += 1) {
+    const measure = song.measures[measureIndex];
+    const notesByVoice = (measure as { notes?: unknown }).notes;
+    const voiceNotesCandidate = Array.isArray(notesByVoice) ? (notesByVoice as unknown[])[voiceIndex] : undefined;
+    const voiceNotes = Array.isArray(voiceNotesCandidate) ? (voiceNotesCandidate as unknown[]) : [];
+
+    if (voiceNotes.length === 0) {
+      continue;
+    }
+
+    const { key, scale } = safeKeyScaleForMeasure(song, measureIndex);
+    for (const rawNote of voiceNotes) {
+      if (rawNote == null || typeof rawNote !== 'object') {
+        continue;
+      }
+
+      const note = rawNote as {
+        isRest?: unknown;
+        scaleDegree?: unknown;
+        octave?: unknown;
+        chromatic?: unknown;
+      };
+
+      if (note.isRest === true) {
+        continue;
+      }
+
+      if (!isFiniteInt(note.scaleDegree) || !Number.isInteger(note.scaleDegree) || note.scaleDegree < 1 || note.scaleDegree > 7) {
+        continue;
+      }
+
+      const octave = isFiniteInt(note.octave) ? Math.trunc(note.octave as number) : 0;
+      const chromatic = isFiniteInt(note.chromatic) ? Math.trunc(note.chromatic as number) : 0;
+      const midi = scaleDegreeToMidi(note.scaleDegree, octave, chromatic, key, scale, 4);
+      minMidi = Math.min(minMidi, midi);
+      maxMidi = Math.max(maxMidi, midi);
+    }
+  }
+
+  if (!Number.isFinite(minMidi) || !Number.isFinite(maxMidi)) {
+    return fallback;
+  }
+
+  const rawSpan = maxMidi - minMidi;
+  if (rawSpan >= MIN_VOICE_PITCH_SPAN_SEMITONES) {
+    return {
+      voiceIndex,
+      hasNotes: true,
+      minMidi: clampMidi(minMidi),
+      maxMidi: clampMidi(maxMidi),
+      pitchSpanSemitones: rawSpan,
+      minSpanApplied: false,
+    };
+  }
+
+  const needed = MIN_VOICE_PITCH_SPAN_SEMITONES - rawSpan;
+  let expandedMin = minMidi - Math.floor(needed / 2);
+  let expandedMax = maxMidi + Math.ceil(needed / 2);
+
+  if (expandedMax > 127) {
+    const overflow = expandedMax - 127;
+    expandedMax = 127;
+    expandedMin -= overflow;
+  }
+
+  if (expandedMin < 0) {
+    const underflow = -expandedMin;
+    expandedMin = 0;
+    expandedMax += underflow;
+  }
+
+  expandedMin = clampMidi(expandedMin);
+  expandedMax = clampMidi(expandedMax);
+
+  if (expandedMax - expandedMin < MIN_VOICE_PITCH_SPAN_SEMITONES) {
+    expandedMax = Math.min(127, expandedMin + MIN_VOICE_PITCH_SPAN_SEMITONES);
+  }
+
+  return {
+    voiceIndex,
+    hasNotes: true,
+    minMidi: expandedMin,
+    maxMidi: expandedMax,
+    pitchSpanSemitones: expandedMax - expandedMin,
+    minSpanApplied: true,
+  };
+}
 
 /**
  * Convert an absolute song tick to `{ measureIndex, beat }` using song-local meter changes.
