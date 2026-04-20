@@ -9,10 +9,8 @@ import {
   NOTE_HEIGHT,
 } from './constants';
 import {
-  getKeyAtMeasure,
   getMeasureStartTicks,
   getMeterAtMeasure,
-  getScaleAtMeasure,
   measureIndexFromAbsoluteTick,
   measureLengthInTicks,
   TPQN,
