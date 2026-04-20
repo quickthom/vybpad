@@ -1,7 +1,10 @@
 import type { SongData, Viewport } from '@vybpad/shared';
 import { describe, expect, it } from 'vitest';
 
-import { chordStripCaretSelectionFromPointer } from '../../../../src/components/editor/editorKeyboardLogic';
+import {
+  chordStripCaretSelectionFromPointer,
+  tableInsertBeatFromSelection,
+} from '../../../../src/components/editor/editorKeyboardLogic';
 import {
   CHORD_AREA_HEIGHT,
   CHORD_LETTER_STRIP_HEIGHT,
@@ -46,5 +49,19 @@ describe('chordStripCaretSelectionFromPointer', () => {
   it('returns null in the staff area', () => {
     const song = buildDefaultSong();
     expect(chordStripCaretSelectionFromPointer(song, DEFAULT_VIEWPORT, 80, MEASURE_HEADER_HEIGHT + 80)).toBeNull();
+  });
+});
+
+describe('tableInsertBeatFromSelection', () => {
+  it('uses collapsed range beat from table caret when measure matches (chords)', () => {
+    const song = buildDefaultSong();
+    const selection = { type: 'range', measureIndex: 0, rangeStart: 96, rangeEnd: 96 };
+    expect(tableInsertBeatFromSelection(selection, song, 0, 'chord', 0)).toBe(96);
+  });
+
+  it('uses collapsed range beat from table caret when measure matches (notes)', () => {
+    const song = buildDefaultSong();
+    const selection = { type: 'range', measureIndex: 0, rangeStart: 96, rangeEnd: 96 };
+    expect(tableInsertBeatFromSelection(selection, song, 0, 'note', 0)).toBe(96);
   });
 });
