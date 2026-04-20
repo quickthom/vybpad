@@ -26,6 +26,8 @@ You are the Tech Lead. Per HITL direction, you shall not perform any task or por
 
 **Focus:** **REF_AUDIT_2** UI remediation **Waves 5–8** — execution plan: `~/.cursor/plans/ui_r2_waves_5-8_c9d08890.plan.md` (or latest name in Cursor plans dir).
 
+**Coordination note (2026-04-20):** `TASK_STATUS.md` now contains only active **REF_AUDIT_2** rows after archiving non-REF waves and historical UI/task tables to `TASK_STATUS_ARCHIVE.md`. Ongoing workstream and block chain in `TASK_STATUS.md` remains unchanged.
+
 **Gating — `develop` health**
 
 - **`./scripts/ci-local.sh` must be green on `develop`** before restarting **UI-R2-W5.1**. Track as **`TECH-BASELINE-CI`** in `TASK_STATUS.md`: fix root causes (e.g. stray debug `fetch` ingest in `client/src/utils/apiClient.ts`, ESLint issues, failing unit/component/E2E). **Do not** “fix” CI by deleting tests or gutting assertions (HITL).
