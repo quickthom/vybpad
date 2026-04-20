@@ -5,6 +5,7 @@ import type { SongData } from '@vybpad/shared';
 import { describe, expect, it } from 'vitest';
 
 import {
+  absoluteTickFromMeasurePosition,
   getMeasureStartTicks,
   getTempoAtMeasure,
   measureIndexFromAbsoluteTick,
@@ -81,5 +82,25 @@ describe('TASK-5.6 measureIndexFromAbsoluteTick', () => {
     expect(measureIndexFromAbsoluteTick(song, 192)).toBe(1);
     expect(measureIndexFromAbsoluteTick(song, 192 + 143)).toBe(1);
     expect(measureIndexFromAbsoluteTick(song, 192 + 144)).toBe(2);
+  });
+});
+
+describe('TASK-5.6 cross-measure move remap', () => {
+  it('derives destination measure + local beat after a source-beat offset crosses a barline', () => {
+    const song = minimalSong();
+    song.measures[1]!.changes = { meter: { numerator: 3, denominator: 4 } };
+
+    const sourceLocalBeat = 160;
+    const sourceAbsolute = absoluteTickFromMeasurePosition(song, 0, sourceLocalBeat);
+    const destinationAbsolute = sourceAbsolute + 80;
+    const starts = getMeasureStartTicks(song);
+    const destinationMeasure = measureIndexFromAbsoluteTick(song, destinationAbsolute);
+    const destinationLocalBeat = destinationAbsolute - (starts[destinationMeasure] ?? 0);
+
+    expect(starts[0]).toBe(0);
+    expect(starts[1]).toBe(192);
+    expect(starts[2]).toBe(192 + 144);
+    expect(destinationMeasure).toBe(1);
+    expect(destinationLocalBeat).toBe(48);
   });
 });
