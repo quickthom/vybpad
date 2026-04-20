@@ -1,16 +1,23 @@
 /*
  * QA COVERAGE PLAN — UI-R2-W5.3
  *
- * Criterion 1: computeMeasuresPerLine packs whole measures by numeric canvas width + horizontal zoom
+ * Criterion 1: renderer barrel API exports computeMeasuresPerLine
+ *   happy: computeMeasuresPerLine exists at client/src/engine/renderer/index.ts and is a function
+ *
+ * Criterion 2: computeMeasuresPerLine packs whole measures by numeric canvas width + horizontal zoom
  *   happy: returns an integer count that matches expected floor packing for 4/4 measure width at zoom 1 and zoom 2
  *   error: non-increasing as zoom increases or width decreases; outputs remain numeric
  *   edges: wide vs narrow width and zoom-based contraction at non-integral widths
  *
- * Criterion 2: alignment with existing layout metrics
+ * Criterion 3: alignment with existing layout metrics
  *   happy: same base behavior as measureWidthPixels(song, measureIndex, zoom) for the same BEAT_WIDTH and meter
  *   edges: deterministic use of PAT-012 constants in caller inputs
  *
- * Criterion 3: TASK-8.0 stride safety compatibility (for MeasureBar callers)
+ * Criterion 4: fractional meter correctness (e.g., 5/8) aligned to measureWidthPixels
+ *   happy: fractional beatsPerMeasure does not floor; packing aligns to 5/8 measure width
+ *   error: not flooring beatsPerMeasure, no measure-width mismatch for 5/8
+ *
+ * Criterion 5: TASK-8.0 stride safety compatibility (for MeasureBar callers)
  *   happy: output is always at least 1 so chunking loops using i += measuresPerLine remain safe
  */
 
@@ -19,6 +26,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 
 import { BEAT_WIDTH, MEASURE_HEADER_HEIGHT } from '../../../../src/engine/renderer/constants';
 import { measureWidthPixels } from '../../../../src/engine/renderer/layout';
+import * as rendererIndex from '../../../../src/engine/renderer/index';
 
 type ComputeMeasuresPerLine = (args: {
   canvasWidthPx: number;
@@ -30,26 +38,6 @@ type ComputeMeasuresPerLine = (args: {
 
 let computeMeasuresPerLine!: ComputeMeasuresPerLine;
 
-async function resolveComputeMeasuresPerLine(): Promise<ComputeMeasuresPerLine> {
-  try {
-    const packing = await import('../../../../src/engine/renderer/measurePacking');
-    const fn = (packing as { computeMeasuresPerLine?: unknown }).computeMeasuresPerLine;
-    if (typeof fn === 'function') {
-      return fn as ComputeMeasuresPerLine;
-    }
-  } catch {
-    // Optional module path used by other builders; continue with fallback.
-  }
-
-  const barrel = await import('../../../../src/engine/renderer/layout');
-  const fn = (barrel as { computeMeasuresPerLine?: unknown }).computeMeasuresPerLine;
-  if (typeof fn === 'function') {
-    return fn as ComputeMeasuresPerLine;
-  }
-
-  throw new Error('computeMeasuresPerLine was not found in renderer sources.');
-}
-
 function emptyMeasure(id: string): Measure {
   return {
     id,
@@ -58,7 +46,7 @@ function emptyMeasure(id: string): Measure {
   };
 }
 
-function minimalSong44(measureCount: number): SongData {
+function minimalSong(measureCount: number, meter: { numerator: number; denominator: number } = { numerator: 4, denominator: 4 }): SongData {
   const measures: Measure[] = [];
   for (let i = 0; i < measureCount; i += 1) {
     measures.push(emptyMeasure(`00000000-0000-4000-8000-00000000000${i}`));
@@ -70,15 +58,16 @@ function minimalSong44(measureCount: number): SongData {
       key: 'C',
       scale: 'major',
       tempo: 120,
-      meter: { numerator: 4, denominator: 4 },
+      meter,
     },
     measures,
     bandConfig: { tracks: [] },
   };
 }
 
-beforeAll(async () => {
-  computeMeasuresPerLine = await resolveComputeMeasuresPerLine();
+beforeAll(() => {
+  expect(typeof (rendererIndex as { computeMeasuresPerLine?: unknown }).computeMeasuresPerLine).toBe('function');
+  computeMeasuresPerLine = (rendererIndex as { computeMeasuresPerLine?: ComputeMeasuresPerLine }).computeMeasuresPerLine as ComputeMeasuresPerLine;
 });
 
 function safeCompute(args: { canvasWidthPx: number; zoom: number; measureHeaderHeightPx?: number; beatsPerMeasure?: number }): number {
@@ -89,9 +78,13 @@ function safeCompute(args: { canvasWidthPx: number; zoom: number; measureHeaderH
 }
 
 describe('measure packing (OB-15)', () => {
+  it('re-exports computeMeasuresPerLine from the renderer barrel', () => {
+    expect(typeof (rendererIndex as { computeMeasuresPerLine?: unknown }).computeMeasuresPerLine).toBe('function');
+  });
+
   describe('happy path', () => {
     it('returns an integer number of measures matching measureWidthPixels-based packing at zoom 1 and zoom 2', () => {
-      const song = minimalSong44(12);
+      const song = minimalSong(12);
       const widthForThreeMeasures = measureWidthPixels(song, 0, 1) * 3;
 
       const atZoom1 = safeCompute({ canvasWidthPx: widthForThreeMeasures + 1, zoom: 1, measureHeaderHeightPx: 0 });
@@ -109,7 +102,7 @@ describe('measure packing (OB-15)', () => {
     });
 
     it('returns fewer measures when canvas width shrinks for the same zoom', () => {
-      const song = minimalSong44(12);
+      const song = minimalSong(12);
       const zoom = 1;
       const widthForThree = measureWidthPixels(song, 0, zoom) * 3;
 
@@ -118,6 +111,23 @@ describe('measure packing (OB-15)', () => {
 
       expect(wide).toBe(3);
       expect(narrow).toBe(2);
+    });
+
+    it('uses fractional beatsPerMeasure for a 5/8 meter aligned to measureWidthPixels', () => {
+      const song = minimalSong(12, { numerator: 5, denominator: 8 });
+      const oneMeasureWidth = measureWidthPixels(song, 0, 1);
+      const canvasWidthPx = oneMeasureWidth * 3 + 1;
+
+      const measuresPerLine = safeCompute({
+        canvasWidthPx,
+        zoom: 1,
+        measureHeaderHeightPx: 0,
+        beatsPerMeasure: 5 / 8,
+      });
+      const expected = Math.max(1, Math.floor(canvasWidthPx / oneMeasureWidth));
+
+      expect(measuresPerLine).toBe(expected);
+      expect(measuresPerLine).toBe(3);
     });
   });
 
