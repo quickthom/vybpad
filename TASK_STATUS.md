@@ -27,10 +27,10 @@ Phases 0 (7/7), 1A (7/7), 1B (6/6), Phase 2 (15/15), Phase 3 (10/10), Phase 4 (1
 | TECH-BASELINE-CI | TaskCoord | — | merged | — | None | **`develop` green:** TL verified `./scripts/ci-local.sh` before W5.1 restart; superseded by ongoing `develop` health. |
 | UI-R2-W5.1 | Builder | — | merged | [#94](https://github.com/quickthom/vybpad/pull/94), [#95](https://github.com/quickthom/vybpad/pull/95) | UI-R2-W4.3 | OB-14 slice 1: `voicePitchRange` + tests; #94 squash + #95 ESLint hotfix on `develop` (`63c4841`). |
 | UI-R2-W5.1 | QA | — | merged | [#94](https://github.com/quickthom/vybpad/pull/94) | UI-R2-W5.1 | Tests on branch; merged with W5.1. |
-| UI-R2-W5.2 | Builder | `phase-ui-r2/w5-2-ob14-render-hit` | in-progress | — | UI-R2-W5.1 | OB-14 renderer + hit-test; TaskCoordinator spawned post-#94. |
-| UI-R2-W5.2 | QA | `phase-ui-r2/w5-2-ob14-render-hit` | in-progress | — | UI-R2-W5.2 | Concurrent QA on same branch per PAT-017. |
-| UI-R2-W5.3 | Builder | — | blocked | — | UI-R2-W5.2 | OB-15 measure packing. |
-| UI-R2-W5.3 | QA | — | blocked | — | UI-R2-W5.3 | — |
+| UI-R2-W5.2 | Builder | — | merged | [#96](https://github.com/quickthom/vybpad/pull/96) | UI-R2-W5.1 | OB-14 layout/noteBlocks/hitTest alignment; squash-merge `6b41e7d`. |
+| UI-R2-W5.2 | QA | — | merged | [#96](https://github.com/quickthom/vybpad/pull/96) | UI-R2-W5.2 | QA on branch; merged with W5.2. |
+| UI-R2-W5.3 | Builder | `phase-ui-r2/w5-3-ob15-measure-pack` | in-progress | — | UI-R2-W5.2 | OB-15 packing algorithm (pure + tests); TaskCoordinator. |
+| UI-R2-W5.3 | QA | `phase-ui-r2/w5-3-ob15-measure-pack` | in-progress | — | UI-R2-W5.3 | Concurrent QA per PAT-017. |
 | UI-R2-W5.4 | Builder | — | blocked | — | UI-R2-W5.3 | OB-15 integration. |
 | UI-R2-W5.4 | QA | — | blocked | — | UI-R2-W5.4 | — |
 | UI-R2-W6.1 | Builder | — | blocked | — | UI-R2-W5.4 | OB-16 shell scroll. |
