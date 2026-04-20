@@ -26,6 +26,7 @@ import { randomUUID } from 'node:crypto';
 
 import { ChordPalette } from '@/components/panels/ChordPalette';
 import { EditorLayout } from '@/app/EditorLayout';
+import { pat010DiatonicHex } from '@/engine/renderer/colorMaps';
 import { theoryEngine } from '@/engine/theory';
 import { buildDefaultSong, useSongStore } from '@/store/songStore';
 import { useUIStore } from '@/store/uiStore';
@@ -112,6 +113,13 @@ describe('ChordPalette — UI-W7 — RA-10 diatonic/borrowed density (single col
     expect(group.className).not.toMatch(/grid-cols-2/);
   });
 
+  it('renders the diatonic degree row as a horizontal block row for RA-207 (expected)', () => {
+    render(<ChordPalette currentKey="C" currentScale="major" mode="diatonic" onChordSelect={vi.fn()} />);
+
+    const group = screen.getByRole('group', { name: /Diatonic scale degrees/i });
+    expect(group.className).toMatch(/\bflex-row\b/);
+  });
+
   it('does not use a two-column grid for the borrowed chord list when borrowed chords are listed', async () => {
     const user = userEvent.setup();
     render(
@@ -151,6 +159,21 @@ describe('ChordPalette — UI-W7 — RA-10 diatonic/borrowed density (single col
       const row = screen.getByTestId(`chord-palette-degree-${deg}`);
       expect(row.textContent).toContain(roman);
       expect(row.textContent).toContain(name);
+    }
+  });
+
+  it('renders diatonic degree rows with PAT-010 degree-coded color anchors for RA-207', () => {
+    const key = 'C';
+    const scale = 'major';
+
+    render(<ChordPalette currentKey={key} currentScale={scale} mode="diatonic" onChordSelect={vi.fn()} />);
+
+    for (let deg = 1; deg <= 7; deg += 1) {
+      const row = screen.getByTestId(`chord-palette-degree-${deg}`);
+      const expectedColor = pat010DiatonicHex(deg as ChordEvent['scaleDegree']).toLowerCase();
+      const styleHints = `${row.getAttribute('style') ?? ''} ${row.className}`.toLowerCase();
+
+      expect(styleHints).toContain(expectedColor);
     }
   });
 

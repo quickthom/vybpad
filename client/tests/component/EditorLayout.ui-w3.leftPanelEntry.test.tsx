@@ -13,7 +13,22 @@
  *   error: (focus/modal guards — covered elsewhere)
  *   edges: rest button; chromatic toggle aria-pressed; raise/lower adjust chromatic on selected note
  *
- * Criterion 3 — No regression to ChordPalette diatonic/borrowed:
+ * Criterion 3 — RA-203: Melody pitch buttons are degree-coded controls (not neutral/undifferentiated)
+ *   happy: each pitch button exposes PAT-010 hue aligned to diatonic degree
+ *   error: plain surface/neutral appearance without degree anchor
+ *   edges: C-major smoke mapping C D E F G A B
+ *
+ * Criterion 4 — RA-204: Full raise/lower matrix is available and mutates expected note fields
+ *   happy: controls exist for half-step, diatonic, and octave; each class mutates the expected state
+ *   error: missing control IDs or no-op state updates
+ *   edges: diatonic shift preserves chromatic where not explicitly changed; octave shift preserves duration
+ *
+ * Criterion 5 — RA-214: Add/Split/Tie controls exist and mutate note data
+ *   happy: Add inserts note, Split subdivides selected note, Tie merges compatible adjacent note
+ *   error: missing controls or incompatible selection leaves note graph unchanged
+ *   edges: split no-op safety for non-splittable notes; tie no-op for non-adjacent notes
+ *
+ * Criterion 6 — No regression to ChordPalette diatonic/borrowed:
  *   happy: mode tabs + borrowed scale select + degree clicks still add chords with expected borrowed flag
  *   error: borrowed tab shows no rows — skip click (documented in test body)
  *
@@ -24,6 +39,9 @@
  * - `melody-entry-rest` — rest entry (isRest: true per INTERFACES NoteEvent)
  * - `melody-entry-chromatic-toggle` — chromatic entry default +1 semitone on new notes (PAT-018); must expose `aria-pressed`
  * - `melody-entry-raise-half` / `melody-entry-lower-half` — nudge chromatic offset on selection (−1 / +1 semitone vs diatonic)
+ * - `melody-entry-raise` / `melody-entry-lower` — diatonic degree +/-1 without chromatic side effect
+ * - `melody-entry-raise-octave` / `melody-entry-lower-octave` — octave +/-1 without duration side effect
+ * - `melody-entry-add` / `melody-entry-split` / `melody-entry-tie` — note mutation controls in melody entry area
  *
  * ⛔ INTERFACES: Do not require new `NoteEditAction` discriminants — existing `add` / `update` with Partial<NoteEvent> suffice.
  */
@@ -38,6 +56,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { EditorLayout } from '@/app/EditorLayout';
 import { type EditorKeyboardContext, handleEditorKeydown } from '@/hooks/useKeyboard';
+import { pat010DiatonicHex } from '@/engine/renderer/colorMaps';
 import { buildDefaultSong, useSongStore } from '@/store/songStore';
 import { useUIStore } from '@/store/uiStore';
 
@@ -161,6 +180,16 @@ function noteEvent(
     velocity: 100,
   };
 }
+
+const DIATONIC_PITCHES: readonly { degree: number; pitch: string }[] = [
+  { degree: 1, pitch: 'C' },
+  { degree: 2, pitch: 'D' },
+  { degree: 3, pitch: 'E' },
+  { degree: 4, pitch: 'F' },
+  { degree: 5, pitch: 'G' },
+  { degree: 6, pitch: 'A' },
+  { degree: 7, pitch: 'B' },
+] as const;
 
 /** Same shape as EditorCanvas.entryModes tests — chord + one melody note so digit `3` appends next. */
 function makeSongChordAndNote(ch: ChordEvent, note: NoteEvent): SongData {
@@ -344,6 +373,197 @@ describe('EditorLayout — UI-W3 — melody entry vs keyboard baseline (RA-6)', 
     await user.click(screen.getByTestId('melody-entry-lower-half'));
     await waitFor(() => {
       expect(useSongStore.getState().song.measures[0]?.notes[0][0]?.chromatic).toBe(0);
+    });
+  });
+
+  it('renders each melody pitch button with degree-coded PAT-010 color (RA-203)', async () => {
+    const user = userEvent.setup();
+    useSongStore.getState().loadSong(buildDefaultSong());
+    useUIStore.getState().setSelection({ type: 'range', measureIndex: 0, rangeStart: 0, rangeEnd: 0 });
+
+    renderEditorAtLocalEditor();
+    await screen.findByRole('application', { name: /Song editor/i });
+    await user.click(screen.getByRole('application', { name: /Song editor/i }));
+
+    for (const { degree, pitch } of DIATONIC_PITCHES) {
+      const button = screen.getByTestId(`melody-entry-pitch-${pitch}`);
+      const expectedColor = pat010DiatonicHex(degree as 1 | 2 | 3 | 4 | 5 | 6 | 7).toLowerCase();
+      const styleHints = `${button.getAttribute('style') ?? ''} ${button.className}`.toLowerCase();
+
+      expect(styleHints).toContain(expectedColor);
+      expect(styleHints).not.toContain('bg-[var(--color-surface,#ffffff)]');
+      expect(styleHints).not.toContain('bg-[var(--color-surface-muted,#f9fafb)]');
+    }
+  });
+
+  it('renders all RA-204 raise/lower controls including half-step, diatonic, and octave IDs', async () => {
+    renderEditorAtLocalEditor();
+    await screen.findByRole('application', { name: /Song editor/i });
+
+    expect(screen.queryByTestId('melody-entry-raise-half')).toBeInTheDocument();
+    expect(screen.queryByTestId('melody-entry-lower-half')).toBeInTheDocument();
+    expect(screen.queryByTestId('melody-entry-raise')).toBeInTheDocument();
+    expect(screen.queryByTestId('melody-entry-lower')).toBeInTheDocument();
+    expect(screen.queryByTestId('melody-entry-raise-octave')).toBeInTheDocument();
+    expect(screen.queryByTestId('melody-entry-lower-octave')).toBeInTheDocument();
+  });
+
+  it('mutates note fields for half-step, diatonic, and octave controls with expected boundaries (RA-204)', async () => {
+    const user = userEvent.setup();
+    const nid = randomUUID();
+    const s = buildDefaultSong();
+    s.measures[0].notes[0].push({
+      id: nid,
+      scaleDegree: 3,
+      octave: 0,
+      chromatic: 0,
+      beat: 0,
+      duration: 48,
+      isRest: false,
+      velocity: 100,
+    });
+    useSongStore.getState().loadSong(s);
+    useUIStore.getState().setSelection({ type: 'note', measureIndex: 0, eventIds: [nid] });
+
+    renderEditorAtLocalEditor();
+    await screen.findByRole('application', { name: /Song editor/i });
+
+    await user.click(screen.getByTestId('melody-entry-raise-half'));
+    await waitFor(() => {
+      const note = useSongStore.getState().song.measures[0]?.notes[0]?.find((n) => n.id === nid);
+      expect(note?.chromatic).toBe(1);
+    });
+
+    await user.click(screen.getByTestId('melody-entry-lower-half'));
+    await waitFor(() => {
+      const note = useSongStore.getState().song.measures[0]?.notes[0]?.find((n) => n.id === nid);
+      expect(note?.chromatic).toBe(0);
+    });
+
+    await user.click(screen.getByTestId('melody-entry-raise'));
+    await waitFor(() => {
+      const note = useSongStore.getState().song.measures[0]?.notes[0]?.find((n) => n.id === nid);
+      expect(note?.scaleDegree).toBe(4);
+      expect(note?.chromatic).toBe(0);
+      expect(note?.duration).toBe(48);
+    });
+
+    await user.click(screen.getByTestId('melody-entry-lower'));
+    await waitFor(() => {
+      const note = useSongStore.getState().song.measures[0]?.notes[0]?.find((n) => n.id === nid);
+      expect(note?.scaleDegree).toBe(3);
+      expect(note?.duration).toBe(48);
+    });
+
+    await user.click(screen.getByTestId('melody-entry-raise-octave'));
+    await waitFor(() => {
+      const note = useSongStore.getState().song.measures[0]?.notes[0]?.find((n) => n.id === nid);
+      expect(note?.octave).toBe(1);
+      expect(note?.duration).toBe(48);
+    });
+
+    await user.click(screen.getByTestId('melody-entry-lower-octave'));
+    await waitFor(() => {
+      const note = useSongStore.getState().song.measures[0]?.notes[0]?.find((n) => n.id === nid);
+      expect(note?.octave).toBe(0);
+      expect(note?.duration).toBe(48);
+    });
+  });
+
+  it('adds note on selected duration and exposes required RA-214 actions', async () => {
+    const user = userEvent.setup();
+    useSongStore.getState().loadSong(buildDefaultSong());
+    useUIStore.getState().setSelection({ type: 'range', measureIndex: 0, rangeStart: 0, rangeEnd: 0 });
+
+    renderEditorAtLocalEditor();
+    await screen.findByRole('application', { name: /Song editor/i });
+
+    expect(screen.queryByTestId('melody-entry-add')).toBeInTheDocument();
+    expect(screen.queryByTestId('melody-entry-split')).toBeInTheDocument();
+    expect(screen.queryByTestId('melody-entry-tie')).toBeInTheDocument();
+
+    await user.click(screen.getByTestId('left-panel-duration-ticks-96'));
+    await user.click(screen.getByTestId('melody-entry-add'));
+
+    await waitFor(() => {
+      const lane = useSongStore.getState().song.measures[0]?.notes[0];
+      expect(lane?.length).toBe(1);
+      expect(lane?.[0]?.duration).toBe(96);
+    });
+  });
+
+  it('RA-214 split action mutates selected note into two contiguous notes', async () => {
+    const user = userEvent.setup();
+    const splitNoteId = randomUUID();
+    const splitSong = buildDefaultSong();
+    splitSong.measures[0].notes[0] = [
+      {
+        id: splitNoteId,
+        scaleDegree: 3,
+        octave: 0,
+        chromatic: 0,
+        beat: 0,
+        duration: 48,
+        isRest: false,
+        velocity: 100,
+      },
+    ];
+    useSongStore.getState().loadSong(splitSong);
+    useUIStore.getState().setSelection({ type: 'note', measureIndex: 0, eventIds: [splitNoteId] });
+
+    renderEditorAtLocalEditor();
+    await screen.findByRole('application', { name: /Song editor/i });
+    expect(screen.queryByTestId('melody-entry-split')).toBeInTheDocument();
+
+    await user.click(screen.getByTestId('melody-entry-split'));
+
+    await waitFor(() => {
+      const lane = useSongStore.getState().song.measures[0]?.notes[0] ?? [];
+      expect(lane).toHaveLength(2);
+      expect(lane.reduce((sum, n) => sum + n.duration, 0)).toBe(48);
+    });
+  });
+
+  it('RA-214 tie action merges adjacent compatible notes on selection', async () => {
+    const user = userEvent.setup();
+    const tieNoteA = randomUUID();
+    const tieNoteB = randomUUID();
+    const tieSong = buildDefaultSong();
+    tieSong.measures[0].notes[0] = [
+      {
+        id: tieNoteA,
+        scaleDegree: 3,
+        octave: 0,
+        chromatic: 0,
+        beat: 0,
+        duration: 24,
+        isRest: false,
+        velocity: 100,
+      },
+      {
+        id: tieNoteB,
+        scaleDegree: 3,
+        octave: 0,
+        chromatic: 0,
+        beat: 24,
+        duration: 24,
+        isRest: false,
+        velocity: 100,
+      },
+    ];
+    useSongStore.getState().loadSong(tieSong);
+    useUIStore.getState().setSelection({ type: 'note', measureIndex: 0, eventIds: [tieNoteA] });
+
+    renderEditorAtLocalEditor();
+    await screen.findByRole('application', { name: /Song editor/i });
+    expect(screen.queryByTestId('melody-entry-tie')).toBeInTheDocument();
+
+    await user.click(screen.getByTestId('melody-entry-tie'));
+
+    await waitFor(() => {
+      const lane = useSongStore.getState().song.measures[0]?.notes[0] ?? [];
+      expect(lane).toHaveLength(1);
+      expect(lane[0]?.duration).toBe(48);
     });
   });
 });
