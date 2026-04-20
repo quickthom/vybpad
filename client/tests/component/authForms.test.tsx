@@ -75,11 +75,13 @@ describe('LoginForm — TASK-3.1', () => {
       await user.type(screen.getByLabelText(/^password/i), 'password12');
       await user.click(screen.getAllByRole('button', { name: /^sign in$/i })[0]!);
 
+      expect(vi.mocked(fetch)).toHaveBeenCalledTimes(1);
       expect(vi.mocked(fetch).mock.calls[0]![0]).toBe('http://api.test/api/auth/login');
       expect((vi.mocked(fetch).mock.calls[0]![1] as RequestInit).method).toBe('POST');
       expect((vi.mocked(fetch).mock.calls[0]![1] as RequestInit).body).toBe(
         JSON.stringify({ email: 'ada@example.com', password: 'password12' }),
       );
+      expect((vi.mocked(fetch).mock.calls[0]![0] as string)).not.toContain('127.0.0.1:7650/ingest');
     });
   });
 });
@@ -133,6 +135,7 @@ describe('RegisterForm — TASK-3.1', () => {
       await user.type(screen.getByLabelText(/^password/i), 'password12');
       await user.click(screen.getAllByRole('button', { name: /create account/i })[0]!);
 
+      expect(vi.mocked(fetch)).toHaveBeenCalledTimes(1);
       expect(vi.mocked(fetch).mock.calls[0]![0]).toBe('http://api.test/api/auth/register');
       expect((vi.mocked(fetch).mock.calls[0]![1] as RequestInit).body).toBe(
         JSON.stringify({
@@ -141,6 +144,7 @@ describe('RegisterForm — TASK-3.1', () => {
           displayName: 'Neo',
         }),
       );
+      expect((vi.mocked(fetch).mock.calls[0]![0] as string)).not.toContain('127.0.0.1:7650/ingest');
     });
   });
 });
