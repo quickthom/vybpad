@@ -28,6 +28,8 @@ export type ShortcutCommandId =
   | 'scrollDown'
   | 'moveSelectionLeft'
   | 'moveSelectionRight'
+  | 'undo'
+  | 'redo'
   | 'playPause'
   | 'stopPlayback'
   | 'rewindPlayback';

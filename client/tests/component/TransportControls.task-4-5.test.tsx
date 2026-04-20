@@ -54,6 +54,8 @@ function renderTransport(overrides: Partial<ComponentProps<typeof TransportContr
   const onStop = vi.fn();
   const onRewind = vi.fn();
   const onTempoChange = vi.fn();
+  const onUndo = vi.fn();
+  const onRedo = vi.fn();
 
   const props: ComponentProps<typeof TransportControls> = {
     isPlaying: false,
@@ -66,11 +68,13 @@ function renderTransport(overrides: Partial<ComponentProps<typeof TransportContr
     onStop,
     onRewind,
     onTempoChange,
+    onUndo,
+    onRedo,
     ...overrides,
   };
 
   const view = render(<TransportControls {...props} />);
-  return { ...view, onPlay, onPause, onStop, onRewind, onTempoChange, props };
+  return { ...view, onPlay, onPause, onStop, onRewind, onTempoChange, onUndo, onRedo, props };
 }
 
 describe('TransportControls — TASK-4.5 — TransportControlsProps surface', () => {
@@ -335,5 +339,43 @@ describe('TransportControls — TASK-4.5 — transport callbacks', () => {
       await user.click(pause);
       expect(onPause).not.toHaveBeenCalled();
     });
+  });
+});
+
+describe('TransportControls — undo/redo controls', () => {
+  it('renders Undo and Redo as disabled by default when canUndo / canRedo are omitted', () => {
+    renderTransport();
+    expect(screen.getByTestId('vybpad-transport-undo')).toBeDisabled();
+    expect(screen.getByTestId('vybpad-transport-redo')).toBeDisabled();
+  });
+
+  it('invokes onUndo when Undo is clicked and canUndo is true', async () => {
+    const user = userEvent.setup();
+    const { onUndo } = renderTransport({ canUndo: true });
+    await user.click(screen.getByTestId('vybpad-transport-undo'));
+    expect(onUndo).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not invoke onUndo when Undo is disabled', async () => {
+    const user = userEvent.setup();
+    const onUndo = vi.fn();
+    renderTransport({ canUndo: false, onUndo });
+    await user.click(screen.getByTestId('vybpad-transport-undo'));
+    expect(onUndo).not.toHaveBeenCalled();
+  });
+
+  it('invokes onRedo when Redo is clicked and canRedo is true', async () => {
+    const user = userEvent.setup();
+    const { onRedo } = renderTransport({ canRedo: true });
+    await user.click(screen.getByTestId('vybpad-transport-redo'));
+    expect(onRedo).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not invoke onRedo when Redo is disabled', async () => {
+    const user = userEvent.setup();
+    const onRedo = vi.fn();
+    renderTransport({ canRedo: false, onRedo });
+    await user.click(screen.getByTestId('vybpad-transport-redo'));
+    expect(onRedo).not.toHaveBeenCalled();
   });
 });

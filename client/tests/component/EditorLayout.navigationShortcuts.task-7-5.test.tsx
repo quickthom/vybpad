@@ -67,6 +67,8 @@ const TASK75_CHORDS = {
   playPause: { key: ' ', code: 'Space' },
   stopPlayback: { key: '.', code: 'Period' },
   rewindPlayback: { key: ',', code: 'Comma' },
+  undo: { key: 'z', code: 'KeyZ', ctrlKey: true },
+  redo: { key: 'z', code: 'KeyZ', ctrlKey: true, shiftKey: true },
 } as const;
 
 const EXPECT_ZOOM_MIN = 0.25;
@@ -339,6 +341,80 @@ describe('EditorLayout — TASK-7.5 — navigation + playback shortcuts (stores 
     await waitFor(() => {
       expect(usePlaybackStore.getState().currentTick).toBe(0);
     });
+  });
+
+  it('dispatches undo when Ctrl+Z is pressed after a mutation', async () => {
+    stubCanvas2d();
+    await focusSongCanvas();
+
+    useSongStore.getState().updateMetadata({ tempo: 132 });
+    expect(useSongStore.getState().song.metadata.tempo).toBe(132);
+    expect(useSongStore.getState().canUndo).toBe(true);
+
+    window.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        ...TASK75_CHORDS.undo,
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+
+    await waitFor(() => {
+      expect(useSongStore.getState().song.metadata.tempo).toBe(120);
+      expect(useSongStore.getState().canRedo).toBe(true);
+    });
+  });
+
+  it('dispatches redo when Ctrl+Shift+Z is pressed after undo', async () => {
+    stubCanvas2d();
+    await focusSongCanvas();
+
+    useSongStore.getState().updateMetadata({ tempo: 126 });
+    window.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        ...TASK75_CHORDS.undo,
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+    await waitFor(() => {
+      expect(useSongStore.getState().song.metadata.tempo).toBe(120);
+    });
+
+    window.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        ...TASK75_CHORDS.redo,
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+
+    await waitFor(() => {
+      expect(useSongStore.getState().song.metadata.tempo).toBe(126);
+      expect(useSongStore.getState().canRedo).toBe(false);
+    });
+  });
+
+  it('does not dispatch undo while key/scale modal is open (PAT-027 global gating)', async () => {
+    stubCanvas2d();
+    await focusSongCanvas();
+
+    useSongStore.getState().updateMetadata({ tempo: 134 });
+    const before = useSongStore.getState().song.metadata.tempo;
+
+    fireEvent.click(screen.getByRole('button', { name: /key \/ scale/i }));
+    expect(await screen.findByRole('dialog', { name: /key and scale/i })).toBeTruthy();
+
+    window.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        ...TASK75_CHORDS.undo,
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+
+    expect(useSongStore.getState().song.metadata.tempo).toBe(before);
+    expect(useSongStore.getState().canUndo).toBe(true);
   });
 
   it('does not drive scrollY negative when ArrowUp is pressed at scrollY 0', async () => {

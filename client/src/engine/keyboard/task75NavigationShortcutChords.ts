@@ -27,4 +27,8 @@ export const TASK75_TRANSPORT_SHORTCUT_CHORDS = {
   playPause: 'Space',
   stopPlayback: '.',
   rewindPlayback: ',',
+  undo: 'Ctrl+Z',
+  undoMac: 'Meta+Z',
+  redo: 'Ctrl+Shift+Z',
+  redoMac: 'Meta+Shift+Z',
 } as const;
