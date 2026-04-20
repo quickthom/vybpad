@@ -115,6 +115,7 @@ describe('measure packing (OB-15)', () => {
 
     it('uses fractional beatsPerMeasure for a 5/8 meter aligned to measureWidthPixels', () => {
       const song = minimalSong(12, { numerator: 5, denominator: 8 });
+      const beatsPerMeasure = 5 * 4 / 8;
       const oneMeasureWidth = measureWidthPixels(song, 0, 1);
       const canvasWidthPx = oneMeasureWidth * 3 + 1;
 
@@ -122,12 +123,11 @@ describe('measure packing (OB-15)', () => {
         canvasWidthPx,
         zoom: 1,
         measureHeaderHeightPx: 0,
-        beatsPerMeasure: 5 / 8,
+        beatsPerMeasure,
       });
       const expected = Math.max(1, Math.floor(canvasWidthPx / oneMeasureWidth));
 
       expect(measuresPerLine).toBe(expected);
-      expect(measuresPerLine).toBe(3);
     });
   });
 
