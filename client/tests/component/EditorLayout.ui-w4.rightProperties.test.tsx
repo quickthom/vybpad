@@ -222,7 +222,7 @@ describe('EditorLayout — UI-W4 — chord properties (selected chord → ChordE
     renderEditorAtLocalEditor();
     await screen.findByRole('application', { name: /Song editor/i });
 
-    await user.selectOptions(screen.getByTestId('properties-chord-quality'), 'minor');
+    await user.click(within(screen.getByTestId('properties-chord-quality')).getByRole('button', { name: /minor/i }));
 
     await waitFor(() => {
       expect(useSongStore.getState().song.measures[0].chords.find((c) => c.id === cid)?.quality).toBe('minor');
@@ -238,7 +238,9 @@ describe('EditorLayout — UI-W4 — chord properties (selected chord → ChordE
     renderEditorAtLocalEditor();
     await screen.findByRole('application', { name: /Song editor/i });
 
-    await user.selectOptions(screen.getByTestId('properties-chord-seventh'), 'dom7');
+    await user.click(
+      within(screen.getByTestId('properties-chord-seventh')).getByRole('button', { name: 'chord seventh 7' }),
+    );
 
     await waitFor(() => {
       expect(useSongStore.getState().song.measures[0].chords.find((c) => c.id === cid)?.seventh).toBe('dom7');
@@ -254,7 +256,9 @@ describe('EditorLayout — UI-W4 — chord properties (selected chord → ChordE
     renderEditorAtLocalEditor();
     await screen.findByRole('application', { name: /Song editor/i });
 
-    await user.selectOptions(screen.getByTestId('properties-chord-suspension'), 'sus4');
+    await user.click(
+      within(screen.getByRole('group', { name: /options/i })).getByRole('checkbox', { name: /sus4/i }),
+    );
 
     await waitFor(() => {
       expect(useSongStore.getState().song.measures[0].chords.find((c) => c.id === cid)?.suspension).toBe('sus4');
@@ -270,7 +274,9 @@ describe('EditorLayout — UI-W4 — chord properties (selected chord → ChordE
     renderEditorAtLocalEditor();
     await screen.findByRole('application', { name: /Song editor/i });
 
-    await user.selectOptions(screen.getByTestId('properties-chord-addition'), 'add9');
+    await user.click(
+      within(screen.getByRole('group', { name: /options/i })).getByRole('checkbox', { name: /add9/i }),
+    );
 
     await waitFor(() => {
       expect(useSongStore.getState().song.measures[0].chords.find((c) => c.id === cid)?.addition).toBe('add9');
@@ -288,7 +294,7 @@ describe('EditorLayout — UI-W4 — chord properties (selected chord → ChordE
     renderEditorAtLocalEditor();
     await screen.findByRole('application', { name: /Song editor/i });
 
-    await user.selectOptions(screen.getByTestId('properties-chord-inversion'), '2');
+    await user.click(within(screen.getByTestId('properties-chord-inversion')).getByRole('button', { name: /inversion 2/i }));
 
     await waitFor(() => {
       expect(useSongStore.getState().song.measures[0].chords.find((c) => c.id === cid)?.inversion).toBe(2);
@@ -356,8 +362,8 @@ describe('EditorLayout — UI-W4 — blocked chord edit (no silent failure)', ()
     renderEditorAtLocalEditor();
     await screen.findByRole('application', { name: /Song editor/i });
 
-    const inversionSelect = screen.getByTestId('properties-chord-inversion');
-    const opt3 = within(inversionSelect).queryByRole('option', { name: /^3$/ });
+    const inversionGroup = screen.getByTestId('properties-chord-inversion');
+    const opt3 = within(inversionGroup).queryByRole('button', { name: /^3$/ });
 
     if (!opt3) {
       expect(useSongStore.getState().song.measures[0].chords.find((c) => c.id === cid)?.inversion).toBe(0);
@@ -365,14 +371,14 @@ describe('EditorLayout — UI-W4 — blocked chord edit (no silent failure)', ()
       return;
     }
 
-    if ((opt3 as HTMLOptionElement).disabled) {
+    if ((opt3 as HTMLButtonElement).disabled) {
       expect(useSongStore.getState().song.measures[0].chords.find((c) => c.id === cid)?.inversion).toBe(0);
       expect(showErrorSpy).not.toHaveBeenCalled();
       showErrorSpy.mockRestore();
       return;
     }
 
-    await user.selectOptions(inversionSelect, '3');
+    await user.click(opt3);
     await waitFor(() => {
       const inv = useSongStore.getState().song.measures[0].chords.find((c) => c.id === cid)?.inversion;
       const toasted = showErrorSpy.mock.calls.length > 0;

@@ -2,13 +2,41 @@ import type { ChordEvent, NoteName, ScaleDegree, ScaleType, SecondaryChord } fro
 import type { ReactElement } from 'react';
 
 import { theoryEngine } from '../../engine/theory';
-import { useToastStore } from '../../store/toastStore';
 
-const QUALITIES: ChordEvent['quality'][] = ['major', 'minor', 'diminished', 'augmented'];
-const SEVENTHS: ChordEvent['seventh'][] = ['none', 'maj7', 'min7', 'dom7', 'dim7', 'min7b5'];
-const SUSPENSIONS: ChordEvent['suspension'][] = ['none', 'sus2', 'sus4'];
-const ADDITIONS: ChordEvent['addition'][] = ['none', 'add9', 'add11', 'add13'];
-const INVERSIONS: Array<0 | 1 | 2 | 3> = [0, 1, 2, 3];
+const QUALITIES: readonly { value: ChordEvent['quality']; label: string }[] = [
+  { value: 'major', label: 'Major' },
+  { value: 'minor', label: 'Minor' },
+  { value: 'diminished', label: 'Dim' },
+  { value: 'augmented', label: 'Aug' },
+] as const;
+
+const SEVENTHS: readonly { value: ChordEvent['seventh']; label: string }[] = [
+  { value: 'none', label: 'None' },
+  { value: 'maj7', label: 'Maj7' },
+  { value: 'min7', label: 'Min7' },
+  { value: 'dom7', label: '7' },
+  { value: 'dim7', label: 'Dim7' },
+  { value: 'min7b5', label: 'm7b5' },
+] as const;
+
+const INVERSIONS: readonly { value: 0 | 1 | 2 | 3; label: string }[] = [
+  { value: 0, label: '0' },
+  { value: 1, label: '1' },
+  { value: 2, label: '2' },
+  { value: 3, label: '3' },
+] as const;
+
+const EMBELLISHMENTS: readonly {
+  kind: 'suspension' | 'addition';
+  value: ChordEvent['suspension'] | ChordEvent['addition'];
+  label: string;
+}[] = [
+  { kind: 'suspension', value: 'sus2', label: 'Sus2' },
+  { kind: 'suspension', value: 'sus4', label: 'Sus4' },
+  { kind: 'addition', value: 'add9', label: 'Add9' },
+  { kind: 'addition', value: 'add11', label: 'Add11' },
+  { kind: 'addition', value: 'add13', label: 'Add13' },
+] as const;
 
 const BORROW_SCALES: ScaleType[] = [
   'major',
@@ -23,6 +51,12 @@ const BORROW_SCALES: ScaleType[] = [
 ];
 
 const SECONDARY_FN = ['V', 'viio', 'IV'] as const;
+
+function buttonPressedClass(isPressed: boolean): string {
+  return isPressed
+    ? 'border-[var(--color-primary,#4F46E5)] bg-[var(--color-surface-muted,#F9FAFB)] text-[var(--color-text-primary,#111827)]'
+    : 'border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)] text-[var(--color-text-primary,#111827)]';
+}
 
 function secondaryToValue(sec: SecondaryChord | null): string {
   if (sec == null) return 'none';
@@ -40,6 +74,10 @@ function parseSecondaryValue(raw: string): SecondaryChord | null {
   if (fn === 'viio') return { function: 'viio', target: t as ScaleDegree };
   if (fn === 'IV') return { function: 'IV', target: t as ScaleDegree };
   return null;
+}
+
+function inversionState(chord: ChordEvent): 0 | 1 | 2 | 3 {
+  return chord.seventh === 'none' && chord.inversion === 3 ? 0 : chord.inversion;
 }
 
 function maxInversion(chord: ChordEvent): 2 | 3 {
@@ -68,8 +106,6 @@ export function ChordProperties({
   onSecondaryCycle,
   onSecondaryClear,
 }: ChordPropertiesProps): ReactElement {
-  const showError = useToastStore((s) => s.showError);
-
   const triad = chord.seventh === 'none';
   const invMax = maxInversion(chord);
 
@@ -99,112 +135,152 @@ export function ChordProperties({
       </p>
 
       <div className="flex flex-col gap-2">
-        <label htmlFor="properties-chord-quality" className="text-[13px] font-medium text-[var(--color-text-primary,#111827)]">
-          Quality
-        </label>
-        <select
-          id="properties-chord-quality"
+        <p className="text-[13px] font-medium text-[var(--color-text-primary,#111827)]">Chord type</p>
+        <div
+          role="group"
+          aria-label="Chord type"
+          className="grid grid-cols-2 gap-2"
           data-testid="properties-chord-quality"
-          value={chord.quality}
-          onChange={(e) => mergeAndDispatch({ quality: e.target.value as ChordEvent['quality'] })}
-          className="h-10 w-full rounded-lg border border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)] px-3 text-sm text-[var(--color-text-primary,#111827)] outline-none focus:border-[var(--color-primary,#4F46E5)] focus:shadow-[0_0_0_1px_var(--color-primary,#4F46E5)]"
         >
-          {QUALITIES.map((q) => (
-            <option key={q} value={q}>
-              {q}
-            </option>
-          ))}
-        </select>
+          {QUALITIES.map((option) => {
+            const pressed = chord.quality === option.value;
+            return (
+              <button
+                key={option.value}
+                type="button"
+                aria-pressed={pressed}
+                aria-label={`chord type ${option.label}`}
+                onClick={() => {
+                  if (!pressed) {
+                    mergeAndDispatch({ quality: option.value });
+                  }
+                }}
+                className={`inline-flex h-9 min-h-0 shrink-0 items-center justify-center rounded-md border px-3 text-sm font-medium outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2 ${buttonPressedClass(
+                  pressed,
+                )}`}
+              >
+                {option.label}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       <div className="flex flex-col gap-2">
-        <label htmlFor="properties-chord-seventh" className="text-[13px] font-medium text-[var(--color-text-primary,#111827)]">
-          Seventh
-        </label>
-        <select
-          id="properties-chord-seventh"
+        <p className="text-[13px] font-medium text-[var(--color-text-primary,#111827)]">Seventh family</p>
+        <div
+          role="group"
+          aria-label="Chord seventh"
+          className="grid grid-cols-3 gap-2"
           data-testid="properties-chord-seventh"
-          value={chord.seventh}
-          onChange={(e) => {
-            const seventh = e.target.value as ChordEvent['seventh'];
-            const next: Partial<ChordEvent> = { seventh };
-            if (seventh === 'none' && chord.inversion === 3) {
-              next.inversion = 0;
-            }
-            mergeAndDispatch(next);
-          }}
-          className="h-10 w-full rounded-lg border border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)] px-3 text-sm text-[var(--color-text-primary,#111827)] outline-none focus:border-[var(--color-primary,#4F46E5)] focus:shadow-[0_0_0_1px_var(--color-primary,#4F46E5)]"
         >
-          {SEVENTHS.map((s) => (
-            <option key={s} value={s}>
-              {s}
-            </option>
-          ))}
-        </select>
+          {SEVENTHS.map((option) => {
+            const pressed = chord.seventh === option.value;
+            return (
+              <button
+                key={option.value}
+                type="button"
+                aria-pressed={pressed}
+                aria-label={`chord seventh ${option.label}`}
+                onClick={() => {
+                  if (pressed) return;
+                  const next: Partial<ChordEvent> = { seventh: option.value };
+                  if (option.value === 'none' && chord.inversion === 3) {
+                    next.inversion = 0;
+                  }
+                  mergeAndDispatch(next);
+                }}
+                className={`inline-flex h-9 min-h-0 shrink-0 items-center justify-center rounded-md border px-3 text-sm font-medium outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2 ${buttonPressedClass(
+                  pressed,
+                )}`}
+              >
+                {option.label}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       <div className="flex flex-col gap-2">
-        <label htmlFor="properties-chord-suspension" className="text-[13px] font-medium text-[var(--color-text-primary,#111827)]">
-          Suspension
-        </label>
-        <select
-          id="properties-chord-suspension"
-          data-testid="properties-chord-suspension"
-          value={chord.suspension}
-          onChange={(e) => mergeAndDispatch({ suspension: e.target.value as ChordEvent['suspension'] })}
-          className="h-10 w-full rounded-lg border border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)] px-3 text-sm text-[var(--color-text-primary,#111827)] outline-none focus:border-[var(--color-primary,#4F46E5)] focus:shadow-[0_0_0_1px_var(--color-primary,#4F46E5)]"
-        >
-          {SUSPENSIONS.map((s) => (
-            <option key={s} value={s}>
-              {s}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div className="flex flex-col gap-2">
-        <label htmlFor="properties-chord-addition" className="text-[13px] font-medium text-[var(--color-text-primary,#111827)]">
-          Addition
-        </label>
-        <select
-          id="properties-chord-addition"
-          data-testid="properties-chord-addition"
-          value={chord.addition}
-          onChange={(e) => mergeAndDispatch({ addition: e.target.value as ChordEvent['addition'] })}
-          className="h-10 w-full rounded-lg border border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)] px-3 text-sm text-[var(--color-text-primary,#111827)] outline-none focus:border-[var(--color-primary,#4F46E5)] focus:shadow-[0_0_0_1px_var(--color-primary,#4F46E5)]"
-        >
-          {ADDITIONS.map((a) => (
-            <option key={a} value={a}>
-              {a}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div className="flex flex-col gap-2">
-        <label htmlFor="properties-chord-inversion" className="text-[13px] font-medium text-[var(--color-text-primary,#111827)]">
-          Inversion
-        </label>
-        <select
-          id="properties-chord-inversion"
+        <p className="text-[13px] font-medium text-[var(--color-text-primary,#111827)]">Inversion</p>
+        <div
+          role="group"
+          aria-label="Inversion"
+          className="grid grid-cols-4 gap-2"
           data-testid="properties-chord-inversion"
-          value={chord.inversion > invMax ? invMax : chord.inversion}
-          onChange={(e) => {
-            const v = Number(e.target.value) as 0 | 1 | 2 | 3;
-            if (triad && v === 3) {
-              showError('Third inversion requires a seventh chord.');
-              return;
-            }
-            mergeAndDispatch({ inversion: v });
-          }}
-          className="h-10 w-full rounded-lg border border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)] px-3 text-sm text-[var(--color-text-primary,#111827)] outline-none focus:border-[var(--color-primary,#4F46E5)] focus:shadow-[0_0_0_1px_var(--color-primary,#4F46E5)]"
         >
-          {INVERSIONS.map((i) => (
-            <option key={i} value={i} disabled={triad && i === 3}>
-              {i}
-            </option>
-          ))}
-        </select>
+          {INVERSIONS.map((option) => {
+            const disabled = triad && option.value === 3;
+            const pressed = inversionState(chord) === option.value;
+            return (
+              <button
+                key={option.value}
+                type="button"
+                disabled={disabled}
+                aria-disabled={disabled || undefined}
+                aria-pressed={pressed}
+                aria-label={`inversion ${option.label}`}
+                onClick={() => {
+                  if (disabled || pressed) {
+                    return;
+                  }
+                  if (option.value > invMax) {
+                    return;
+                  }
+                  mergeAndDispatch({ inversion: option.value });
+                }}
+                className={`inline-flex h-9 min-h-0 shrink-0 items-center justify-center rounded-md border px-3 text-sm font-medium outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2 ${
+                  disabled ? 'cursor-not-allowed opacity-50' : buttonPressedClass(pressed)
+                }`}
+              >
+                {option.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <p className="text-[13px] font-medium text-[var(--color-text-primary,#111827)]">Options</p>
+        <div
+          role="group"
+          aria-label="Options"
+          className="grid grid-cols-2 gap-2 sm:grid-cols-3"
+          data-testid="properties-chord-options"
+        >
+          {EMBELLISHMENTS.map((option) => {
+            const checked =
+              option.kind === 'suspension'
+                ? chord.suspension === option.value
+                : chord.addition === option.value;
+            const label = `${option.label}`;
+            return (
+              <label
+                key={`${option.kind}-${option.value}`}
+                className="inline-flex items-center gap-2 rounded-md border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-3 py-2 text-sm text-[var(--color-text-primary,#111827)]"
+              >
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={() => {
+                    if (option.kind === 'suspension') {
+                      mergeAndDispatch({
+                        suspension: checked ? 'none' : (option.value as ChordEvent['suspension']),
+                      });
+                    } else {
+                      mergeAndDispatch({
+                        addition: checked ? 'none' : (option.value as ChordEvent['addition']),
+                      });
+                    }
+                  }}
+                  aria-label={label}
+                  className="h-[18px] w-[18px] border-[var(--color-border-strong,#D1D5DB)]"
+                />
+                {label}
+              </label>
+            );
+          })}
+        </div>
       </div>
 
       <div className="flex flex-col gap-2">
