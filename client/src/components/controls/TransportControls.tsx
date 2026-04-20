@@ -15,15 +15,14 @@ export interface TransportControlsProps {
   onStop: () => void;
   onRewind: () => void;
   onTempoChange: (bpm: number) => void;
-  /** Loop region controls (UI-W6 — folded into transport row; RA-11). */
-  loopContent?: ReactNode;
-  /** Optional trailing slot (e.g. MIDI export / drag-to-desktop affordance); omit when unused. */
-  endContent?: ReactNode;
-  /** Undo / redo history controls (UI-W10). */
   canUndo?: boolean;
   canRedo?: boolean;
   onUndo?: () => void;
   onRedo?: () => void;
+  /** Loop region controls (UI-W6 — folded into transport row; RA-11). */
+  loopContent?: ReactNode;
+  /** Optional trailing slot (e.g. MIDI export / drag-to-desktop affordance); omit when unused. */
+  endContent?: ReactNode;
   /** UI-W8 (RA-13) — record arm toggle; omit when unused. */
   recordArmed?: boolean;
   onRecordToggle?: () => void;
@@ -52,12 +51,12 @@ export function TransportControls({
   onStop,
   onRewind,
   onTempoChange,
-  loopContent,
-  endContent,
   canUndo,
   canRedo,
   onUndo,
   onRedo,
+  loopContent,
+  endContent,
   recordArmed,
   onRecordToggle,
   metronomeEnabled,
@@ -73,8 +72,6 @@ export function TransportControls({
   const playDisabled = initStatus === 'initializing';
   /** Pause / stop / rewind require a running engine (INTERFACES transport actions). */
   const transportLocked = initStatus !== 'ready';
-  const undoDisabled = canUndo !== true;
-  const redoDisabled = canRedo !== true;
 
   const showKeyMeterBand =
     (keyLabel != null && keyLabel !== '') ||
@@ -128,6 +125,28 @@ export function TransportControls({
         className="flex min-h-12 min-w-0 flex-wrap items-center gap-2 px-3 lg:flex-nowrap lg:overflow-x-auto"
       >
         <div className="flex shrink-0 items-center gap-2" role="group" aria-label="Playback">
+          <button
+            type="button"
+            data-testid="vybpad-transport-undo"
+            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-3 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+            aria-label="Undo"
+            aria-pressed={undefined}
+            disabled={canUndo !== true}
+            onClick={onUndo}
+          >
+            Undo
+          </button>
+          <button
+            type="button"
+            data-testid="vybpad-transport-redo"
+            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-3 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+            aria-label="Redo"
+            aria-pressed={undefined}
+            disabled={canRedo !== true}
+            onClick={onRedo}
+          >
+            Redo
+          </button>
           {isPlaying ? (
             <button
               type="button"
@@ -169,26 +188,6 @@ export function TransportControls({
             onClick={onRewind}
           >
             Rewind
-          </button>
-          <button
-            type="button"
-            data-testid="vybpad-transport-undo"
-            className="inline-flex min-h-8 min-w-8 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-3 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
-            aria-label="Undo"
-            disabled={undoDisabled}
-            onClick={onUndo}
-          >
-            Undo
-          </button>
-          <button
-            type="button"
-            data-testid="vybpad-transport-redo"
-            className="inline-flex min-h-8 min-w-8 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-3 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
-            aria-label="Redo"
-            disabled={redoDisabled}
-            onClick={onRedo}
-          >
-            Redo
           </button>
         </div>
 
