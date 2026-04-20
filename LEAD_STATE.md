@@ -24,22 +24,22 @@ You are the Tech Lead. Per HITL direction, you shall not perform any task or por
 
 ## Current state (2026-04-20)
 
-**Focus:** **REF_AUDIT_2** UI remediation **Waves 5–8** — execution plan: `~/.cursor/plans/ui_r2_waves_5-8_c9d08890.plan.md` (or latest name in Cursor plans dir).
+**Focus:** **REF_AUDIT_2** UI remediation — **Wave 5 (OB-14 / OB-15) complete through UI-R2-W5.4** on `develop`. Execution plan: `~/.cursor/plans/ui_r2_waves_5-8_c9d08890.plan.md`.
 
-**Coordination note (2026-04-20):** `TASK_STATUS.md` now contains only active **REF_AUDIT_2** rows after archiving non-REF waves and historical UI/task tables to `TASK_STATUS_ARCHIVE.md`. Ongoing workstream and block chain in `TASK_STATUS.md` remains unchanged.
+**Wave 5 merges (merge order observed)**
 
-**Gating — `develop` health**
+- **UI-R2-W5.1** — [#94](https://github.com/quickthom/vybpad/pull/94), [#95](https://github.com/quickthom/vybpad/pull/95) (pitch-range pure helpers + lint hotfix).
+- **UI-R2-W5.2** — [#96](https://github.com/quickthom/vybpad/pull/96) (render/hit-test alignment).
+- **UI-R2-W5.3** — [#97](https://github.com/quickthom/vybpad/pull/97) (`measurePacking` + tests).
+- **UI-R2-W5.4** — [#98](https://github.com/quickthom/vybpad/pull/98) (`EditorLayout` host-width → `MeasureBar` chunking; TC completed; TL squash-merged after PR review).
 
-- **`./scripts/ci-local.sh` must be green on `develop`** before restarting **UI-R2-W5.1**. Track as **`TECH-BASELINE-CI`** in `TASK_STATUS.md`: fix root causes (e.g. stray debug `fetch` ingest in `client/src/utils/apiClient.ts`, ESLint issues, failing unit/component/E2E). **Do not** “fix” CI by deleting tests or gutting assertions (HITL).
-- After baseline merges, issue a **fresh** **UI-R2-W5.1** task brief and spawn **TaskCoordinator** (new branch; no reuse of abandoned PR).
+**Next (Wave 6 — plan order)**
 
-**UI-R2-W5.1 reset**
+- **UI-R2-W6.1** (OB-16 shell scroll) → **W6.2** (OB-11 search) → **W6.3** (OB-12 Popular). **Wave 6 before Wave 7**; avoid parallel `EditorLayout.tsx` churn across W6/W7 without an explicit merge plan. Spawn **TaskCoordinator** per task; **OB-12** brief: deterministic diatonic shortlist per section below.
 
-- Prior **PR #92** was **closed** and W5.1 is **pending** until baseline + new brief.
+**`develop` health**
 
-**Downstream**
-
-- **UI-R2-W5.2–W5.4** and **W6.1–W6.3** are **blocked** on the merge-ordered chain (see `TASK_STATUS.md`). Wave 6 before Wave 7 per plan; no parallel `EditorLayout.tsx` churn across W6/W7 without merge plan proof.
+- Pre-merge gate remains **`./scripts/ci-local.sh`** on the PR branch tip (`docs/CI_LOCAL.md`); GitHub checks are not the authority.
 
 **Subagent worktrees (mandatory)**
 

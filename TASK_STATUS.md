@@ -31,10 +31,10 @@ Phases 0 (7/7), 1A (7/7), 1B (6/6), Phase 2 (15/15), Phase 3 (10/10), Phase 4 (1
 | UI-R2-W5.2 | QA | — | merged | [#96](https://github.com/quickthom/vybpad/pull/96) | UI-R2-W5.2 | QA on branch; merged with W5.2. |
 | UI-R2-W5.3 | Builder | — | merged | [#97](https://github.com/quickthom/vybpad/pull/97) | UI-R2-W5.2 | OB-15 `measurePacking` + tests; PR opened by TL after coordinator push; squash-merged. |
 | UI-R2-W5.3 | QA | — | merged | [#97](https://github.com/quickthom/vybpad/pull/97) | UI-R2-W5.3 | QA/remediation commits on branch. |
-| UI-R2-W5.4 | Builder | `phase-ui-r2/w5-4-ob15-integration` | in-progress | — | UI-R2-W5.3 | OB-15 wire `computeMeasuresPerLine` to shell/editor; TaskCoordinator. |
-| UI-R2-W5.4 | QA | `phase-ui-r2/w5-4-ob15-integration` | in-progress | — | UI-R2-W5.4 | Concurrent QA per PAT-017. |
-| UI-R2-W6.1 | Builder | — | blocked | — | UI-R2-W5.4 | OB-16 shell scroll. |
-| UI-R2-W6.1 | QA | — | blocked | — | UI-R2-W6.1 | — |
+| UI-R2-W5.4 | Builder | — | merged | [#98](https://github.com/quickthom/vybpad/pull/98) | UI-R2-W5.3 | OB-15: `EditorLayout` + `computeMeasuresPerLine` → `MeasureBar` chunking; squash-merge `4d200ab`. |
+| UI-R2-W5.4 | QA | — | merged | [#98](https://github.com/quickthom/vybpad/pull/98) | UI-R2-W5.4 | Component tests on branch; merged with W5.4. |
+| UI-R2-W6.1 | Builder | — | pending | — | UI-R2-W5.4 | OB-16 shell scroll — **unblocked** after W5.4; spawn TaskCoordinator. |
+| UI-R2-W6.1 | QA | — | pending | — | UI-R2-W6.1 | Concurrent with W6.1 Builder. |
 | UI-R2-W6.2 | Builder | — | blocked | — | UI-R2-W6.1 | OB-11 search. |
 | UI-R2-W6.2 | QA | — | blocked | — | UI-R2-W6.2 | — |
 | UI-R2-W6.3 | Builder | — | blocked | — | UI-R2-W6.2 | OB-12 Popular. |
