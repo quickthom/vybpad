@@ -10,6 +10,7 @@ import {
   noteBlockFillColor,
   NOTE_BLOCK_CORNER_RADIUS,
 } from './noteBlocks';
+import type { VoicePitchRange } from './voicePitchRange';
 
 /** UX §6 / TASK-2.12 — chord-tone strip height; bottom-aligned, clipped to block shape. */
 export const GUIDE_CHORD_TONE_UNDERLINE_PX = 2;
@@ -111,6 +112,8 @@ export interface DrawGuideOverlayOptions {
   theoryEngine?: TheoryEngine;
   /** Melody row height from staff spacing (defaults to {@link NOTE_HEIGHT}). */
   melodyRowHeight?: number;
+  /** Optional active-voice pitch anchor for geometry parity with note rendering. */
+  melodyVoicePitchRange?: Pick<VoicePitchRange, 'minPitch'>;
 }
 
 /**
@@ -129,6 +132,7 @@ export function drawGuideOverlay(
   }
 
   const melodyRowHeight = options.melodyRowHeight ?? NOTE_HEIGHT;
+  const melodyVoicePitchRange = options.melodyVoicePitchRange;
   const te = options.theoryEngine ?? theoryEngine;
 
   const start = viewport.startMeasure;
@@ -169,6 +173,7 @@ export function drawGuideOverlay(
           isRest: false,
           voiceIndex: v,
           melodyRowHeight,
+          melodyVoicePitchRange,
         });
 
         const baseFill = noteBlockFillColor(note, key, scale, colorScheme);

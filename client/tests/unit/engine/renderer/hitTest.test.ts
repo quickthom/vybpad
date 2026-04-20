@@ -35,6 +35,7 @@ import {
   NOTE_HEIGHT,
   computeNoteBlockRect,
   layoutChordBlock,
+  computeMelodyVoicePitchRanges,
 } from '../../../../src/engine/renderer/index';
 import type { EditorCanvasHit } from '../../../../src/engine/renderer/hitTest';
 import { hitTestEditorCanvas } from '../../../../src/engine/renderer/hitTest';
@@ -439,6 +440,87 @@ describe('hit testing (TASK-2.6) — misses return null', () => {
 
     const hit = hitTestEditorCanvas(5000, MEASURE_HEADER_HEIGHT + 50, song, viewport);
     expect(hit).toBeNull();
+  });
+});
+
+describe('hit testing (TASK-UI-R2-W5.2) — active-voice narrow ranges', () => {
+  it('hits the painted block when the active voice pitch window is clamped to the melody range', () => {
+    const focused = note({
+      id: 'narrow-range-note',
+      scaleDegree: 4,
+      octave: 0,
+      chromatic: 0,
+      beat: 0,
+      duration: 48,
+    });
+    const song = minimalSong([
+      {
+        ...emptyMeasure('narrow'),
+        notes: [[focused], [], [], []],
+      },
+    ]);
+    const viewport = vp({ measureCount: 1, scrollY: 0 });
+    const [voiceRange] = computeMelodyVoicePitchRanges(song);
+
+    const painted = computeNoteBlockRect({
+      song,
+      viewport,
+      measureIndex: 0,
+      note: focused,
+      isRest: focused.isRest,
+      melodyRowHeight: NOTE_HEIGHT,
+      melodyVoicePitchRange: voiceRange,
+    });
+    const center = centerOf(painted);
+
+    const hit = hitTestEditorCanvas(
+      center.x,
+      center.y,
+      song,
+      viewport,
+      NOTE_HEIGHT,
+      [true, true, true, true],
+      voiceRange,
+    );
+
+    expect(hit).not.toBeNull();
+    expect(hit?.kind).toBe('note');
+    const nh = hit as Extract<EditorCanvasHit, { kind: 'note' }>;
+    expect(nh.note.id).toBe(focused.id);
+    expect(nh.note.scaleDegree).toBe(focused.scaleDegree);
+  });
+
+  it('does not hit the shifted narrow-range rect when called without the active voice pitch context', () => {
+    const focused = note({
+      id: 'narrow-range-miss',
+      scaleDegree: 4,
+      octave: 0,
+      chromatic: 0,
+      beat: 0,
+      duration: 48,
+    });
+    const song = minimalSong([
+      {
+        ...emptyMeasure('narrow2'),
+        notes: [[focused], [], [], []],
+      },
+    ]);
+    const viewport = vp({ measureCount: 1, scrollY: 0 });
+    const [voiceRange] = computeMelodyVoicePitchRanges(song);
+
+    const painted = computeNoteBlockRect({
+      song,
+      viewport,
+      measureIndex: 0,
+      note: focused,
+      isRest: focused.isRest,
+      melodyRowHeight: NOTE_HEIGHT,
+      melodyVoicePitchRange: voiceRange,
+    });
+    const center = centerOf(painted);
+
+    const legacyHit = hitTestEditorCanvas(center.x, center.y, song, viewport, NOTE_HEIGHT);
+    expect(legacyHit).toBeNull();
   });
 });
 

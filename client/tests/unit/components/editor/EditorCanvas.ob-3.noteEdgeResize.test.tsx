@@ -30,6 +30,7 @@ import { softMagneticSnapMeasureTick, trailingResizeStripWidthPx } from '../../.
 import { PITCH_GUTTER_WIDTH } from '../../../../src/engine/renderer/constants';
 import { computeNoteBlockRect } from '../../../../src/engine/renderer/noteBlocks';
 import { horizontalPxToTicks } from '../../../../src/engine/renderer/layout';
+import { computeMelodyVoicePitchRanges } from '../../../../src/engine/renderer/layout';
 import { getMeterAtMeasure, measureLengthInTicks } from '../../../../src/engine/renderer/tickUtils';
 import { useSongStore } from '../../../../src/store/songStore';
 
@@ -180,6 +181,7 @@ function leadingStripCenterVx(song: SongData, note: NoteEvent): number {
 
 /** Vertical center of the note block in viewport coordinates (for hitTest). */
 function noteMidClientY(song: SongData, note: NoteEvent, canvasTop: number): number {
+  const [activeVoicePitchRange] = computeMelodyVoicePitchRanges(song);
   const r = computeNoteBlockRect({
     song,
     viewport: DEFAULT_VIEWPORT,
@@ -187,6 +189,7 @@ function noteMidClientY(song: SongData, note: NoteEvent, canvasTop: number): num
     note,
     isRest: note.isRest,
     voiceIndex: 0,
+    melodyVoicePitchRange: activeVoicePitchRange,
   });
   return canvasTop + r.y + r.height / 2;
 }

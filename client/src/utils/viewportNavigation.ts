@@ -17,16 +17,19 @@ const ZOOM_STEP_RATIO = 1.25;
 /** One staff row per vertical scroll tick (matches {@link NOTE_HEIGHT} pitch ladder). */
 export const EDITOR_SCROLL_STEP_Y = NOTE_HEIGHT;
 
-const MAX_SCROLL_Y = NOTE_HEIGHT * 120;
+const DEFAULT_MAX_SCROLL_Y = NOTE_HEIGHT * 120;
+
+/** Legacy fallback for environments that still call {@link withScrollYDelta} without pitch-range context. */
+export const MAX_SCROLL_Y = DEFAULT_MAX_SCROLL_Y;
 
 function clampZoom(z: number): number {
   if (!Number.isFinite(z)) return DEFAULT_EDITOR_ZOOM;
   return Math.min(MAX_EDITOR_ZOOM, Math.max(MIN_EDITOR_ZOOM, z));
 }
 
-function clampScrollY(y: number): number {
+function clampScrollY(y: number, maxScrollY = DEFAULT_MAX_SCROLL_Y): number {
   if (!Number.isFinite(y)) return 0;
-  return Math.min(MAX_SCROLL_Y, Math.max(0, y));
+  return Math.min(maxScrollY, Math.max(0, y));
 }
 
 export function withZoomIn(viewport: Viewport): Viewport {
@@ -41,6 +44,24 @@ export function withResetZoom(viewport: Viewport): Viewport {
   return { ...viewport, zoom: DEFAULT_EDITOR_ZOOM };
 }
 
-export function withScrollYDelta(viewport: Viewport, deltaY: number): Viewport {
-  return { ...viewport, scrollY: clampScrollY(viewport.scrollY + deltaY) };
+/**
+ * Applies a vertical scroll delta and clamps to a bounded pitch-range viewport.
+ *
+ * For compatibility, `melodyRowCount` and `melodyRowHeight` are optional. When omitted,
+ * the legacy 120-row clamp is used for callers that intentionally do not provide dynamic range
+ * context.
+ */
+export function withScrollYDelta(
+  viewport: Viewport,
+  deltaY: number,
+  melodyRowCount?: number,
+  melodyRowHeight: number = NOTE_HEIGHT,
+): Viewport {
+  const rowHeight = Number.isFinite(melodyRowHeight) && melodyRowHeight > 0 ? melodyRowHeight : NOTE_HEIGHT;
+  const maxRows =
+    typeof melodyRowCount === 'number' && Number.isFinite(melodyRowCount)
+      ? Math.max(0, Math.floor(melodyRowCount))
+      : 0;
+  const dynamicMax = maxRows > 0 ? maxRows * rowHeight : DEFAULT_MAX_SCROLL_Y;
+  return { ...viewport, scrollY: clampScrollY(viewport.scrollY + deltaY, dynamicMax) };
 }

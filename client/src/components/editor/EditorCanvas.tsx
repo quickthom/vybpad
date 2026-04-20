@@ -47,6 +47,8 @@ import {
   getMeasureStartTicks,
   horizontalPxToTicks,
   horizontalTicksToPx,
+  computeMelodyVoicePitchRanges,
+  melodyPitchRangeRowCount,
   measureIndexAndBeatFromAbsoluteTick,
 } from '../../engine/renderer/layout';
 import { computePitchAxisLabelsInViewport, drawPitchAxisGutter } from '../../engine/renderer/pitchAxisLayout';
@@ -168,8 +170,13 @@ function visibleMeasuresWidthPx(song: SongData, viewport: Viewport): number {
   return horizontalTicksToPx((starts[lastEx] ?? 0) - (starts[first] ?? 0), viewport.zoom);
 }
 
-function canvasHeightPx(melodyRowHeight: number): number {
-  return MEASURE_HEADER_HEIGHT + MELODY_DIATONIC_ROW_COUNT * melodyRowHeight + CHORD_AREA_HEIGHT + CHORD_LETTER_STRIP_HEIGHT;
+function canvasHeightPx(melodyRowHeight: number, melodyRowCount: number = MELODY_DIATONIC_ROW_COUNT): number {
+  return (
+    MEASURE_HEADER_HEIGHT +
+    melodyRowCount * melodyRowHeight +
+    CHORD_AREA_HEIGHT +
+    CHORD_LETTER_STRIP_HEIGHT
+  );
 }
 
 function songTotalTicks(song: SongData): number {
@@ -323,6 +330,11 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
   const setActiveVoice = useUIStore((s) => s.setActiveVoice);
 
   const melodyRowHeight = useMemo(() => melodyRowHeightPx(staffSpacing), [staffSpacing]);
+  const activeVoicePitchRange = useMemo(() => {
+    const ranges = computeMelodyVoicePitchRanges(song);
+    return ranges[activeVoice] ?? ranges[0];
+  }, [song, activeVoice]);
+  const melodyRowCount = useMemo(() => melodyPitchRangeRowCount(activeVoicePitchRange), [activeVoicePitchRange]);
 
   const [hoverHit, setHoverHit] = useState<EditorCanvasHit | null>(null);
   /** `resize` uses ew-resize; `move` uses grabbing (OB-3). */
@@ -380,7 +392,14 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
   const hitResizeEdge = useCallback(
     (hit: EditorCanvasHit, vx: number): 'leading' | 'trailing' | null => {
       if (hit.kind === 'chord') {
-        const r = layoutChordBlock(hit.chord, hit.measureIndex, song, viewport, melodyRowHeight);
+        const r = layoutChordBlock(
+          hit.chord,
+          hit.measureIndex,
+          song,
+          viewport,
+          melodyRowHeight,
+          melodyRowCount,
+        );
         return classifyHorizontalResizeEdge(r.x, r.width, vx);
       }
       const r = computeNoteBlockRect({
@@ -391,10 +410,11 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
         isRest: hit.note.isRest,
         voiceIndex: hit.voiceIndex,
         melodyRowHeight,
+        melodyVoicePitchRange: activeVoicePitchRange,
       });
       return classifyHorizontalResizeEdge(r.x, r.width, vx);
     },
-    [song, viewport, melodyRowHeight],
+    [song, viewport, melodyRowHeight, melodyRowCount, activeVoicePitchRange],
   );
 
   const paint = useCallback(() => {
@@ -416,7 +436,7 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
     ctx.fillStyle = '#FFFFFF';
     ctx.fillRect(0, 0, w, h);
 
-    const pitchLabels = computePitchAxisLabelsInViewport(song, viewport, h, melodyRowHeight);
+    const pitchLabels = computePitchAxisLabelsInViewport(song, viewport, h, melodyRowHeight, activeVoicePitchRange);
 
     // Main canvas layer stack (bottom → top). Keep in sync with hitTest.ts global Z-order notes.
     // Grid + blocks are translated past the pitch gutter; gutter labels paint afterward on the left strip.
@@ -425,22 +445,41 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
     // drawGridBackground → drawNoteBlocks → drawChordBlocks (RA-2 bottom strip) → drawGuideOverlay → drawPlaybackHighlight → hover/selection → cursor.
     drawGridBackground(ctx, song, viewport, h, {
       melodyRowHeight,
+      melodyRowCount,
       gridContentWidthPx: gridContentW,
     });
     drawNoteBlocks(ctx, song, viewport, {
       colorScheme,
       labelMode,
       melodyRowHeight,
+      melodyVoicePitchRange: activeVoicePitchRange,
       melodyVoiceVisible,
       activeVoice,
       inactiveMelodyDisplayMode,
     });
-    drawChordBlocks(ctx, song, viewport, theoryEngine, { colorScheme, labelMode, melodyRowHeight });
+    drawChordBlocks(ctx, song, viewport, theoryEngine, {
+      colorScheme,
+      labelMode,
+      melodyRowHeight,
+      melodyRowCount,
+    });
     if (showGuides) {
-      drawGuideOverlay(ctx, song, viewport, colorScheme, { melodyRowHeight });
+      drawGuideOverlay(ctx, song, viewport, colorScheme, {
+        melodyRowHeight,
+        melodyVoicePitchRange: activeVoicePitchRange,
+      });
     }
 
-    drawPlaybackHighlight(ctx, song, viewport, playbackTick, melodyRowHeight, melodyVoiceVisible);
+    drawPlaybackHighlight(
+      ctx,
+      song,
+      viewport,
+      playbackTick,
+      melodyRowHeight,
+      activeVoicePitchRange,
+      melodyRowCount,
+      melodyVoiceVisible,
+    );
 
     const strokeRect = (x: number, y: number, rw: number, rh: number, stroke: string, fill?: string) => {
       ctx.save();
@@ -456,7 +495,14 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
 
     const drawHoverOrSelection = (hit: EditorCanvasHit, isSelection: boolean) => {
       if (hit.kind === 'chord') {
-        const r = layoutChordBlock(hit.chord, hit.measureIndex, song, viewport, melodyRowHeight);
+        const r = layoutChordBlock(
+          hit.chord,
+          hit.measureIndex,
+          song,
+          viewport,
+          melodyRowHeight,
+          melodyRowCount,
+        );
         strokeRect(r.x, r.y, r.width, r.height, isSelection ? SELECTION_STROKE : HOVER_STROKE, isSelection ? SELECTION_COLOR : undefined);
       } else {
         const r = computeNoteBlockRect({
@@ -467,6 +513,7 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
           isRest: hit.note.isRest,
           voiceIndex: hit.voiceIndex,
           melodyRowHeight,
+          melodyVoicePitchRange: activeVoicePitchRange,
         });
         strokeRect(r.x, r.y, r.width, r.height, isSelection ? SELECTION_STROKE : HOVER_STROKE, isSelection ? SELECTION_COLOR : undefined);
       }
@@ -503,7 +550,14 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
       ctx.lineWidth = 1;
       if (rp.hit.kind === 'chord') {
         const ch: ChordEvent = { ...rp.hit.chord, beat: rp.beat, duration: rp.duration };
-        const r = layoutChordBlock(ch, rp.measureIndex, song, viewport, melodyRowHeight);
+        const r = layoutChordBlock(
+          ch,
+          rp.measureIndex,
+          song,
+          viewport,
+          melodyRowHeight,
+          melodyRowCount,
+        );
         ctx.strokeRect(r.x + 0.5, r.y + 0.5, r.width - 1, r.height - 1);
       } else {
         const n: NoteEvent = {
@@ -522,6 +576,7 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
           isRest: rp.hit.note.isRest,
           voiceIndex: rp.hit.voiceIndex,
           melodyRowHeight,
+          melodyVoicePitchRange: activeVoicePitchRange,
         });
         ctx.strokeRect(r.x + 0.5, r.y + 0.5, r.width - 1, r.height - 1);
       }
@@ -542,8 +597,10 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
     showGuides,
     labelMode,
     melodyRowHeight,
+    melodyRowCount,
     activeVoice,
     melodyVoiceVisible,
+    activeVoicePitchRange,
     inactiveMelodyDisplayMode,
   ]);
 
@@ -561,7 +618,7 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
       const parent = canvas.parentElement;
       const cssW = parent?.clientWidth ?? 800;
       const contentW = PITCH_GUTTER_WIDTH + Math.max(visibleMeasuresWidthPx(song, viewport), cssW);
-      const cssH = canvasHeightPx(melodyRowHeight);
+      const cssH = canvasHeightPx(melodyRowHeight, melodyRowCount);
       const dpr = window.devicePixelRatio || 1;
       canvas.style.width = `${contentW}px`;
       canvas.style.height = `${cssH}px`;
@@ -582,7 +639,7 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
       ro?.disconnect();
       window.removeEventListener('resize', resize);
     };
-  }, [song, viewport, melodyRowHeight]);
+  }, [song, viewport, melodyRowHeight, melodyRowCount]);
 
   const endDrag = useCallback(
     (canvas: HTMLCanvasElement, clientX: number, clientY: number) => {
@@ -639,7 +696,7 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
           let newChr = note.chromatic;
           if (!note.isRest) {
             const vy = end.y;
-            const rel = viewportYToStaffRelativeY(vy, viewport.scrollY);
+            const rel = viewportYToStaffRelativeY(vy, viewport.scrollY, activeVoicePitchRange, melodyRowHeight);
             const grid = nearestPitchGridFromStaffRelY(rel, melodyRowHeight);
             const po = diatonicRowToDegreeAndOctave(grid.diatonicRow);
             newSd = po.scaleDegree;
@@ -690,7 +747,7 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
       }
       sessionRef.current = null;
     },
-    [onChordEdit, onNoteEdit, song, viewport.scrollY, viewport.zoom, melodyRowHeight],
+    [onChordEdit, onNoteEdit, song, viewport.scrollY, viewport.zoom, melodyRowHeight, activeVoicePitchRange],
   );
 
   const handlePointerDown = (e: ReactPointerEvent<HTMLCanvasElement>) => {
@@ -701,7 +758,16 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
     const cx = e.clientX ?? 0;
     const cy = e.clientY ?? 0;
     const { x: vx, y: vy } = pointerEventToViewportXY(canvas, cx, cy, PITCH_GUTTER_WIDTH);
-    const hit = hitTestEditorCanvas(vx, vy, song, viewport, melodyRowHeight, melodyVoiceVisible);
+    const hit = hitTestEditorCanvas(
+      vx,
+      vy,
+      song,
+      viewport,
+      melodyRowHeight,
+      melodyVoiceVisible,
+      activeVoicePitchRange,
+      melodyRowCount,
+    );
 
     if (typeof canvas.setPointerCapture === 'function') {
       canvas.setPointerCapture(e.pointerId);
@@ -711,8 +777,25 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
       keyboardTargetMeasureRef.current = null;
       // Empty staff click: place a deterministic collapsed caret for table-mode inserts.
       // Empty chord-strip click still uses chord-append caret semantics.
-      const melodyCaret = melodyGridCaretSelectionFromPointer(song, viewport, vx, vy, melodyRowHeight);
-      onSelectionChange(melodyCaret ?? chordStripCaretSelectionFromPointer(song, viewport, vx, vy, melodyRowHeight));
+      const melodyCaret = melodyGridCaretSelectionFromPointer(
+        song,
+        viewport,
+        vx,
+        vy,
+        melodyRowHeight,
+        melodyRowCount,
+      );
+      onSelectionChange(
+        melodyCaret ??
+          chordStripCaretSelectionFromPointer(
+            song,
+            viewport,
+            vx,
+            vy,
+            melodyRowHeight,
+            melodyRowCount,
+          ),
+      );
       sessionRef.current = {
         phase: 'pending',
         hit: null,
@@ -780,7 +863,16 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
 
     if (!sess) {
       const { x: vx, y: vy } = pointerEventToViewportXY(canvas, mcx, mcy, PITCH_GUTTER_WIDTH);
-      const hit = hitTestEditorCanvas(vx, vy, song, viewport, melodyRowHeight, melodyVoiceVisible);
+      const hit = hitTestEditorCanvas(
+        vx,
+        vy,
+        song,
+        viewport,
+        melodyRowHeight,
+        melodyVoiceVisible,
+        activeVoicePitchRange,
+        melodyRowCount,
+      );
       setHoverHit(hit);
       setHoverOnResizeEdge(hit != null && hitResizeEdge(hit, vx) != null);
       scheduleRedraw();
@@ -857,7 +949,7 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
         let newOct = note.octave;
         let newChr = note.chromatic;
         if (!note.isRest) {
-          const rel = viewportYToStaffRelativeY(end.y, viewport.scrollY);
+          const rel = viewportYToStaffRelativeY(end.y, viewport.scrollY, activeVoicePitchRange, melodyRowHeight);
           const grid = nearestPitchGridFromStaffRelY(rel, melodyRowHeight);
           const po = diatonicRowToDegreeAndOctave(grid.diatonicRow);
           newSd = po.scaleDegree;

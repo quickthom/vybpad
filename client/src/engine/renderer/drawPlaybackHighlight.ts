@@ -1,6 +1,7 @@
 import type { SongData, Viewport } from '@vybpad/shared';
 
 import {
+  MELODY_DIATONIC_ROW_COUNT,
   NOTE_HEIGHT,
   PLAYBACK_HIGHLIGHT_COLOR,
   PLAYBACK_HIGHLIGHT_LINE_WIDTH,
@@ -8,6 +9,7 @@ import {
 import { CHORD_BLOCK_CORNER_RADIUS, layoutChordBlock } from './chordBlocks';
 import { computeNoteBlockRect, NOTE_BLOCK_CORNER_RADIUS } from './noteBlocks';
 import { absoluteTickFromMeasurePosition } from './tickUtils';
+import type { VoicePitchRange } from './voicePitchRange';
 
 /**
  * UX §6 — notes/chords sounding at `playbackTick`: 2px stroke `#F59E0B` on top of blocks.
@@ -19,6 +21,8 @@ export function drawPlaybackHighlight(
   viewport: Viewport,
   playbackTick: number | null,
   melodyRowHeight: number = NOTE_HEIGHT,
+  melodyVoicePitchRange?: Pick<VoicePitchRange, 'minPitch'>,
+  melodyRowCount: number = MELODY_DIATONIC_ROW_COUNT,
   melodyVoiceVisible: readonly [boolean, boolean, boolean, boolean] = [true, true, true, true],
 ): void {
   if (playbackTick == null) {
@@ -43,7 +47,7 @@ export function drawPlaybackHighlight(
       if (playbackTick < absStart || playbackTick >= absEnd) {
         continue;
       }
-      const r = layoutChordBlock(chord, mi, song, viewport, melodyRowHeight);
+      const r = layoutChordBlock(chord, mi, song, viewport, melodyRowHeight, melodyRowCount);
       if (r.width <= 0) continue;
       strokeRoundRect(ctx, r.x, r.y, r.width, r.height, CHORD_BLOCK_CORNER_RADIUS);
     }
@@ -68,6 +72,7 @@ export function drawPlaybackHighlight(
           isRest: false,
           voiceIndex: v,
           melodyRowHeight,
+          melodyVoicePitchRange,
         });
         strokeRoundRect(ctx, r.x, r.y, r.width, r.height, NOTE_BLOCK_CORNER_RADIUS);
       }
