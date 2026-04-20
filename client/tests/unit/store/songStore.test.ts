@@ -179,6 +179,28 @@ describe('SongStore — INTERFACES.md contract', () => {
       expect(useSongStore.getState().song.measures[0].chords[0].beat).toBe(24);
     });
 
+    it('moves a chord to the destination measure when the source no longer matches the callback measure', () => {
+      useSongStore.getState().editChord(0, { type: 'add', chord: baseChordPayload() });
+      const id = useSongStore.getState().song.measures[0].chords[0].id;
+      useSongStore.getState().editChord(1, { type: 'move', chordId: id, newBeat: 12 });
+      expect(useSongStore.getState().song.measures[0].chords).toEqual([]);
+      expect(useSongStore.getState().song.measures[1].chords).toHaveLength(1);
+      expect(useSongStore.getState().song.measures[1].chords[0]).toMatchObject({ id, beat: 12 });
+    });
+
+    it('re-locates a chord on cross-measure resize update payload', () => {
+      useSongStore.getState().editChord(0, { type: 'add', chord: { ...baseChordPayload(), beat: 160, duration: 24 } });
+      const id = useSongStore.getState().song.measures[0].chords[0].id;
+      useSongStore.getState().editChord(1, {
+        type: 'update',
+        chordId: id,
+        changes: { beat: 12, duration: 24 },
+      });
+      expect(useSongStore.getState().song.measures[0].chords).toEqual([]);
+      expect(useSongStore.getState().song.measures[1].chords).toHaveLength(1);
+      expect(useSongStore.getState().song.measures[1].chords[0]).toMatchObject({ id, beat: 12, duration: 24 });
+    });
+
     it('resize: updates chord duration', () => {
       useSongStore.getState().editChord(0, { type: 'add', chord: baseChordPayload() });
       const id = useSongStore.getState().song.measures[0].chords[0].id;
@@ -229,6 +251,28 @@ describe('SongStore — INTERFACES.md contract', () => {
       expect(n.beat).toBe(24);
       expect(n.scaleDegree).toBe(3);
       expect(n.octave).toBe(1);
+    });
+
+    it('moves a note to the destination measure when the source no longer matches the callback measure', () => {
+      useSongStore.getState().editNote(0, 0, { type: 'add', note: baseNotePayload() });
+      const id = useSongStore.getState().song.measures[0].notes[0][0].id;
+      useSongStore.getState().editNote(1, 0, { type: 'move', noteId: id, newBeat: 12 });
+      expect(useSongStore.getState().song.measures[0].notes[0]).toEqual([]);
+      expect(useSongStore.getState().song.measures[1].notes[0]).toHaveLength(1);
+      expect(useSongStore.getState().song.measures[1].notes[0][0]).toMatchObject({ id, beat: 12 });
+    });
+
+    it('re-locates a note on cross-measure resize update payload', () => {
+      useSongStore.getState().editNote(0, 0, { type: 'add', note: { ...baseNotePayload(), beat: 160, duration: 24 } });
+      const id = useSongStore.getState().song.measures[0].notes[0][0].id;
+      useSongStore.getState().editNote(1, 0, {
+        type: 'update',
+        noteId: id,
+        changes: { beat: 12, duration: 24 },
+      });
+      expect(useSongStore.getState().song.measures[0].notes[0]).toEqual([]);
+      expect(useSongStore.getState().song.measures[1].notes[0]).toHaveLength(1);
+      expect(useSongStore.getState().song.measures[1].notes[0][0]).toMatchObject({ id, beat: 12, duration: 24 });
     });
 
     it('resize: updates note duration', () => {
