@@ -96,6 +96,9 @@ export function computeVoicePitchSpan(song: SongData, voiceIndex: 0 | 1 | 2 | 3)
 
   for (let measureIndex = 0; measureIndex < song.measures.length; measureIndex += 1) {
     const measure = song.measures[measureIndex];
+    if (measure == null || typeof measure !== 'object') {
+      continue;
+    }
     const notesByVoice = (measure as { notes?: unknown }).notes;
     const voiceNotesCandidate = Array.isArray(notesByVoice) ? (notesByVoice as unknown[])[voiceIndex] : undefined;
     const voiceNotes = Array.isArray(voiceNotesCandidate) ? (voiceNotesCandidate as unknown[]) : [];
