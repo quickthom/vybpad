@@ -8,7 +8,7 @@ import {
   MELODY_DIATONIC_ROW_COUNT,
   NOTE_HEIGHT,
 } from './constants';
-import { getMeasureStartTicks, getMeterAtMeasure, measureLengthInTicks, TPQN } from './tickUtils';
+import { getMeasureStartTicks, getMeterAtMeasure, measureIndexFromAbsoluteTick, measureLengthInTicks, TPQN } from './tickUtils';
 
 // Re-export PAT-012 and tick helpers for the public barrel
 export {
@@ -33,6 +33,21 @@ export {
   measureLengthInTicks,
   TPQN,
 } from './tickUtils';
+
+/**
+ * Convert an absolute song tick to `{ measureIndex, beat }` using song-local meter changes.
+ * Values outside `[0, totalTicks)` are clamped to the nearest valid song tick.
+ */
+export function measureIndexAndBeatFromAbsoluteTick(song: SongData, absoluteTick: number): { measureIndex: number; beat: number } {
+  if (!Number.isFinite(absoluteTick) || song.measures.length === 0) {
+    return { measureIndex: 0, beat: 0 };
+  }
+  const starts = getMeasureStartTicks(song);
+  const totalTicks = starts[song.measures.length] ?? 0;
+  const clamped = Math.max(0, Math.min(Math.round(absoluteTick), Math.max(0, totalTicks - 1)));
+  const measureIndex = measureIndexFromAbsoluteTick(song, clamped);
+  return { measureIndex, beat: clamped - (starts[measureIndex] ?? 0) };
+}
 
 /**
  * Horizontal scale: one quarter-note beat is `BEAT_WIDTH * zoom` pixels (PAT-012).

@@ -16,13 +16,13 @@ import * as hitTestModule from '../../../../src/engine/renderer/hitTest';
 import { PITCH_GUTTER_WIDTH } from '../../../../src/engine/renderer/constants';
 import {
   absoluteTickFromMeasurePosition,
-  absoluteTickToViewportX,
   getMeterAtMeasure,
   horizontalPxToTicks,
   horizontalTicksToPx,
   measureLengthInTicks,
 } from '../../../../src/engine/renderer/layout';
 import { layoutChordBlock } from '../../../../src/engine/renderer/chordBlocks';
+import { computeNoteBlockRect } from '../../../../src/engine/renderer/noteBlocks';
 import { trailingResizeStripWidthPx } from '../../../../src/components/editor/pointerMath';
 import { getMeasureStartTicks, measureIndexFromAbsoluteTick } from '../../../../src/engine/renderer/tickUtils';
 
@@ -176,6 +176,9 @@ describe('EditorCanvas — OB-7 cross-measure drag', () => {
     const starts = getMeasureStartTicks(crossSong);
     const expectedMeasure = measureIndexFromAbsoluteTick(crossSong, destinationAbsolute);
     const expectedBeat = destinationAbsolute - (starts[expectedMeasure] ?? 0);
+    const chordRect = layoutChordBlock(chord, 0, crossSong, DEFAULT_VIEWPORT);
+    const downX = PITCH_GUTTER_WIDTH + chordRect.x + chordRect.width / 2;
+    const downY = chordRect.y + chordRect.height / 2;
 
     vi.spyOn(hitTestModule, 'hitTestEditorCanvas').mockReturnValue({
       kind: 'chord',
@@ -204,13 +207,11 @@ describe('EditorCanvas — OB-7 cross-measure drag', () => {
     );
 
     const canvas = canvasIn(container);
-    const downVx = absoluteTickToViewportX(fromAbsolute, DEFAULT_VIEWPORT, crossSong);
     const dragVx = horizontalTicksToPx(snappedDragTicks, DEFAULT_VIEWPORT.zoom);
-    const downX = PITCH_GUTTER_WIDTH + downVx;
 
     fireEvent.pointerDown(canvas, {
       clientX: downX,
-      clientY: 40,
+      clientY: downY,
       button: 0,
       buttons: 1,
       pointerId: 1,
@@ -218,7 +219,7 @@ describe('EditorCanvas — OB-7 cross-measure drag', () => {
     });
     fireEvent.pointerMove(canvas, {
       clientX: downX + dragVx,
-      clientY: 40,
+      clientY: downY,
       button: 0,
       buttons: 1,
       pointerId: 1,
@@ -226,16 +227,15 @@ describe('EditorCanvas — OB-7 cross-measure drag', () => {
     });
     fireEvent.pointerUp(canvas, {
       clientX: downX + dragVx,
-      clientY: 40,
+      clientY: downY,
       button: 0,
       buttons: 0,
       pointerId: 1,
       pointerType: 'mouse',
     });
-
     const moveCalls = onChordEdit.mock.calls.filter(([, action]) => action.type === 'move');
     expect(moveCalls.length).toBeGreaterThan(0);
-    const [, targetMeasure, payload] = moveCalls[moveCalls.length - 1]!;
+    const [targetMeasure, payload] = moveCalls[moveCalls.length - 1]!;
     expect(targetMeasure).toBe(expectedMeasure);
     expect(payload).toMatchObject({ type: 'move', chordId });
     if (payload.type === 'move') {
@@ -255,6 +255,17 @@ describe('EditorCanvas — OB-7 cross-measure drag', () => {
     const destinationAbsolute = fromAbsolute + snappedDragTicks;
     const starts = getMeasureStartTicks(crossSong);
     const expectedBeat = destinationAbsolute - (starts[measureIndexFromAbsoluteTick(crossSong, destinationAbsolute)] ?? 0);
+    const noteRect = computeNoteBlockRect({
+      song: crossSong,
+      viewport: DEFAULT_VIEWPORT,
+      measureIndex: 0,
+      note,
+      isRest: false,
+      voiceIndex: 0,
+      melodyRowHeight: 20,
+    });
+    const downX = PITCH_GUTTER_WIDTH + noteRect.x + noteRect.width / 2;
+    const downY = noteRect.y + noteRect.height / 2;
 
     vi.spyOn(hitTestModule, 'hitTestEditorCanvas').mockReturnValue({
       kind: 'note',
@@ -284,13 +295,11 @@ describe('EditorCanvas — OB-7 cross-measure drag', () => {
     );
 
     const canvas = canvasIn(container);
-    const downVx = absoluteTickToViewportX(fromAbsolute, DEFAULT_VIEWPORT, crossSong);
     const dragVx = horizontalTicksToPx(snappedDragTicks, DEFAULT_VIEWPORT.zoom);
-    const downX = PITCH_GUTTER_WIDTH + downVx;
 
     fireEvent.pointerDown(canvas, {
       clientX: downX,
-      clientY: 120,
+      clientY: downY,
       button: 0,
       buttons: 1,
       pointerId: 1,
@@ -298,7 +307,7 @@ describe('EditorCanvas — OB-7 cross-measure drag', () => {
     });
     fireEvent.pointerMove(canvas, {
       clientX: downX + dragVx,
-      clientY: 120,
+      clientY: downY,
       button: 0,
       buttons: 1,
       pointerId: 1,
@@ -306,7 +315,7 @@ describe('EditorCanvas — OB-7 cross-measure drag', () => {
     });
     fireEvent.pointerUp(canvas, {
       clientX: downX + dragVx,
-      clientY: 120,
+      clientY: downY,
       button: 0,
       buttons: 0,
       pointerId: 1,
@@ -327,6 +336,9 @@ describe('EditorCanvas — OB-7 cross-measure drag', () => {
     crossSong.measures[1]!.changes = { meter: { numerator: 3, denominator: 4 } };
     const chord = crossSong.measures[0]!.chords[0]!;
     chord.beat = 160;
+    const chordRect = layoutChordBlock(chord, 0, crossSong, DEFAULT_VIEWPORT);
+    const downX = PITCH_GUTTER_WIDTH + chordRect.x + chordRect.width / 2;
+    const downY = chordRect.y + chordRect.height / 2;
 
     const rafSpy = vi
       .spyOn(window, 'requestAnimationFrame')
@@ -360,12 +372,11 @@ describe('EditorCanvas — OB-7 cross-measure drag', () => {
     );
 
     const canvas = canvasIn(container);
-    const downX = PITCH_GUTTER_WIDTH + absoluteTickToViewportX(absoluteTickFromMeasurePosition(crossSong, 0, 160), DEFAULT_VIEWPORT, crossSong);
     const moveX = downX + horizontalTicksToPx(80, DEFAULT_VIEWPORT.zoom);
 
     fireEvent.pointerDown(canvas, {
       clientX: downX,
-      clientY: 40,
+      clientY: downY,
       button: 0,
       buttons: 1,
       pointerId: 1,
@@ -375,7 +386,7 @@ describe('EditorCanvas — OB-7 cross-measure drag', () => {
 
     fireEvent.pointerMove(canvas, {
       clientX: moveX,
-      clientY: 40,
+      clientY: downY,
       button: 0,
       buttons: 1,
       pointerId: 1,
@@ -384,7 +395,7 @@ describe('EditorCanvas — OB-7 cross-measure drag', () => {
     expect(rafSpy).toHaveBeenCalled();
     fireEvent.pointerUp(canvas, {
       clientX: moveX,
-      clientY: 40,
+      clientY: downY,
       button: 0,
       buttons: 0,
       pointerId: 1,

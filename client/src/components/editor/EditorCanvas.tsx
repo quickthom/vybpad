@@ -43,11 +43,15 @@ import { drawPlaybackHighlight } from '../../engine/renderer/drawPlaybackHighlig
 import { drawChordBlocks, layoutChordBlock } from '../../engine/renderer/chordBlocks';
 import { drawGridBackground } from '../../engine/renderer/gridBackground';
 import { hitTestEditorCanvas } from '../../engine/renderer/hitTest';
-import { getMeasureStartTicks, horizontalPxToTicks, horizontalTicksToPx } from '../../engine/renderer/layout';
+import {
+  getMeasureStartTicks,
+  horizontalPxToTicks,
+  horizontalTicksToPx,
+  measureIndexAndBeatFromAbsoluteTick,
+} from '../../engine/renderer/layout';
 import { computePitchAxisLabelsInViewport, drawPitchAxisGutter } from '../../engine/renderer/pitchAxisLayout';
 import { drawGuideOverlay } from '../../engine/renderer/guideOverlay';
 import { computeNoteBlockRect, drawNoteBlocks } from '../../engine/renderer/noteBlocks';
-import { getMeterAtMeasure, measureLengthInTicks } from '../../engine/renderer/tickUtils';
 import { chordStripCaretSelectionFromPointer } from './editorKeyboardLogic';
 import {
   classifyHorizontalResizeEdge,
@@ -55,6 +59,8 @@ import {
   diatonicRowToDegreeAndOctave,
   nearestPitchGridFromStaffRelY,
   pointerEventToViewportXY,
+  MAGNETIC_SNAP_GRID_STEP_TICKS,
+  MAGNETIC_SNAP_THRESHOLD_TICKS,
   softMagneticSnapMeasureTick,
   viewportYToStaffRelativeY,
 } from './pointerMath';
@@ -138,6 +144,23 @@ type DragSession =
       startChromatic?: number;
     };
 
+type DragPreview = {
+  kind: 'move' | 'resize';
+  hit: EditorCanvasHit;
+  measureIndex: number;
+  beat: number;
+  duration: number;
+  scaleDegree?: ScaleDegree;
+  octave?: number;
+  chromatic?: number;
+};
+
+type MeasureBeatAbsolute = {
+  measureIndex: number;
+  beat: number;
+  absoluteTick: number;
+};
+
 function visibleMeasuresWidthPx(song: SongData, viewport: Viewport): number {
   const starts = getMeasureStartTicks(song);
   const first = viewport.startMeasure;
@@ -149,38 +172,90 @@ function canvasHeightPx(melodyRowHeight: number): number {
   return MEASURE_HEADER_HEIGHT + MELODY_DIATONIC_ROW_COUNT * melodyRowHeight + CHORD_AREA_HEIGHT + CHORD_LETTER_STRIP_HEIGHT;
 }
 
-/** Move: clamp start beat; OB-5 soft-snaps to PAT-004 sixteenth grid before clamping. */
-function clampChordBeat(song: SongData, measureIndex: number, beat: number, duration: number): number {
-  const len = measureLengthInTicks(getMeterAtMeasure(song, measureIndex));
-  const maxStart = Math.max(0, len - duration);
-  const b = softMagneticSnapMeasureTick(Math.round(beat), 0, maxStart);
-  return Math.max(0, Math.min(b, maxStart));
+function songTotalTicks(song: SongData): number {
+  if (song.measures.length === 0) return 0;
+  const starts = getMeasureStartTicks(song);
+  return starts[song.measures.length] ?? 0;
 }
 
-/** Trailing resize: snap trailing edge tick, then derive duration (OB-5). */
-function clampChordDuration(song: SongData, measureIndex: number, beat: number, duration: number): number {
-  const len = measureLengthInTicks(getMeterAtMeasure(song, measureIndex));
-  const d = Math.round(duration);
-  let endTick = beat + d;
-  const minEnd = beat + 1;
-  endTick = Math.max(minEnd, Math.min(endTick, len));
-  const snappedEnd = softMagneticSnapMeasureTick(endTick, minEnd, len);
-  const out = snappedEnd - beat;
-  return Math.max(1, Math.min(out, len - beat));
+function roundSafe(value: number): number {
+  return Number.isFinite(value) ? Math.round(value) : 0;
 }
 
-/** Leading-edge resize keeps the note/chord end tick fixed (Hookpad-style); OB-5 snaps leading edge. */
-function clampLeadingEdgeResizeTicks(
+function remapMoveAcrossMeasures(
+  song: SongData,
+  sourceMeasure: number,
   startBeat: number,
   startDuration: number,
   deltaTicks: number,
-): { beat: number; duration: number } {
-  const endRel = startBeat + startDuration;
-  let nb = Math.round(startBeat + deltaTicks);
-  nb = Math.max(0, Math.min(nb, endRel - 1));
-  nb = softMagneticSnapMeasureTick(nb, 0, endRel - 1);
-  const nd = Math.max(1, endRel - nb);
-  return { beat: nb, duration: nd };
+): MeasureBeatAbsolute {
+  const measureStarts = getMeasureStartTicks(song);
+  const sourceMeasureTick = measureStarts[sourceMeasure] ?? 0;
+  const sourceTick = sourceMeasureTick + startBeat;
+  const duration = Math.max(1, startDuration);
+  const totalTicks = songTotalTicks(song);
+  const maxStart = Math.max(0, totalTicks - duration);
+  const snapped = softMagneticSnapMeasureTick(
+    sourceTick + deltaTicks,
+    0,
+    maxStart,
+    MAGNETIC_SNAP_GRID_STEP_TICKS,
+    MAGNETIC_SNAP_THRESHOLD_TICKS,
+  );
+  const absoluteTick = roundSafe(Math.max(0, Math.min(snapped, maxStart)));
+  const remap = measureIndexAndBeatFromAbsoluteTick(song, absoluteTick);
+  return { ...remap, absoluteTick };
+}
+
+function remapTrailingResizeAcrossMeasures(
+  song: SongData,
+  sourceMeasure: number,
+  startBeat: number,
+  startDuration: number,
+  deltaTicks: number,
+): number {
+  const starts = getMeasureStartTicks(song);
+  const sourceStart = starts[sourceMeasure] ?? 0;
+  const totalTicks = songTotalTicks(song);
+  const eventStart = sourceStart + startBeat;
+  const minEnd = eventStart + 1;
+  const maxEnd = Math.max(minEnd, totalTicks);
+  const snapped = softMagneticSnapMeasureTick(
+    eventStart + startDuration + deltaTicks,
+    minEnd,
+    maxEnd,
+    MAGNETIC_SNAP_GRID_STEP_TICKS,
+    MAGNETIC_SNAP_THRESHOLD_TICKS,
+  );
+  const endTick = roundSafe(Math.min(maxEnd, Math.max(minEnd, snapped)));
+  return Math.max(1, endTick - eventStart);
+}
+
+function remapLeadingResizeAcrossMeasures(
+  song: SongData,
+  sourceMeasure: number,
+  startBeat: number,
+  startDuration: number,
+  deltaTicks: number,
+): MeasureBeatAbsolute & { duration: number } {
+  const starts = getMeasureStartTicks(song);
+  const sourceStart = starts[sourceMeasure] ?? 0;
+  const sourceTick = sourceStart + startBeat;
+  const sourceEnd = sourceTick + startDuration;
+  const totalTicks = songTotalTicks(song);
+  const maxStart = Math.max(0, sourceEnd - 1);
+  const maxSnap = Math.max(0, Math.min(maxStart, Math.max(0, totalTicks - 1)));
+  const snapped = softMagneticSnapMeasureTick(
+    sourceTick + deltaTicks,
+    0,
+    maxSnap,
+    MAGNETIC_SNAP_GRID_STEP_TICKS,
+    MAGNETIC_SNAP_THRESHOLD_TICKS,
+  );
+  const absoluteTick = roundSafe(Math.max(0, Math.min(snapped, maxSnap)));
+  const duration = Math.max(1, sourceEnd - absoluteTick);
+  const remap = measureIndexAndBeatFromAbsoluteTick(song, absoluteTick);
+  return { ...remap, duration, absoluteTick };
 }
 
 function findVoiceForNote(song: SongData, measureIndex: number, noteId: string): 0 | 1 | 2 | 3 | null {
@@ -252,8 +327,8 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
   const [activeDragKind, setActiveDragKind] = useState<'idle' | 'move' | 'resize'>('idle');
   const [hoverOnResizeEdge, setHoverOnResizeEdge] = useState(false);
   const rafRef = useRef<number | null>(null);
-  /** Live resize outline during trailing/leading drag (pointer-up commits to store). */
-  const dragResizePreviewRef = useRef<{ hit: EditorCanvasHit; beat: number; duration: number } | null>(null);
+  /** Live move/resize outline during drag (pointer-up commits to store). */
+  const dragResizePreviewRef = useRef<DragPreview | null>(null);
   /** Latest paint closure — resize + rAF paths must repaint without relying on stale React state (PAT-008, OB-4). */
   const paintRef = useRef<() => void>(() => {});
 
@@ -426,14 +501,21 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
       ctx.lineWidth = 1;
       if (rp.hit.kind === 'chord') {
         const ch: ChordEvent = { ...rp.hit.chord, beat: rp.beat, duration: rp.duration };
-        const r = layoutChordBlock(ch, rp.hit.measureIndex, song, viewport, melodyRowHeight);
+        const r = layoutChordBlock(ch, rp.measureIndex, song, viewport, melodyRowHeight);
         ctx.strokeRect(r.x + 0.5, r.y + 0.5, r.width - 1, r.height - 1);
       } else {
-        const n: NoteEvent = { ...rp.hit.note, beat: rp.beat, duration: rp.duration };
+        const n: NoteEvent = {
+          ...rp.hit.note,
+          beat: rp.beat,
+          duration: rp.duration,
+          ...(rp.scaleDegree !== undefined ? { scaleDegree: rp.scaleDegree } : {}),
+          ...(rp.octave !== undefined ? { octave: rp.octave } : {}),
+          ...(rp.chromatic !== undefined ? { chromatic: rp.chromatic } : {}),
+        };
         const r = computeNoteBlockRect({
           song,
           viewport,
-          measureIndex: rp.hit.measureIndex,
+          measureIndex: rp.measureIndex,
           note: n,
           isRest: rp.hit.note.isRest,
           voiceIndex: rp.hit.voiceIndex,
@@ -512,19 +594,31 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
 
       if (s.hit.kind === 'chord') {
         const ch = s.hit.chord;
-        const mi = s.hit.measureIndex;
+        const sourceMeasure = s.hit.measureIndex;
         if (s.kind === 'move') {
-          const nb = clampChordBeat(song, mi, s.startBeat + deltaTicks, ch.duration);
-          if (nb !== ch.beat) onChordEdit(mi, { type: 'move', chordId: ch.id, newBeat: nb });
+          const remap = remapMoveAcrossMeasures(song, sourceMeasure, s.startBeat, ch.duration, deltaTicks);
+          if (remap.measureIndex !== sourceMeasure || remap.beat !== ch.beat) {
+            onChordEdit(remap.measureIndex, { type: 'move', chordId: ch.id, newBeat: remap.beat });
+          }
         } else {
           const edge = s.resizeEdge ?? 'trailing';
           if (edge === 'trailing') {
-            const nd = clampChordDuration(song, mi, ch.beat, s.startDuration + deltaTicks);
-            if (nd !== ch.duration) onChordEdit(mi, { type: 'resize', chordId: ch.id, newDuration: nd });
+            const nd = remapTrailingResizeAcrossMeasures(song, sourceMeasure, s.startBeat, s.startDuration, deltaTicks);
+            if (nd !== ch.duration) onChordEdit(sourceMeasure, { type: 'resize', chordId: ch.id, newDuration: nd });
           } else {
-            const { beat: nb, duration: nd } = clampLeadingEdgeResizeTicks(s.startBeat, s.startDuration, deltaTicks);
-            if (nb !== ch.beat || nd !== ch.duration) {
-              onChordEdit(mi, {
+            const {
+              beat: nb,
+              duration: nd,
+              measureIndex: destinationMeasure,
+            } = remapLeadingResizeAcrossMeasures(
+              song,
+              sourceMeasure,
+              s.startBeat,
+              s.startDuration,
+              deltaTicks,
+            );
+            if (nb !== ch.beat || nd !== ch.duration || destinationMeasure !== sourceMeasure) {
+              onChordEdit(destinationMeasure, {
                 type: 'update',
                 chordId: ch.id,
                 changes: { beat: nb, duration: nd },
@@ -534,10 +628,10 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
         }
       } else {
         const note = s.hit.note;
-        const mi = s.hit.measureIndex;
+        const sourceMeasure = s.hit.measureIndex;
         const voice = s.hit.voiceIndex;
         if (s.kind === 'move') {
-          const nb = clampChordBeat(song, mi, s.startBeat + deltaTicks, note.duration);
+          const remap = remapMoveAcrossMeasures(song, sourceMeasure, s.startBeat, note.duration, deltaTicks);
           let newSd = note.scaleDegree;
           let newOct = note.octave;
           let newChr = note.chromatic;
@@ -550,30 +644,40 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
             newOct = po.octave;
             newChr = grid.chromatic;
           }
-          const beatChanged = nb !== note.beat;
+          const beatChanged = remap.beat !== note.beat;
           const degreeOrOctChanged = !note.isRest && (newSd !== note.scaleDegree || newOct !== note.octave);
           const chromaticChanged = !note.isRest && newChr !== note.chromatic;
-          if (beatChanged || degreeOrOctChanged) {
-            onNoteEdit(mi, voice, {
+          if (beatChanged || remap.measureIndex !== sourceMeasure || degreeOrOctChanged) {
+            onNoteEdit(remap.measureIndex, voice, {
               type: 'move',
               noteId: note.id,
-              newBeat: nb,
+              newBeat: remap.beat,
               ...(newSd !== note.scaleDegree ? { newScaleDegree: newSd } : {}),
               ...(newOct !== note.octave ? { newOctave: newOct } : {}),
             });
           }
           if (chromaticChanged) {
-            onNoteEdit(mi, voice, { type: 'update', noteId: note.id, changes: { chromatic: newChr } });
+            onNoteEdit(remap.measureIndex, voice, { type: 'update', noteId: note.id, changes: { chromatic: newChr } });
           }
         } else {
           const edge = s.resizeEdge ?? 'trailing';
           if (edge === 'trailing') {
-            const nd = clampChordDuration(song, mi, note.beat, s.startDuration + deltaTicks);
-            if (nd !== note.duration) onNoteEdit(mi, voice, { type: 'resize', noteId: note.id, newDuration: nd });
+            const nd = remapTrailingResizeAcrossMeasures(song, sourceMeasure, s.startBeat, s.startDuration, deltaTicks);
+            if (nd !== note.duration) onNoteEdit(sourceMeasure, voice, { type: 'resize', noteId: note.id, newDuration: nd });
           } else {
-            const { beat: nb, duration: nd } = clampLeadingEdgeResizeTicks(s.startBeat, s.startDuration, deltaTicks);
-            if (nb !== note.beat || nd !== note.duration) {
-              onNoteEdit(mi, voice, {
+            const {
+              beat: nb,
+              duration: nd,
+              measureIndex: destinationMeasure,
+            } = remapLeadingResizeAcrossMeasures(
+              song,
+              sourceMeasure,
+              s.startBeat,
+              s.startDuration,
+              deltaTicks,
+            );
+            if (nb !== note.beat || nd !== note.duration || destinationMeasure !== sourceMeasure) {
+              onNoteEdit(destinationMeasure, voice, {
                 type: 'update',
                 noteId: note.id,
                 changes: { beat: nb, duration: nd },
@@ -681,50 +785,103 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
       return;
     }
 
-    if (sess.phase === 'drag' && sess.kind === 'resize') {
+    if (sess.phase === 'drag') {
       const origin = pointerEventToViewportXY(canvas, sess.originClientX, sess.originClientY, PITCH_GUTTER_WIDTH);
       const end = pointerEventToViewportXY(canvas, mcx, mcy, PITCH_GUTTER_WIDTH);
       const deltaTicks = horizontalPxToTicks(end.x - origin.x, viewport.zoom);
-      const edge = sess.resizeEdge ?? 'trailing';
-      if (sess.hit.kind === 'chord') {
-        const ch = sess.hit.chord;
-        const mi = sess.hit.measureIndex;
-        let beat = ch.beat;
-        let duration = ch.duration;
-        if (edge === 'trailing') {
-          duration = clampChordDuration(song, mi, ch.beat, sess.startDuration + deltaTicks);
+      if (sess.kind === 'resize') {
+        const edge = sess.resizeEdge ?? 'trailing';
+        if (sess.hit.kind === 'chord') {
+          const ch = sess.hit.chord;
+          const mi = sess.hit.measureIndex;
+          let beat = ch.beat;
+          let duration = ch.duration;
+          let previewMeasure = mi;
+          if (edge === 'trailing') {
+            duration = remapTrailingResizeAcrossMeasures(song, mi, sess.startBeat, sess.startDuration, deltaTicks);
+          } else {
+            const o = remapLeadingResizeAcrossMeasures(song, mi, sess.startBeat, sess.startDuration, deltaTicks);
+            beat = o.beat;
+            duration = o.duration;
+            previewMeasure = o.measureIndex;
+          }
+          dragResizePreviewRef.current = {
+            kind: 'resize',
+            hit: sess.hit,
+            measureIndex: previewMeasure,
+            beat,
+            duration,
+          };
         } else {
-          const o = clampLeadingEdgeResizeTicks(sess.startBeat, sess.startDuration, deltaTicks);
-          beat = o.beat;
-          duration = o.duration;
+          const note = sess.hit.note;
+          const mi = sess.hit.measureIndex;
+          let beat = note.beat;
+          let duration = note.duration;
+          let previewMeasure = mi;
+          if (edge === 'trailing') {
+            duration = remapTrailingResizeAcrossMeasures(song, mi, sess.startBeat, sess.startDuration, deltaTicks);
+          } else {
+            const o = remapLeadingResizeAcrossMeasures(song, mi, sess.startBeat, sess.startDuration, deltaTicks);
+            beat = o.beat;
+            duration = o.duration;
+            previewMeasure = o.measureIndex;
+          }
+          dragResizePreviewRef.current = {
+            kind: 'resize',
+            hit: sess.hit,
+            measureIndex: previewMeasure,
+            beat,
+            duration,
+          };
         }
-        dragResizePreviewRef.current = { hit: sess.hit, beat, duration };
+        scheduleRedraw();
+        return;
+      }
+
+      const mi = sess.hit.measureIndex;
+      if (sess.hit.kind === 'chord') {
+        const chord = sess.hit.chord;
+        const remap = remapMoveAcrossMeasures(song, mi, sess.startBeat, chord.duration, deltaTicks);
+        dragResizePreviewRef.current = {
+          kind: 'move',
+          hit: sess.hit,
+          measureIndex: remap.measureIndex,
+          beat: remap.beat,
+          duration: chord.duration,
+        };
       } else {
         const note = sess.hit.note;
-        const mi = sess.hit.measureIndex;
-        let beat = note.beat;
-        let duration = note.duration;
-        if (edge === 'trailing') {
-          duration = clampChordDuration(song, mi, note.beat, sess.startDuration + deltaTicks);
-        } else {
-          const o = clampLeadingEdgeResizeTicks(sess.startBeat, sess.startDuration, deltaTicks);
-          beat = o.beat;
-          duration = o.duration;
+        let newSd = note.scaleDegree;
+        let newOct = note.octave;
+        let newChr = note.chromatic;
+        if (!note.isRest) {
+          const rel = viewportYToStaffRelativeY(end.y, viewport.scrollY);
+          const grid = nearestPitchGridFromStaffRelY(rel, melodyRowHeight);
+          const po = diatonicRowToDegreeAndOctave(grid.diatonicRow);
+          newSd = po.scaleDegree;
+          newOct = po.octave;
+          newChr = grid.chromatic;
         }
-        dragResizePreviewRef.current = { hit: sess.hit, beat, duration };
+        const remap = remapMoveAcrossMeasures(song, mi, sess.startBeat, note.duration, deltaTicks);
+        dragResizePreviewRef.current = {
+          kind: 'move',
+          hit: sess.hit,
+          measureIndex: remap.measureIndex,
+          beat: remap.beat,
+          duration: note.duration,
+          scaleDegree: newSd,
+          octave: newOct,
+          chromatic: note.isRest ? undefined : newChr,
+        };
       }
       scheduleRedraw();
-      return;
-    }
-
-    if (sess.phase === 'drag') {
       return;
     }
 
     if (sess.phase === 'pending') {
       const dist = Math.hypot(mcx - sess.originClientX, mcy - sess.originClientY);
       if (dist >= DRAG_THRESHOLD_PX && sess.hit) {
-        sessionRef.current = {
+        const dragSession: DragSession = {
           phase: 'drag',
           kind: 'move',
           hit: sess.hit,
@@ -737,8 +894,10 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
           startOctave: sess.startOctave,
           startChromatic: sess.startChromatic,
         };
+        sessionRef.current = dragSession;
         setActiveDragKind('move');
         setHoverHit(null);
+        return handlePointerMove(e);
       }
       return;
     }
