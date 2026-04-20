@@ -499,6 +499,14 @@ interface TransportControlsProps {
   onStop: () => void;
   onRewind: () => void;
   onTempoChange: (bpm: number) => void;
+  /** PAT-009 — history controls in toolbar; optional so legacy callers can omit. */
+  canUndo?: boolean;
+  /** PAT-009 — history controls in toolbar; optional so legacy callers can omit. */
+  canRedo?: boolean;
+  /** PAT-009 — history controls in toolbar; optional so legacy callers can omit. */
+  onUndo?: () => void;
+  /** PAT-009 — history controls in toolbar; optional so legacy callers can omit. */
+  onRedo?: () => void;
   /** UI-W6 (RA-11) — loop region controls folded into the transport row; omit when unused. */
   loopContent?: React.ReactNode;
   /** Optional trailing slot (e.g. MIDI export / drag-to-desktop affordance); omit when unused. */

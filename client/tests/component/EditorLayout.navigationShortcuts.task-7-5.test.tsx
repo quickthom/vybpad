@@ -69,6 +69,8 @@ const TASK75_CHORDS = {
   rewindPlayback: { key: ',', code: 'Comma' },
   undo: { key: 'z', code: 'KeyZ', ctrlKey: true },
   redo: { key: 'z', code: 'KeyZ', ctrlKey: true, shiftKey: true },
+  undoMac: { key: 'z', code: 'KeyZ', metaKey: true },
+  redoMac: { key: 'z', code: 'KeyZ', metaKey: true, shiftKey: true },
 } as const;
 
 const EXPECT_ZOOM_MIN = 0.25;
@@ -343,13 +345,27 @@ describe('EditorLayout — TASK-7.5 — navigation + playback shortcuts (stores 
     });
   });
 
-  it('dispatches undo when Ctrl+Z is pressed after a mutation', async () => {
+  it('undoes the last song mutation when Ctrl+Z is pressed', async () => {
     stubCanvas2d();
     await focusSongCanvas();
 
-    useSongStore.getState().updateMetadata({ tempo: 132 });
-    expect(useSongStore.getState().song.metadata.tempo).toBe(132);
-    expect(useSongStore.getState().canUndo).toBe(true);
+    const initialCount = useSongStore.getState().song.measures[0]!.chords.length;
+    useSongStore.getState().editChord(0, {
+      type: 'add',
+      chord: {
+        scaleDegree: 3,
+        quality: 'minor',
+        seventh: 'none',
+        suspension: 'none',
+        addition: 'none',
+        inversion: 0,
+        borrowed: null,
+        secondary: null,
+        beat: 96,
+        duration: 48,
+      },
+    });
+    expect(useSongStore.getState().song.measures[0]!.chords).toHaveLength(initialCount + 1);
 
     window.dispatchEvent(
       new KeyboardEvent('keydown', {
@@ -360,16 +376,67 @@ describe('EditorLayout — TASK-7.5 — navigation + playback shortcuts (stores 
     );
 
     await waitFor(() => {
-      expect(useSongStore.getState().song.metadata.tempo).toBe(120);
-      expect(useSongStore.getState().canRedo).toBe(true);
+      expect(useSongStore.getState().song.measures[0]!.chords).toHaveLength(initialCount);
     });
   });
 
-  it('dispatches redo when Ctrl+Shift+Z is pressed after undo', async () => {
+  it('undoes the last song mutation when Meta+Z is pressed', async () => {
     stubCanvas2d();
     await focusSongCanvas();
 
-    useSongStore.getState().updateMetadata({ tempo: 126 });
+    const initialCount = useSongStore.getState().song.measures[0]!.chords.length;
+    useSongStore.getState().editChord(0, {
+      type: 'add',
+      chord: {
+        scaleDegree: 3,
+        quality: 'minor',
+        seventh: 'none',
+        suspension: 'none',
+        addition: 'none',
+        inversion: 0,
+        borrowed: null,
+        secondary: null,
+        beat: 96,
+        duration: 48,
+      },
+    });
+    expect(useSongStore.getState().song.measures[0]!.chords).toHaveLength(initialCount + 1);
+
+    window.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        ...TASK75_CHORDS.undoMac,
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+
+    await waitFor(() => {
+      expect(useSongStore.getState().song.measures[0]!.chords).toHaveLength(initialCount);
+    });
+  });
+
+  it('redoes the last undone song mutation when Ctrl+Shift+Z is pressed', async () => {
+    stubCanvas2d();
+    await focusSongCanvas();
+
+    const initialCount = useSongStore.getState().song.measures[0]!.chords.length;
+    useSongStore.getState().editChord(0, {
+      type: 'add',
+      chord: {
+        scaleDegree: 3,
+        quality: 'minor',
+        seventh: 'none',
+        suspension: 'none',
+        addition: 'none',
+        inversion: 0,
+        borrowed: null,
+        secondary: null,
+        beat: 96,
+        duration: 48,
+      },
+    });
+    expect(useSongStore.getState().song.measures[0]!.chords).toHaveLength(initialCount + 1);
+
     window.dispatchEvent(
       new KeyboardEvent('keydown', {
         ...TASK75_CHORDS.undo,
@@ -378,7 +445,7 @@ describe('EditorLayout — TASK-7.5 — navigation + playback shortcuts (stores 
       }),
     );
     await waitFor(() => {
-      expect(useSongStore.getState().song.metadata.tempo).toBe(120);
+      expect(useSongStore.getState().song.measures[0]!.chords).toHaveLength(initialCount);
     });
 
     window.dispatchEvent(
@@ -388,22 +455,32 @@ describe('EditorLayout — TASK-7.5 — navigation + playback shortcuts (stores 
         cancelable: true,
       }),
     );
-
     await waitFor(() => {
-      expect(useSongStore.getState().song.metadata.tempo).toBe(126);
-      expect(useSongStore.getState().canRedo).toBe(false);
+      expect(useSongStore.getState().song.measures[0]!.chords).toHaveLength(initialCount + 1);
     });
   });
 
-  it('does not dispatch undo while key/scale modal is open (PAT-027 global gating)', async () => {
+  it('redoes the last undone song mutation when Meta+Shift+Z is pressed', async () => {
     stubCanvas2d();
     await focusSongCanvas();
 
-    useSongStore.getState().updateMetadata({ tempo: 134 });
-    const before = useSongStore.getState().song.metadata.tempo;
-
-    fireEvent.click(screen.getByRole('button', { name: /key \/ scale/i }));
-    expect(await screen.findByRole('dialog', { name: /key and scale/i })).toBeTruthy();
+    const initialCount = useSongStore.getState().song.measures[0]!.chords.length;
+    useSongStore.getState().editChord(0, {
+      type: 'add',
+      chord: {
+        scaleDegree: 3,
+        quality: 'minor',
+        seventh: 'none',
+        suspension: 'none',
+        addition: 'none',
+        inversion: 0,
+        borrowed: null,
+        secondary: null,
+        beat: 96,
+        duration: 48,
+      },
+    });
+    expect(useSongStore.getState().song.measures[0]!.chords).toHaveLength(initialCount + 1);
 
     window.dispatchEvent(
       new KeyboardEvent('keydown', {
@@ -412,9 +489,102 @@ describe('EditorLayout — TASK-7.5 — navigation + playback shortcuts (stores 
         cancelable: true,
       }),
     );
+    await waitFor(() => {
+      expect(useSongStore.getState().song.measures[0]!.chords).toHaveLength(initialCount);
+    });
 
-    expect(useSongStore.getState().song.metadata.tempo).toBe(before);
-    expect(useSongStore.getState().canUndo).toBe(true);
+    window.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        ...TASK75_CHORDS.redoMac,
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+    await waitFor(() => {
+      expect(useSongStore.getState().song.measures[0]!.chords).toHaveLength(initialCount + 1);
+    });
+  });
+
+  it('does not redo the last undone song mutation when Meta+Shift+Z is pressed while key/scale modal is open', async () => {
+    stubCanvas2d();
+    await focusSongCanvas();
+
+    const initialCount = useSongStore.getState().song.measures[0]!.chords.length;
+    useSongStore.getState().editChord(0, {
+      type: 'add',
+      chord: {
+        scaleDegree: 3,
+        quality: 'minor',
+        seventh: 'none',
+        suspension: 'none',
+        addition: 'none',
+        inversion: 0,
+        borrowed: null,
+        secondary: null,
+        beat: 96,
+        duration: 48,
+      },
+    });
+    window.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        ...TASK75_CHORDS.undo,
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+    await waitFor(() => {
+      expect(useSongStore.getState().song.measures[0]!.chords).toHaveLength(initialCount);
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /key \/ scale/i }));
+    expect(await screen.findByRole('dialog', { name: /key and scale/i })).toBeTruthy();
+
+    window.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        ...TASK75_CHORDS.redoMac,
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+
+    expect(useSongStore.getState().song.measures[0]!.chords).toHaveLength(initialCount);
+  });
+
+  it('does not undo when text input is focused (PAT-027 global gating)', async () => {
+    stubCanvas2d();
+    await focusSongCanvas();
+
+    const initialCount = useSongStore.getState().song.measures[0]!.chords.length;
+    useSongStore.getState().editChord(0, {
+      type: 'add',
+      chord: {
+        scaleDegree: 3,
+        quality: 'minor',
+        seventh: 'none',
+        suspension: 'none',
+        addition: 'none',
+        inversion: 0,
+        borrowed: null,
+        secondary: null,
+        beat: 96,
+        duration: 48,
+      },
+    });
+    expect(useSongStore.getState().song.measures[0]!.chords).toHaveLength(initialCount + 1);
+
+    const tempo = screen.getByRole('spinbutton', { name: /tempo/i });
+    tempo.focus();
+    expect(document.activeElement).toBe(tempo);
+
+    window.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        ...TASK75_CHORDS.undoMac,
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+
+    expect(useSongStore.getState().song.measures[0]!.chords).toHaveLength(initialCount + 1);
   });
 
   it('does not drive scrollY negative when ArrowUp is pressed at scrollY 0', async () => {
