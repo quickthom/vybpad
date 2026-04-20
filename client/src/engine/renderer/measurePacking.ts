@@ -31,7 +31,7 @@ export function computeMeasuresPerLine({
   const safeZoom = Number.isFinite(zoom) && zoom > 0 ? zoom : 1;
   const safeBeatWidth = Number.isFinite(beatWidthPx) && beatWidthPx > 0 ? beatWidthPx : BEAT_WIDTH;
   const safeBeatsPerMeasure = Number.isFinite(beatsPerMeasure)
-    ? Math.max(1, Math.floor(beatsPerMeasure))
+    ? Math.max(1, beatsPerMeasure)
     : 4;
   const safeHeader = Number.isFinite(measureHeaderHeightPx) && measureHeaderHeightPx > 0 ? measureHeaderHeightPx : 0;
 
