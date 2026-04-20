@@ -12,3 +12,4 @@ export * from './drawPlaybackCursor';
 export * from './drawPlaybackHighlight';
 export * from './hitTest';
 export * from './pitchAxisLayout';
+export * from './voicePitchRange';
