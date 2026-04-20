@@ -201,6 +201,47 @@ function applyNoteEdit(measure: Measure, voice: number, action: NoteEditAction):
   }
 }
 
+type ChordLocation = { measureIndex: number; chordIndex: number };
+type NoteLocation = { measureIndex: number; voice: 0 | 1 | 2 | 3; noteIndex: number };
+
+function findChordLocation(song: SongData, preferredMeasureIndex: number, chordId: string): ChordLocation | null {
+  const preferred = song.measures[preferredMeasureIndex];
+  if (preferred) {
+    const chordIndex = preferred.chords.findIndex((chord) => chord.id === chordId);
+    if (chordIndex >= 0) return { measureIndex: preferredMeasureIndex, chordIndex };
+  }
+
+  for (let measureIndex = 0; measureIndex < song.measures.length; measureIndex++) {
+    if (measureIndex === preferredMeasureIndex) continue;
+    const measure = song.measures[measureIndex];
+    const chordIndex = measure.chords.findIndex((chord) => chord.id === chordId);
+    if (chordIndex >= 0) return { measureIndex, chordIndex };
+  }
+
+  return null;
+}
+
+function findNoteLocation(song: SongData, preferredMeasureIndex: number, noteId: string): NoteLocation | null {
+  const preferred = song.measures[preferredMeasureIndex];
+  if (preferred) {
+    for (const voice of [0, 1, 2, 3] as const) {
+      const noteIndex = preferred.notes[voice].findIndex((note) => note.id === noteId);
+      if (noteIndex >= 0) return { measureIndex: preferredMeasureIndex, voice, noteIndex };
+    }
+  }
+
+  for (let measureIndex = 0; measureIndex < song.measures.length; measureIndex++) {
+    if (measureIndex === preferredMeasureIndex) continue;
+    const measure = song.measures[measureIndex];
+    for (const voice of [0, 1, 2, 3] as const) {
+      const noteIndex = measure.notes[voice].findIndex((note) => note.id === noteId);
+      if (noteIndex >= 0) return { measureIndex, voice, noteIndex };
+    }
+  }
+
+  return null;
+}
+
 function clampBeatToMeasure(song: SongData, measureIndex: number, beat: number, duration: number): number {
   const len = measureLengthInTicks(getMeterAtMeasure(song, measureIndex));
   const d = Math.max(1, Math.round(duration));
@@ -231,10 +272,44 @@ export const useSongStore = create<SongStoreState>()(
 
     editChord: (measureIndex, action) => {
       set((draft) => {
-        const measure = draft.song.measures[measureIndex];
-        if (!measure) return;
+        if (action.type === 'add') {
+          const measure = draft.song.measures[measureIndex];
+          if (!measure) return;
+          pushUndoSnapshot(draft);
+          applyChordEdit(measure, action);
+          afterMutation(draft);
+          return;
+        }
+
+        const sourceLocation = findChordLocation(draft.song, measureIndex, action.chordId);
+        if (!sourceLocation) return;
+
+        const sourceMeasure = draft.song.measures[sourceLocation.measureIndex];
+        const destinationMeasure = draft.song.measures[measureIndex];
+        if (!sourceMeasure || !destinationMeasure) return;
+
         pushUndoSnapshot(draft);
-        applyChordEdit(measure, action);
+
+        if (sourceLocation.measureIndex === measureIndex) {
+          applyChordEdit(destinationMeasure, action);
+          afterMutation(draft);
+          return;
+        }
+
+        const chord = sourceMeasure.chords[sourceLocation.chordIndex];
+        if (!chord) return;
+
+        if (action.type === 'delete') {
+          sourceMeasure.chords.splice(sourceLocation.chordIndex, 1);
+          afterMutation(draft);
+          return;
+        }
+
+        sourceMeasure.chords.splice(sourceLocation.chordIndex, 1);
+        destinationMeasure.chords.push(chord);
+        applyChordEdit(destinationMeasure, action);
+        sortChords(sourceMeasure.chords);
+        sortChords(destinationMeasure.chords);
         afterMutation(draft);
       });
     },
@@ -242,10 +317,43 @@ export const useSongStore = create<SongStoreState>()(
     editNote: (measureIndex, voice, action) => {
       if (voice < 0 || voice > 3) return;
       set((draft) => {
-        const measure = draft.song.measures[measureIndex];
-        if (!measure) return;
+        if (action.type === 'add') {
+          const measure = draft.song.measures[measureIndex];
+          if (!measure) return;
+          pushUndoSnapshot(draft);
+          applyNoteEdit(measure, voice, action);
+          afterMutation(draft);
+          return;
+        }
+
+        const destinationMeasure = draft.song.measures[measureIndex];
+        const sourceLocation = findNoteLocation(draft.song, measureIndex, action.noteId);
+        if (!sourceLocation || !destinationMeasure) return;
+
+        const sourceMeasure = draft.song.measures[sourceLocation.measureIndex];
+        if (!sourceMeasure) return;
+        const sourceLane = sourceMeasure.notes[sourceLocation.voice];
+
         pushUndoSnapshot(draft);
-        applyNoteEdit(measure, voice, action);
+
+        if (sourceLocation.measureIndex === measureIndex && sourceLocation.voice === voice) {
+          applyNoteEdit(sourceMeasure, voice, action);
+          afterMutation(draft);
+          return;
+        }
+
+        const note = sourceLane.splice(sourceLocation.noteIndex, 1)[0];
+        if (!note) return;
+
+        if (action.type === 'delete') {
+          afterMutation(draft);
+          return;
+        }
+
+        destinationMeasure.notes[voice].push(note);
+        applyNoteEdit(destinationMeasure, voice, action);
+        sortNotes(sourceLane);
+        sortNotes(destinationMeasure.notes[voice]);
         afterMutation(draft);
       });
     },
