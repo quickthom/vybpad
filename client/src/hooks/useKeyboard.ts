@@ -552,16 +552,14 @@ function pickSelectedMelodyNote(ctx: EditorKeyboardContext): SelectedMelodyNoteS
 }
 
 function applyDiatonicStep(degree: ScaleDegree, delta: -1 | 1): { degree: ScaleDegree; octaveDelta: number } {
-  let next = (degree + delta) as number;
-  let octaveDelta = 0;
-  if (next === 8) {
-    next = 1;
-    octaveDelta = 1;
-  } else if (next === 0) {
-    next = 7;
-    octaveDelta = -1;
+  const scaleDegrees: ScaleDegree[] = [1, 2, 3, 4, 5, 6, 7];
+  const currentIndex = scaleDegrees.indexOf(degree);
+  if (delta === 1) {
+    const octaveDelta = degree === 7 ? 1 : 0;
+    return { degree: scaleDegrees[(currentIndex + 1) % scaleDegrees.length], octaveDelta };
   }
-  return { degree: next as ScaleDegree, octaveDelta };
+  const octaveDelta = degree === 1 ? -1 : 0;
+  return { degree: scaleDegrees[(currentIndex + scaleDegrees.length - 1) % scaleDegrees.length], octaveDelta };
 }
 
 /** Half-step chromatic nudge on a selected note (PAT-018); used by left-panel Raise/Lower (UI-W3). */

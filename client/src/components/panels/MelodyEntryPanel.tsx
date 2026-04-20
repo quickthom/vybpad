@@ -129,7 +129,7 @@ export function MelodyEntryPanel(props: MelodyEntryPanelProps): ReactElement | n
         </button>
         <button
           type="button"
-          data-testid="melody-entry-raise-diatonic"
+          data-testid="melody-entry-raise"
           aria-label="Raise selection by diatonic step"
           onClick={onRaise}
           className="inline-flex min-h-8 flex-1 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-3 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
@@ -158,7 +158,7 @@ export function MelodyEntryPanel(props: MelodyEntryPanelProps): ReactElement | n
         </button>
         <button
           type="button"
-          data-testid="melody-entry-lower-diatonic"
+          data-testid="melody-entry-lower"
           aria-label="Lower selection by diatonic step"
           onClick={onLower}
           className="inline-flex min-h-8 flex-1 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-3 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"

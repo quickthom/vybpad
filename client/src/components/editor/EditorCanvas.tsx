@@ -213,13 +213,15 @@ function remapTrailingResizeAcrossMeasures(
   startBeat: number,
   startDuration: number,
   deltaTicks: number,
+  allowCrossMeasure = true,
 ): number {
   const starts = getMeasureStartTicks(song);
   const sourceStart = starts[sourceMeasure] ?? 0;
   const totalTicks = songTotalTicks(song);
+  const sourceMeasureBoundary = allowCrossMeasure ? totalTicks : starts[sourceMeasure + 1] ?? totalTicks;
   const eventStart = sourceStart + startBeat;
   const minEnd = eventStart + 1;
-  const maxEnd = Math.max(minEnd, totalTicks);
+  const maxEnd = Math.max(minEnd, sourceMeasureBoundary);
   const snapped = softMagneticSnapMeasureTick(
     eventStart + startDuration + deltaTicks,
     minEnd,
@@ -662,7 +664,7 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
         } else {
           const edge = s.resizeEdge ?? 'trailing';
           if (edge === 'trailing') {
-            const nd = remapTrailingResizeAcrossMeasures(song, sourceMeasure, s.startBeat, s.startDuration, deltaTicks);
+            const nd = remapTrailingResizeAcrossMeasures(song, sourceMeasure, s.startBeat, s.startDuration, deltaTicks, false);
             if (nd !== note.duration) onNoteEdit(sourceMeasure, voice, { type: 'resize', noteId: note.id, newDuration: nd });
           } else {
             const {
@@ -819,7 +821,7 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
           let duration = note.duration;
           let previewMeasure = mi;
           if (edge === 'trailing') {
-            duration = remapTrailingResizeAcrossMeasures(song, mi, sess.startBeat, sess.startDuration, deltaTicks);
+            duration = remapTrailingResizeAcrossMeasures(song, mi, sess.startBeat, sess.startDuration, deltaTicks, false);
           } else {
             const o = remapLeadingResizeAcrossMeasures(song, mi, sess.startBeat, sess.startDuration, deltaTicks);
             beat = o.beat;
