@@ -35,6 +35,7 @@ import {
 import { createShortcutManager } from '../engine/keyboard/shortcutManager';
 import type { ShortcutCommandId, ShortcutContext } from '../engine/keyboard/shortcutTypes';
 import { TASK73_EDITOR_SHORTCUT_CHORDS } from '../engine/keyboard/task73ShortcutChords';
+import { computeMeasuresPerLine } from '../engine/renderer/measurePacking';
 import {
   TASK75_NAVIGATION_SHORTCUT_CHORDS,
   TASK75_TRANSPORT_SHORTCUT_CHORDS,
@@ -209,6 +210,8 @@ export function EditorLayout() {
 
   const [selectedMeasures, setSelectedMeasures] = useState<[number, number] | null>(null);
   const [tempoMeterDialogOpen, setTempoMeterDialogOpen] = useState(false);
+  const editorCanvasHostRef = useRef<HTMLDivElement | null>(null);
+  const [editorCanvasContentWidth, setEditorCanvasContentWidth] = useState(0);
   /** Shared with `EditorCanvas` keyboard + chord palette (TASK-5.1). */
   const keyboardTargetMeasureRef = useRef<number | null>(null);
   const textDurationArmedRef = useRef(false);
@@ -238,6 +241,23 @@ export function EditorLayout() {
       meterLabel: `${m.numerator}/${m.denominator}`,
     };
   }, [song, keyScaleTargetMeasure]);
+
+  const measuresPerLine = useMemo(() => {
+    /** ASSUMPTIONS: using the active editor host width and current viewport.startMeasure meter keeps packing
+     * aligned to local time signature without adding an extra full-measure scan for worst-case width.
+     * This can under-pack by design when future measures are wider than the start measure.
+     */
+    const m = getMeterAtMeasure(song, viewport.startMeasure);
+    const denominator = Number.isFinite(m.denominator) && m.denominator > 0 ? m.denominator : 4;
+    const numerator = Number.isFinite(m.numerator) ? m.numerator : 4;
+    // Convert meter to quarter-beat width so mixed signatures (like 6/8) use quarter-equivalent beats per measure.
+    const beatsPerMeasure = Math.max(1, (numerator / denominator) * 4);
+    return computeMeasuresPerLine({
+      canvasWidthPx: editorCanvasContentWidth,
+      zoom: viewport.zoom,
+      beatsPerMeasure,
+    });
+  }, [editorCanvasContentWidth, song, viewport.startMeasure, viewport.zoom]);
 
   const handleZoomInTransport = useCallback(() => {
     setViewport(withZoomIn(useUIStore.getState().viewport));
@@ -1079,6 +1099,33 @@ export function EditorLayout() {
     // `runProjectSave` is invoked via `runProjectSaveRef` so this effect does not depend on callback identity.
   }, [song, isDirty, projectId, loadStatus]);
 
+  useEffect(() => {
+    const host = editorCanvasHostRef.current;
+    if (!host) return;
+
+    const syncEditorCanvasWidth = () => {
+      // In headless/jsdom environments `clientWidth` can be 0 even when a test width is set
+      // on the container. Fall back to `window.innerWidth` so measure packing remains responsive.
+      const hostWidth = Math.max(0, host.clientWidth);
+      const fallbackWidth = Math.max(0, window?.innerWidth ?? 0);
+      const nextWidth = hostWidth > 0 ? hostWidth : fallbackWidth;
+      setEditorCanvasContentWidth(nextWidth);
+    };
+
+    syncEditorCanvasWidth();
+    let ro: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== 'undefined') {
+      ro = new ResizeObserver(syncEditorCanvasWidth);
+      ro.observe(host);
+    }
+    window.addEventListener('resize', syncEditorCanvasWidth);
+
+    return () => {
+      ro?.disconnect();
+      window.removeEventListener('resize', syncEditorCanvasWidth);
+    };
+  }, []);
+
   async function handleSave() {
     if (!projectId || saveBusy || loadStatus !== 'ready') return;
     if (autosaveTimerRef.current) {
@@ -1402,6 +1449,7 @@ export function EditorLayout() {
         </aside>
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
           <main
+            ref={editorCanvasHostRef}
             className="min-h-0 flex-1 overflow-x-auto p-3"
             aria-busy={projectId ? loadStatus === 'loading' : false}
           >
@@ -1457,7 +1505,7 @@ export function EditorLayout() {
           <MeasureBar
             measureCount={song.measures.length}
             selectedMeasures={selectedMeasures}
-            measuresPerLine={viewport.measureCount}
+            measuresPerLine={measuresPerLine}
             onSelectMeasure={(index) => setSelectedMeasures([index, index])}
             onSelectRange={(start, end) => setSelectedMeasures([start, end])}
             onAddMeasures={(count) => addMeasures(song.measures.length, count)}

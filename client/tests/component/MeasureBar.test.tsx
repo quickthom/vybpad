@@ -316,7 +316,63 @@ describe('App — MeasureBar integration (criterion 5)', () => {
     vi.restoreAllMocks();
   });
 
+  function mockMainWidth(container: Element, widthPx: number): void {
+    const main = container.querySelector('main');
+    if (!main) return;
+
+    Object.defineProperty(main, 'clientWidth', {
+      configurable: true,
+      get: () => widthPx,
+    });
+  }
+
+  function countMeasureRows(strip: HTMLElement): number {
+    const trackSelector =
+      '.flex.min-h-0.min-w-0.flex-1.flex-col.justify-center.gap-1.overflow-x-auto.px-2.py-1';
+    const track = strip.querySelector(trackSelector);
+    if (!track) return 0;
+    return Array.from(track.children).filter((child) => child.getAttribute('class')?.includes('flex-wrap')).length;
+  }
+
   describe('happy path', () => {
+    it('renders multiple measure rows when the observed canvas width supports ≥2 measures per line', () => {
+      const { container } = render(
+        <BrowserRouter>
+          <EditorLayout />
+        </BrowserRouter>,
+      );
+      const strips = screen.getAllByRole('region', { name: 'Measures' });
+      const strip = strips[strips.length - 1]!;
+      expect(strip).toBeTruthy();
+
+      mockMainWidth(container, 400);
+      fireEvent(window, new Event('resize'));
+
+      const rows = countMeasureRows(strip);
+      expect(rows).toBeGreaterThanOrEqual(2);
+    });
+
+    it('reduces measuresPerLine and increases row count when window width decreases', () => {
+      const { container } = render(
+        <BrowserRouter>
+          <EditorLayout />
+        </BrowserRouter>,
+      );
+      const strips = screen.getAllByRole('region', { name: 'Measures' });
+      const strip = strips[strips.length - 1]!;
+      expect(strip).toBeTruthy();
+
+      mockMainWidth(container, 400);
+      fireEvent(window, new Event('resize'));
+      const rowsAtWideWidth = countMeasureRows(strip);
+
+      mockMainWidth(container, 120);
+      fireEvent(window, new Event('resize'));
+      const rowsAtNarrowWidth = countMeasureRows(strip);
+
+      expect(rowsAtNarrowWidth).toBeGreaterThanOrEqual(rowsAtWideWidth);
+    });
+
     it('renders the measure strip region in the bottom shell and increases song measure count when Add is used', () => {
       render(
         <BrowserRouter>
