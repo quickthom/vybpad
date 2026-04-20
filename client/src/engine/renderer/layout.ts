@@ -168,7 +168,7 @@ export function computeVoicePitchSpan(song: SongData, voiceIndex: 0 | 1 | 2 | 3)
       minMidi: MIN_PITCH_SPAN_FALLBACK.min,
       maxMidi: MIN_PITCH_SPAN_FALLBACK.max,
       pitchSpanSemitones: MIN_VOICE_PITCH_SPAN_SEMITONES,
-      minSpanApplied: false,
+      minSpanApplied: true,
     };
   }
 
