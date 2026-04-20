@@ -1,18 +1,28 @@
 /** @vitest-environment jsdom */
-import type { MouseEvent } from 'react';
 
-import { cleanup, render, screen, within } from '@testing-library/react';
+import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { PlacementDurationControls } from '@/components/panels/PlacementDurationControls';
 
-const TICKS_TO_BEATS = {
+const PRESETS = {
   192: '4',
   96: '2',
   48: '1',
   24: '1/2',
   12: '1/4',
+} as const;
+
+const PRESET_TICK_ORDER = [192, 96, 48, 24, 12] as const;
+const MAX_PRESET_TICKS = 192;
+
+const EXPECTED_PERCENT_BY_TICKS: Record<number, number> = {
+  192: 100,
+  96: 50,
+  48: 25,
+  24: 12.5,
+  12: 6.25,
 };
 
 afterEach(() => {
@@ -20,46 +30,82 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-function pickDurationAccessorByTicks(ticks: number): string {
-  return TICKS_TO_BEATS[ticks as keyof typeof TICKS_TO_BEATS] ?? `${ticks / 48}`;
+function parseWidth(el: Element): { value: number; unit: '%' | 'px' } {
+  const style = el.getAttribute('style');
+  const match = /width:\s*([0-9]+(?:\.[0-9]+)?)(px|%)?/.exec(style ?? '');
+  if (!match || !match[1]) {
+    throw new Error(`Missing width style on bar: ${style ?? '<empty>'}`);
+  }
+
+  return {
+    value: Number(match[1]),
+    unit: (match[2] as '%' | 'px') ?? '%',
+  };
 }
 
 describe('PlacementDurationControls — UI-R2-W3 — RA-205', () => {
-  it('shows the active duration primarily as beat count, not raw tick text', async () => {
-    const onDurationTicks = vi.fn();
-    const currentDurationTicks = 48;
-
-    render(<PlacementDurationControls currentDurationTicks={currentDurationTicks} onDurationTicks={onDurationTicks} />);
+  it('renders beats-first active readout', () => {
+    render(<PlacementDurationControls currentDurationTicks={48} onDurationTicks={vi.fn()} />);
 
     const liveText = screen.getByText((_, node) => node instanceof HTMLElement && node.getAttribute('aria-live') === 'polite');
-    const visibleLabel = pickDurationAccessorByTicks(currentDurationTicks);
-    expect(liveText.textContent).toContain(visibleLabel);
-    expect(liveText.textContent).not.toMatch(/\bticks?\b/i);
+    expect(liveText).toBeTruthy();
+    expect(liveText.textContent).toContain('Next note or chord: 1');
+    expect(liveText.textContent).not.toMatch(/\bticks\b/i);
   });
 
-  it('renders duration presets as beat-oriented labels with bar-action semantics (tick values treated as metadata)', async () => {
-    const onDurationTicks = vi.fn();
-    render(<PlacementDurationControls currentDurationTicks={48} onDurationTicks={onDurationTicks} />);
+  it('couples each preset label with its proportional bar and keeps deterministic widths', () => {
+    render(<PlacementDurationControls currentDurationTicks={96} onDurationTicks={vi.fn()} />);
 
-    const presetGroup = screen.getByRole('group', { name: /Duration presets/i });
-    const buttons = within(presetGroup).getAllByRole('button');
-    expect(buttons.length).toBeGreaterThanOrEqual(5);
-    let previousWidth = Number.POSITIVE_INFINITY;
+    const widths = PRESET_TICK_ORDER.map((ticks) => {
+      const button = screen.getByTestId(`left-panel-duration-ticks-${ticks}`);
+      const expectedLabel = PRESETS[ticks as keyof typeof PRESETS];
 
-    for (const button of buttons) {
-      const compactLabel = button.textContent?.replace(/\([^)]*\)/g, '').trim();
-      expect(compactLabel).toBeTruthy();
-      expect(compactLabel).toMatch(/^\d+(?:\/\d+)?(?:\.\d+)?$/);
+      expect(button).toBeInTheDocument();
+      expect(button).toHaveAttribute('aria-pressed', String(ticks === 96));
+      expect(button).toHaveAttribute('aria-label', `${expectedLabel} beats (${ticks} ticks)`);
+      expect(button).toHaveTextContent(expectedLabel);
 
-      const barContainer = button.querySelector('span[aria-hidden="true"]');
-      const bar = barContainer?.querySelector('span');
-      expect(bar).toBeTruthy();
-      const width = Number(bar?.getAttribute('style')?.match(/width:\s*([0-9.]+)%/)?.[1]);
-      expect(width).toBeGreaterThan(0);
-      expect(width).toBeLessThanOrEqual(100);
-      expect(width).toBeLessThanOrEqual(previousWidth);
-      previousWidth = width;
+      const parsed = parseWidth(screen.getByTestId(`left-panel-duration-bar-${ticks}`));
+
+      return { ticks, parsed };
+    });
+
+    const units = new Set(widths.map((entry) => entry.parsed.unit));
+    expect(units.size).toBe(1);
+    const [unit] = units;
+
+    if (unit === '%') {
+      for (const { ticks, parsed } of widths) {
+        expect(parsed.value).toBeGreaterThan(0);
+        expect(parsed.value).toBeLessThanOrEqual(100);
+        expect(parsed.value).toBeCloseTo(EXPECTED_PERCENT_BY_TICKS[ticks], 2);
+      }
+      return;
     }
+
+    const fullWidth = widths.find((entry) => entry.ticks === MAX_PRESET_TICKS)?.parsed.value;
+    if (!fullWidth) throw new Error('Expected to compute base width from 192-tick preset');
+
+    for (const { ticks, parsed } of widths) {
+      const expected = (ticks / MAX_PRESET_TICKS) * fullWidth;
+      expect(parsed.value).toBeGreaterThan(0);
+      expect(parsed.value).toBeCloseTo(expected, 2);
+    }
+  });
+
+  it('flags the active preset in both state and bar affordance', () => {
+    render(<PlacementDurationControls currentDurationTicks={24} onDurationTicks={vi.fn()} />);
+
+    const activeButton = screen.getByTestId('left-panel-duration-ticks-24');
+    const inactiveButton = screen.getByTestId('left-panel-duration-ticks-48');
+
+    const activeBar = screen.getByTestId('left-panel-duration-bar-24');
+    const inactiveBar = screen.getByTestId('left-panel-duration-bar-48');
+
+    expect(activeButton).toHaveAttribute('aria-pressed', 'true');
+    expect(activeBar.className).toContain('bg-[var(--color-primary,#4F46E5)]');
+    expect(inactiveBar.className).not.toContain('bg-[var(--color-primary,#4F46E5)]');
+    expect(activeButton).not.toBe(inactiveButton);
   });
 
   it('calls onDurationTicks with canonical tick values when a preset action is clicked', async () => {
@@ -68,12 +114,9 @@ describe('PlacementDurationControls — UI-R2-W3 — RA-205', () => {
 
     render(<PlacementDurationControls currentDurationTicks={48} onDurationTicks={onDurationTicks} />);
 
-    const button = screen.getByTestId('left-panel-duration-ticks-96');
-    await user.click(button);
+    await user.click(screen.getByTestId('left-panel-duration-ticks-96'));
 
     expect(onDurationTicks).toHaveBeenCalledTimes(1);
-    const arg = onDurationTicks.mock.calls[0]?.[0] as number;
-    expect(arg).toBe(96);
-    expect(TICKS_TO_BEATS[arg as keyof typeof TICKS_TO_BEATS]).toBeDefined();
+    expect(onDurationTicks).toHaveBeenCalledWith(96);
   });
 });

@@ -34,11 +34,6 @@ export function PlacementDurationControls(props: PlacementDurationControlsProps)
   const { currentDurationTicks, onDurationTicks } = props;
   const activeLabel = ticksToBeatLabel(currentDurationTicks);
 
-  const barWidthPercent = (ticks: number): number => {
-    const pct = (ticks / MAX_PRESET_TICKS) * 100;
-    return Math.max(8, Math.min(100, Math.round(pct)));
-  };
-
   return (
     <section
       className="flex shrink-0 flex-col gap-2 border-b border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)] px-3 py-2"
@@ -49,28 +44,41 @@ export function PlacementDurationControls(props: PlacementDurationControlsProps)
         Next note or chord: {activeLabel}
       </p>
       <div className="flex flex-col gap-1.5" role="group" aria-label="Duration presets">
-        {PRESETS.map(({ ticks, label }) => (
-          <button
-            key={ticks}
-            type="button"
-            data-testid={`left-panel-duration-ticks-${ticks}`}
-            aria-pressed={currentDurationTicks === ticks}
-            onClick={() => onDurationTicks(ticks)}
-            className={
-              currentDurationTicks === ticks
-                ? 'inline-flex w-full min-h-9 flex-col items-start justify-center gap-1 rounded-lg border border-[var(--color-primary,#4F46E5)] bg-[var(--color-surface-muted,#F9FAFB)] px-3 py-2 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2'
-                : 'inline-flex w-full min-h-9 flex-col items-start justify-center gap-1 rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-3 py-2 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2'
-            }
-          >
-            <span>{label}</span>
-            <span aria-hidden="true" className="h-1.5 w-full rounded-full bg-[var(--color-surface-muted,#F9FAFB)]">
+        {PRESETS.map(({ ticks, label }) => {
+          const isActive = currentDurationTicks === ticks;
+          const widthPercent = (ticks / MAX_PRESET_TICKS) * 100;
+          return (
+            <button
+              key={ticks}
+              type="button"
+              data-testid={`left-panel-duration-ticks-${ticks}`}
+              aria-pressed={isActive}
+              aria-label={`${label} beats (${ticks} ticks)`}
+              onClick={() => onDurationTicks(ticks)}
+              className={
+                isActive
+                  ? 'inline-flex w-full min-h-9 flex-col items-start justify-center gap-1 rounded-lg border border-[var(--color-primary,#4F46E5)] bg-[var(--color-surface-muted,#F9FAFB)] px-3 py-2 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2'
+                  : 'inline-flex w-full min-h-9 flex-col items-start justify-center gap-1 rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-3 py-2 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2'
+              }
+            >
+              <span className="text-xs font-medium text-[var(--color-text-primary,#111827)]">{label}</span>
               <span
-                className="h-1.5 rounded-full bg-[var(--color-primary,#4F46E5)] transition-[width] duration-150"
-                style={{ width: `${barWidthPercent(ticks)}%` }}
-              />
-            </span>
-          </button>
-        ))}
+                aria-hidden="true"
+                className="h-1.5 w-full overflow-hidden rounded-full bg-[var(--color-surface-muted,#F9FAFB)]"
+              >
+                <span
+                  data-testid={`left-panel-duration-bar-${ticks}`}
+                  className={
+                    isActive
+                      ? 'h-full rounded-full bg-[var(--color-primary,#4F46E5)] transition-[width] duration-150'
+                      : 'h-full rounded-full bg-[var(--color-text-secondary,#4B5563)] transition-[width] duration-150'
+                  }
+                  style={{ width: `${widthPercent}%` }}
+                />
+              </span>
+            </button>
+          );
+        })}
       </div>
     </section>
   );

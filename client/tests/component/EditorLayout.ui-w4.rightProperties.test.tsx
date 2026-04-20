@@ -363,15 +363,11 @@ describe('EditorLayout — UI-W4 — blocked chord edit (no silent failure)', ()
     await screen.findByRole('application', { name: /Song editor/i });
 
     const inversionGroup = screen.getByTestId('properties-chord-inversion');
-    const opt3 = within(inversionGroup).queryByRole('button', { name: /inversion 3/i });
+    const opt3 = within(inversionGroup).getByRole('button', { name: /inversion 3/i });
 
-    if (!opt3) {
-      expect(useSongStore.getState().song.measures[0].chords.find((c) => c.id === cid)?.inversion).toBe(0);
-      showErrorSpy.mockRestore();
-      return;
-    }
+    expect(opt3).toBeInTheDocument();
 
-    if ((opt3 as HTMLButtonElement).disabled) {
+    if (opt3.disabled) {
       expect(useSongStore.getState().song.measures[0].chords.find((c) => c.id === cid)?.inversion).toBe(0);
       expect(showErrorSpy).not.toHaveBeenCalled();
       showErrorSpy.mockRestore();
@@ -381,8 +377,8 @@ describe('EditorLayout — UI-W4 — blocked chord edit (no silent failure)', ()
     await user.click(opt3);
     await waitFor(() => {
       const inv = useSongStore.getState().song.measures[0].chords.find((c) => c.id === cid)?.inversion;
-      const toasted = showErrorSpy.mock.calls.length > 0;
-      expect(inv !== 3 || toasted).toBe(true);
+      expect(showErrorSpy).toHaveBeenCalled();
+      expect(inv).not.toBe(3);
     });
 
     showErrorSpy.mockRestore();
