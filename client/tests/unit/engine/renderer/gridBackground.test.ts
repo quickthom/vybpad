@@ -13,6 +13,8 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   absoluteTickToViewportX,
   BEAT_WIDTH,
+  CHORD_AREA_HEIGHT,
+  CHORD_LETTER_STRIP_HEIGHT,
   computeGridBackgroundLayout,
   drawGridBackground,
   MEASURE_HEADER_HEIGHT,
@@ -22,7 +24,7 @@ import {
   TPQN,
 } from '../../../../src/engine/renderer/index';
 import { pat010DiatonicHex } from '../../../../src/engine/renderer/colorMaps';
-import { noteStaffTopY } from '../../../../src/engine/renderer/layout';
+import { bottomChordStripTopY, MELODY_DIATONIC_ROW_COUNT, noteStaffTopY } from '../../../../src/engine/renderer/layout';
 
 function emptyMeasure(id: string): Measure {
   return { id, chords: [], notes: [[], [], [], []] };
@@ -315,6 +317,59 @@ describe('grid background — canvas draw calls (TASK-2.14)', () => {
     expect(fontSeq[idx]).toBe(MEASURE_NUMBER_FONT);
   });
 
+  it('paints the chord-strip letter band with CHORD_LETTER_STRIP_HEIGHT using white fill', () => {
+    const song = minimalSong44(1);
+    const view = vp({ measureCount: 1, zoom: 1 });
+    const gridContentWidthPx = 320;
+    const fillRectCalls: { x: number; y: number; w: number; h: number; color: string }[] = [];
+    let currentFillStyle = '';
+    const ctx = {
+      save: vi.fn(),
+      restore: vi.fn(),
+      beginPath: vi.fn(),
+      moveTo: vi.fn(),
+      lineTo: vi.fn(),
+      stroke: vi.fn(),
+      fillText: vi.fn(),
+      fillRect: vi.fn((x: number, y: number, w: number, h: number) => {
+        fillRectCalls.push({ x, y, w, h, color: currentFillStyle });
+      }),
+      lineWidth: 1,
+      set fillStyle(v: string) {
+        currentFillStyle = v;
+      },
+      get fillStyle() {
+        return currentFillStyle;
+      },
+      set font(_v: string) {
+        /* no-op */
+      },
+      get font() {
+        return '';
+      },
+      set strokeStyle(_v: string) {
+        /* no-op */
+      },
+      get strokeStyle() {
+        return '';
+      },
+      textBaseline: 'alphabetic' as CanvasTextBaseline,
+      textAlign: 'start' as CanvasTextAlign,
+    } as unknown as CanvasRenderingContext2D;
+
+    drawGridBackground(ctx, song, view, 700, { melodyRowHeight: NOTE_HEIGHT, gridContentWidthPx });
+    const stripY = bottomChordStripTopY(NOTE_HEIGHT);
+    const stripRect = fillRectCalls.find(
+      (c) =>
+        c.x === 0 &&
+        c.y === stripY &&
+        c.w === gridContentWidthPx &&
+        c.h === CHORD_LETTER_STRIP_HEIGHT &&
+        c.color === 'white',
+    );
+    expect(stripRect).toBeDefined();
+  });
+
   it('issues moveTo with half-pixel X matching rounded viewport X for bar lines and beat lines at zoom 1', () => {
     const song = minimalSong44(2);
     const view = vp({ measureCount: 2, zoom: 1 });
@@ -371,11 +426,12 @@ describe('grid background — canvas draw calls (TASK-2.14)', () => {
     );
   });
 
-  it('fills melody rows with subtle PAT-010 tint in the row band', () => {
+  it('fills each visible melody row with deterministic PAT-010 tint geometry', () => {
     const song = minimalSong44(1);
     const view = vp({ measureCount: 1, zoom: 1, scrollY: 0 });
+    const gridContentWidthPx = 320;
+    const canvasHeight = noteStaffTopY() + MELODY_DIATONIC_ROW_COUNT * NOTE_HEIGHT + CHORD_AREA_HEIGHT + CHORD_LETTER_STRIP_HEIGHT;
     const fillRectCalls: { x: number; y: number; w: number; h: number; color: string }[] = [];
-    const fillStyleLog: string[] = [];
     let currentFillStyle = '';
 
     const ctx = {
@@ -392,7 +448,6 @@ describe('grid background — canvas draw calls (TASK-2.14)', () => {
       lineWidth: 1,
       set fillStyle(v: string) {
         currentFillStyle = v;
-        fillStyleLog.push(v);
       },
       get fillStyle() {
         return currentFillStyle;
@@ -413,15 +468,22 @@ describe('grid background — canvas draw calls (TASK-2.14)', () => {
       textAlign: 'start' as CanvasTextAlign,
     } as unknown as CanvasRenderingContext2D;
 
-    drawGridBackground(ctx, song, view, 200, { melodyRowHeight: NOTE_HEIGHT, gridContentWidthPx: 320 });
+    drawGridBackground(ctx, song, view, canvasHeight, { melodyRowHeight: NOTE_HEIGHT, gridContentWidthPx });
 
     const staffTop = noteStaffTopY();
-    const expectedFirstRowTint = blendPat010Fill(pat010DiatonicHex(1), 0.08);
-    const firstRowFill = fillRectCalls.find(
-      (c) => c.x === 0 && c.y >= staffTop && c.y < staffTop + NOTE_HEIGHT && c.w === 320 && c.h === NOTE_HEIGHT,
-    );
-    expect(firstRowFill).toBeDefined();
-    expect(firstRowFill?.color).toBe(expectedFirstRowTint);
-    expect(fillStyleLog.some((c) => c.startsWith('rgb('))).toBe(true);
+    const stripY = bottomChordStripTopY(NOTE_HEIGHT);
+    const tintCalls = fillRectCalls.filter((c) => c.h === NOTE_HEIGHT && c.y < stripY);
+    expect(tintCalls).toHaveLength(MELODY_DIATONIC_ROW_COUNT);
+    for (let r = 0; r < MELODY_DIATONIC_ROW_COUNT; r++) {
+      const expectedDegree = (((r % 7) + 1) as unknown) as 1 | 2 | 3 | 4 | 5 | 6 | 7;
+      expect(tintCalls[r]).toMatchObject({
+        x: 0,
+        y: staffTop + r * NOTE_HEIGHT,
+        w: gridContentWidthPx,
+        h: NOTE_HEIGHT,
+        color: blendPat010Fill(pat010DiatonicHex(expectedDegree), 0.08),
+      });
+    }
+    expect(tintCalls.every((c) => c.color.startsWith('rgb('))).toBe(true);
   });
 });

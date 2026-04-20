@@ -95,6 +95,16 @@ describe('UI-W1 — piano roll pitch gutter labels (criterion 2)', () => {
       expect(labels.some((l) => l.primary.trim().length > 0)).toBe(true);
     });
 
+  it('RA-206: pitch labels contain only pitch letters (no octave digits)', () => {
+    const song = minimalSong(1);
+    const viewport: Viewport = { startMeasure: 0, measureCount: 1, scrollY: 0, zoom: 1 };
+    const labels = computePitchAxisLabelsInViewport(song, viewport, defaultMelodyCanvasHeight(NOTE_HEIGHT), NOTE_HEIGHT);
+    for (const row of labels) {
+      expect(row.primary).toMatch(/^[A-G](?:[#♯♭b])?$/);
+      expect(row.primary).not.toMatch(/\d/);
+    }
+  });
+
     it('labels each visible row with a bounded primary string (UX §2 canvas label structure)', () => {
       const song = minimalSong(1);
       const viewport: Viewport = { startMeasure: 0, measureCount: 1, scrollY: 0, zoom: 1 };
@@ -108,6 +118,13 @@ describe('UI-W1 — piano roll pitch gutter labels (criterion 2)', () => {
         expect(row.centerY).toBeLessThan(defaultMelodyCanvasHeight(NOTE_HEIGHT));
       }
     });
+
+  it('RA-206: midiToScientificPitchLabel returns note text without octave numbers', () => {
+    expect(midiToScientificPitchLabel(60)).toBe('C');
+    expect(midiToScientificPitchLabel(61)).toBe('D♭');
+    expect(midiToScientificPitchLabel(62)).toBe('D');
+    expect(midiToScientificPitchLabel(71)).toBe('B');
+  });
   });
 
   it('uses flat spellings from active key/scale context (RA-206)', () => {
@@ -133,7 +150,7 @@ describe('UI-W1 — piano roll pitch gutter labels (criterion 2)', () => {
 });
 
 describe('UI-W1 — pitch label spelling helpers (RA-206)', () => {
-  it('prefers non-sharp naming when context is unavailable (default flat-first spelling)', () => {
+  it('preserves the explicit no-context flat-first fallback spelling convention (RA-206)', () => {
     expect(midiToScientificPitchLabel(1)).toBe('D♭');
     expect(midiToScientificPitchLabel(3)).toBe('E♭');
   });
