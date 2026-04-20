@@ -9,11 +9,29 @@
  *   edges: single-note active range expands to one octave and keeps note anchored relative to range min.
  *
  * Criterion 2: hitTestEditorCanvas aligns with computeNoteBlockRect AABB
- *   happy: interior points hit note, right/bottom AABB edges miss.
+ *   happy: interior points hit note for non-default scroll values derived from range-aware scroll anchor,
+ *     right/bottom AABB edges miss.
  *   error: edge inclusivity drifts between geometry and hit-test.
  *   edges: chromatic notes are still aligned to the same AABB.
  *
- * Criterion 3: Selection / drag affordances share the same note geometry as hit-testing
+ * Criterion 3: Active voice selection is deterministic for disjoint per-voice pitch spans
+ *   happy: when switching activeVoice between disjoint pitch ranges, click coordinates derived from each
+ *     active-range anchor map deterministically to the expected target voice.
+ *   error: without active-voice range anchoring, both cases read from the same global viewport.
+ *   edges: notes in non-overlapping ranges produce different anchors and thus different row mappings.
+ *
+ * Criterion 4: pitch labels and grid rows share the same effective row math as note geometry
+ *   happy: for a range-driven viewport scroll anchor, pitch-axis labels and note block centers share the
+ *     same row center Y in viewport space.
+ *   error: label rows shift independently from note geometry.
+ *   edges: disjoint chromatic offsets stay aligned to computed row centers.
+ *
+ * Criterion 5: EditorCanvas default props remain valid while range-aware geometry is active
+ *   happy: caller-owned optional props omitted should not change contract; active-range clicks still route to note hits.
+ *   error: default/legacy prop usage changes cause miss or throw.
+ *   edges: no explicit melodyVoiceVisible / inactiveMelodyDisplayMode arguments provided.
+ *
+ * Supporting check: selection/drag affordances still share geometry alignment with hit rects
  *   happy: trailing-strip resize still dispatches NoteEditAction resize for a note hit by its computed strip.
  *   error: y-misaligned pointer near strip edge does not dispatch resize for that note.
  *   edges: thin-note trailing strip clamp still permits resize gestures.
@@ -33,6 +51,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { EditorCanvas } from '../../../../src/components/editor/EditorCanvas';
 import { trailingResizeStripWidthPx } from '../../../../src/components/editor/pointerMath';
 import { PITCH_GUTTER_WIDTH, NOTE_HEIGHT } from '../../../../src/engine/renderer/constants';
+import * as pitchAxisLayout from '../../../../src/engine/renderer/pitchAxisLayout';
 import { computeMelodyVoicePitchRanges, EMPTY_VOICE_PITCH_RANGE } from '../../../../src/engine/renderer/voicePitchRange';
 import { computeNoteBlockRect } from '../../../../src/engine/renderer/noteBlocks';
 import { hitTestEditorCanvas, type EditorCanvasHit } from '../../../../src/engine/renderer/hitTest';
@@ -186,6 +205,11 @@ function activeVoiceAlignedRect(
   });
 }
 
+function rangeAnchorScrollY(song: SongData, activeVoice: VoiceIndex): number {
+  const ranges = computeMelodyVoicePitchRanges(song);
+  return rowOffsetPxForMidiPitch(ranges[activeVoice]?.minPitch ?? EMPTY_VOICE_PITCH_RANGE.minPitch);
+}
+
 function hitAt(song: SongData, point: { x: number; y: number }, viewport: Viewport = BASE_VIEWPORT): EditorCanvasHit | null {
   return hitTestEditorCanvas(point.x, point.y, song, viewport);
 }
@@ -258,6 +282,103 @@ describe('UI-R2-W5.2 — active melody pitch-range geometry and interaction', ()
     });
   });
 
+  describe('Criterion 3: disjoint per-voice ranges produce deterministic active-voice-dependent row maps', () => {
+    it('targets each voice deterministically when activeVoice changes between disjoint pitch spans', () => {
+      const lowVoiceNote = note({
+        id: randomUUID(),
+        beat: 0,
+        duration: 24,
+        scaleDegree: 1,
+        octave: 0,
+        chromatic: 0,
+      });
+      const highVoiceNote = note({
+        id: randomUUID(),
+        beat: 96,
+        duration: 24,
+        scaleDegree: 7,
+        octave: 3,
+        chromatic: 0,
+      });
+      const song = makeSong([[lowVoiceNote], [highVoiceNote], [], []]);
+
+      const lowRect = activeVoiceAlignedRect(song, lowVoiceNote, 0, 0, 0, BASE_VIEWPORT);
+      const highRect = activeVoiceAlignedRect(song, highVoiceNote, 0, 1, 1, BASE_VIEWPORT);
+      const lowAnchor = rangeAnchorScrollY(song, 0);
+      const highAnchor = rangeAnchorScrollY(song, 1);
+
+      expect(lowAnchor).not.toEqual(highAnchor);
+      expect(lowRect.y).not.toEqual(highRect.y);
+      const lowSelection = vi.fn();
+      const highSelection = vi.fn();
+
+      const { container } = render(
+        <EditorCanvas
+          song={song}
+          viewport={BASE_VIEWPORT}
+          selection={null}
+          playbackTick={null}
+          activeVoice={0}
+          entryMode="table"
+          showGuides={false}
+          colorScheme="diatonic"
+          onChordEdit={vi.fn()}
+          onNoteEdit={vi.fn()}
+          onSelectionChange={lowSelection}
+          onViewportChange={vi.fn()}
+        />,
+      );
+      mockCanvasLayout({ left: 0, top: 0, width: 1200, height: 800 });
+
+      fireEvent.pointerDown(canvasIn(container), {
+        clientX: PITCH_GUTTER_WIDTH + lowRect.x + lowRect.width / 2,
+        clientY: lowRect.y + lowRect.height / 2,
+        button: 0,
+        buttons: 1,
+        pointerId: 1,
+        pointerType: 'mouse',
+      });
+
+      expect(lowSelection).toHaveBeenCalledWith({
+        type: 'note',
+        measureIndex: 0,
+        eventIds: [lowVoiceNote.id],
+      });
+
+      const { container: activeShiftedContainer } = render(
+        <EditorCanvas
+          song={song}
+          viewport={BASE_VIEWPORT}
+          selection={null}
+          playbackTick={null}
+          activeVoice={1}
+          entryMode="table"
+          showGuides={false}
+          colorScheme="diatonic"
+          onChordEdit={vi.fn()}
+          onNoteEdit={vi.fn()}
+          onSelectionChange={highSelection}
+          onViewportChange={vi.fn()}
+        />,
+      );
+
+      fireEvent.pointerDown(canvasIn(activeShiftedContainer), {
+        clientX: PITCH_GUTTER_WIDTH + highRect.x + highRect.width / 2,
+        clientY: highRect.y + highRect.height / 2,
+        button: 0,
+        buttons: 1,
+        pointerId: 2,
+        pointerType: 'mouse',
+      });
+
+      expect(highSelection).toHaveBeenCalledWith({
+        type: 'note',
+        measureIndex: 0,
+        eventIds: [highVoiceNote.id],
+      });
+    });
+  });
+
   describe('Criterion 2: note hit-testing follows computeNoteBlockRect AABB', () => {
     it('hits only inside the rect computed for that note and rejects boundary points at x+width / y+height', () => {
       const noteId = randomUUID();
@@ -288,6 +409,36 @@ describe('UI-R2-W5.2 — active melody pitch-range geometry and interaction', ()
       expect(hitAt(song, { x: rect.x + rect.width, y: rect.y + rect.height / 2 }, BASE_VIEWPORT)).toBeNull();
       expect(hitAt(song, { x: rect.x + rect.width / 2, y: rect.y + rect.height }, BASE_VIEWPORT)).toBeNull();
       expect(hitAt(song, { x: rect.x + rect.width + 0.001, y: rect.y + 1 }, BASE_VIEWPORT)).toBeNull();
+    });
+
+    it('keeps aligned when the viewport scroll offset comes from an active voice range anchor', () => {
+      const n = note({
+        id: randomUUID(),
+        beat: 48,
+        duration: 48,
+        scaleDegree: 3,
+        octave: 2,
+        chromatic: 0,
+      });
+      const s = makeSong([[n], [], [], []]);
+      const anchoredViewport = {
+        ...BASE_VIEWPORT,
+        scrollY: rangeAnchorScrollY(s, 0),
+      };
+      const rect = computeNoteBlockRect({
+        song: s,
+        viewport: anchoredViewport,
+        measureIndex: 0,
+        note: n,
+        isRest: false,
+        voiceIndex: 0,
+      });
+
+      expect(hitAt(s, { x: rect.x + 1, y: rect.y + 1 }, anchoredViewport)).toMatchObject({
+        kind: 'note',
+        note: expect.objectContaining({ id: n.id }),
+      });
+      expect(hitAt(s, { x: rect.x + rect.width, y: rect.y }, anchoredViewport)).toBeNull();
     });
   });
 
@@ -510,6 +661,88 @@ describe('UI-R2-W5.2 — active melody pitch-range geometry and interaction', ()
       const selection = onSelectionChange.mock.calls.at(-1)?.[0];
       expect(selection).toMatchObject({
         type: 'note',
+        eventIds: [visible.id],
+      });
+    });
+  });
+
+  describe('Criterion 4: pitch-axis label rows follow the same row math as note geometry under range anchors', () => {
+    it('uses shared row-center math between note blocks and pitch labels at non-default anchored scroll', () => {
+      const visible = note({
+        id: randomUUID(),
+        beat: 0,
+        duration: 48,
+        scaleDegree: 4,
+        octave: 2,
+        chromatic: -1,
+      });
+      const song = makeSong([[visible], [], [], []]);
+      const viewport = {
+        ...BASE_VIEWPORT,
+        scrollY: rangeAnchorScrollY(song, 0),
+      };
+      const rect = computeNoteBlockRect({
+        song,
+        viewport,
+        measureIndex: 0,
+        note: visible,
+        isRest: false,
+        voiceIndex: 0,
+      });
+
+      const labels = pitchAxisLayout.computePitchAxisLabelsInViewport(song, viewport, 1200, NOTE_HEIGHT);
+      const labelForNote = labels.find((label) => Math.abs(label.centerY - (rect.y + rect.height / 2)) < 0.0001);
+      expect(labelForNote).toBeDefined();
+      if (labelForNote) {
+        expect(labelForNote.centerY).toBe(rect.y + rect.height / 2);
+      }
+    });
+  });
+
+  describe('Criterion 5: default prop contract with computed-range geometry', () => {
+    it('keeps legacy optional-prop behavior when caller omits optional visibility/alias props and uses range-aligned hit coordinates', () => {
+      const visible = note({
+        id: randomUUID(),
+        beat: 72,
+        duration: 24,
+        scaleDegree: 2,
+        octave: 1,
+        chromatic: 1,
+      });
+      const song = makeSong([[visible], [], [], []]);
+      const rect = activeVoiceAlignedRect(song, visible, 0, 0, 0, BASE_VIEWPORT);
+      const onSelectionChange = vi.fn();
+
+      const { container } = render(
+        <EditorCanvas
+          song={song}
+          viewport={BASE_VIEWPORT}
+          selection={null}
+          playbackTick={null}
+          activeVoice={0}
+          entryMode="table"
+          showGuides={false}
+          colorScheme="diatonic"
+          onChordEdit={vi.fn()}
+          onNoteEdit={vi.fn()}
+          onSelectionChange={onSelectionChange}
+          onViewportChange={vi.fn()}
+        />,
+      );
+      mockCanvasLayout({ left: 0, top: 0, width: 1200, height: 800 });
+
+      fireEvent.pointerDown(canvasIn(container), {
+        clientX: PITCH_GUTTER_WIDTH + rect.x + rect.width / 2,
+        clientY: rect.y + rect.height / 2,
+        button: 0,
+        buttons: 1,
+        pointerId: 3,
+        pointerType: 'mouse',
+      });
+
+      expect(onSelectionChange).toHaveBeenCalledWith({
+        type: 'note',
+        measureIndex: 0,
         eventIds: [visible.id],
       });
     });
