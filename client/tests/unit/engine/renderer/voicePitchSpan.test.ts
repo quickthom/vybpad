@@ -283,7 +283,7 @@ describe('computeVoicePitchSpan — UI-R2-W5.1', () => {
       expect(result).toMatchObject({
         voiceIndex: 0,
         hasNotes: true,
-        minSpanApplied: false,
+        minSpanApplied: true,
         minMidi: 60,
         maxMidi: 72,
         pitchSpanSemitones: MIN_VOICE_PITCH_SPAN_SEMITONES,
