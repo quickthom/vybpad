@@ -92,11 +92,12 @@ test.describe('UI-R2-W7.5 — desktop toolbar consolidation', () => {
     await openFreshEditor(page);
 
     const toolbar = getTransportToolbar(page);
+    const tempoGroup = toolbar.getByRole('group', { name: 'Tempo and meter' });
     const keyMeterCluster = toolbar.getByTestId('vybpad-transport-key-meter-cluster');
     await expect(keyMeterCluster).toBeVisible();
     await expect(keyMeterCluster).toContainText(/C major/i);
     await expect(keyMeterCluster).toContainText('4/4');
-    await expect(keyMeterCluster).toHaveClass(/mx-auto/);
+    await expect(tempoGroup).toHaveClass(/mx-auto/);
   });
 
   test('RA-210 — horizontal and vertical zoom controls are independently operable', async ({ page }) => {
