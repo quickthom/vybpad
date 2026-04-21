@@ -155,3 +155,6 @@ If you are reviewing a PR for the first time after a Reviewer rotation, the TL w
 - Review a PR without reading `PATTERNS.md` — a Builder correctly applying a pre-authorized pattern is not a violation
 - Re-litigate items explicitly marked as resolved in a delta brief unless the remediation itself introduced a new defect in those areas
 - Flag upstream changes (TL docs, QA tests, merges) as irrelevant or ask the Builder to revert them.
+- Review anything without a valid PR. 
+- Complete a review without receiving a valid Review Brief or Re-Review Brief (see TechLead.md)
+- Allow a PR with no self-review checklist to be returned to the Builder (it must be completely redone by a new Builder)

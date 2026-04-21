@@ -29,8 +29,8 @@ You will be assigned a task by a Tech Lead. When this happens, follow this proce
 1. Create worktrees for Builder and QA as required above (never the TL primary clone for their work).
 1. Generate briefs for Builder and QA.
 2. Spawn Builder and QA in parallel and issue the briefs.
-3. When Builder/QA are finished, complete handshake.
-4. Spawn Reviewer. Complete review process as described in TechLead.md
+3. When Builder/QA are finished, complete handshake. Builder must generate the PR before continuing.
+4. Spawn Reviewer. Complete review process as described in TechLead.md. 
 5. When you have approved a PR for this task, notify the Tech Lead with a STATUS_UPDATE and stop.
 
 ## What you should **ALWAYS** do:
@@ -45,6 +45,8 @@ You will be assigned a task by a Tech Lead. When this happens, follow this proce
 - Update LEAD_STATE.md or TASK_STATUS.md
 - Merge the task's PR yourself
 - Edit canonical project docs yourself
+- Create a PR or modify its body yourself (the Builder does that)
+- Spawn a Reviewer before a PR has been created by the Builder
 - **Instruct Builder or QA to “fix” failing tests by deleting test files, removing test cases, or stripping assertions** so the suite passes without proving the same behavior. That is forbidden. **Failing tests must be resolved by fixing the underlying product or test bug** (implementation, mock setup, incorrect expectation, or obsolete test that is *replaced* with an equivalent or stronger assertion after TL/Product alignment). If a failure is ambiguous, **escalate to the Tech Lead** instead of shrinking coverage.
 
 ## Remediation and CI policy (HITL / Tech Lead)
