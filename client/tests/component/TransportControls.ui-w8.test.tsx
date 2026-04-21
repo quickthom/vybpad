@@ -154,6 +154,63 @@ describe('TransportControls — UI-R2-W7.2 — vertical zoom (RA-210)', () => {
   });
 });
 
+describe('TransportControls — UI-R2-W7.5 — independent dual zoom controls', () => {
+  it('renders both horizontal and vertical zoom clusters when both readouts are supplied', () => {
+    renderW8({
+      zoomPercent: 100,
+      zoomYPercent: 100,
+      onZoomIn: vi.fn(),
+      onZoomOut: vi.fn(),
+      onZoomReset: vi.fn(),
+      onZoomYIn: vi.fn(),
+      onZoomYOut: vi.fn(),
+      onZoomYReset: vi.fn(),
+    });
+
+    expect(screen.getByRole('group', { name: 'Editor canvas zoom' })).toBeVisible();
+    expect(screen.getByRole('group', { name: 'Editor melody zoom' })).toBeVisible();
+    expect(screen.getByTestId('vybpad-zoom-readout')).toHaveTextContent(/100%/);
+    expect(screen.getByTestId('vybpad-zoom-y-readout')).toHaveTextContent(/100%/);
+  });
+
+  it('keeps zoom callbacks isolated by axis when one control is clicked', async () => {
+    const user = userEvent.setup();
+    const onZoomIn = vi.fn();
+    const onZoomOut = vi.fn();
+    const onZoomReset = vi.fn();
+    const onZoomYIn = vi.fn();
+    const onZoomYOut = vi.fn();
+    const onZoomYReset = vi.fn();
+
+    renderW8({
+      zoomPercent: 120,
+      zoomYPercent: 80,
+      onZoomIn,
+      onZoomOut,
+      onZoomReset,
+      onZoomYIn,
+      onZoomYOut,
+      onZoomYReset,
+    });
+
+    await user.click(screen.getByTestId('vybpad-zoom-in'));
+    expect(onZoomIn).toHaveBeenCalledTimes(1);
+    expect(onZoomOut).not.toHaveBeenCalled();
+    expect(onZoomReset).not.toHaveBeenCalled();
+    expect(onZoomYIn).not.toHaveBeenCalled();
+    expect(onZoomYOut).not.toHaveBeenCalled();
+    expect(onZoomYReset).not.toHaveBeenCalled();
+
+    await user.click(screen.getByTestId('vybpad-zoom-y-in'));
+    expect(onZoomYIn).toHaveBeenCalledTimes(1);
+    expect(onZoomIn).toHaveBeenCalledTimes(1);
+    expect(onZoomOut).toHaveBeenCalledTimes(0);
+    expect(onZoomReset).toHaveBeenCalledTimes(0);
+    expect(onZoomYOut).not.toHaveBeenCalled();
+    expect(onZoomYReset).not.toHaveBeenCalled();
+  });
+});
+
 describe('TransportControls — UI-W8 — tempo/meter edit entry (RA-20)', () => {
   describe('happy path', () => {
     it('invokes onTempoMeterEdit when the top-band tempo/meter control is activated', async () => {
