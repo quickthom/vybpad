@@ -1,5 +1,5 @@
 import type { ChordEvent, ProjectResponse, ScaleDegree, SongData, Track, TrackRole } from '@vybpad/shared';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import { EditorPropertiesPanel } from '../components/panels/EditorPropertiesPanel';
@@ -95,6 +95,13 @@ const NOTE_DURATION_COMMAND_TICKS: Partial<Record<ShortcutCommandId, number>> = 
   setNoteDurationSixteenth: 12,
   setNoteDurationThirtySecond: 6,
 };
+
+/** TASK-7.1 — left chord palette rail sizing contract (UX §3 + OB-6 / RA-213 tuning). */
+const CHORD_PALETTE_MIN_WIDTH_PX = 240;
+const CHORD_PALETTE_DEFAULT_WIDTH_PX = 240;
+const CHORD_PALETTE_MAX_WIDTH_PX = 400;
+const CHORD_PALETTE_COLLAPSED_WIDTH_PX = 48;
+const RIGHT_PROPERTIES_PANEL_WIDTH_PX = 192;
 
 /** Compare the song snapshot we PUT with current store state to detect edits during an in-flight save. */
 function songMatchesSentBaseline(sent: SongData, now: SongData): boolean {
@@ -212,6 +219,7 @@ export function EditorLayout() {
   const [tempoMeterDialogOpen, setTempoMeterDialogOpen] = useState(false);
   const editorCanvasHostRef = useRef<HTMLDivElement | null>(null);
   const [editorCanvasContentWidth, setEditorCanvasContentWidth] = useState(0);
+  const [chordPaletteWidthPx, setChordPaletteWidthPx] = useState(CHORD_PALETTE_DEFAULT_WIDTH_PX);
   /** Shared with `EditorCanvas` keyboard + chord palette (TASK-5.1). */
   const keyboardTargetMeasureRef = useRef<number | null>(null);
   const textDurationArmedRef = useRef(false);
@@ -221,6 +229,7 @@ export function EditorLayout() {
   const [chordPaletteExpanded, setChordPaletteExpanded] = useState(true);
   const [keyScaleDialogOpen, setKeyScaleDialogOpen] = useState(false);
   const keyScaleTriggerRef = useRef<HTMLButtonElement>(null);
+  const chordPaletteResizeDragRef = useRef<{ startX: number; startWidth: number } | null>(null);
 
   const keyScaleTargetMeasure = useMemo(
     () => keyScaleTargetMeasureIndex(selectedMeasures, selection),
@@ -270,6 +279,48 @@ export function EditorLayout() {
   const handleZoomResetTransport = useCallback(() => {
     setViewport(withResetZoom(useUIStore.getState().viewport));
   }, [setViewport]);
+
+  const clampChordPaletteWidthPx = useCallback((candidatePx: number): number => {
+    return Math.min(CHORD_PALETTE_MAX_WIDTH_PX, Math.max(CHORD_PALETTE_MIN_WIDTH_PX, candidatePx));
+  }, []);
+
+  const updateChordPaletteWidthOnDrag = useCallback(
+    (event: MouseEvent) => {
+      const drag = chordPaletteResizeDragRef.current;
+      if (!drag) {
+        return;
+      }
+      const nextPx = clampChordPaletteWidthPx(drag.startWidth + (event.clientX - drag.startX));
+      setChordPaletteWidthPx(nextPx);
+    },
+    [clampChordPaletteWidthPx],
+  );
+
+  const finishChordPaletteResize = useCallback(() => {
+    chordPaletteResizeDragRef.current = null;
+    window.removeEventListener('mousemove', updateChordPaletteWidthOnDrag);
+    window.removeEventListener('mouseup', finishChordPaletteResize);
+  }, [updateChordPaletteWidthOnDrag]);
+
+  const startChordPaletteResize = useCallback(
+    (event: ReactMouseEvent<HTMLDivElement>) => {
+      if (!chordPaletteExpanded || event.button !== 0) return;
+      event.preventDefault();
+      chordPaletteResizeDragRef.current = {
+        startX: event.clientX,
+        startWidth: chordPaletteWidthPx,
+      };
+      window.addEventListener('mousemove', updateChordPaletteWidthOnDrag);
+      window.addEventListener('mouseup', finishChordPaletteResize);
+    },
+    [chordPaletteExpanded, chordPaletteWidthPx, finishChordPaletteResize, updateChordPaletteWidthOnDrag],
+  );
+
+  useEffect(() => {
+    return () => {
+      finishChordPaletteResize();
+    };
+  }, [finishChordPaletteResize]);
 
   const getShortcutContext = useCallback((): ShortcutContext => {
     return {
@@ -1354,17 +1405,36 @@ export function EditorLayout() {
         }}
       />
       <div className="flex min-h-0 min-w-0 flex-1 flex-row overflow-hidden">
-          <aside
+        <aside
           id="vybpad-panel-chords"
           className={
             chordPaletteExpanded
-                ? 'flex min-h-0 w-[288px] min-w-60 max-w-[288px] shrink-0 flex-col border-r border-[var(--color-border,#E5E7EB)] bg-[var(--color-app-bg,#F3F4F6)] overflow-hidden overflow-x-hidden'
-                : 'flex min-h-0 w-12 shrink-0 flex-col items-center border-r border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)] overflow-hidden overflow-x-hidden py-2'
+              ? 'relative flex min-h-0 min-w-[240px] shrink-0 flex-col border-r border-[var(--color-border,#E5E7EB)] bg-[var(--color-app-bg,#F3F4F6)] overflow-hidden overflow-x-hidden'
+              : `flex min-h-0 w-[${CHORD_PALETTE_COLLAPSED_WIDTH_PX}px] shrink-0 flex-col items-center border-r border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)] overflow-hidden overflow-x-hidden py-2`
+          }
+          style={
+            chordPaletteExpanded
+              ? {
+                  width: `${clampChordPaletteWidthPx(chordPaletteWidthPx)}px`,
+                  minWidth: `${CHORD_PALETTE_MIN_WIDTH_PX}px`,
+                }
+              : { width: `${CHORD_PALETTE_COLLAPSED_WIDTH_PX}px` }
           }
           role="complementary"
           aria-label="Chord palette panel"
         >
           {chordPaletteExpanded ? (
+            <>
+            <div
+              role="separator"
+              aria-orientation="vertical"
+              aria-label="Resize chord palette rail"
+              data-testid="vybpad-panel-chords-resize-handle"
+              className="absolute right-0 top-0 z-10 h-full w-2 touch-none cursor-col-resize"
+              onMouseDown={startChordPaletteResize}
+            >
+              <span className="pointer-events-none absolute inset-y-0 right-0 w-px bg-[var(--color-border-strong,#D1D5DB)]" />
+            </div>
             <div className="flex min-h-0 flex-1 flex-col">
               <PlacementDurationControls
                 currentDurationTicks={currentDurationTicks}
@@ -1432,6 +1502,7 @@ export function EditorLayout() {
                 />
               </div>
             </div>
+            </>
           ) : (
             <Tooltip label="Expand chord palette">
               <button
@@ -1517,7 +1588,14 @@ export function EditorLayout() {
             }}
           />
         </div>
-        <div className="flex min-h-0 w-[288px] min-w-[240px] max-w-[288px] shrink-0 flex-col self-stretch overflow-x-hidden overflow-y-auto border-l border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)]">
+        <div
+          className="flex min-h-0 shrink-0 flex-col self-stretch overflow-x-hidden overflow-y-auto border-l border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)]"
+          style={{
+            width: `${RIGHT_PROPERTIES_PANEL_WIDTH_PX}px`,
+            minWidth: `${RIGHT_PROPERTIES_PANEL_WIDTH_PX}px`,
+            maxWidth: `${RIGHT_PROPERTIES_PANEL_WIDTH_PX}px`,
+          }}
+        >
           <EditorPropertiesPanel
             selectionType={selection?.type ?? null}
             chordContext={chordPropertyContext}

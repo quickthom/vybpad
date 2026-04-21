@@ -34,7 +34,7 @@ async function bootstrapEditor(page: Page): Promise<void> {
   await page.getByRole('textbox', { name: /password/i }).fill(password);
   await submitRegisterFormAndExpectProjects(page);
 
-  await page.getByRole('button', { name: /new project/i }).click();
+  await page.getByRole('button', { name: /create project/i }).click();
   await page.getByRole('textbox', { name: /project name/i }).fill(projectName);
   await page.getByRole('button', { name: /create project/i }).click();
   await waitForEditorRouteReady(page);
