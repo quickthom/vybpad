@@ -179,7 +179,7 @@ describe('UI-R2-W7.5a — toolbar shell consolidation baseline', () => {
     expect(keyMeter?.textContent ?? '').toMatch(/\b(major|minor)\b/i);
 
     const tempoInput = screen.getByLabelText('Tempo') as HTMLInputElement;
-    expect(tempoInput).toHaveValue('120');
+    expect(tempoInput).toHaveValue(120);
     expect(toolbar).toContainElement(tempoInput);
 
     const zoomReadout = toolbar.querySelector('[data-testid="vybpad-zoom-readout"]');
