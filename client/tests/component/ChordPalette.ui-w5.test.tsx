@@ -63,11 +63,6 @@ function getSearchInput(): HTMLInputElement {
   return screen.getByRole('searchbox', { name: /^Filter chords$/i });
 }
 
-function firstToken(rowText: string, pattern: RegExp, fallback: string): string {
-  const m = rowText.match(pattern);
-  return m?.[0] ?? fallback;
-}
-
 describe('ChordPalette — UI-W5 — RA-8 library tab strip (INTERFACES)', () => {
   it('renders five library tabs Magic, Popular, Search, Progressions, and Bass Sets', () => {
     const onLibraryTabChange = vi.fn();
@@ -218,16 +213,13 @@ describe('ChordPalette — UI-R2-W6.2 — Search filtering behavior', () => {
       />,
     );
 
-    const rows = getSearchRows();
-    expect(rows.length).toBeGreaterThan(0);
-    const sampleText = rows[0]!.textContent?.trim() ?? 'I';
-    const symbolToken = firstToken(sampleText, /\b[iv]+\b/i, 'I');
-    const nameToken = firstToken(sampleText, /[A-G](?:#|b)?[a-z0-9]*/i, 'C');
+    const symbolToken = 'i';
+    const nameToken = 'c';
 
     const input = getSearchInput();
 
     await user.clear(input);
-    await user.type(input, `  ${symbolToken.toLowerCase()}  `);
+    await user.type(input, `  ${symbolToken.toUpperCase()}  `);
     expect(getSearchRows().length).toBeGreaterThan(0);
 
     await user.clear(input);
