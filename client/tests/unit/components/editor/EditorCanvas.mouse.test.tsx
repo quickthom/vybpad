@@ -41,6 +41,7 @@ import { EditorCanvas } from '../../../../src/components/editor/EditorCanvas';
 import * as hitTestModule from '../../../../src/engine/renderer/hitTest';
 import { horizontalTicksToPx } from '../../../../src/engine/renderer/layout';
 import { MEASURE_HEADER_HEIGHT, NOTE_HEIGHT, PITCH_GUTTER_WIDTH } from '../../../../src/engine/renderer/constants';
+import { melodyRowHeightPx } from '../../../../src/utils/staffSpacing';
 import { useSongStore } from '../../../../src/store/songStore';
 
 const DEFAULT_VIEWPORT: Viewport = {
@@ -48,6 +49,7 @@ const DEFAULT_VIEWPORT: Viewport = {
   measureCount: 8,
   scrollY: 0,
   zoom: 1,
+  zoomY: 1,
 };
 
 function makeSongWithChordAndNote(chordId: string, noteId: string, noteOverrides?: Partial<NoteEvent>): SongData {
@@ -227,6 +229,47 @@ describe('EditorCanvas — TASK-2.7 mouse interaction (interface contract)', () 
       const [, , argSong, argViewport] = downCall!;
       expect(argSong).toBe(song);
       expect(argViewport).toEqual(DEFAULT_VIEWPORT);
+    });
+
+    it('forwards vertically scaled row height into hitTestEditorCanvas when viewport zoomY is updated', () => {
+      const onSelectionChange = vi.fn();
+      const hitSpy = vi.spyOn(hitTestModule, 'hitTestEditorCanvas').mockReturnValue(null);
+      const viewportWithZoomY = { ...DEFAULT_VIEWPORT, zoomY: 2 };
+      const baseRowHeight = melodyRowHeightPx('default');
+
+      mockCanvasLayout({ left: 120, top: 40, width: 900, height: 500 });
+
+      const { container } = render(
+        <EditorCanvas
+          song={song}
+          viewport={viewportWithZoomY}
+          selection={null}
+          playbackTick={null}
+          activeVoice={0}
+          entryMode="table"
+          showGuides={false}
+          colorScheme="diatonic"
+          onChordEdit={vi.fn()}
+          onNoteEdit={vi.fn()}
+          onSelectionChange={onSelectionChange}
+          onViewportChange={vi.fn()}
+        />,
+      );
+
+      const canvas = canvasIn(container);
+      fireEvent.pointerDown(canvas, {
+        clientX: 220,
+        clientY: 90,
+        button: 0,
+        buttons: 1,
+        pointerId: 1,
+        pointerType: 'mouse',
+      });
+
+      const downCall = hitSpy.mock.calls.at(-1);
+      expect(downCall).toBeDefined();
+      expect(downCall?.[4]).toBe(baseRowHeight * 2);
+      expect(onSelectionChange).toHaveBeenCalled();
     });
   });
 

@@ -17,6 +17,8 @@
  *
  * RA-15 (gate B): Band/Lyrics/Stable disabled stubs; single trio (no duplicate deferred row).
  *   happy: exactly one sr-only MVP hint; three disabled buttons with Not in MVP tooltip
+ * RA-210: dual-axis zoom controls render as independent horizontal + vertical groups with explicit labels.
+ *   happy: both readouts render; H and V +/-/reset callbacks are distinct
  *
  * Contract: INTERFACES.md — TransportControlsProps (UI-W8 optional props).
  * Props are cast at the call site because the component implementation may lag INTERFACES until Builder lands UI-W8.
@@ -39,6 +41,10 @@ type TransportControlsPropsW8 = ComponentProps<typeof TransportControls> & {
   onZoomIn?: () => void;
   onZoomOut?: () => void;
   onZoomReset?: () => void;
+  zoomYPercent?: number;
+  onZoomYIn?: () => void;
+  onZoomYOut?: () => void;
+  onZoomYReset?: () => void;
   keyLabel?: string;
   meterLabel?: string;
   onTempoMeterEdit?: () => void;
@@ -97,6 +103,60 @@ describe('TransportControls — UI-W8 — zoom (RA-16/21)', () => {
       const reset = screen.getByTestId('vybpad-zoom-reset');
       expect(reset).toHaveAccessibleName(/1:1/i);
     });
+  });
+});
+
+describe('TransportControls — UI-R2-W7.2 — dual-axis zoom (RA-210)', () => {
+  it('renders both horizontal and vertical zoom controls with distinct a11y labels', async () => {
+    const user = userEvent.setup();
+    const onZoomIn = vi.fn();
+    const onZoomOut = vi.fn();
+    const onZoomReset = vi.fn();
+    const onZoomYIn = vi.fn();
+    const onZoomYOut = vi.fn();
+    const onZoomYReset = vi.fn();
+
+    renderW8({
+      zoomPercent: 110,
+      onZoomIn,
+      onZoomOut,
+      onZoomReset,
+      zoomYPercent: 190,
+      onZoomYIn,
+      onZoomYOut,
+      onZoomYReset,
+    });
+
+    const horizontalGroup = screen.getByRole('group', { name: /editor canvas zoom/i });
+    const verticalGroup = screen.getByRole('group', { name: /vertical zoom/i });
+    expect(within(horizontalGroup).getByTestId('vybpad-zoom-readout')).toHaveTextContent('110%');
+    expect(within(verticalGroup).getByText('190')).toBeInTheDocument();
+
+    await user.click(within(horizontalGroup).getByRole('button', { name: /^zoom in$/i }));
+    await user.click(within(horizontalGroup).getByRole('button', { name: /^zoom out$/i }));
+    await user.click(within(horizontalGroup).getByRole('button', { name: /reset zoom/i }));
+    await user.click(within(verticalGroup).getByRole('button', { name: /vertical zoom in/i }));
+    await user.click(within(verticalGroup).getByRole('button', { name: /vertical zoom out/i }));
+    await user.click(within(verticalGroup).getByRole('button', { name: /vertical reset/i }));
+
+    expect(onZoomIn).toHaveBeenCalledTimes(1);
+    expect(onZoomOut).toHaveBeenCalledTimes(1);
+    expect(onZoomReset).toHaveBeenCalledTimes(1);
+    expect(onZoomYIn).toHaveBeenCalledTimes(1);
+    expect(onZoomYOut).toHaveBeenCalledTimes(1);
+    expect(onZoomYReset).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not render the vertical zoom cluster when vertical zoom props are missing', () => {
+    renderW8({
+      zoomPercent: 120,
+      onZoomIn: vi.fn(),
+      onZoomOut: vi.fn(),
+      onZoomReset: vi.fn(),
+    });
+
+    expect(screen.getByRole('group', { name: /editor canvas zoom/i })).toBeInTheDocument();
+    expect(screen.queryByRole('group', { name: /vertical zoom/i })).toBeNull();
   });
 });
 

@@ -46,6 +46,7 @@ const DEFAULT_VIEWPORT: Viewport = {
   measureCount: 8,
   scrollY: 0,
   zoom: 1,
+  zoomY: 1,
 };
 
 /**
@@ -85,6 +86,7 @@ describe('UIStore — TASK-2.11 / INTERFACES.md', () => {
         measureCount: 8,
         scrollY: 0,
         zoom: 1,
+        zoomY: 1,
       });
     });
 
@@ -134,12 +136,14 @@ describe('UIStore — TASK-2.11 / INTERFACES.md', () => {
         measureCount: 4,
         scrollY: 120,
         zoom: 1.25,
+        zoomY: 1.5,
       });
       expect(useUIStore.getState().viewport).toEqual({
         startMeasure: 2,
         measureCount: 4,
         scrollY: 120,
         zoom: 1.25,
+        zoomY: 1.5,
       });
 
       useUIStore.getState().setViewport({
@@ -147,12 +151,14 @@ describe('UIStore — TASK-2.11 / INTERFACES.md', () => {
         measureCount: 16,
         scrollY: 0,
         zoom: 2,
+        // Intentionally omits zoomY to validate default normalization on replacement.
       });
       expect(useUIStore.getState().viewport).toEqual({
         startMeasure: 0,
         measureCount: 16,
         scrollY: 0,
         zoom: 2,
+        zoomY: 1,
       });
     });
   });
