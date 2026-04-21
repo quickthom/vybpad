@@ -98,9 +98,10 @@ describe('EditorLayout — UI-W5 — RA-7 top bar voice label', () => {
     renderEditor();
     await screen.findByRole('application', { name: /Song editor/i });
 
-    const header = screen.getByRole('banner');
-    expect(within(header).getAllByText(/^Voice [1-4]$/)).toHaveLength(1);
-    expect(within(header).getByText(/^Voice 1$/)).toBeInTheDocument();
+    const toolbar = screen.getByTestId('vybpad-transport-toolbar');
+    expect(within(toolbar).getByRole('group', { name: 'Song and panel controls' })).toBeInTheDocument();
+    expect(within(toolbar).getByText(/^Voice 1$/)).toBeInTheDocument();
+    expect(screen.getAllByText(/^Voice [1-4]$/)).toHaveLength(1);
 
     await user.click(screen.getByTestId('properties-melody-active-voice-3'));
 
@@ -108,8 +109,8 @@ describe('EditorLayout — UI-W5 — RA-7 top bar voice label', () => {
       expect(useUIStore.getState().activeVoice).toBe(3);
     });
 
-    expect(within(header).getAllByText(/^Voice [1-4]$/)).toHaveLength(1);
-    expect(within(header).getByText(/^Voice 4$/)).toBeInTheDocument();
+    expect(screen.getAllByText(/^Voice [1-4]$/)).toHaveLength(1);
+    expect(screen.getByText(/^Voice 4$/)).toBeInTheDocument();
   });
 });
 
@@ -207,7 +208,7 @@ describe('EditorLayout — UI-R2-W7.5 — toolbar consolidation shell contract',
     expect(playbackCluster).toBeVisible();
     expect(within(playbackCluster).getByRole('button', { name: /Undo/i })).toBeVisible();
     expect(within(playbackCluster).getByRole('button', { name: /Redo/i })).toBeVisible();
-    expect(within(playbackCluster).getByRole('button', { name: /Play/i })).toBeVisible();
+    expect(within(playbackCluster).getByRole('button', { name: /^(?:Play|Start audio and play)$/i })).toBeVisible();
     expect(within(playbackCluster).getByRole('button', { name: /Stop playback/i })).toBeVisible();
     expect(within(playbackCluster).getByRole('button', { name: /Rewind/i })).toBeVisible();
   });
