@@ -200,12 +200,12 @@ export function TransportControls({
         </div>
 
           <div
-            className="mx-auto flex shrink-0 items-center gap-2"
+            role="group"
+            aria-label="Tempo and meter"
+            className="pointer-events-none mx-auto flex shrink-0 items-center gap-2"
           >
             {showKeyMeterCluster ? (
               <div
-                role="group"
-                aria-label="Tempo and meter"
                 className="pointer-events-none flex min-w-0 items-center gap-1.5 text-xs leading-tight text-[var(--color-text-primary,#111827)]"
                 data-testid="vybpad-transport-key-meter-cluster"
               >
