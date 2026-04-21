@@ -529,6 +529,10 @@ interface TransportControlsProps {
   onZoomYIn?: () => void;
   onZoomYOut?: () => void;
   onZoomYReset?: () => void;
+  /** UI-W8 (RA-20) — optional leading chrome (e.g. panel toggles) before centered meter/key/tempo cluster. */
+  leadingContent?: React.ReactNode;
+  /** Optional cluster before trailing `endContent` / zoom readouts (e.g. secondary toolbar controls). */
+  trailingContent?: React.ReactNode;
   /** UI-W8 (RA-20) — key + meter + tempo readouts in top band; click opens tempo/meter edit when callback set. */
   keyLabel?: string;
   meterLabel?: string;
