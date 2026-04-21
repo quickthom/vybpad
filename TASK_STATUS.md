@@ -33,11 +33,11 @@ Phases 0 (7/7), 1A (7/7), 1B (6/6), Phase 2 (15/15), Phase 3 (10/10), Phase 4 (1
 | UI-R2-W5.3 | QA | — | merged | [#97](https://github.com/quickthom/vybpad/pull/97) | UI-R2-W5.3 | QA/remediation commits on branch. |
 | UI-R2-W5.4 | Builder | — | merged | [#98](https://github.com/quickthom/vybpad/pull/98) | UI-R2-W5.3 | OB-15: `EditorLayout` + `computeMeasuresPerLine` → `MeasureBar` chunking; squash-merge `4d200ab`. |
 | UI-R2-W5.4 | QA | — | merged | [#98](https://github.com/quickthom/vybpad/pull/98) | UI-R2-W5.4 | Component tests on branch; merged with W5.4. |
-| UI-R2-W6.1 | Builder | — | pending | — | UI-R2-W5.4 | OB-16 shell scroll — **unblocked** after W5.4; spawn TaskCoordinator. |
-| UI-R2-W6.1 | QA | — | pending | — | UI-R2-W6.1 | Concurrent with W6.1 Builder. |
-| UI-R2-W6.2 | Builder | — | blocked | — | UI-R2-W6.1 | OB-11 search. |
-| UI-R2-W6.2 | QA | — | blocked | — | UI-R2-W6.2 | — |
-| UI-R2-W6.3 | Builder | — | blocked | — | UI-R2-W6.2 | OB-12 Popular. |
-| UI-R2-W6.3 | QA | — | blocked | — | UI-R2-W6.3 | — |
+| UI-R2-W6.1 | Builder | — | merged | [#99](https://github.com/quickthom/vybpad/pull/99) | UI-R2-W5.4 | OB-16 shell scroll; squash-merge `f5ace87`. |
+| UI-R2-W6.1 | QA | — | merged | [#99](https://github.com/quickthom/vybpad/pull/99) | UI-R2-W6.1 | Tests on branch; merged with W6.1. |
+| UI-R2-W6.2 | Builder | — | merged | [#100](https://github.com/quickthom/vybpad/pull/100) | UI-R2-W6.1 | OB-11 chord search; squash-merge `b1291df`. |
+| UI-R2-W6.2 | QA | — | merged | [#100](https://github.com/quickthom/vybpad/pull/100) | UI-R2-W6.2 | Tests on branch; merged with W6.2. |
+| UI-R2-W6.3 | Builder | — | merged | [#101](https://github.com/quickthom/vybpad/pull/101) | UI-R2-W6.2 | OB-12 deterministic Popular shortlist (`getPopularChords`); squash-merge `375733a`. |
+| UI-R2-W6.3 | QA | — | merged | [#101](https://github.com/quickthom/vybpad/pull/101) | UI-R2-W6.3 | Tests on branch; merged with W6.3. |
 
 ---

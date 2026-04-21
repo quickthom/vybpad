@@ -22,9 +22,9 @@ You are the Tech Lead. Per HITL direction, you shall not perform any task or por
 
 ---
 
-## Current state (2026-04-20)
+## Current state (2026-04-21)
 
-**Focus:** **REF_AUDIT_2** UI remediation — **Wave 5 (OB-14 / OB-15) complete through UI-R2-W5.4** on `develop`. Execution plan: `~/.cursor/plans/ui_r2_waves_5-8_c9d08890.plan.md`.
+**Focus:** **REF_AUDIT_2** UI remediation — **Wave 6 (OB-16 / OB-11 / OB-12) merged to `develop`** (#99, #100, #101). Execution plan: `~/.cursor/plans/ui_r2_waves_5-8_c9d08890.plan.md`.
 
 **Wave 5 merges (merge order observed)**
 
@@ -33,9 +33,15 @@ You are the Tech Lead. Per HITL direction, you shall not perform any task or por
 - **UI-R2-W5.3** — [#97](https://github.com/quickthom/vybpad/pull/97) (`measurePacking` + tests).
 - **UI-R2-W5.4** — [#98](https://github.com/quickthom/vybpad/pull/98) (`EditorLayout` host-width → `MeasureBar` chunking; TC completed; TL squash-merged after PR review).
 
-**Next (Wave 6 — plan order)**
+**Wave 6 merges (strict plan order)**
 
-- **UI-R2-W6.1** (OB-16 shell scroll) → **W6.2** (OB-11 search) → **W6.3** (OB-12 Popular). **Wave 6 before Wave 7**; avoid parallel `EditorLayout.tsx` churn across W6/W7 without an explicit merge plan. Spawn **TaskCoordinator** per task; **OB-12** brief: deterministic diatonic shortlist per section below.
+- **UI-R2-W6.1** — [#99](https://github.com/quickthom/vybpad/pull/99) (OB-16 viewport-bound shell + overflow tests).
+- **UI-R2-W6.2** — [#100](https://github.com/quickthom/vybpad/pull/100) (OB-11 ChordPalette Search filtering).
+- **UI-R2-W6.3** — [#101](https://github.com/quickthom/vybpad/pull/101) (OB-12 deterministic Popular shortlist via `getPopularChords`).
+
+**Next (Wave 7 — plan order)**
+
+- **UI-R2-W7.1** → **W7.5** per plan (shell density, dual zoom, overlays, toolbar). **No Wave 7 until Wave 6 integrated** — satisfied. Spawn **TaskCoordinator** per slice; watch `EditorLayout.tsx` / toolbar overlap per plan.
 
 **`develop` health**
 
