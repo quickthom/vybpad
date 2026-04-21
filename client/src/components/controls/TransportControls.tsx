@@ -200,7 +200,7 @@ export function TransportControls({
         </div>
 
         <div
-          className="mx-auto flex shrink-0 items-center gap-2"
+          className="mx-auto flex shrink-0 items-center gap-2 pointer-events-none"
           role="group"
           aria-label="Tempo and meter"
         >
@@ -210,15 +210,21 @@ export function TransportControls({
               className="pointer-events-none flex min-w-0 items-center gap-1.5 text-xs leading-tight text-[var(--color-text-primary,#111827)]"
             >
               {keyLabel ? (
-                <span className="font-medium tabular-nums text-[var(--color-text-primary,#111827)]">
+                <span className="pointer-events-none font-medium tabular-nums text-[var(--color-text-primary,#111827)]">
                   {keyLabel}
                 </span>
               ) : null}
-              {meterLabel ? <span className="tabular-nums text-[var(--color-text-secondary,#4B5563)]">{meterLabel}</span> : null}
+              {meterLabel ? (
+                <span className="pointer-events-none tabular-nums text-[var(--color-text-secondary,#4B5563)]">
+                  {meterLabel}
+                </span>
+              ) : null}
             </div>
           ) : null}
-          <label className="pointer-events-auto flex shrink-0 items-center gap-2 text-sm text-[var(--color-text-secondary,#4B5563)]">
-            <span id="transport-tempo-label">Tempo</span>
+          <div className="pointer-events-none flex shrink-0 items-center gap-2">
+            <span id="transport-tempo-label" className="pointer-events-none">
+              Tempo
+            </span>
             <input
               id="transport-tempo-input"
               type="number"
@@ -226,13 +232,16 @@ export function TransportControls({
               max={300}
               value={tempo}
               onChange={(e) => onTempoChange(Number(e.target.value))}
-              className="h-8 w-20 rounded-lg border border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)] px-2 text-center text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none focus:border-[var(--color-primary,#4F46E5)] focus:ring-1 focus:ring-[var(--color-primary,#4F46E5)] disabled:opacity-50"
+              className="pointer-events-auto h-8 w-20 rounded-lg border border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)] px-2 text-center text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none focus:border-[var(--color-primary,#4F46E5)] focus:ring-1 focus:ring-[var(--color-primary,#4F46E5)] disabled:opacity-50"
               aria-labelledby="transport-tempo-label"
             />
-            <span className="text-[var(--color-text-muted,#9CA3AF)]" aria-hidden="true">
+            <span
+              className="pointer-events-none text-[var(--color-text-muted,#9CA3AF)]"
+              aria-hidden="true"
+            >
               BPM
             </span>
-          </label>
+          </div>
           {onTempoMeterEdit ? (
             <button
               type="button"
