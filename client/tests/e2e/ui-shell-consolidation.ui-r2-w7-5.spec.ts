@@ -81,7 +81,7 @@ test.describe('UI-R2-W7.5 — desktop toolbar consolidation', () => {
     await expect(playback.getByTestId('vybpad-transport-redo')).toBeVisible();
     await expect(playback.getByTestId('vybpad-transport-play')).toBeVisible();
     await expect(playback.getByRole('button', { name: /^Stop playback$/ })).toBeVisible();
-    await expect(playback.getByTestId('vybpad-transport-rewind')).toBeVisible();
+    await expect(playback.getByRole('button', { name: /^Rewind to start$/i })).toBeVisible();
     await expect(playback.getByRole('spinbutton', { name: /tempo/i })).toBeVisible();
     await expect(transport.getByTestId('vybpad-transport-record')).toBeVisible();
     await expect(transport.getByTestId('vybpad-transport-metronome')).toBeVisible();
