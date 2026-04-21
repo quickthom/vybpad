@@ -84,7 +84,7 @@ export default defineConfig({
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: 4,
+  workers: 6,
   reporter: process.env.CI ? [['github'], ['list']] : [['list']],
   use: {
     baseURL,
