@@ -11,6 +11,7 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
+    "e2e:local": "bash ./scripts/e2e.sh",
     "e2e:devstack": "concurrently -k -n api,client \"npm run dev --workspace=@vybpad/server\" \"npm run dev --workspace=@vybpad/client -- --host 127.0.0.1 --port 5173\"",
     "build": "tsc --build",
     "lint": "eslint .",

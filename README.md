@@ -65,7 +65,7 @@ npm test
 
 You can also run `npm test` inside `client` for client-focused runs.
 
-**Full CI parity (build, lint, unit tests, Playwright):** use [docs/CI_LOCAL.md](docs/CI_LOCAL.md) or run `./scripts/ci-local.sh` from the repo root when validating before push (especially if GitHub Actions minutes are limited).
+**Full CI parity (build, lint, unit tests, Playwright):** use [docs/CI_LOCAL.md](docs/CI_LOCAL.md) or run `npm run e2e:local` from the repo root when validating before push (especially if GitHub Actions minutes are limited).
 
 ### End-to-end (Playwright)
 

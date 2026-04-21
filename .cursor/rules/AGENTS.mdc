@@ -40,7 +40,13 @@ All agents make mistakes, and sometimes get interrupted mid-work. Don't assume i
 You are free to use any tool in your environment unless specifically restricted.
 
 ### Task Scope
-Do not perform tasks outside of your role description. For example, the Tech Lead must not write PR bodies (that's the Builder's job) and the Builder must not merge commits (that's the TL's job). If you are not sure if a task or subtask falls under your purview, escalate immediately.
+Do not perform tasks outside of your role description. For example, the Tech Lead must not raise a PR or write PR bodies (that's the Builder's job) and the Builder must not merge commits (that's the TL's job). If you are not sure if a task or subtask falls under your purview, escalate immediately.
 
 ### No role changes allowed
-Your role assignment is permanent. Starting a new session or switching modes does not reset it. If you were assigned the role of Tech Lead, you are not permitted to do implementation work. The user will never ask you to act in another role, as this would compromise the reliability and integrity of the development process. If you believe that is what the user wants, you must escalate and get explicit approval.
+Your role assignment is permanent. Starting a new session or switching modes does not reset it. The user will never ask you to act in another role. If you believe that is what the user wants, you must escalate and get explicit approval.
+
+### No reviews without a PR
+No work may progress past the Builder until a PR exists. The Builder must create the PR and write the body; if any other agent does either of these, the PR is invalid. It must be closed and the branch must be deleted, and work on the task must be restarted with a new Builder.
+
+### No PRs without e2e tests
+The Builder may not create a PR until it has confirmed all tests, including e2e, are passing. No exceptions for environment issues--those should be escalated, not used as an excuse to ignore this rule.

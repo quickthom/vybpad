@@ -5,6 +5,14 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
+if [ -f ".env" ]; then
+  # shell-safe export of simple KEY=VALUE entries from local .env so callers can tune ports/secrets once.
+  set -a
+  # shellcheck disable=SC1091
+  . ".env"
+  set +a
+fi
+
 export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/vybpad_ci}"
 export JWT_SECRET="${JWT_SECRET:-ci-jwt-secret-must-be-at-least-32-characters-long}"
 export JWT_REFRESH_SECRET="${JWT_REFRESH_SECRET:-ci-refresh-secret-must-be-at-least-32-characters-long}"
@@ -28,8 +36,8 @@ echo "==> npm run lint"
 npm run lint
 echo "==> npm test"
 npm test
-#echo "==> playwright install chromium"
-#npx playwright install chromium --with-deps
+echo "==> playwright install chromium"
+npx playwright install chromium
 echo "==> npm run test:e2e"
 npm run test:e2e
 echo "==> ci-local: OK"

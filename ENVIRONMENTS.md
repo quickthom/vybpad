@@ -10,7 +10,7 @@ The sections below expand this for **operators**: local development, Docker Comp
 - **Production:** Inject variables via the hosting platform or orchestrator (no in-app secrets manager for MVP).
 - **Never commit** real secrets. `.env` and `*.env.local` are git-ignored.
 - **CI:** prefer GitHub Actions secrets `CI_JWT_SECRET` / `CI_JWT_REFRESH_SECRET` (see `.github/workflows/ci.yml`). The workflow falls back to documented CI-only placeholders when secrets are unset so forks can run without configuration.
-- **Local CI parity:** [docs/CI_LOCAL.md](docs/CI_LOCAL.md) mirrors the workflow’s env and step order for pre-push validation; [scripts/ci-local.sh](scripts/ci-local.sh) runs that sequence.
+- **Local CI parity:** [docs/CI_LOCAL.md](docs/CI_LOCAL.md) mirrors the workflow’s env and step order for pre-push validation; `./scripts/e2e.sh` (or `npm run e2e:local`) runs that sequence via [scripts/ci-local.sh](scripts/ci-local.sh).
 
 ## Root variables (local / Compose)
 
@@ -69,7 +69,26 @@ Team policy may narrow this further; [REQUIREMENTS.md](REQUIREMENTS.md) grants b
 
 ```bash
 # from repo root
-npm install
+   npm install
+
+### E2E one-command bootstrap for fresh worktrees
+
+```bash
+./scripts/e2e.sh
+```
+
+Equivalent:
+
+```bash
+npm run e2e:local
+```
+
+That command:
+
+1. Copies `.env.example` to `.env` if needed.
+2. Runs the full local parity script (`./scripts/ci-local.sh`).
+
+For parallel worktrees, set `PLAYWRIGHT_BASE_URL`, `PLAYWRIGHT_API_URL`, `CORS_ORIGIN`, and `VITE_API_URL` to a unique port pair in `.env` before running.
 ```
 
 Note: if you use git worktrees, each worktree must run `npm install` locally (see PAT-017).
@@ -184,6 +203,7 @@ Security and secrets:
 ## Troubleshooting
 
 - **Database connection errors:** ensure `DATABASE_URL` is reachable and credentials match DB container/provider.
+- **Fresh worktree / first e2e run:** `./scripts/e2e.sh` now creates `.env` when missing and runs `scripts/ci-local.sh`, which reads `.env` and fills missing values with CI defaults. If `P1010` user-access errors appear, create the DB role/database or point `DATABASE_URL` at an existing cluster.
 - **Port conflicts:** ensure `PORT` and host ports (3001, 5173, 5432) are free or remap in `.env` and `docker-compose.yml`. For **parallel Playwright** runs, assign distinct ports per worktree (PAT-030); `playwright.config.ts` propagates `PORT` / `VITE_API_URL` / `CORS_ORIGIN` to spawned servers from `PLAYWRIGHT_*_URL`.
 - **Hot-reload in Docker:** if changes in mounted volumes are not picked up, check host OS Docker file-watching settings (macOS/Windows specifics).
 

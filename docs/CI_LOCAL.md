@@ -9,6 +9,22 @@
 - **Node.js 22** and **npm** at the repo root
 - **PostgreSQL 16** reachable at the URL you set (see below). To match CI exactly:
 
+## Quick start (fresh worktree)
+
+From the repository root:
+
+```bash
+./scripts/e2e.sh
+```
+
+This is the least-cognitive-load path and runs the full local parity sequence automatically.
+
+Equivalent:
+
+```bash
+npm run e2e:local
+```
+
   ```bash
   docker run -d --name vybpad-ci-pg -p 5432:5432 \
     -e POSTGRES_PASSWORD=postgres \
@@ -81,11 +97,15 @@ node node_modules/prisma/build/index.js migrate deploy --schema=prisma/schema.pr
 npm run build
 npm run lint
 npm test
-npx playwright install chromium --with-deps
+npx playwright install chromium
 npm run test:e2e
 ```
 
-Or run the scripted version: `./scripts/ci-local.sh` (see [scripts/ci-local.sh](../scripts/ci-local.sh)).
+Or run the scripted versions:
+
+```bash
+./scripts/e2e.sh
+```
 
 ## Targeted E2E (remediation / fast loop)
 
