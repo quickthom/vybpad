@@ -104,22 +104,18 @@ export const authRoutes: FastifyPluginCallback = (app, _opts, done) => {
   app.post('/auth/login', { schema: loginSchema }, async (request, reply) => {
     const body = request.body as { email: string; password: string };
     const email = body.email.trim().toLowerCase();
-    try {
-      const result = await verifyLogin(app.prisma, { email, password: body.password });
-      if (!result) {
-        app.log.info({ reqId: request.id }, 'Login failed (invalid credentials)');
-        return reply.status(401).send({ code: 'INVALID_CREDENTIALS' as const });
-      }
-      const { user, accessToken, refreshOpaque } = result;
-      setRefreshCookie(reply, refreshOpaque);
-      app.log.info({ reqId: request.id, userId: user.id }, 'User logged in');
-      return reply.status(200).send({
-        user: toUserResponse(user),
-        accessToken,
-      });
-    } catch (error: unknown) {
-      throw error;
+    const result = await verifyLogin(app.prisma, { email, password: body.password });
+    if (!result) {
+      app.log.info({ reqId: request.id }, 'Login failed (invalid credentials)');
+      return reply.status(401).send({ code: 'INVALID_CREDENTIALS' as const });
     }
+    const { user, accessToken, refreshOpaque } = result;
+    setRefreshCookie(reply, refreshOpaque);
+    app.log.info({ reqId: request.id, userId: user.id }, 'User logged in');
+    return reply.status(200).send({
+      user: toUserResponse(user),
+      accessToken,
+    });
   });
 
   app.post('/auth/refresh', async (request, reply) => {
