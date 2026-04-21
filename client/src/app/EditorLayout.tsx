@@ -5,6 +5,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { EditorPropertiesPanel } from '../components/panels/EditorPropertiesPanel';
 import { EditorSettingsPanel } from '../components/panels/EditorSettingsPanel';
 import { MixerOverlay } from '../components/overlays/MixerOverlay';
+import { ProgressionsOverlay } from '../components/overlays/ProgressionsOverlay';
 import { KeyScaleChangeDialog } from '../components/common/KeyScaleChangeDialog';
 import { Tooltip } from '../components/common/Tooltip';
 import { MidiExportControls } from '../components/controls/MidiExportControls';
@@ -222,6 +223,7 @@ export function EditorLayout() {
   const mixerOpen = activePanels.has('mixer');
   const settingsOpen = activePanels.has('settings');
   const pianoOpen = activePanels.has('piano');
+  const progressionsOpen = activePanels.has('progressions');
 
   const [selectedMeasures, setSelectedMeasures] = useState<[number, number] | null>(null);
   const [tempoMeterDialogOpen, setTempoMeterDialogOpen] = useState(false);
@@ -238,6 +240,7 @@ export function EditorLayout() {
   const [keyScaleDialogOpen, setKeyScaleDialogOpen] = useState(false);
   const keyScaleTriggerRef = useRef<HTMLButtonElement>(null);
   const mixerTriggerRef = useRef<HTMLButtonElement>(null);
+  const progressionsOverlayTriggerRef = useRef<HTMLButtonElement | null>(null);
   const chordPaletteResizeDragRef = useRef<{ startX: number; startWidth: number } | null>(null);
 
   const keyScaleTargetMeasure = useMemo(
@@ -345,15 +348,28 @@ export function EditorLayout() {
 
   const getShortcutContext = useCallback((): ShortcutContext => {
     return {
-      hasModalOpen: keyScaleDialogOpen || tempoMeterDialogOpen || mixerOpen,
+      hasModalOpen: keyScaleDialogOpen || tempoMeterDialogOpen || mixerOpen || progressionsOpen,
       isTextEditing: isEditableKeyboardTarget(document.activeElement),
       hasEditorFocus: isSongEditorCanvasFocused(document.activeElement),
       isPlaying: usePlaybackStore.getState().isPlaying,
     };
-  }, [keyScaleDialogOpen, tempoMeterDialogOpen, mixerOpen]);
+  }, [keyScaleDialogOpen, tempoMeterDialogOpen, mixerOpen, progressionsOpen]);
 
   const getSongAfterMutation = useCallback(() => useSongStore.getState().song, []);
   const getSelectionAfterMutation = useCallback(() => useUIStore.getState().selection, []);
+
+  const setProgressionsPanelOpen = useCallback(
+    (nextOpen: boolean): void => {
+      const isOpen = activePanels.has('progressions');
+      if (nextOpen && !isOpen) {
+        togglePanel('progressions');
+      }
+      if (!nextOpen && isOpen) {
+        togglePanel('progressions');
+      }
+    },
+    [activePanels, togglePanel],
+  );
 
   /**
    * TASK-7.2–7.5 — PAT-027 command dispatch from `createShortcutManager` (runs before `handleEditorKeydown` in useKeyboard).
@@ -813,6 +829,18 @@ export function EditorLayout() {
       melodyChromaticEntryActive,
       smartOctaveEnabled,
     ],
+  );
+
+  const handleChordPaletteLibraryTabChange = useCallback(
+    (nextTab: 'magic' | 'popular' | 'search' | 'progressions' | 'bassSets'): void => {
+      if (nextTab === 'progressions' && document.activeElement instanceof HTMLButtonElement) {
+        progressionsOverlayTriggerRef.current = document.activeElement;
+      }
+
+      setChordPaletteLibraryTab(nextTab);
+      setProgressionsPanelOpen(nextTab === 'progressions');
+    },
+    [setProgressionsPanelOpen],
   );
 
   const handlePlacementDurationTicks = useCallback(
@@ -1518,7 +1546,7 @@ export function EditorLayout() {
                   mode={chordPaletteMode}
                   onChordSelect={handleChordPaletteSelect}
                   libraryTab={chordPaletteLibraryTab}
-                  onLibraryTabChange={setChordPaletteLibraryTab}
+                  onLibraryTabChange={handleChordPaletteLibraryTabChange}
                   onBrowseDefaultsReset={() => setChordPaletteMode('diatonic')}
                 />
               </div>
@@ -1681,6 +1709,18 @@ export function EditorLayout() {
           }
         }}
         focusReturnTarget={mixerTriggerRef.current}
+      />
+      <ProgressionsOverlay
+        open={progressionsOpen}
+        currentKey={paletteKey}
+        currentScale={paletteScale}
+        onChordSelect={handleChordPaletteSelect}
+        onClose={() => {
+          if (progressionsOpen) {
+            togglePanel('progressions');
+          }
+        }}
+        focusReturnTarget={progressionsOverlayTriggerRef.current}
       />
       <KeyScaleChangeDialog
         open={keyScaleDialogOpen}

@@ -99,6 +99,7 @@ describe('EditorLayout — UI-W5 — RA-8 chord palette shell wiring (library ro
   beforeEach(() => {
     stubCanvas2d();
     useSongStore.getState().loadSong(buildDefaultSong());
+    useUIStore.setState({ activePanels: new Set<string>() });
     while (useUIStore.getState().entryMode !== 'table') {
       useUIStore.getState().toggleEntryMode();
     }
@@ -110,6 +111,41 @@ describe('EditorLayout — UI-W5 — RA-8 chord palette shell wiring (library ro
     const tablist = screen.getByRole('tablist', { name: /Chord library/i });
     expect(tablist).toBeVisible();
     expect(within(tablist).getByRole('tab', { name: /^Progressions$/i })).toBeVisible();
+  });
+});
+
+describe('EditorLayout — UI-R2-W7.4 — Progressions overlay behavior', () => {
+  beforeEach(() => {
+    stubCanvas2d();
+    useSongStore.getState().loadSong(buildDefaultSong());
+    useUIStore.setState({ activePanels: new Set<string>() });
+    while (useUIStore.getState().entryMode !== 'table') {
+      useUIStore.getState().toggleEntryMode();
+    }
+  });
+
+  it('opens the Progressions overlay when selecting the Progressions library tab', async () => {
+    const user = userEvent.setup();
+    renderEditor();
+    await screen.findByRole('application', { name: /Song editor/i });
+
+    await user.click(screen.getByRole('tab', { name: /^Progressions$/i }));
+    expect(screen.getByRole('dialog', { name: 'Progressions' })).toBeInTheDocument();
+  });
+
+  it('closes the Progressions overlay with Escape and restores focus to the trigger tab', async () => {
+    const user = userEvent.setup();
+    renderEditor();
+    await screen.findByRole('application', { name: /Song editor/i });
+
+    const progressionsTab = screen.getByRole('tab', { name: /^Progressions$/i });
+    await user.click(progressionsTab);
+    expect(screen.getByRole('dialog', { name: 'Progressions' })).toBeInTheDocument();
+
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('dialog', { name: 'Progressions' })).toBeNull();
+    expect(progressionsTab).toHaveAttribute('aria-selected', 'true');
+    expect(progressionsTab).toHaveFocus();
   });
 });
 

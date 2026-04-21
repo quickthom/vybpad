@@ -304,33 +304,16 @@ describe('ChordPalette — UI-R2-W6.3 — Popular tab sequence behavior', () => 
 });
 
 describe('ChordPalette — UI-W5 — RA-8 Progressions presets', () => {
-  it('applies two distinct preset degree sequences via onChordSelect without logging console errors', async () => {
-    const user = userEvent.setup();
-    const onChordSelect = vi.fn();
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
-
+  it('renders progressions content placeholder when progressions tab is selected', () => {
     render(
       <ChordPaletteW5
         {...baseProps()}
-        onChordSelect={onChordSelect}
         libraryTab="progressions"
         onLibraryTabChange={vi.fn()}
       />,
     );
 
-    await user.click(screen.getByTestId('chord-palette-progression-preset-a'));
-    const seqA = onChordSelect.mock.calls.map((c) => c[0].scaleDegree);
-    onChordSelect.mockClear();
-
-    await user.click(screen.getByTestId('chord-palette-progression-preset-b'));
-    const seqB = onChordSelect.mock.calls.map((c) => c[0].scaleDegree);
-
-    expect(seqA.length).toBeGreaterThan(0);
-    expect(seqB.length).toBeGreaterThan(0);
-    expect(seqA.join(',')).not.toBe(seqB.join(','));
-    expect(consoleError).not.toHaveBeenCalled();
-
-    consoleError.mockRestore();
+    expect(screen.getByText(/floating panel/i)).toBeInTheDocument();
   });
 });
 
