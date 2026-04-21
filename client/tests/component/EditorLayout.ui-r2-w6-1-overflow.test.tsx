@@ -70,6 +70,14 @@ function renderEditorAtLocalEditor(): void {
   );
 }
 
+function getEditorRoot(): HTMLElement | null {
+  return document.querySelector('div.flex.min-h-screen.flex-col');
+}
+
+function getMainShell(): HTMLElement | null {
+  return document.querySelector('main[aria-busy]');
+}
+
 beforeEach(() => {
   stubCanvas2d();
   resetPlaybackStoreForTests();
@@ -99,7 +107,7 @@ describe('UI-R2-W6.1 — criterion 1: shell should be viewport-bound and not doc
   it('renders the editor root as a full-height flex column shell with no inline document overflow override', () => {
     renderEditorAtLocalEditor();
 
-    const shell = document.querySelector('div.flex.min-h-screen.flex-col');
+    const shell = getEditorRoot();
     expect(shell).toBeTruthy();
     expect(shell?.className).toMatch(/\bflex\b/);
     expect(shell?.className).toMatch(/\bflex-col\b/);
@@ -137,7 +145,7 @@ describe('UI-R2-W6.1 — criterion 2: rail overflow must stay inside side rails'
     expect(rightRailClass).toMatch(/\bself-stretch\b/);
     expect(rightRailClass).toMatch(/\bmin-h-0\b/);
 
-    const rightScroller = rightRail?.querySelector('section[role="region"][aria-label="Editor properties"]');
+    const rightScroller = rightRail?.querySelector('[data-testid="properties-region"]');
     expect(rightScroller).toBeTruthy();
     expect(rightScroller?.className).toMatch(/\boverflow-y-auto\b/);
   });
@@ -147,7 +155,7 @@ describe('UI-R2-W6.1 — criterion 3: middle canvas host should fill viewport an
   it('renders the canvas host as flex-fill with only horizontal overflow utility in the contract', () => {
     renderEditorAtLocalEditor();
 
-    const mainHost = document.querySelector('main[aria-busy]');
+    const mainHost = getMainShell();
     expect(mainHost).toBeTruthy();
     const cls = mainHost?.getAttribute('class') ?? '';
     expect(cls).toMatch(/\bflex-1\b/);

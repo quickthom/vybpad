@@ -14,6 +14,11 @@
  * Criterion 3 — Middle canvas host keeps horizontal overflow intent.
  *   happy: canvas host main element reports computed `overflowX = auto` and non-`hidden`/`scroll` overflowY contract.
  *   edge: same assertions after full document-ready hydration.
+ *
+ * Criterion 4 — Minimum viewport guard remains active for editor routes.
+ *   happy: editor shell is replaced by viewport-too-narrow copy below 1024px and returns to editor at >=1024px.
+ *   error: narrow widths keep rendering editor chrome or guard never reappears at small widths.
+ *   edges: direct boundary around 1000px/1024px and typical small-viewport 800px case.
  */
 
 import { expect, type Locator, type Page, test } from '@playwright/test';
@@ -51,6 +56,18 @@ function getRailScrollMetrics(
   }, selector);
 }
 
+async function injectOverflowProbe(page: Page, selector: string): Promise<void> {
+  await page.evaluate((sel) => {
+    const el = document.querySelector(sel) as HTMLElement | null;
+    if (!el) return;
+    if (el.querySelector('[data-testid="ui-r2-w6-1-overflow-probe"]')) return;
+    const probe = document.createElement('div');
+    probe.setAttribute('data-testid', 'ui-r2-w6-1-overflow-probe');
+    probe.style.cssText = 'height: 1600px; width: 1px';
+    el.appendChild(probe);
+  }, selector);
+}
+
 async function setViewportForScrollAssertions(page: Page): Promise<void> {
   await page.setViewportSize({ width: 1280, height: 320 });
 }
@@ -82,6 +99,19 @@ test.describe('UI-R2-W6.1 — shell overflow and rails scroll contract (Playwrig
     const root = getEditorShellRoot(page);
     await expect(root).toBeVisible();
 
+    const viewportFit = await root.evaluate((el) => {
+      return {
+        shellHeight: Math.ceil(el.getBoundingClientRect().height),
+        viewportHeight: window.innerHeight,
+      };
+    });
+    expect(viewportFit.shellHeight).toBeLessThanOrEqual(viewportFit.viewportHeight + 1);
+
+    const canvasHeight = await root.locator('main[aria-busy]').evaluate((el) => Math.ceil(el.getBoundingClientRect().height));
+
+    expect(canvasHeight).toBeGreaterThan(0);
+    expect(canvasHeight).toBeLessThanOrEqual(viewportFit.shellHeight);
+
     const noBodyScroll = await page.evaluate(() => {
       const doc = document.documentElement;
       return doc.scrollHeight <= doc.clientHeight + 1;
@@ -100,7 +130,10 @@ test.describe('UI-R2-W6.1 — shell overflow and rails scroll contract (Playwrig
     await expect(root).toBeVisible();
 
     const leftScrollerSelector = '#vybpad-panel-chords div.overflow-y-auto';
-    const rightScrollerSelector = 'section[role="region"][aria-label="Editor properties"]';
+    const rightScrollerSelector = '[data-testid="properties-region"]';
+
+    await injectOverflowProbe(page, leftScrollerSelector);
+    await injectOverflowProbe(page, rightScrollerSelector);
 
     const leftBefore = await getRailScrollMetrics(page, leftScrollerSelector);
     const rightBefore = await getRailScrollMetrics(page, rightScrollerSelector);
@@ -130,6 +163,24 @@ test.describe('UI-R2-W6.1 — shell overflow and rails scroll contract (Playwrig
 
     const afterPageScroll = await page.evaluate(() => window.scrollY);
     expect(afterPageScroll).toBe(beforePageScroll);
+  });
+
+  test('editor min-viewport guard remains active below 1024px and recovers above threshold', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await openFreshEditor(page);
+    await expect(page.getByRole('application', { name: /Song editor/i })).toBeVisible({
+      timeout: 90_000,
+    });
+
+    await page.setViewportSize({ width: 800, height: 720 });
+    await expect(page.getByText(/vYbpad needs a display at least 1024px wide/i)).toBeVisible({
+      timeout: 15_000,
+    });
+
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await expect(page.getByRole('application', { name: /Song editor/i })).toBeVisible({
+      timeout: 15_000,
+    });
   });
 
   test('center canvas host keeps horizontal-overflow intent after hydration', async ({ page }) => {
