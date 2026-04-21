@@ -483,12 +483,6 @@ export function ChordPalette(props: ChordPaletteProps): ReactElement {
     );
   };
 
-  const applyProgressionDegrees = (degrees: readonly ScaleDegree[]): void => {
-    for (const deg of degrees) {
-      onChordSelect(diatonicSelectPayload(deg, currentScale));
-    }
-  };
-
   const libraryPanel = (): ReactElement => {
     switch (libraryTab) {
       case 'magic':
@@ -577,23 +571,9 @@ export function ChordPalette(props: ChordPaletteProps): ReactElement {
       case 'progressions':
         return (
           <div className="flex flex-col gap-2">
-            <p className="text-xs text-[var(--color-text-muted,#9CA3AF)]">Apply a preset progression to the editor insertion point.</p>
-            <button
-              type="button"
-              data-testid="chord-palette-progression-preset-a"
-              className="inline-flex min-h-8 w-full items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-3 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
-              onClick={() => applyProgressionDegrees([1, 4, 5, 1])}
-            >
-              Preset A — I–IV–V–I
-            </button>
-            <button
-              type="button"
-              data-testid="chord-palette-progression-preset-b"
-              className="inline-flex min-h-8 w-full items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-3 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
-              onClick={() => applyProgressionDegrees([2, 5, 1, 6])}
-            >
-              Preset B — ii–V–I–vi
-            </button>
+            <p className="text-xs text-[var(--color-text-muted,#9CA3AF)]">
+              Progressions open in the floating panel on the right side of the editor.
+            </p>
           </div>
         );
       case 'bassSets':
