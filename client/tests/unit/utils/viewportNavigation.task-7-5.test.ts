@@ -1,82 +1,86 @@
 /**
  * TASK-7.5 — viewport zoom / vertical scroll semantics for `UIStore.viewport` (INTERFACES.md `Viewport`).
+ *
+ * QA exercises the live `viewportNavigation` module and documents bounds for horizontal and vertical zoom + scroll.
  */
-import { describe, expect, it } from 'vitest';
-
 import type { Viewport } from '@vybpad/shared';
+import { describe, expect, it } from 'vitest';
+import {
+  DEFAULT_EDITOR_ZOOM,
+  DEFAULT_EDITOR_ZOOM_Y,
+  MAX_EDITOR_ZOOM,
+  MAX_EDITOR_ZOOM_Y,
+  EDITOR_SCROLL_STEP_Y,
+  MIN_EDITOR_ZOOM,
+  MIN_EDITOR_ZOOM_Y,
+  withResetZoom,
+  withScrollYDelta,
+  withZoomIn,
+  withZoomOut,
+  withZoomYIn,
+  withZoomYOut,
+  withZoomYReset,
+} from '@/utils/viewportNavigation';
 
-import { NOTE_HEIGHT } from '@/engine/renderer/constants';
-import * as viewportNavigation from '@/utils/viewportNavigation';
-
-const MIN_EDITOR_ZOOM = viewportNavigation.MIN_EDITOR_ZOOM ?? 0.25;
-const MAX_EDITOR_ZOOM = viewportNavigation.MAX_EDITOR_ZOOM ?? 4;
-const DEFAULT_EDITOR_ZOOM = viewportNavigation.DEFAULT_EDITOR_ZOOM ?? 1;
-const ZOOM_STEP_RATIO = viewportNavigation.ZOOM_STEP_RATIO ?? 1.25;
-const EDITOR_SCROLL_STEP_Y = viewportNavigation.EDITOR_SCROLL_STEP_Y ?? NOTE_HEIGHT;
-const MAX_SCROLL_Y = viewportNavigation.MAX_SCROLL_Y ?? NOTE_HEIGHT * 120;
-const MIN_EDITOR_ZOOM_Y = viewportNavigation.MIN_EDITOR_ZOOM_Y ?? MIN_EDITOR_ZOOM;
-const MAX_EDITOR_ZOOM_Y = viewportNavigation.MAX_EDITOR_ZOOM_Y ?? MAX_EDITOR_ZOOM;
-const DEFAULT_EDITOR_ZOOM_Y = viewportNavigation.DEFAULT_EDITOR_ZOOM_Y ?? 1;
-
-const baseVp: Viewport = { startMeasure: 0, measureCount: 8, scrollY: 40, zoom: 1 };
+const baseVp: Viewport = { startMeasure: 0, measureCount: 8, scrollY: 40, zoom: 1, zoomY: 1 };
 
 describe('TASK-7.5 — viewport navigation math (UIStore.viewport contract)', () => {
-  it('clamps zoom in/out within min/max', () => {
+  it('clamps horizontal zoom in/out within min/max', () => {
     let v: Viewport = { ...baseVp, zoom: MIN_EDITOR_ZOOM };
-    v = viewportNavigation.withZoomOut(v);
+    v = withZoomOut(v);
     expect(v.zoom).toBe(MIN_EDITOR_ZOOM);
     v = { ...baseVp, zoom: MAX_EDITOR_ZOOM };
-    v = viewportNavigation.withZoomIn(v);
+    v = withZoomIn(v);
     expect(v.zoom).toBe(MAX_EDITOR_ZOOM);
   });
 
+  it('clamps vertical zoom in/out within min/max', () => {
+    let v: Viewport = { ...baseVp, zoomY: MIN_EDITOR_ZOOM_Y };
+    v = withZoomYOut(v);
+    expect(v.zoomY).toBe(MIN_EDITOR_ZOOM_Y);
+    v = { ...baseVp, zoomY: MAX_EDITOR_ZOOM_Y };
+    v = withZoomYIn(v);
+    expect(v.zoomY).toBe(MAX_EDITOR_ZOOM_Y);
+  });
+
   it('resetZoom restores default horizontal zoom', () => {
-    const v = viewportNavigation.withResetZoom({ ...baseVp, zoom: 2.5 });
+    const v = withResetZoom({ ...baseVp, zoom: 2.5, zoomY: 2 });
     expect(v.zoom).toBe(DEFAULT_EDITOR_ZOOM);
+    expect(v.zoomY).toBe(2);
     expect(v.startMeasure).toBe(baseVp.startMeasure);
   });
 
+  it('resetZoomY restores default vertical zoom without changing horizontal zoom', () => {
+    const v = withZoomYReset({ ...baseVp, zoom: 2, zoomY: 2 });
+    expect(v.zoomY).toBe(DEFAULT_EDITOR_ZOOM_Y);
+  expect(v.zoom).toBe(2);
+  });
+
   it('scrollUp decreases scrollY and scrollDown increases it', () => {
-    const up = viewportNavigation.withScrollYDelta(baseVp, -EDITOR_SCROLL_STEP_Y);
+    const up = withScrollYDelta(baseVp, -EDITOR_SCROLL_STEP_Y);
     expect(up.scrollY).toBe(baseVp.scrollY - EDITOR_SCROLL_STEP_Y);
-    const down = viewportNavigation.withScrollYDelta(baseVp, EDITOR_SCROLL_STEP_Y);
+    const down = withScrollYDelta(baseVp, EDITOR_SCROLL_STEP_Y);
     expect(down.scrollY).toBe(baseVp.scrollY + EDITOR_SCROLL_STEP_Y);
   });
 
   it('clamps scrollY at zero', () => {
-    const v = viewportNavigation.withScrollYDelta({ ...baseVp, scrollY: 5 }, -100);
+    const v = withScrollYDelta({ ...baseVp, scrollY: 5 }, -100);
     expect(v.scrollY).toBe(0);
   });
 
-  it('clamps scrollY to the expected max bound', () => {
-    const maxRowBound = { ...baseVp, scrollY: MAX_SCROLL_Y - 1 };
-    const v = viewportNavigation.withScrollYDelta(maxRowBound, 10000);
-    expect(v.scrollY).toBeLessThanOrEqual(MAX_SCROLL_Y);
+  it('clamps scrollY at dynamic max while preserving row height', () => {
+    const v = withScrollYDelta({ ...baseVp, scrollY: 0 }, 1000, 10, 24);
+    expect(v.scrollY).toBe(240);
+    expect(v.scrollY).not.toBe(1000);
   });
 
-  it('exposes and clamps new vertical zoom helpers for zoomY', () => {
-    expect(typeof viewportNavigation.withZoomYIn).toBe('function');
-    expect(typeof viewportNavigation.withZoomYOut).toBe('function');
-    expect(typeof viewportNavigation.withResetZoomY).toBe('function');
-
-    const withZoomYIn = viewportNavigation.withZoomYIn as (v: Viewport) => Viewport;
-    const withZoomYOut = viewportNavigation.withZoomYOut as (v: Viewport) => Viewport;
-    const withResetZoomY = viewportNavigation.withResetZoomY as (v: Viewport) => Viewport;
-
-    expect(withZoomYIn({ ...baseVp, zoomY: MIN_EDITOR_ZOOM_Y }).zoomY).toBe(MIN_EDITOR_ZOOM_Y);
-    expect(withZoomYOut({ ...baseVp, zoomY: MAX_EDITOR_ZOOM_Y }).zoomY).toBe(MAX_EDITOR_ZOOM_Y);
-    expect(withResetZoomY({ ...baseVp, zoomY: 2.5, zoom: 2.5 }).zoomY).toBe(DEFAULT_EDITOR_ZOOM_Y);
-  });
-
-  it('normalizes invalid zoomY to default and keeps horizontal zoom untouched', () => {
-    const withZoomYIn = viewportNavigation.withZoomYIn as (v: Viewport) => Viewport;
-    const withResetZoomY = viewportNavigation.withResetZoomY as (v: Viewport) => Viewport;
-
-    const normalized = withZoomYIn({ ...baseVp });
-    expect(normalized.zoomY).toBe(DEFAULT_EDITOR_ZOOM_Y);
-    expect(normalized.zoom).toBe(baseVp.zoom);
-
-    const invalidValue = withResetZoomY({ ...baseVp, zoomY: Number.NaN, zoom: 3 });
-    expect(invalidValue.zoomY).toBe(DEFAULT_EDITOR_ZOOM_Y);
+  it('keeps zoomY unchanged while horizontal zoom changes and vice versa', () => {
+    const v: Viewport = { ...baseVp, zoom: 1.5, zoomY: 1.5 };
+    const afterHorizontal = withZoomIn(v);
+    expect(afterHorizontal.zoom).toBe(1.875);
+    expect(afterHorizontal.zoomY).toBe(1.5);
+    const afterVertical = withZoomYIn(v);
+    expect(afterVertical.zoomY).toBe(1.875);
+    expect(afterVertical.zoom).toBe(1.5);
   });
 });

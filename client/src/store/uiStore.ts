@@ -25,9 +25,28 @@ const DEFAULT_VIEWPORT: Viewport = {
   measureCount: 8,
   scrollY: 0,
   zoom: 1,
+  zoomY: 1,
 };
 
 const hydrated = typeof window !== 'undefined' ? readPersistedEditorUiSettings() : null;
+
+function clampViewportZoom(zoom: number, fallback: number): number {
+  if (!Number.isFinite(zoom)) {
+    return fallback;
+  }
+  return Math.min(4, Math.max(0.25, zoom));
+}
+
+const PERSISTED_ZOOM = clampViewportZoom(hydrated?.zoom ?? 1, 1);
+const PERSISTED_ZOOM_Y = clampViewportZoom(hydrated?.zoomY ?? 1, 1);
+
+function normalizeViewport(viewport: Viewport): Viewport {
+  return {
+    ...viewport,
+    zoom: clampViewportZoom(viewport.zoom, 1),
+    zoomY: clampViewportZoom(viewport.zoomY ?? 1, 1),
+  };
+}
 
 /** Mirrors INTERFACES.md `UIStore`. */
 export interface UIStore {
@@ -63,7 +82,11 @@ export interface UIStore {
 
 export const useUIStore = create<UIStore>()(
   immer((set) => ({
-    viewport: DEFAULT_VIEWPORT,
+    viewport: {
+      ...DEFAULT_VIEWPORT,
+      zoom: PERSISTED_ZOOM,
+      zoomY: PERSISTED_ZOOM_Y,
+    },
     selection: null,
     activeVoice: 0,
     entryMode: hydrated?.entryMode ?? 'table',
@@ -78,7 +101,7 @@ export const useUIStore = create<UIStore>()(
 
     setViewport: (v: Viewport) => {
       set((draft) => {
-        draft.viewport = v;
+        draft.viewport = normalizeViewport(v);
       });
     },
 
@@ -189,6 +212,8 @@ function schedulePersist(): void {
       melodyVoiceVisible: [...s.melodyVoiceVisible] as [boolean, boolean, boolean, boolean],
       inactiveMelodyDisplayMode: s.inactiveMelodyDisplayMode,
       smartOctaveEnabled: s.smartOctaveEnabled,
+      zoom: s.viewport.zoom,
+      zoomY: s.viewport.zoomY,
     });
   }, 50);
 }
@@ -201,6 +226,8 @@ if (typeof window !== 'undefined') {
       state.colorScheme === prev.colorScheme &&
       state.showGuides === prev.showGuides &&
       state.staffSpacing === prev.staffSpacing &&
+      state.viewport.zoom === prev.viewport.zoom &&
+      state.viewport.zoomY === prev.viewport.zoomY &&
       state.inactiveMelodyDisplayMode === prev.inactiveMelodyDisplayMode &&
       state.smartOctaveEnabled === prev.smartOctaveEnabled &&
       state.melodyVoiceVisible[0] === prev.melodyVoiceVisible[0] &&

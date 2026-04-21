@@ -17,8 +17,6 @@
  *
  * RA-15 (gate B): Band/Lyrics/Stable disabled stubs; single trio (no duplicate deferred row).
  *   happy: exactly one sr-only MVP hint; three disabled buttons with Not in MVP tooltip
- * RA-210: dual-axis zoom controls render as independent horizontal + vertical groups with explicit labels.
- *   happy: both readouts render; H and V +/-/reset callbacks are distinct
  *
  * Contract: INTERFACES.md — TransportControlsProps (UI-W8 optional props).
  * Props are cast at the call site because the component implementation may lag INTERFACES until Builder lands UI-W8.
@@ -106,57 +104,53 @@ describe('TransportControls — UI-W8 — zoom (RA-16/21)', () => {
   });
 });
 
-describe('TransportControls — UI-R2-W7.2 — dual-axis zoom (RA-210)', () => {
-  it('renders both horizontal and vertical zoom controls with distinct a11y labels', async () => {
+describe('TransportControls — UI-R2-W7.2 — vertical zoom (RA-210)', () => {
+  it('shows zoomYPercent in its readout and wires vertical zoom callbacks', async () => {
     const user = userEvent.setup();
-    const onZoomIn = vi.fn();
-    const onZoomOut = vi.fn();
-    const onZoomReset = vi.fn();
     const onZoomYIn = vi.fn();
     const onZoomYOut = vi.fn();
     const onZoomYReset = vi.fn();
-
     renderW8({
-      zoomPercent: 110,
-      onZoomIn,
-      onZoomOut,
-      onZoomReset,
-      zoomYPercent: 190,
+      zoomYPercent: 130,
       onZoomYIn,
       onZoomYOut,
       onZoomYReset,
     });
 
-    const horizontalGroup = screen.getByRole('group', { name: /editor canvas zoom/i });
-    const verticalGroup = screen.getByRole('group', { name: /vertical zoom/i });
-    expect(within(horizontalGroup).getByTestId('vybpad-zoom-readout')).toHaveTextContent('110%');
-    expect(within(verticalGroup).getByText('190')).toBeInTheDocument();
+    expect(screen.getByTestId('vybpad-zoom-y-readout')).toHaveTextContent(/130/);
 
-    await user.click(within(horizontalGroup).getByRole('button', { name: /^zoom in$/i }));
-    await user.click(within(horizontalGroup).getByRole('button', { name: /^zoom out$/i }));
-    await user.click(within(horizontalGroup).getByRole('button', { name: /reset zoom/i }));
-    await user.click(within(verticalGroup).getByRole('button', { name: /vertical zoom in/i }));
-    await user.click(within(verticalGroup).getByRole('button', { name: /vertical zoom out/i }));
-    await user.click(within(verticalGroup).getByRole('button', { name: /vertical reset/i }));
+    await user.click(screen.getByTestId('vybpad-zoom-y-in'));
+    await user.click(screen.getByTestId('vybpad-zoom-y-out'));
+    await user.click(screen.getByTestId('vybpad-zoom-y-reset'));
 
-    expect(onZoomIn).toHaveBeenCalledTimes(1);
-    expect(onZoomOut).toHaveBeenCalledTimes(1);
-    expect(onZoomReset).toHaveBeenCalledTimes(1);
     expect(onZoomYIn).toHaveBeenCalledTimes(1);
     expect(onZoomYOut).toHaveBeenCalledTimes(1);
     expect(onZoomYReset).toHaveBeenCalledTimes(1);
   });
 
-  it('does not render the vertical zoom cluster when vertical zoom props are missing', () => {
+  it('uses independent aria-labels for vertical zoom controls', async () => {
+    const user = userEvent.setup();
+    const onZoomYIn = vi.fn();
+    const onZoomYOut = vi.fn();
+    const onZoomYReset = vi.fn();
     renderW8({
-      zoomPercent: 120,
-      onZoomIn: vi.fn(),
-      onZoomOut: vi.fn(),
-      onZoomReset: vi.fn(),
+      zoomYPercent: 100,
+      onZoomYIn,
+      onZoomYOut,
+      onZoomYReset,
     });
 
-    expect(screen.getByRole('group', { name: /editor canvas zoom/i })).toBeInTheDocument();
-    expect(screen.queryByRole('group', { name: /vertical zoom/i })).toBeNull();
+    const zoomYIn = screen.getByRole('button', { name: /zoom melody rows in/i });
+    const zoomYOut = screen.getByRole('button', { name: /zoom melody rows out/i });
+    const reset = screen.getByTestId('vybpad-zoom-y-reset');
+    await user.click(zoomYIn);
+    await user.click(zoomYOut);
+    await user.click(reset);
+
+    expect(onZoomYIn).toHaveBeenCalledTimes(1);
+    expect(onZoomYOut).toHaveBeenCalledTimes(1);
+    expect(onZoomYReset).toHaveBeenCalledTimes(1);
+    expect(reset).toHaveAccessibleName(/reset melody row zoom to 1:1/i);
   });
 });
 

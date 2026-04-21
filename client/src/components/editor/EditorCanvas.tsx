@@ -50,6 +50,7 @@ import {
   computeMelodyVoicePitchRanges,
   melodyPitchRangeRowCount,
   measureIndexAndBeatFromAbsoluteTick,
+  scaleMelodyRowHeight,
 } from '../../engine/renderer/layout';
 import { computePitchAxisLabelsInViewport, drawPitchAxisGutter } from '../../engine/renderer/pitchAxisLayout';
 import { drawGuideOverlay } from '../../engine/renderer/guideOverlay';
@@ -329,7 +330,10 @@ export function EditorCanvas(props: EditorCanvasProps): ReactElement {
 
   const setActiveVoice = useUIStore((s) => s.setActiveVoice);
 
-  const melodyRowHeight = useMemo(() => melodyRowHeightPx(staffSpacing), [staffSpacing]);
+  const melodyRowHeight = useMemo(
+    () => scaleMelodyRowHeight(melodyRowHeightPx(staffSpacing), viewport.zoomY ?? 1),
+    [staffSpacing, viewport.zoomY],
+  );
   const activeVoicePitchRange = useMemo(() => {
     const ranges = computeMelodyVoicePitchRanges(song);
     return ranges[activeVoice] ?? ranges[0];

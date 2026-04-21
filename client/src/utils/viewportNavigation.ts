@@ -10,6 +10,9 @@ import { NOTE_HEIGHT } from '../engine/renderer/constants';
 export const MIN_EDITOR_ZOOM = 0.25;
 export const MAX_EDITOR_ZOOM = 4;
 export const DEFAULT_EDITOR_ZOOM = 1;
+export const MIN_EDITOR_ZOOM_Y = 0.25;
+export const MAX_EDITOR_ZOOM_Y = 4;
+export const DEFAULT_EDITOR_ZOOM_Y = 1;
 
 /** Multiplicative step per zoom in/out command (Hookpad-style discrete steps). */
 const ZOOM_STEP_RATIO = 1.25;
@@ -22,9 +25,11 @@ const DEFAULT_MAX_SCROLL_Y = NOTE_HEIGHT * 120;
 /** Legacy fallback for environments that still call {@link withScrollYDelta} without pitch-range context. */
 export const MAX_SCROLL_Y = DEFAULT_MAX_SCROLL_Y;
 
-function clampZoom(z: number): number {
-  if (!Number.isFinite(z)) return DEFAULT_EDITOR_ZOOM;
-  return Math.min(MAX_EDITOR_ZOOM, Math.max(MIN_EDITOR_ZOOM, z));
+function clampZoom(z: number, min: number, max: number, fallback: number): number {
+  if (!Number.isFinite(z)) {
+    return fallback;
+  }
+  return Math.min(max, Math.max(min, z));
 }
 
 function clampScrollY(y: number, maxScrollY = DEFAULT_MAX_SCROLL_Y): number {
@@ -33,15 +38,33 @@ function clampScrollY(y: number, maxScrollY = DEFAULT_MAX_SCROLL_Y): number {
 }
 
 export function withZoomIn(viewport: Viewport): Viewport {
-  return { ...viewport, zoom: clampZoom(viewport.zoom * ZOOM_STEP_RATIO) };
+  return { ...viewport, zoom: clampZoom(viewport.zoom * ZOOM_STEP_RATIO, MIN_EDITOR_ZOOM, MAX_EDITOR_ZOOM, DEFAULT_EDITOR_ZOOM) };
 }
 
 export function withZoomOut(viewport: Viewport): Viewport {
-  return { ...viewport, zoom: clampZoom(viewport.zoom / ZOOM_STEP_RATIO) };
+  return { ...viewport, zoom: clampZoom(viewport.zoom / ZOOM_STEP_RATIO, MIN_EDITOR_ZOOM, MAX_EDITOR_ZOOM, DEFAULT_EDITOR_ZOOM) };
 }
 
 export function withResetZoom(viewport: Viewport): Viewport {
   return { ...viewport, zoom: DEFAULT_EDITOR_ZOOM };
+}
+
+export function withZoomYIn(viewport: Viewport): Viewport {
+  return {
+    ...viewport,
+    zoomY: clampZoom((viewport.zoomY ?? DEFAULT_EDITOR_ZOOM_Y) * ZOOM_STEP_RATIO, MIN_EDITOR_ZOOM_Y, MAX_EDITOR_ZOOM_Y, DEFAULT_EDITOR_ZOOM_Y),
+  };
+}
+
+export function withZoomYOut(viewport: Viewport): Viewport {
+  return {
+    ...viewport,
+    zoomY: clampZoom((viewport.zoomY ?? DEFAULT_EDITOR_ZOOM_Y) / ZOOM_STEP_RATIO, MIN_EDITOR_ZOOM_Y, MAX_EDITOR_ZOOM_Y, DEFAULT_EDITOR_ZOOM_Y),
+  };
+}
+
+export function withZoomYReset(viewport: Viewport): Viewport {
+  return { ...viewport, zoomY: DEFAULT_EDITOR_ZOOM_Y };
 }
 
 /**

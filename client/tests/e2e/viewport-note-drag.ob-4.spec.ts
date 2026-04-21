@@ -214,15 +214,19 @@ test.describe('OB-4 — viewport stability during note drag', () => {
     await waitForEditorRouteReady(page);
 
     const zoomReadout = page.getByTestId('vybpad-zoom-readout');
+    const zoomYReadout = page.getByTestId('vybpad-zoom-y-readout');
     await expect(zoomReadout).toBeVisible();
+    await expect(zoomYReadout).toBeVisible();
+    const zoomYBeforeText = (await zoomYReadout.innerText()).trim();
     await page.getByTestId('vybpad-zoom-in').click();
     await page.getByTestId('vybpad-zoom-in').click();
 
     const readoutText = (await zoomReadout.innerText()).trim();
     const zoom = parseZoomPercent(readoutText);
     expect(zoom).toBeGreaterThan(1.01);
-
+    await expect(zoomYReadout).toHaveText(zoomYBeforeText);
     const viewport = viewportFromReadout(zoom);
+
     const { startX, startY } = noteDragPointerPositions(song, viewport, note);
 
     const canvas = page.getByRole('application', { name: /Song editor/i });
@@ -250,9 +254,17 @@ test.describe('OB-4 — viewport stability during note drag', () => {
     for (let step = 1; step <= 4; step += 1) {
       await page.mouse.move(pageX + (72 * step) / 4, pageY);
       await expect(zoomReadout).toHaveText(readoutText);
+      await expect(zoomYReadout).toHaveText(zoomYBeforeText);
     }
     await page.mouse.up();
 
+    await expect(zoomReadout).toHaveText(readoutText);
+    await expect(zoomYReadout).toHaveText(zoomYBeforeText);
+
+    const zoomYAfterHorizontal = parseZoomPercent((await zoomYReadout.innerText()).trim());
+    await page.getByTestId('vybpad-zoom-y-in').click();
+    const zoomYAfterVertical = parseZoomPercent((await zoomYReadout.innerText()).trim());
+    expect(zoomYAfterVertical).toBeGreaterThan(zoomYAfterHorizontal);
     await expect(zoomReadout).toHaveText(readoutText);
 
     await expect(async () => {

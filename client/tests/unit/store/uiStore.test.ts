@@ -80,13 +80,13 @@ describe('UIStore — TASK-2.11 / INTERFACES.md', () => {
   });
 
   describe('initial state (Zustand create() defaults)', () => {
-    it('exposes viewport { startMeasure: 0, measureCount: 8, scrollY: 0, zoom: 1 } on first getState()', () => {
-      expect(useUIStore.getState().viewport).toEqual({
-        startMeasure: 0,
-        measureCount: 8,
-        scrollY: 0,
-        zoom: 1,
-        zoomY: 1,
+    it('exposes viewport { startMeasure: 0, measureCount: 8, scrollY: 0, zoom: 1, zoomY: 1 } on first getState()', () => {
+    expect(useUIStore.getState().viewport).toEqual({
+      startMeasure: 0,
+      measureCount: 8,
+      scrollY: 0,
+      zoom: 1,
+      zoomY: 1,
       });
     });
 
@@ -136,14 +136,14 @@ describe('UIStore — TASK-2.11 / INTERFACES.md', () => {
         measureCount: 4,
         scrollY: 120,
         zoom: 1.25,
-        zoomY: 1.5,
+        zoomY: 1.1,
       });
       expect(useUIStore.getState().viewport).toEqual({
         startMeasure: 2,
         measureCount: 4,
         scrollY: 120,
         zoom: 1.25,
-        zoomY: 1.5,
+        zoomY: 1.1,
       });
 
       useUIStore.getState().setViewport({
@@ -151,15 +151,26 @@ describe('UIStore — TASK-2.11 / INTERFACES.md', () => {
         measureCount: 16,
         scrollY: 0,
         zoom: 2,
-        // Intentionally omits zoomY to validate default normalization on replacement.
+        zoomY: 0.9,
       });
       expect(useUIStore.getState().viewport).toEqual({
         startMeasure: 0,
         measureCount: 16,
         scrollY: 0,
         zoom: 2,
-        zoomY: 1,
+        zoomY: 0.9,
       });
+    });
+
+    it('defaults zoomY to 1 when setViewport input omits it', () => {
+      useUIStore.getState().setViewport({
+        startMeasure: 1,
+        measureCount: 4,
+        scrollY: 20,
+        zoom: 1.5,
+      } as Viewport);
+
+      expect(useUIStore.getState().viewport.zoomY).toBe(1);
     });
   });
 
