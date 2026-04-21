@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import type { ReactNode, Ref } from 'react';
 
 import { getPlaybackInitErrorMessage } from '../../engine/audio';
-import { usePlaybackStore, type PlaybackInitErrorCode, type PlaybackInitStatus } from '../../store/playbackStore';
+import { type PlaybackInitErrorCode, type PlaybackInitStatus } from '../../store/playbackStore';
 
 /** INTERFACES.md — `TransportControls` / `TransportControlsProps` (TASK-4.1 + UI-W6 + UI-W8). */
 export interface TransportControlsProps {
@@ -47,6 +47,7 @@ export interface TransportControlsProps {
   keyLabel?: string;
   meterLabel?: string;
   onTempoMeterEdit?: () => void;
+  toolbarRef?: Ref<HTMLDivElement>;
 }
 
 export function TransportControls({
@@ -83,36 +84,11 @@ export function TransportControls({
   keyLabel,
   meterLabel,
   onTempoMeterEdit,
+  toolbarRef,
 }: TransportControlsProps) {
-  const [observedInitStatus, setObservedInitStatus] = useState<PlaybackInitStatus>(initStatus);
-  const toolbarRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const applyInitStatusAttributes = (nextStatus: PlaybackInitStatus): void => {
-      if (!toolbarRef.current) return;
-
-      if (nextStatus === 'initializing') {
-        toolbarRef.current.setAttribute('aria-busy', 'true');
-      } else {
-        toolbarRef.current.removeAttribute('aria-busy');
-      }
-
-      toolbarRef.current.setAttribute('data-audio-ready', nextStatus === 'ready' ? 'true' : 'false');
-    };
-
-    const initialStatus = usePlaybackStore.getState().initStatus;
-    setObservedInitStatus(initialStatus);
-    applyInitStatusAttributes(initialStatus);
-
-    const unsubscribe = usePlaybackStore.subscribe((state) => {
-      setObservedInitStatus(state.initStatus);
-      applyInitStatusAttributes(state.initStatus);
-    });
-    return unsubscribe;
-  }, []);
-  const effectiveInitStatus = observedInitStatus === 'locked' ? initStatus : observedInitStatus;
-  const playDisabled = effectiveInitStatus === 'initializing';
+  const playDisabled = initStatus === 'initializing';
   /** Pause / stop / rewind require a running engine (INTERFACES transport actions). */
-  const transportLocked = effectiveInitStatus !== 'ready';
+  const transportLocked = initStatus !== 'ready';
 
   const showKeyMeterBand =
     (keyLabel != null && keyLabel !== '') ||
@@ -131,8 +107,8 @@ export function TransportControls({
       data-ui-density="compact"
       role="toolbar"
       aria-label="Transport"
-      aria-busy={effectiveInitStatus === 'initializing' ? 'true' : undefined}
-      data-audio-ready={effectiveInitStatus === 'ready' ? 'true' : 'false'}
+      aria-busy={initStatus === 'initializing' ? 'true' : undefined}
+      data-audio-ready={initStatus === 'ready' ? 'true' : 'false'}
       className="flex min-w-0 flex-col border-b border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)] lg:flex-nowrap"
     >
       {showKeyMeterBand ? (
@@ -212,11 +188,11 @@ export function TransportControls({
               type="button"
               data-testid="vybpad-transport-play"
               className="inline-flex min-h-8 min-w-8 items-center justify-center rounded-lg bg-[var(--color-primary,#4F46E5)] px-3 text-sm font-medium text-[var(--color-text-on-primary,#FFFFFF)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-primary-hover,#4338CA)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
-              aria-label={effectiveInitStatus === 'ready' ? 'Play' : 'Start audio and play'}
+              aria-label={initStatus === 'ready' ? 'Play' : 'Start audio and play'}
               disabled={playDisabled}
               onClick={onPlay}
             >
-              {effectiveInitStatus === 'initializing' ? 'Starting…' : 'Play'}
+              {initStatus === 'initializing' ? 'Starting…' : 'Play'}
             </button>
           )}
           <button
@@ -255,11 +231,10 @@ export function TransportControls({
           <input
             role="spinbutton"
             id="transport-tempo-input"
-            type="text"
-            inputMode="numeric"
+            type="number"
             min={20}
             max={300}
-          value={String(tempo)}
+            value={String(tempo)}
             onChange={(e) => onTempoChange(Number(e.target.value))}
             className="h-8 w-20 rounded-lg border border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)] px-2 text-center text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none focus:border-[var(--color-primary,#4F46E5)] focus:ring-1 focus:ring-[var(--color-primary,#4F46E5)] disabled:opacity-50"
             aria-labelledby="transport-tempo-label"
@@ -421,7 +396,7 @@ export function TransportControls({
           ))}
         </div>
 
-        {effectiveInitStatus === 'initializing' && (
+        {initStatus === 'initializing' && (
           <div
             role="status"
             className="flex items-center gap-2 text-sm text-[var(--color-text-secondary,#4B5563)]"
@@ -435,7 +410,7 @@ export function TransportControls({
           </div>
         )}
 
-        {effectiveInitStatus === 'ready' && (
+        {initStatus === 'ready' && (
           <p className="sr-only" role="status" aria-live="polite">
             Playback ready. Piano samples loaded.
           </p>

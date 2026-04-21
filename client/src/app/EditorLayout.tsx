@@ -242,6 +242,19 @@ export function EditorLayout() {
   const mixerTriggerRef = useRef<HTMLButtonElement>(null);
   const progressionsOverlayTriggerRef = useRef<HTMLButtonElement | null>(null);
   const chordPaletteResizeDragRef = useRef<{ startX: number; startWidth: number } | null>(null);
+  const transportToolbarRootRef = useRef<HTMLDivElement>(null);
+
+  const syncTransportToolbarAttributes = useCallback((status: typeof initStatus) => {
+    const toolbar = transportToolbarRootRef.current;
+    if (!toolbar) return;
+
+    if (status === 'initializing') {
+      toolbar.setAttribute('aria-busy', 'true');
+    } else {
+      toolbar.removeAttribute('aria-busy');
+    }
+    toolbar.setAttribute('data-audio-ready', status === 'ready' ? 'true' : 'false');
+  }, []);
 
   const keyScaleTargetMeasure = useMemo(
     () => keyScaleTargetMeasureIndex(selectedMeasures, selection),
@@ -345,6 +358,21 @@ export function EditorLayout() {
       finishChordPaletteResize();
     };
   }, [finishChordPaletteResize]);
+
+  useEffect(() => {
+    syncTransportToolbarAttributes(initStatus);
+  }, [initStatus, syncTransportToolbarAttributes]);
+
+  useEffect(() => {
+    const unsubscribe = usePlaybackStore.subscribe((state) => {
+      syncTransportToolbarAttributes(state.initStatus);
+    });
+    return () => {
+      if (typeof unsubscribe === 'function') {
+        unsubscribe();
+      }
+    };
+  }, [syncTransportToolbarAttributes]);
 
   const getShortcutContext = useCallback((): ShortcutContext => {
     return {
@@ -1413,17 +1441,16 @@ export function EditorLayout() {
               {user.displayName}
             </span>
           ) : null}
-          <Tooltip label="Active melody voice (Ctrl+1–4)">
-            <span
-              tabIndex={0}
-              className="inline-flex h-8 shrink-0 cursor-default items-center rounded-md border border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface-muted,#F9FAFB)] px-2 text-[12px] font-medium text-[var(--color-text-secondary,#4B5563)]"
-            >
-              Voice {activeVoice + 1}
-            </span>
-          </Tooltip>
+          <span
+            aria-hidden="true"
+            className="sr-only"
+          >
+            Voice {activeVoice + 1}
+          </span>
         </div>
       </header>
       <TransportControls
+        toolbarRef={transportToolbarRootRef}
         isPlaying={isPlaying}
         tempo={song.metadata.tempo}
         currentBeat={currentBeatDisplay}
