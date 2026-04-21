@@ -104,18 +104,18 @@ export function TransportControls({
       data-ui-density="compact"
       aria-busy={initStatus === 'initializing' ? true : undefined}
       data-audio-ready={initStatus === 'ready' ? 'true' : 'false'}
-      className="flex min-w-0 flex-col border-b border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)] lg:flex-nowrap"
+      className="flex min-w-0 w-full max-w-full flex-col border-b border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)] lg:flex-nowrap overflow-x-hidden"
     >
       <div
         role="toolbar"
         aria-label="Transport"
         aria-busy={initStatus === 'initializing' ? true : undefined}
         data-audio-ready={initStatus === 'ready' ? 'true' : 'false'}
-        className="flex min-h-12 min-w-0 flex-wrap items-center gap-2 px-3 lg:flex-nowrap lg:overflow-x-auto"
+        className="flex min-h-12 min-w-0 w-full max-w-full flex-wrap items-center gap-2 px-3 lg:flex-nowrap lg:overflow-x-auto"
       >
         {leadingContent ? (
           <div
-            className="hidden shrink-0 items-center gap-2 lg:flex"
+            className="hidden min-w-0 items-center gap-2 lg:flex"
             role="group"
             aria-label="Song and panel controls"
           >
@@ -123,7 +123,7 @@ export function TransportControls({
           </div>
         ) : null}
 
-        <div className="flex shrink-0 items-center gap-2" role="group" aria-label="Playback">
+        <div className="flex min-w-0 items-center gap-2" role="group" aria-label="Playback">
           <button
             type="button"
             data-testid="vybpad-transport-undo"
@@ -192,7 +192,7 @@ export function TransportControls({
 
         <div
           data-testid="vybpad-transport-current-beat"
-          className="flex min-h-8 min-w-[120px] shrink-0 items-center text-sm tabular-nums text-[var(--color-text-primary,#111827)]"
+          className="flex min-h-8 min-w-[120px] items-center text-sm tabular-nums text-[var(--color-text-primary,#111827)]"
           aria-live="polite"
         >
           <span className="sr-only">Current position</span>
@@ -246,7 +246,7 @@ export function TransportControls({
         </div>
 
         {trailingContent ? (
-          <div className="hidden shrink-0 items-center gap-2 lg:flex" role="group" aria-label="Additional controls">
+          <div className="hidden min-w-0 items-center gap-2 lg:flex" role="group" aria-label="Additional controls">
             {trailingContent}
           </div>
         ) : null}
@@ -371,15 +371,15 @@ export function TransportControls({
         {loopContent ? (
           <>
             <div
-              className="hidden h-6 w-px shrink-0 bg-[var(--color-border,#E5E7EB)] sm:block"
+              className="pointer-events-none hidden h-6 w-px shrink-0 bg-[var(--color-border,#E5E7EB)] sm:block"
               aria-hidden
             />
             {loopContent}
           </>
         ) : null}
 
-        <div className="hidden h-6 w-px shrink-0 bg-[var(--color-border,#E5E7EB)] sm:block" aria-hidden />
-        <div className="flex shrink-0 items-center gap-2" role="group" aria-label="Deferred shell features">
+        <div className="pointer-events-none hidden h-6 w-px shrink-0 bg-[var(--color-border,#E5E7EB)] sm:block" aria-hidden />
+        <div className="flex min-w-0 items-center gap-2" role="group" aria-label="Deferred shell features">
           <span id="vybpad-mvp-deferred-hint" className="sr-only">
             Not in MVP; deferred per ARCHITECTURE roadmap.
           </span>
@@ -429,7 +429,7 @@ export function TransportControls({
         {endContent ? (
           <div
             data-testid="vybpad-midi-export-cluster"
-            className="ml-auto flex min-w-0 shrink-0 flex-nowrap items-center gap-2 overflow-x-auto"
+            className="ml-auto flex min-w-0 flex-nowrap items-center gap-2 overflow-x-auto"
             role="group"
             aria-label="MIDI export"
           >

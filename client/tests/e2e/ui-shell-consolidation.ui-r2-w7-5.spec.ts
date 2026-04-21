@@ -138,11 +138,11 @@ test.describe('UI-R2-W7.5 — desktop toolbar consolidation', () => {
     await expect(visibleHeaderRow).toHaveCount(0);
     const hiddenHeaderRow = page.getByRole('banner', { includeHidden: true });
     await expect(hiddenHeaderRow).toHaveCount(1);
-    await expect(hiddenHeaderRow.getByRole('heading', { level: 1 })).toHaveCount(1);
+    await expect(hiddenHeaderRow.getByRole('heading', { level: 1, includeHidden: true })).toHaveCount(1);
 
     const navButtons = ['Projects', 'Chords', 'Mixer', 'Settings', 'Piano', 'Key / scale', 'Log out'];
     for (const name of navButtons) {
-      await expect(hiddenHeaderRow.getByRole('button', { name })).toHaveCount(1);
+      await expect(hiddenHeaderRow.getByRole('button', { name, includeHidden: true })).toHaveCount(1);
     }
   });
 });

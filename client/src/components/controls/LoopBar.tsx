@@ -29,7 +29,7 @@ export function LoopBar() {
 
   return (
     <div
-      className="flex min-h-8 min-w-0 flex-wrap items-center gap-2 lg:flex-nowrap lg:overflow-x-auto"
+      className="pointer-events-none flex min-h-8 min-w-0 flex-wrap items-center gap-2 lg:flex-nowrap lg:overflow-x-auto"
       role="group"
       aria-labelledby={`${groupId}-label`}
     >
@@ -44,8 +44,8 @@ export function LoopBar() {
           </span>
         ) : null}
       </span>
-      <div className="mx-2 hidden h-6 w-px bg-[var(--color-border,#E5E7EB)] sm:block" aria-hidden />
-      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2 lg:flex-nowrap">
+      <div className="pointer-events-none mx-2 hidden h-6 w-px bg-[var(--color-border,#E5E7EB)] sm:block" aria-hidden />
+      <div className="pointer-events-auto flex min-w-0 flex-1 flex-wrap items-center gap-2 lg:flex-nowrap">
         <label className="flex items-center gap-1.5 text-sm text-[var(--color-text-secondary,#4B5563)]">
           <span className="whitespace-nowrap">Start (ticks)</span>
           <input
