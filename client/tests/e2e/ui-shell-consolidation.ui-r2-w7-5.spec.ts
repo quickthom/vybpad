@@ -61,7 +61,8 @@ test.describe('UI-R2-W7.5 — desktop toolbar consolidation', () => {
     await openFreshEditor(page);
     const root = getEditorShellRoot(page);
     await expect(root).toBeVisible();
-    await expect(page.getByRole('banner')).toHaveCount(1);
+    await expect(page.getByRole('banner', { includeHidden: true })).toHaveCount(1);
+    await expect(page.getByRole('banner')).toHaveCount(0);
     await expect(root.locator(':scope > header')).toHaveCount(1);
     await expect(page.locator('[data-testid="vybpad-transport-toolbar"]')).toHaveCount(1);
     await expect(page.getByRole('toolbar', { name: 'Transport' })).toHaveCount(1);
@@ -142,13 +143,15 @@ test.describe('UI-R2-W7.5 — desktop toolbar consolidation', () => {
     await page.setViewportSize(DESKTOP_VIEWPORT);
     await openFreshEditor(page);
 
-    const header = page.getByRole('banner');
-    await expect(header).toHaveCount(1);
-    await expect(header.getByRole('heading', { level: 1 })).toHaveCount(1);
+    const visibleHeaderRow = page.getByRole('banner');
+    await expect(visibleHeaderRow).toHaveCount(0);
+    const hiddenHeaderRow = page.getByRole('banner', { includeHidden: true });
+    await expect(hiddenHeaderRow).toHaveCount(1);
+    await expect(hiddenHeaderRow.getByRole('heading', { level: 1 })).toHaveCount(1);
 
     const navButtons = ['Projects', 'Chords', 'Mixer', 'Settings', 'Piano', 'Key / scale', 'Log out'];
     for (const name of navButtons) {
-      await expect(header.getByRole('button', { name })).toHaveCount(1);
+      await expect(hiddenHeaderRow.getByRole('button', { name })).toHaveCount(1);
     }
   });
 });
