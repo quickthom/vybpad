@@ -42,8 +42,8 @@ Phases 0 (7/7), 1A (7/7), 1B (6/6), Phase 2 (15/15), Phase 3 (10/10), Phase 4 (1
 | UI-R2-W7.1 | TaskCoord | — | merged | [#102](https://github.com/quickthom/vybpad/pull/102) | UI-R2-W6.3 | RA-213 left rail width; squash-merge `8d52837`. Reviewer: **approve with warning** — right properties rail `192px` below UX §3 min (240px); documented exception for center-column target. |
 | UI-R2-W7.2 | TaskCoord | — | merged | [#103](https://github.com/quickthom/vybpad/pull/103) | UI-R2-W7.1 | RA-210 dual-axis zoom; squash-merge `b44e076`. |
 | UI-R2-W7.3 | TaskCoord | — | merged | [#104](https://github.com/quickthom/vybpad/pull/104) | UI-R2-W7.2 | RA-211 mixer overlay. |
-| UI-R2-W7.4 | TaskCoord | — | in-progress | — | UI-R2-W7.3 | RA-212 progressions overlay; TC spawned. |
-| UI-R2-W7.5 | TaskCoord | — | pending | — | UI-R2-W7.4 | RA-209 toolbar consolidation. |
+| UI-R2-W7.4 | TaskCoord | — | merged | [#105](https://github.com/quickthom/vybpad/pull/105) | UI-R2-W7.3 | RA-212 progressions overlay. |
+| UI-R2-W7.5 | TaskCoord | — | in-progress | — | UI-R2-W7.4 | RA-209 toolbar consolidation; TC spawned. |
 | UI-R2-W8.1 | TaskCoord | — | pending | — | UI-R2-W7.5 | RA-217 Diatonic Mode vestigial label. |
 | UI-R2-W8.2 | TaskCoord | — | pending | — | UI-R2-W8.1 | RA-215 Diatonic/Borrowed controls. |
 | UI-R2-W8.3 | TaskCoord | — | pending | — | UI-R2-W8.2 | RA-216 secondary actions. |
