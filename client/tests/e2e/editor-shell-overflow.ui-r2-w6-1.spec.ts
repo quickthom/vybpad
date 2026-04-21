@@ -35,23 +35,40 @@ function getEditorShellRoot(page: Page): Locator {
 function getRailScrollMetrics(
   page: Page,
   selector: string,
-): Promise<{ overflowY: string; scrollHeight: number; clientHeight: number; scrollTop: number }> {
+): Promise<{
+  overflowX: string;
+  overflowY: string;
+  scrollHeight: number;
+  clientHeight: number;
+  scrollWidth: number;
+  clientWidth: number;
+  scrollTop: number;
+  scrollLeft: number;
+}> {
   return page.evaluate((sel) => {
     const el = document.querySelector(sel) as HTMLElement | null;
     if (!el) {
       return {
+        overflowX: '',
         overflowY: '',
         scrollHeight: 0,
         clientHeight: 0,
+        scrollWidth: 0,
+        clientWidth: 0,
         scrollTop: 0,
+        scrollLeft: 0,
       };
     }
     const style = window.getComputedStyle(el);
     return {
+      overflowX: style.overflowX,
       overflowY: style.overflowY,
       scrollHeight: el.scrollHeight,
       clientHeight: el.clientHeight,
+      scrollWidth: el.scrollWidth,
+      clientWidth: el.clientWidth,
       scrollTop: el.scrollTop,
+      scrollLeft: el.scrollLeft,
     };
   }, selector);
 }
@@ -118,8 +135,31 @@ test.describe('UI-R2-W6.1 — shell overflow and rails scroll contract (Playwrig
     });
     expect(noBodyScroll).toBe(true);
 
+    const noBodyHorizontalOverflow = await page.evaluate(() => {
+      const doc = document.documentElement;
+      return doc.scrollWidth <= doc.clientWidth + 1;
+    });
+    expect(noBodyHorizontalOverflow).toBe(true);
+
+    const rootScrollMetrics = await root.evaluate((el) => {
+      const style = getComputedStyle(el);
+      return {
+        overflowX: style.overflowX,
+        overflowY: style.overflowY,
+        scrollHeight: el.scrollHeight,
+        clientHeight: el.clientHeight,
+        scrollWidth: el.scrollWidth,
+        clientWidth: el.clientWidth,
+      };
+    });
+    expect(rootScrollMetrics.scrollHeight).toBeLessThanOrEqual(rootScrollMetrics.clientHeight + 1);
+    expect(rootScrollMetrics.scrollWidth).toBeLessThanOrEqual(rootScrollMetrics.clientWidth + 1);
+    expect(rootScrollMetrics.overflowY).toBe('hidden');
+
     const pageScrollY = await page.evaluate(() => window.scrollY);
     expect(pageScrollY).toBe(0);
+    const pageScrollX = await page.evaluate(() => window.scrollX);
+    expect(pageScrollX).toBe(0);
   });
 
   test('left and right rail scroll containers are independent and can scroll without changing document scroll', async ({ page }) => {
@@ -143,6 +183,7 @@ test.describe('UI-R2-W6.1 — shell overflow and rails scroll contract (Playwrig
     expect(rightBefore.scrollHeight).toBeGreaterThan(rightBefore.clientHeight);
 
     const beforePageScroll = await page.evaluate(() => window.scrollY);
+    const beforePageScrollX = await page.evaluate(() => window.scrollX);
 
     await page.evaluate((sel) => {
       const el = document.querySelector(sel) as HTMLElement | null;
@@ -162,7 +203,9 @@ test.describe('UI-R2-W6.1 — shell overflow and rails scroll contract (Playwrig
     expect(rightAfter.scrollTop).toBeGreaterThan(rightBefore.scrollTop);
 
     const afterPageScroll = await page.evaluate(() => window.scrollY);
+    const afterPageScrollX = await page.evaluate(() => window.scrollX);
     expect(afterPageScroll).toBe(beforePageScroll);
+    expect(afterPageScrollX).toBe(beforePageScrollX);
   });
 
   test('editor min-viewport guard remains active below 1024px and recovers above threshold', async ({ page }) => {

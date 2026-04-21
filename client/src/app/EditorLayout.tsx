@@ -1358,8 +1358,8 @@ export function EditorLayout() {
           id="vybpad-panel-chords"
           className={
             chordPaletteExpanded
-                ? 'flex min-h-0 w-[288px] min-w-60 max-w-[288px] shrink-0 flex-col border-r border-[var(--color-border,#E5E7EB)] bg-[var(--color-app-bg,#F3F4F6)] overflow-hidden'
-                : 'flex min-h-0 w-12 shrink-0 flex-col items-center border-r border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)] overflow-hidden py-2'
+                ? 'flex min-h-0 w-[288px] min-w-60 max-w-[288px] shrink-0 flex-col border-r border-[var(--color-border,#E5E7EB)] bg-[var(--color-app-bg,#F3F4F6)] overflow-hidden overflow-x-hidden'
+                : 'flex min-h-0 w-12 shrink-0 flex-col items-center border-r border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)] overflow-hidden overflow-x-hidden py-2'
           }
           role="complementary"
           aria-label="Chord palette panel"
@@ -1450,7 +1450,7 @@ export function EditorLayout() {
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
           <main
             ref={editorCanvasHostRef}
-            className="min-h-0 flex-1 overflow-x-auto p-3"
+            className="min-h-0 flex-1 overflow-x-auto overflow-y-hidden p-3"
             aria-busy={projectId ? loadStatus === 'loading' : false}
           >
             {projectId && loadStatus === 'loading' ? (
@@ -1517,7 +1517,7 @@ export function EditorLayout() {
             }}
           />
         </div>
-        <div className="flex min-h-0 w-72 max-w-[288px] shrink-0 flex-col self-stretch overflow-x-hidden overflow-y-auto border-l border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)]">
+        <div className="flex min-h-0 w-[288px] min-w-[240px] max-w-[288px] shrink-0 flex-col self-stretch overflow-x-hidden overflow-y-auto border-l border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)]">
           <EditorPropertiesPanel
             selectionType={selection?.type ?? null}
             chordContext={chordPropertyContext}
