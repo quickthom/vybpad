@@ -39,6 +39,10 @@ export interface TransportControlsProps {
   onZoomYIn?: () => void;
   onZoomYOut?: () => void;
   onZoomYReset?: () => void;
+  /** UI-R2-W7.5 shell consolidation: optional external shell controls appended before playback cluster at wide viewports. */
+  leadingContent?: ReactNode;
+  /** Optional trailing slot (e.g. shell-level extras) before export row; omit when unused. */
+  trailingContent?: ReactNode;
   /** UI-W8 (RA-20) — key + meter readouts in top band; click opens tempo/meter edit when callback set. */
   keyLabel?: string;
   meterLabel?: string;
@@ -74,6 +78,8 @@ export function TransportControls({
   onZoomYIn,
   onZoomYOut,
   onZoomYReset,
+  leadingContent,
+  trailingContent,
   keyLabel,
   meterLabel,
   onTempoMeterEdit,
@@ -82,7 +88,7 @@ export function TransportControls({
   /** Pause / stop / rewind require a running engine (INTERFACES transport actions). */
   const transportLocked = initStatus !== 'ready';
 
-  const showKeyMeterBand =
+  const showKeyMeterCluster =
     (keyLabel != null && keyLabel !== '') ||
     (meterLabel != null && meterLabel !== '') ||
     onTempoMeterEdit != null;
@@ -100,34 +106,6 @@ export function TransportControls({
       data-audio-ready={initStatus === 'ready' ? 'true' : 'false'}
       className="flex min-w-0 flex-col border-b border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)] lg:flex-nowrap"
     >
-      {showKeyMeterBand ? (
-        <div className="flex min-h-0 shrink-0 flex-wrap items-center gap-1.5 border-b border-[var(--color-border,#E5E7EB)] px-3 py-0.5">
-          <div
-            data-testid="vybpad-transport-key-meter-cluster"
-            className="flex min-w-0 flex-wrap items-center gap-1.5 text-xs leading-tight text-[var(--color-text-primary,#111827)]"
-          >
-            {keyLabel ? (
-              <span className="font-medium tabular-nums text-[var(--color-text-primary,#111827)]">
-                {keyLabel}
-              </span>
-            ) : null}
-            {meterLabel ? (
-              <span className="tabular-nums text-[var(--color-text-secondary,#4B5563)]">{meterLabel}</span>
-            ) : null}
-          </div>
-          {onTempoMeterEdit ? (
-            <button
-              type="button"
-              data-testid="vybpad-tempo-meter-edit"
-              onClick={onTempoMeterEdit}
-              className="inline-flex min-h-7 shrink-0 items-center justify-center rounded-md border border-[var(--color-border-strong,#D1D5DB)] bg-transparent px-2 text-xs font-medium text-[var(--color-primary,#4F46E5)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
-            >
-              Tempo / meter
-            </button>
-          ) : null}
-        </div>
-      ) : null}
-
       <div
         role="toolbar"
         aria-label="Transport"
@@ -135,6 +113,16 @@ export function TransportControls({
         data-audio-ready={initStatus === 'ready' ? 'true' : 'false'}
         className="flex min-h-12 min-w-0 flex-wrap items-center gap-2 px-3 lg:flex-nowrap lg:overflow-x-auto"
       >
+        {leadingContent ? (
+          <div
+            className="hidden shrink-0 items-center gap-2 lg:flex"
+            role="group"
+            aria-label="Song and panel controls"
+          >
+            {leadingContent}
+          </div>
+        ) : null}
+
         <div className="flex shrink-0 items-center gap-2" role="group" aria-label="Playback">
           <button
             type="button"
@@ -211,22 +199,57 @@ export function TransportControls({
           <span aria-hidden="true">{currentBeat}</span>
         </div>
 
-        <label className="flex shrink-0 items-center gap-2 text-sm text-[var(--color-text-secondary,#4B5563)]">
-          <span id="transport-tempo-label">Tempo</span>
-          <input
-            id="transport-tempo-input"
-            type="number"
-            min={20}
-            max={300}
-            value={tempo}
-            onChange={(e) => onTempoChange(Number(e.target.value))}
-            className="h-8 w-20 rounded-lg border border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)] px-2 text-center text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none focus:border-[var(--color-primary,#4F46E5)] focus:ring-1 focus:ring-[var(--color-primary,#4F46E5)] disabled:opacity-50"
-            aria-labelledby="transport-tempo-label"
-          />
-          <span className="text-[var(--color-text-muted,#9CA3AF)]" aria-hidden="true">
-            BPM
-          </span>
-        </label>
+        <div
+          className="mx-auto flex shrink-0 items-center gap-2"
+          role="group"
+          aria-label="Tempo and meter"
+        >
+          {showKeyMeterCluster ? (
+            <div
+              data-testid="vybpad-transport-key-meter-cluster"
+              className="flex min-w-0 items-center gap-1.5 text-xs leading-tight text-[var(--color-text-primary,#111827)]"
+            >
+              {keyLabel ? (
+                <span className="font-medium tabular-nums text-[var(--color-text-primary,#111827)]">
+                  {keyLabel}
+                </span>
+              ) : null}
+              {meterLabel ? <span className="tabular-nums text-[var(--color-text-secondary,#4B5563)]">{meterLabel}</span> : null}
+            </div>
+          ) : null}
+          <label className="flex shrink-0 items-center gap-2 text-sm text-[var(--color-text-secondary,#4B5563)]">
+            <span id="transport-tempo-label">Tempo</span>
+            <input
+              id="transport-tempo-input"
+              type="number"
+              min={20}
+              max={300}
+              value={tempo}
+              onChange={(e) => onTempoChange(Number(e.target.value))}
+              className="h-8 w-20 rounded-lg border border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)] px-2 text-center text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none focus:border-[var(--color-primary,#4F46E5)] focus:ring-1 focus:ring-[var(--color-primary,#4F46E5)] disabled:opacity-50"
+              aria-labelledby="transport-tempo-label"
+            />
+            <span className="text-[var(--color-text-muted,#9CA3AF)]" aria-hidden="true">
+              BPM
+            </span>
+          </label>
+          {onTempoMeterEdit ? (
+            <button
+              type="button"
+              data-testid="vybpad-tempo-meter-edit"
+              onClick={onTempoMeterEdit}
+              className="inline-flex min-h-8 shrink-0 items-center justify-center rounded-md border border-[var(--color-border-strong,#D1D5DB)] bg-transparent px-2 text-xs font-medium text-[var(--color-primary,#4F46E5)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
+            >
+              Tempo / meter
+            </button>
+          ) : null}
+        </div>
+
+        {trailingContent ? (
+          <div className="hidden shrink-0 items-center gap-2 lg:flex" role="group" aria-label="Additional controls">
+            {trailingContent}
+          </div>
+        ) : null}
 
         {onRecordToggle ? (
           <button
