@@ -199,60 +199,58 @@ export function TransportControls({
           <span aria-hidden="true">{currentBeat}</span>
         </div>
 
-        <div
-          className="mx-auto flex shrink-0 items-center gap-2 pointer-events-none"
-          role="group"
-          aria-label="Tempo and meter"
-        >
-          {showKeyMeterCluster ? (
-            <div
-              data-testid="vybpad-transport-key-meter-cluster"
-              className="pointer-events-none flex min-w-0 items-center gap-1.5 text-xs leading-tight text-[var(--color-text-primary,#111827)]"
-            >
-              {keyLabel ? (
-                <span className="pointer-events-none font-medium tabular-nums text-[var(--color-text-primary,#111827)]">
-                  {keyLabel}
-                </span>
-              ) : null}
-              {meterLabel ? (
-                <span className="pointer-events-none tabular-nums text-[var(--color-text-secondary,#4B5563)]">
-                  {meterLabel}
-                </span>
-              ) : null}
+          <div
+            className="mx-auto flex shrink-0 items-center gap-2"
+          >
+            {showKeyMeterCluster ? (
+              <div
+                role="group"
+                aria-label="Tempo and meter"
+                className="pointer-events-none flex min-w-0 items-center gap-1.5 text-xs leading-tight text-[var(--color-text-primary,#111827)]"
+                data-testid="vybpad-transport-key-meter-cluster"
+              >
+                {keyLabel ? (
+                  <span className="pointer-events-none font-medium tabular-nums text-[var(--color-text-primary,#111827)]">
+                    {keyLabel}
+                  </span>
+                ) : null}
+                {meterLabel ? (
+                  <span className="pointer-events-none tabular-nums text-[var(--color-text-secondary,#4B5563)]">{meterLabel}</span>
+                ) : null}
+              </div>
+            ) : null}
+            <div className="pointer-events-auto flex shrink-0 items-center gap-2">
+              <span id="transport-tempo-label" className="pointer-events-none">
+                Tempo
+              </span>
+              <input
+                id="transport-tempo-input"
+                type="number"
+                min={20}
+                max={300}
+                value={tempo}
+                onChange={(e) => onTempoChange(Number(e.target.value))}
+                className="pointer-events-auto h-8 w-20 rounded-lg border border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)] px-2 text-center text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none focus:border-[var(--color-primary,#4F46E5)] focus:ring-1 focus:ring-[var(--color-primary,#4F46E5)] disabled:opacity-50"
+                aria-labelledby="transport-tempo-label"
+              />
+              <span
+                className="pointer-events-none text-[var(--color-text-muted,#9CA3AF)]"
+                aria-hidden="true"
+              >
+                BPM
+              </span>
             </div>
-          ) : null}
-          <div className="pointer-events-none flex shrink-0 items-center gap-2">
-            <span id="transport-tempo-label" className="pointer-events-none">
-              Tempo
-            </span>
-            <input
-              id="transport-tempo-input"
-              type="number"
-              min={20}
-              max={300}
-              value={tempo}
-              onChange={(e) => onTempoChange(Number(e.target.value))}
-              className="pointer-events-auto h-8 w-20 rounded-lg border border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)] px-2 text-center text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none focus:border-[var(--color-primary,#4F46E5)] focus:ring-1 focus:ring-[var(--color-primary,#4F46E5)] disabled:opacity-50"
-              aria-labelledby="transport-tempo-label"
-            />
-            <span
-              className="pointer-events-none text-[var(--color-text-muted,#9CA3AF)]"
-              aria-hidden="true"
-            >
-              BPM
-            </span>
+            {onTempoMeterEdit ? (
+              <button
+                type="button"
+                data-testid="vybpad-tempo-meter-edit"
+                onClick={onTempoMeterEdit}
+                className="pointer-events-auto inline-flex min-h-8 shrink-0 items-center justify-center rounded-md border border-[var(--color-border-strong,#D1D5DB)] bg-transparent px-2 text-xs font-medium text-[var(--color-primary,#4F46E5)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
+              >
+                Tempo / meter
+              </button>
+            ) : null}
           </div>
-          {onTempoMeterEdit ? (
-            <button
-              type="button"
-              data-testid="vybpad-tempo-meter-edit"
-              onClick={onTempoMeterEdit}
-              className="pointer-events-auto inline-flex min-h-8 shrink-0 items-center justify-center rounded-md border border-[var(--color-border-strong,#D1D5DB)] bg-transparent px-2 text-xs font-medium text-[var(--color-primary,#4F46E5)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
-            >
-              Tempo / meter
-            </button>
-          ) : null}
-        </div>
 
         {trailingContent ? (
           <div className="hidden min-w-0 items-center gap-2 lg:flex" role="group" aria-label="Additional controls">
