@@ -168,6 +168,16 @@ export function bottomChordStripTopY(
   return MEASURE_HEADER_HEIGHT + melodyRowCount * melodyRowHeight;
 }
 
+/**
+ * Canvas Y scaling helper for melody row height at the current vertical zoom factor.
+ * `zoomY` is intentionally a pure layout-only multiplier and does not affect X-axis timing.
+ */
+export function scaleMelodyRowHeight(rowHeight: number = NOTE_HEIGHT, zoomY: number = 1): number {
+  const h = Number.isFinite(rowHeight) ? rowHeight : NOTE_HEIGHT;
+  const z = Number.isFinite(zoomY) && zoomY > 0 ? zoomY : 1;
+  return h * z;
+}
+
 /** Combined height for the roman band plus label strip (PAT-012 + UX §6). */
 export const CHORD_STRIP_TOTAL_HEIGHT = CHORD_AREA_HEIGHT + CHORD_LETTER_STRIP_HEIGHT;
 

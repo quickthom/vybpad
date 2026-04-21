@@ -39,6 +39,10 @@ type TransportControlsPropsW8 = ComponentProps<typeof TransportControls> & {
   onZoomIn?: () => void;
   onZoomOut?: () => void;
   onZoomReset?: () => void;
+  zoomYPercent?: number;
+  onZoomYIn?: () => void;
+  onZoomYOut?: () => void;
+  onZoomYReset?: () => void;
   keyLabel?: string;
   meterLabel?: string;
   onTempoMeterEdit?: () => void;
@@ -97,6 +101,56 @@ describe('TransportControls — UI-W8 — zoom (RA-16/21)', () => {
       const reset = screen.getByTestId('vybpad-zoom-reset');
       expect(reset).toHaveAccessibleName(/1:1/i);
     });
+  });
+});
+
+describe('TransportControls — UI-R2-W7.2 — vertical zoom (RA-210)', () => {
+  it('shows zoomYPercent in its readout and wires vertical zoom callbacks', async () => {
+    const user = userEvent.setup();
+    const onZoomYIn = vi.fn();
+    const onZoomYOut = vi.fn();
+    const onZoomYReset = vi.fn();
+    renderW8({
+      zoomYPercent: 130,
+      onZoomYIn,
+      onZoomYOut,
+      onZoomYReset,
+    });
+
+    expect(screen.getByTestId('vybpad-zoom-y-readout')).toHaveTextContent(/130/);
+
+    await user.click(screen.getByTestId('vybpad-zoom-y-in'));
+    await user.click(screen.getByTestId('vybpad-zoom-y-out'));
+    await user.click(screen.getByTestId('vybpad-zoom-y-reset'));
+
+    expect(onZoomYIn).toHaveBeenCalledTimes(1);
+    expect(onZoomYOut).toHaveBeenCalledTimes(1);
+    expect(onZoomYReset).toHaveBeenCalledTimes(1);
+  });
+
+  it('uses independent aria-labels for vertical zoom controls', async () => {
+    const user = userEvent.setup();
+    const onZoomYIn = vi.fn();
+    const onZoomYOut = vi.fn();
+    const onZoomYReset = vi.fn();
+    renderW8({
+      zoomYPercent: 100,
+      onZoomYIn,
+      onZoomYOut,
+      onZoomYReset,
+    });
+
+    const zoomYIn = screen.getByRole('button', { name: /zoom melody rows in/i });
+    const zoomYOut = screen.getByRole('button', { name: /zoom melody rows out/i });
+    const reset = screen.getByTestId('vybpad-zoom-y-reset');
+    await user.click(zoomYIn);
+    await user.click(zoomYOut);
+    await user.click(reset);
+
+    expect(onZoomYIn).toHaveBeenCalledTimes(1);
+    expect(onZoomYOut).toHaveBeenCalledTimes(1);
+    expect(onZoomYReset).toHaveBeenCalledTimes(1);
+    expect(reset).toHaveAccessibleName(/reset melody row zoom to 1:1/i);
   });
 });
 

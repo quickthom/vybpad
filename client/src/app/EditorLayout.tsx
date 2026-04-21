@@ -65,7 +65,15 @@ import {
 } from '../engine/audio';
 import { useAuthStore } from '../store/authStore';
 import { syncPlaybackEngineWithSong, usePlaybackStore } from '../store/playbackStore';
-import { withResetZoom, withScrollYDelta, withZoomIn, withZoomOut } from '../utils/viewportNavigation';
+import {
+  withResetZoom,
+  withScrollYDelta,
+  withZoomIn,
+  withZoomOut,
+  withZoomYIn,
+  withZoomYOut,
+  withZoomYReset,
+} from '../utils/viewportNavigation';
 import { melodyRowHeightPx } from '../utils/staffSpacing';
 import { computeMelodyVoicePitchRanges, melodyPitchRangeRowCount } from '../engine/renderer/layout';
 import { readPlainTextFromClipboard, writePlainTextToClipboard } from '../utils/clipboardTransport';
@@ -280,6 +288,18 @@ export function EditorLayout() {
     setViewport(withResetZoom(useUIStore.getState().viewport));
   }, [setViewport]);
 
+  const handleZoomYInTransport = useCallback(() => {
+    setViewport(withZoomYIn(useUIStore.getState().viewport));
+  }, [setViewport]);
+
+  const handleZoomYOutTransport = useCallback(() => {
+    setViewport(withZoomYOut(useUIStore.getState().viewport));
+  }, [setViewport]);
+
+  const handleZoomYResetTransport = useCallback(() => {
+    setViewport(withZoomYReset(useUIStore.getState().viewport));
+  }, [setViewport]);
+
   const clampChordPaletteWidthPx = useCallback((candidatePx: number): number => {
     return Math.min(CHORD_PALETTE_MAX_WIDTH_PX, Math.max(CHORD_PALETTE_MIN_WIDTH_PX, candidatePx));
   }, []);
@@ -371,7 +391,7 @@ export function EditorLayout() {
       const songNow = useSongStore.getState().song;
       const activeRange = computeMelodyVoicePitchRanges(songNow)[ui.activeVoice];
       const melodyRowCount = melodyPitchRangeRowCount(activeRange);
-      const step = melodyRowHeightPx(ui.staffSpacing);
+      const step = melodyRowHeightPx(ui.staffSpacing) * (ui.viewport.zoomY ?? 1);
       setViewport(withScrollYDelta(ui.viewport, -step, melodyRowCount, step));
       return;
     }
@@ -380,7 +400,7 @@ export function EditorLayout() {
       const songNow = useSongStore.getState().song;
       const activeRange = computeMelodyVoicePitchRanges(songNow)[ui.activeVoice];
       const melodyRowCount = melodyPitchRangeRowCount(activeRange);
-      const step = melodyRowHeightPx(ui.staffSpacing);
+      const step = melodyRowHeightPx(ui.staffSpacing) * (ui.viewport.zoomY ?? 1);
       setViewport(withScrollYDelta(ui.viewport, step, melodyRowCount, step));
       return;
     }
@@ -1385,6 +1405,10 @@ export function EditorLayout() {
         onZoomIn={handleZoomInTransport}
         onZoomOut={handleZoomOutTransport}
         onZoomReset={handleZoomResetTransport}
+        zoomYPercent={Math.round((viewport.zoomY ?? 1) * 100)}
+        onZoomYIn={handleZoomYInTransport}
+        onZoomYOut={handleZoomYOutTransport}
+        onZoomYReset={handleZoomYResetTransport}
         keyLabel={transportKeyMeterLabels.keyLabel}
         meterLabel={transportKeyMeterLabels.meterLabel}
         onTempoMeterEdit={() => setTempoMeterDialogOpen(true)}

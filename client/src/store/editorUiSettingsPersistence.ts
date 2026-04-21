@@ -17,6 +17,10 @@ export interface PersistedEditorUiSettingsV1 {
   colorScheme: 'diatonic' | 'major';
   showGuides: boolean;
   staffSpacing: StaffSpacing;
+  /** Horizontal zoom (1.0 = default). Omit when absent in older payloads. */
+  zoom?: number;
+  /** Vertical melody zoom (1.0 = default). Omit when absent in older payloads. */
+  zoomY?: number;
   /** UI-W4 — optional for backward compatibility with older localStorage payloads. */
   melodyVoiceVisible?: readonly [boolean, boolean, boolean, boolean];
   inactiveMelodyDisplayMode?: 'outline' | 'solid' | 'alpha';
@@ -51,6 +55,10 @@ function isInactiveMelodyDisplayMode(x: unknown): x is 'outline' | 'solid' | 'al
   return x === 'outline' || x === 'solid' || x === 'alpha';
 }
 
+function isZoomRatio(x: unknown): x is number {
+  return typeof x === 'number' && Number.isFinite(x) && x > 0;
+}
+
 function parsePersistedV1(raw: string | null): PersistedEditorUiSettingsV1 | null {
   if (!raw) {
     return null;
@@ -81,6 +89,12 @@ function parsePersistedV1(raw: string | null): PersistedEditorUiSettingsV1 | nul
       showGuides: o.showGuides,
       staffSpacing: o.staffSpacing,
     };
+    if (o.zoom !== undefined && isZoomRatio(o.zoom)) {
+      base.zoom = o.zoom;
+    }
+    if (o.zoomY !== undefined && isZoomRatio(o.zoomY)) {
+      base.zoomY = o.zoomY;
+    }
     if (o.melodyVoiceVisible !== undefined && isMelodyVoiceVisibleTuple(o.melodyVoiceVisible)) {
       base.melodyVoiceVisible = o.melodyVoiceVisible;
     }

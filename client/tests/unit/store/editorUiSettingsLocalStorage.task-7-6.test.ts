@@ -31,6 +31,8 @@ const fullV1Snapshot = {
   colorScheme: 'major' as const,
   showGuides: true,
   staffSpacing: 'wide' as const,
+  zoom: 1.25,
+  zoomY: 1.1,
 };
 
 afterEach(() => {
@@ -97,6 +99,28 @@ describe('editor UI settings — TASK-7.6 — localStorage persistence contract'
       };
       writePersistedEditorUiSettings(snap);
       expect(readPersistedEditorUiSettings()).toEqual(snap);
+    });
+
+    it('backward-compatible payload without zoom/zoomY still parses', () => {
+      localStorage.setItem(
+        EDITOR_UI_SETTINGS_STORAGE_KEY,
+        JSON.stringify({
+          version: 1,
+          entryMode: 'table',
+          labelMode: 'degree',
+          colorScheme: 'diatonic',
+          showGuides: false,
+          staffSpacing: 'compact',
+        }),
+      );
+      expect(readPersistedEditorUiSettings()).toEqual({
+        version: 1,
+        entryMode: 'table',
+        labelMode: 'degree',
+        colorScheme: 'diatonic',
+        showGuides: false,
+        staffSpacing: 'compact',
+      });
     });
   });
 });

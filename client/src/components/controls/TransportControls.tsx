@@ -34,6 +34,11 @@ export interface TransportControlsProps {
   onZoomIn?: () => void;
   onZoomOut?: () => void;
   onZoomReset?: () => void;
+  /** UI-R2-W7.2 (RA-210) — melody-row vertical zoom and ± / reset; `zoomYPercent` is 100 at default. */
+  zoomYPercent?: number;
+  onZoomYIn?: () => void;
+  onZoomYOut?: () => void;
+  onZoomYReset?: () => void;
   /** UI-W8 (RA-20) — key + meter readouts in top band; click opens tempo/meter edit when callback set. */
   keyLabel?: string;
   meterLabel?: string;
@@ -65,6 +70,10 @@ export function TransportControls({
   onZoomIn,
   onZoomOut,
   onZoomReset,
+  zoomYPercent,
+  onZoomYIn,
+  onZoomYOut,
+  onZoomYReset,
   keyLabel,
   meterLabel,
   onTempoMeterEdit,
@@ -80,6 +89,8 @@ export function TransportControls({
 
   const showZoomCluster =
     zoomPercent != null || onZoomIn != null || onZoomOut != null || onZoomReset != null;
+  const showZoomYCluster =
+    zoomYPercent != null || onZoomYIn != null || onZoomYOut != null || onZoomYReset != null;
 
   return (
     <div
@@ -282,6 +293,51 @@ export function TransportControls({
               aria-label="Reset zoom to 1:1 (100%)"
               disabled={onZoomReset == null}
               onClick={onZoomReset}
+              className="inline-flex min-h-8 shrink-0 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-2 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40"
+            >
+              1:1
+            </button>
+          </div>
+        ) : null}
+
+        {showZoomYCluster ? (
+          <div
+            className="flex shrink-0 items-center gap-1 border-l border-[var(--color-border,#E5E7EB)] pl-2"
+            role="group"
+            aria-label="Editor melody zoom"
+          >
+            <span
+              data-testid="vybpad-zoom-y-readout"
+              className="min-w-[3.25rem] text-center text-sm tabular-nums text-[var(--color-text-secondary,#4B5563)]"
+            >
+              {zoomYPercent != null ? `${zoomYPercent}%` : '—'}
+            </span>
+            <button
+              type="button"
+              data-testid="vybpad-zoom-y-out"
+              aria-label="Zoom melody rows out"
+              disabled={onZoomYOut == null}
+              onClick={onZoomYOut}
+              className="inline-flex min-h-8 min-w-8 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-2 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40"
+            >
+              −
+            </button>
+            <button
+              type="button"
+              data-testid="vybpad-zoom-y-in"
+              aria-label="Zoom melody rows in"
+              disabled={onZoomYIn == null}
+              onClick={onZoomYIn}
+              className="inline-flex min-h-8 min-w-8 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-2 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40"
+            >
+              +
+            </button>
+            <button
+              type="button"
+              data-testid="vybpad-zoom-y-reset"
+              aria-label="Reset melody row zoom to 1:1 (100%)"
+              disabled={onZoomYReset == null}
+              onClick={onZoomYReset}
               className="inline-flex min-h-8 shrink-0 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-2 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40"
             >
               1:1
