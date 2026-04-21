@@ -104,14 +104,8 @@ export const authRoutes: FastifyPluginCallback = (app, _opts, done) => {
   app.post('/auth/login', { schema: loginSchema }, async (request, reply) => {
     const body = request.body as { email: string; password: string };
     const email = body.email.trim().toLowerCase();
-    // #region agent log
-    void fetch('http://127.0.0.1:7650/ingest/aaf3daa6-f526-4232-9c7d-8a68657f2780',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'2f4ced'},body:JSON.stringify({sessionId:'2f4ced',runId:'pre-fix',hypothesisId:'D',location:'server/src/routes/auth.ts:104',message:'Login route entered',data:{reqId:request.id,email},timestamp:Date.now()})}).catch(()=>{});
-    // #endregion
     try {
       const result = await verifyLogin(app.prisma, { email, password: body.password });
-      // #region agent log
-      void fetch('http://127.0.0.1:7650/ingest/aaf3daa6-f526-4232-9c7d-8a68657f2780',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'2f4ced'},body:JSON.stringify({sessionId:'2f4ced',runId:'pre-fix',hypothesisId:'D',location:'server/src/routes/auth.ts:106',message:'Login verification result',data:{reqId:request.id,hasResult:!!result},timestamp:Date.now()})}).catch(()=>{});
-      // #endregion
       if (!result) {
         app.log.info({ reqId: request.id }, 'Login failed (invalid credentials)');
         return reply.status(401).send({ code: 'INVALID_CREDENTIALS' as const });
@@ -124,9 +118,6 @@ export const authRoutes: FastifyPluginCallback = (app, _opts, done) => {
         accessToken,
       });
     } catch (error: unknown) {
-      // #region agent log
-      void fetch('http://127.0.0.1:7650/ingest/aaf3daa6-f526-4232-9c7d-8a68657f2780',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'2f4ced'},body:JSON.stringify({sessionId:'2f4ced',runId:'pre-fix',hypothesisId:'D',location:'server/src/routes/auth.ts:118',message:'Login route caught error',data:{reqId:request.id,errorName:error instanceof Error ? error.name : typeof error},timestamp:Date.now()})}).catch(()=>{});
-      // #endregion
       throw error;
     }
   });

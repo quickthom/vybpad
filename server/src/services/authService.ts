@@ -16,9 +16,6 @@ export type DbClient = PrismaClient | Prisma.TransactionClient;
 
 function getJwtSecret(): string {
   const s = process.env.JWT_SECRET;
-  // #region agent log
-  void fetch('http://127.0.0.1:7650/ingest/aaf3daa6-f526-4232-9c7d-8a68657f2780',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'2f4ced'},body:JSON.stringify({sessionId:'2f4ced',runId:'pre-fix',hypothesisId:'E',location:'server/src/services/authService.ts:17',message:'Evaluating JWT_SECRET',data:{hasSecret:Boolean(s),length:s?.length ?? 0, envNode:process.env.NODE_ENV ?? 'unset'},timestamp:Date.now()})}).catch(()=>{});
-  // #endregion
   if (!s || s.length < 32) {
     throw new Error('JWT_SECRET must be set and at least 32 characters (PAT-013)');
   }
@@ -120,9 +117,6 @@ export async function verifyLogin(
   prisma: PrismaClient,
   params: { email: string; password: string },
 ): Promise<{ user: User; accessToken: string; refreshOpaque: string } | null> {
-  // #region agent log
-  void fetch('http://127.0.0.1:7650/ingest/aaf3daa6-f526-4232-9c7d-8a68657f2780',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'2f4ced'},body:JSON.stringify({sessionId:'2f4ced',runId:'pre-fix',hypothesisId:'E',location:'server/src/services/authService.ts:116',message:'verifyLogin started',data:{email:params.email},timestamp:Date.now()})}).catch(()=>{});
-  // #endregion
   const user = await prisma.user.findUnique({
     where: { email: params.email },
   });
