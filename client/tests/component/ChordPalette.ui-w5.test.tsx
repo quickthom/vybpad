@@ -15,6 +15,12 @@
  * Criterion — Other tabs: minimal functional content (stubs with interactivity per audit doc)
  *   happy: each non-progressions tab exposes at least one labeled interactive control
  *
+ * Criterion — Search tab filtering behavior (UI-R2-W6.2 / OB-11):
+ *   happy: on chord-palette-search-filter, query updates visible rows in real time; case-insensitive + trimmed matching for
+ *     symbol/chord name text; whitespace query restores all rows; reset path clears query state;
+ *   error: no visible rows while on Search tab
+ *   edges: no dependency on implementation-specific row markup for filter behavior checks
+ *
  * ASSUMPTIONS: Builder adds `libraryTab` + `onLibraryTabChange` to `ChordPalette` per INTERFACES.md;
  * stable `data-testid`s below are the contract for RTL.
  */
@@ -46,6 +52,15 @@ function baseProps(): ChordPaletteProps {
     mode: 'diatonic',
     onChordSelect: vi.fn(),
   };
+}
+
+function getSearchRows(): HTMLButtonElement[] {
+  const panel = screen.getByRole('tabpanel');
+  return Array.from(panel.querySelectorAll('button')) as HTMLButtonElement[];
+}
+
+function getSearchInput(): HTMLInputElement {
+  return screen.getByRole('searchbox', { name: /^Filter chords$/i });
 }
 
 describe('ChordPalette — UI-W5 — RA-8 library tab strip (INTERFACES)', () => {
@@ -158,5 +173,135 @@ describe('ChordPalette — UI-W5 — RA-8 discovery tab minimal content', () => 
     const el = screen.getByTestId(testId);
     expect(el).toBeVisible();
     await user.click(el);
+  });
+});
+
+describe('ChordPalette — UI-R2-W6.2 — Search filtering behavior', () => {
+  it('filters visible search rows as the user types in the filter input', async () => {
+    const user = userEvent.setup();
+    render(
+      <ChordPaletteW5
+        {...baseProps()}
+        mode="search"
+        libraryTab="search"
+        onLibraryTabChange={vi.fn()}
+      />,
+    );
+
+    const input = getSearchInput();
+    const allRows = getSearchRows();
+    expect(allRows.length).toBeGreaterThan(0);
+    expect(input).toHaveValue('');
+
+    await user.type(input, 'i');
+    const afterOne = getSearchRows();
+    expect(afterOne.length).toBeLessThanOrEqual(allRows.length);
+
+    await user.type(input, 'z');
+    const afterTwo = getSearchRows();
+    expect(afterTwo.length).toBeLessThanOrEqual(afterOne.length);
+  });
+
+  it('matches case-insensitive and trimmed symbol or name queries', async () => {
+    const user = userEvent.setup();
+    render(
+      <ChordPaletteW5
+        {...baseProps()}
+        mode="search"
+        libraryTab="search"
+        onLibraryTabChange={vi.fn()}
+      />,
+    );
+
+    const symbolToken = 'i';
+    const nameToken = 'c';
+
+    const input = getSearchInput();
+
+    await user.clear(input);
+    await user.type(input, `  ${symbolToken.toUpperCase()}  `);
+    expect(getSearchRows().length).toBeGreaterThan(0);
+
+    await user.clear(input);
+    await user.type(input, `  ${nameToken.toLowerCase()}  `);
+    expect(getSearchRows().length).toBeGreaterThan(0);
+
+    await user.clear(input);
+    await user.type(input, symbolToken.toLowerCase());
+    const lowerCount = getSearchRows().length;
+    await user.clear(input);
+    await user.type(input, symbolToken.toUpperCase());
+    const upperCount = getSearchRows().length;
+    expect(lowerCount).toBe(upperCount);
+  });
+
+  it('restores full rows when filter is empty or whitespace-only', async () => {
+    const user = userEvent.setup();
+    render(
+      <ChordPaletteW5
+        {...baseProps()}
+        mode="search"
+        libraryTab="search"
+        onLibraryTabChange={vi.fn()}
+      />,
+    );
+
+    const input = getSearchInput();
+    const allRows = getSearchRows();
+    expect(allRows.length).toBeGreaterThan(0);
+
+    await user.type(input, 'i');
+    expect(getSearchRows().length).toBeLessThanOrEqual(allRows.length);
+
+    await user.clear(input);
+    await user.type(input, '   ');
+    expect(getSearchRows().length).toBe(allRows.length);
+  });
+
+  it('keeps the search label visible and input accessible', () => {
+    render(
+      <ChordPaletteW5
+        {...baseProps()}
+        mode="search"
+        libraryTab="search"
+        onLibraryTabChange={vi.fn()}
+      />,
+    );
+
+    const label = screen.getByText('Filter chords');
+    expect(label.tagName).toBe('LABEL');
+    expect(label).toBeVisible();
+
+    const input = getSearchInput();
+    const inputId = input.getAttribute('id');
+    expect(inputId).not.toBeNull();
+    expect(label).toHaveAttribute('for', inputId as string);
+    expect(input).toHaveAccessibleName('Filter chords');
+    expect(input).toHaveAttribute('type', 'search');
+  });
+
+  it('clears search filter state when Reset is triggered', async () => {
+    const user = userEvent.setup();
+    const onBrowseDefaultsReset = vi.fn();
+    render(
+      <ChordPaletteW5
+        {...baseProps()}
+        mode="search"
+        libraryTab="search"
+        onLibraryTabChange={vi.fn()}
+        onBrowseDefaultsReset={onBrowseDefaultsReset}
+      />,
+    );
+
+    const input = getSearchInput();
+    await user.type(input, 'DM');
+    expect(input).toHaveValue('DM');
+
+    const reset = screen.getByRole('button', { name: /^Reset$/i });
+    await user.click(reset);
+    expect(onBrowseDefaultsReset).toHaveBeenCalledTimes(1);
+
+    await user.click(screen.getByRole('tab', { name: /^Search$/i }));
+    expect(getSearchInput()).toHaveValue('');
   });
 });

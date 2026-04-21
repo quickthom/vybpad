@@ -83,6 +83,13 @@ export function SecondaryChordInspector(props: SecondaryChordInspectorProps): Re
 
 const DIATONIC_DEGREES = [1, 2, 3, 4, 5, 6, 7] as const satisfies readonly ScaleDegree[];
 
+type SearchModeRow = {
+  degree: ScaleDegree;
+  roman: string;
+  chordName: string;
+  payload: Omit<ChordEvent, 'id' | 'beat' | 'duration'>;
+};
+
 const ALL_SCALE_TYPES = [
   'major',
   'minor',
@@ -157,6 +164,36 @@ function diatonicSelectPayload(degree: ScaleDegree, scale: ScaleType): Omit<Chor
   };
 }
 
+function buildSearchRows(currentKey: NoteName, currentScale: ScaleType): SearchModeRow[] {
+  return DIATONIC_DEGREES.map((deg) => {
+    const payload = diatonicSelectPayload(deg, currentScale);
+    const preview: ChordEvent = {
+      id: 'palette-preview',
+      scaleDegree: payload.scaleDegree,
+      quality: payload.quality,
+      seventh: payload.seventh,
+      suspension: payload.suspension,
+      addition: payload.addition,
+      inversion: payload.inversion,
+      borrowed: payload.borrowed,
+      secondary: payload.secondary,
+      beat: 0,
+      duration: 48,
+    };
+
+    return {
+      degree: deg,
+      roman: theoryEngine.toRomanNumeral(preview, currentScale),
+      chordName: theoryEngine.toChordName(preview, currentKey, currentScale),
+      payload,
+    };
+  });
+}
+
+function normalizeSearchText(value: string): string {
+  return value.trim().toLowerCase();
+}
+
 /**
  * Left-panel chord palette (UX §7) with discovery library tabs (UI-W5 / RA-8).
  */
@@ -180,6 +217,19 @@ export function ChordPalette(props: ChordPaletteProps): ReactElement {
   const [borrowedSource, setBorrowedSource] = useState<ScaleType>(() => defaultBorrowedSource(currentScale));
 
   const [chordSearchFilter, setChordSearchFilter] = useState('');
+
+  const searchRows = useMemo(() => buildSearchRows(currentKey, currentScale), [currentKey, currentScale]);
+  const normalizedSearch = normalizeSearchText(chordSearchFilter);
+  const filteredSearchRows = useMemo(() => {
+    // Keep search semantics case-insensitive with trimmed input; empty queries show all diatonic rows.
+    if (!normalizedSearch) {
+      return searchRows;
+    }
+
+    return searchRows.filter((row) => {
+      return row.roman.toLowerCase().includes(normalizedSearch) || row.chordName.toLowerCase().includes(normalizedSearch);
+    });
+  }, [searchRows, normalizedSearch]);
 
   useEffect(() => {
     setBorrowedSource((prev) =>
@@ -459,11 +509,47 @@ export function ChordPalette(props: ChordPaletteProps): ReactElement {
               id="chord-palette-search-filter"
               data-testid="chord-palette-search-filter"
               type="search"
+              aria-label="Filter chords"
+              aria-controls="chord-palette-search-results"
+              aria-autocomplete="list"
               value={chordSearchFilter}
               onChange={(e) => setChordSearchFilter(e.target.value)}
               placeholder="Type to filter…"
-              className="min-h-8 w-full rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-3 py-2 text-sm text-[var(--color-text-primary,#111827)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
+              className="min-h-10 w-full rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-3 py-2 text-sm text-[var(--color-text-primary,#111827)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
             />
+            <ul
+              id="chord-palette-search-results"
+              role="list"
+              aria-label="Search results"
+              className="mt-1 flex flex-col gap-2"
+            >
+              {filteredSearchRows.length === 0 ? (
+                <li className="text-sm text-[var(--color-text-muted,#9CA3AF)]" role="listitem">
+                  No chords match your query.
+                </li>
+              ) : (
+                filteredSearchRows.map((row) => {
+                  const fill = pat010DiatonicHex(row.degree);
+                  return (
+                    <li key={row.degree} role="listitem" className="w-full">
+                      <button
+                        type="button"
+                        data-testid={`chord-palette-search-degree-${row.degree}`}
+                        className="flex min-h-10 w-full flex-col items-start justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] px-3 py-2 text-left outline-none transition hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
+                        style={{
+                          backgroundImage: `linear-gradient(90deg, ${fill}33 0, ${fill}33 4px, transparent 4px), linear-gradient(var(--color-surface,#FFFFFF), var(--color-surface,#FFFFFF))`,
+                        }}
+                        aria-label={`Add search chord, degree ${row.degree}, ${row.roman}, ${row.chordName}`}
+                        onClick={() => onChordSelect(row.payload)}
+                      >
+                        <span className="text-sm font-semibold leading-none text-[var(--color-text-primary,#111827)]">{row.roman}</span>
+                        <span className="mt-0.5 text-xs leading-none font-normal text-[var(--color-text-secondary,#4B5563)]">{row.chordName}</span>
+                      </button>
+                    </li>
+                  );
+                })
+              )}
+            </ul>
           </div>
         );
       case 'progressions':
