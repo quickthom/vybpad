@@ -15,6 +15,10 @@ const PROGRESSION_PRESETS: readonly ProgressionPreset[] = [
   { id: 'b', sequence: [2, 5, 1, 6] },
 ] as const;
 
+function degreeRomanNumeral(degree: ScaleDegree): string {
+  return ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'][degree - 1];
+}
+
 function getTabbableElements(container: HTMLElement): HTMLElement[] {
   return Array.from(
     container.querySelectorAll<HTMLElement>(
@@ -67,7 +71,7 @@ export function ProgressionsOverlay({
           beat: 0,
           duration: 48,
         };
-        const roman = theoryEngine.toRomanNumeral(preview, currentScale);
+        const roman = degreeRomanNumeral(degree);
         const chordName = theoryEngine.toChordName(preview, currentKey, currentScale);
         return {
           degree,
@@ -189,7 +193,7 @@ export function ProgressionsOverlay({
       }}
     >
       <div
-        className="w-full max-w-[min(560px,calc(100vw-32px))] min-w-[320px] max-h-[min(560px,80vh)] overflow-y-auto rounded-xl border border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)] p-5 shadow-lg"
+        className="max-w-[min(560px,calc(100vw-32px))] min-w-[320px] max-h-[min(560px,80vh)] overflow-y-auto rounded-xl border border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)] p-5 shadow-lg"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="mb-3 flex items-start justify-between gap-3">
@@ -218,14 +222,20 @@ export function ProgressionsOverlay({
               type="button"
               data-testid={`chord-palette-progression-preset-${preset.id}`}
               role="listitem"
-              className="w-full rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] p-2.5 text-left transition hover:border-[var(--color-primary,#4F46E5)] hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
+              className="flex w-full flex-col gap-1.5 rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] p-2.5 text-left transition hover:border-[var(--color-primary,#4F46E5)] hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
               aria-label={`Apply progression ${preset.steps.map((step) => step.roman).join('\u2013')}`}
+              style={{
+                  backgroundImage: `linear-gradient(90deg, ${preset.steps[0].fill}22 0, ${preset.steps[0].fill}22 4px), linear-gradient(var(--color-surface,#FFFFFF), var(--color-surface,#FFFFFF))`,
+                }}
               onClick={() => applyProgression(preset.sequence)}
             >
+              <span className="sr-only">
+                {preset.steps.map((step) => step.roman).join(' – ')}
+              </span>
               <span className="mb-1.5 flex min-h-8 items-center gap-1.5">
-                {preset.steps.map((step) => (
+                {preset.steps.map((step, stepIndex) => (
                   <span
-                    key={`${preset.id}-${step.degree}-${step.roman}`}
+                    key={`${preset.id}-${stepIndex}-${step.roman}`}
                     className="flex min-w-[2.25rem] flex-1 items-center justify-center rounded-md border border-[var(--color-border-strong,#D1D5DB)] px-1.5 py-1 text-[12px] font-semibold leading-none text-[var(--color-text-primary,#111827)]"
                     style={{
                       backgroundImage: `linear-gradient(90deg, ${step.fill}33 0, ${step.fill}33 4px), linear-gradient(var(--color-surface,#FFFFFF), var(--color-surface,#FFFFFF))`,

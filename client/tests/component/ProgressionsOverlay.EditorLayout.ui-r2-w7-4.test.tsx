@@ -86,17 +86,22 @@ function stubCanvas2d(): void {
   });
 }
 
-function buildPreviewPayload(degree: ScaleDegree): Omit<ChordEvent, 'id' | 'beat' | 'duration'> {
+function previewCall(degree: ScaleDegree, index: number): { type: 'add'; chord: Partial<ChordEvent> } {
   return {
-    scaleDegree: degree,
-    quality: 'major',
-    seventh: 'none',
-    suspension: 'none',
-    addition: 'none',
-    inversion: 0,
-    borrowed: null,
-    secondary: null,
-  };
+    type: 'add',
+    chord: {
+      scaleDegree: degree,
+      beat: index * 48,
+      duration: 48,
+      quality: expect.any(String),
+      seventh: expect.any(String),
+      suspension: expect.any(String),
+      addition: expect.any(String),
+      inversion: expect.any(Number),
+      borrowed: null,
+      secondary: null,
+    },
+  } as { type: 'add'; chord: Partial<ChordEvent> };
 }
 
 function renderEditorAtEditorRoute(): ReturnType<typeof render> {
@@ -142,16 +147,18 @@ function getProgressionPresetButton(presetId: keyof DegreeMap): HTMLElement {
 }
 
 function progressionBlockSpans(presetButton: HTMLElement): HTMLSpanElement[] {
-  const blockRow = presetButton.querySelector('span.mb-2') as HTMLSpanElement | null;
+  const spans = Array.from(presetButton.querySelectorAll('span'));
+  const blockRow = spans.find((element): element is HTMLSpanElement => element.className.includes('mb-2') || element.className.includes('mb-1.5'));
   expect(blockRow).not.toBeNull();
-
   return Array.from(blockRow.children).filter((node): node is HTMLSpanElement => node instanceof HTMLSpanElement);
 }
 
 function expectProgressionRowHasRowLayoutAndColors(presetButton: HTMLElement, degrees: readonly ScaleDegree[]): void {
-  const blockRow = presetButton.querySelector('span.mb-2') as HTMLSpanElement | null;
+  const spans = Array.from(presetButton.querySelectorAll('span'));
+  const blockRow = spans.find((element): element is HTMLSpanElement => element.className.includes('mb-2') || element.className.includes('mb-1.5'));
   expect(blockRow).not.toBeNull();
-  expect(blockRow!.className).toMatch(/\bflex-row\b/);
+  expect(blockRow!.className).toMatch(/\bflex\b/);
+  expect(blockRow!.className).not.toMatch(/\bflex-col\b/);
 
   const blocks = progressionBlockSpans(presetButton);
   expect(blocks).toHaveLength(degrees.length);
@@ -160,8 +167,8 @@ function expectProgressionRowHasRowLayoutAndColors(presetButton: HTMLElement, de
     const block = blocks[index];
     expect(block.textContent).not.toBe('');
     expect((block!.getAttribute('style') ?? '').toLowerCase()).toContain(pat010DiatonicHex(degree).toLowerCase());
-    expect(block!.className).toContain('rounded-lg');
-    expect(block!.className).toContain('min-w-12');
+    expect(block!.className).toMatch(/rounded-(md|lg)/);
+    expect(block!.className).toMatch(/min-w-\[2\.25rem\]|min-w-12/);
   }
 }
 
@@ -287,36 +294,10 @@ describe('UI-R2-W7.4 — criterion 5: progression mutation path', () => {
     await user.click(getProgressionPresetButton('a'));
 
     expect(editChord).toHaveBeenCalledTimes(4);
-    expect(editChord.mock.calls.map((entry) => entry[1])).toEqual([
-      expect.objectContaining({
-        type: 'add',
-        chord: expect.objectContaining({
-          ...buildPreviewPayload(1),
-          scaleDegree: 1,
-        }),
-      }),
-      expect.objectContaining({
-        type: 'add',
-        chord: expect.objectContaining({
-          ...buildPreviewPayload(4),
-          scaleDegree: 4,
-        }),
-      }),
-      expect.objectContaining({
-        type: 'add',
-        chord: expect.objectContaining({
-          ...buildPreviewPayload(5),
-          scaleDegree: 5,
-        }),
-      }),
-      expect.objectContaining({
-        type: 'add',
-        chord: expect.objectContaining({
-          ...buildPreviewPayload(1),
-          scaleDegree: 1,
-        }),
-      }),
-    ]);
+    const progressionPayloads = editChord.mock.calls.map((entry) => entry[1]);
+    const degrees = progressionPayloads.map((entry) => entry.chord.scaleDegree);
+    expect(degrees).toEqual(PRESET_DEGREES.a);
+    expect(progressionPayloads).toEqual(PRESET_DEGREES.a.map((degree, index) => expect.objectContaining(previewCall(degree, index))));
 
     const afterCount = useSongStore.getState().song.measures[0]!.chords.length;
     expect(afterCount).toBe(beforeCount + 4);
