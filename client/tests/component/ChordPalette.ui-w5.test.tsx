@@ -26,6 +26,7 @@
  */
 import { ChordPalette } from '@/components/panels/ChordPalette';
 import type { ChordPaletteProps } from '@/components/panels/ChordPalette';
+import { PAT010_DIATONIC_DEGREE_HEX, PAT010_MAJOR_CENTRIC_RELATIVE_SEMITONE_HEX } from '@/engine/renderer/colorMaps';
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactElement } from 'react';
@@ -61,6 +62,90 @@ function getSearchRows(): HTMLButtonElement[] {
 
 function getSearchInput(): HTMLInputElement {
   return screen.getByRole('searchbox', { name: /^Filter chords$/i });
+}
+
+type PopularRow = {
+  id: string;
+  label: string;
+  styleHints: string;
+};
+
+const MIN_POPULAR_ROW_COUNT = 8;
+const PAT_010_HEX = new Set(
+  [...PAT010_DIATONIC_DEGREE_HEX, ...PAT010_MAJOR_CENTRIC_RELATIVE_SEMITONE_HEX].map((v) => v.toLowerCase()),
+);
+
+function normalizeText(raw: string): string {
+  return raw.trim().replace(/\s+/g, ' ');
+}
+
+function normalizePat010Color(rawColor: string): string {
+  const color = rawColor.toLowerCase();
+
+  if (color.length === 4 || color.length === 5) {
+    return `#${color[1]}${color[1]}${color[2]}${color[2]}${color[3]}${color[3]}`;
+  }
+
+  if (color.length === 9) {
+    return color.slice(0, 7);
+  }
+
+  return color.slice(0, 7);
+}
+
+function extractPopularRows(): HTMLButtonElement[] {
+  const panel = screen.getByRole('tabpanel');
+  const buttons = Array.from(panel.querySelectorAll('button')) as HTMLButtonElement[];
+  return buttons.filter((button) => normalizeText(button.textContent ?? '').length > 0);
+}
+
+function popularRowSignatures(): PopularRow[] {
+  return extractPopularRows().map((row, index) => ({
+    id: row.getAttribute('data-testid') ?? `${index}`,
+    label: normalizeText(row.textContent ?? ''),
+    styleHints: `${row.style.cssText} ${row.className}`.toLowerCase(),
+  }));
+}
+
+function expectPopularRowsHaveActionableText(rows: PopularRow[]): void {
+  for (const row of rows) {
+    const { label } = row;
+    expect(label).toBeTruthy();
+
+    const hasRomanLikeText = /\b[b#]?[ivIV]+(?:\/[b#]?[ivIV]+)?\b/.test(label);
+    const hasLetterName = /\b[A-G](?:#|b)?[0-9]*/i.test(label);
+
+    expect(hasRomanLikeText).toBe(true);
+    expect(hasLetterName).toBe(true);
+  }
+}
+
+function expectPopularRowsHavePat010Swatches(rows: PopularRow[]): void {
+  const colorRegex = /#[0-9a-f]{3,8}/gi;
+
+  for (const row of rows) {
+    const matches = row.styleHints.match(colorRegex) ?? [];
+    if (matches.length === 0) {
+      continue;
+    }
+
+    const normalized = matches.map((match) => normalizePat010Color(match).toLowerCase());
+    const knownColorMatch = normalized.some((value) => PAT_010_HEX.has(value));
+
+    expect(knownColorMatch).toBe(true);
+  }
+}
+
+function renderPopularPalette(currentKey: string, currentScale: 'major' | 'minor' = 'major'): void {
+  render(
+    <ChordPaletteW5
+      {...baseProps()}
+      currentKey={currentKey}
+      currentScale={currentScale}
+      libraryTab="popular"
+      onLibraryTabChange={vi.fn()}
+    />,
+  );
 }
 
 describe('ChordPalette — UI-W5 — RA-8 library tab strip (INTERFACES)', () => {
@@ -120,6 +205,100 @@ describe('ChordPalette — UI-W5 — RA-8 library tab strip (INTERFACES)', () =>
     );
 
     expect(screen.getByRole('tab', { name: /^Bass Sets$/i })).toHaveAttribute('aria-selected', 'true');
+  });
+});
+
+describe('ChordPalette — UI-R2-W6.3 — Popular tab sequence behavior', () => {
+  it('renders multiple distinct popular entries for C major', () => {
+    renderPopularPalette('C', 'major');
+
+    const rows = popularRowSignatures();
+    expect(rows.length).toBeGreaterThanOrEqual(MIN_POPULAR_ROW_COUNT);
+    expect(new Set(rows.map((row) => row.label)).size).toBeGreaterThan(1);
+    expectPopularRowsHaveActionableText(rows);
+  });
+
+  it('keeps the same popular sequence data on repeated renders for identical key+scale', () => {
+    const onChordSelect = vi.fn();
+
+    const { rerender } = render(
+      <ChordPaletteW5
+        {...baseProps()}
+        currentKey="C"
+        currentScale="major"
+        libraryTab="popular"
+        onLibraryTabChange={vi.fn()}
+        onChordSelect={onChordSelect}
+      />,
+    );
+
+    const firstRun = popularRowSignatures().map((row) => `${row.id}::${row.label}`);
+    rerender(
+      <ChordPaletteW5
+        {...baseProps()}
+        currentKey="C"
+        currentScale="major"
+        libraryTab="popular"
+        onLibraryTabChange={vi.fn()}
+        onChordSelect={onChordSelect}
+      />,
+    );
+    const secondRun = popularRowSignatures().map((row) => `${row.id}::${row.label}`);
+
+    expect(secondRun).toEqual(firstRun);
+  });
+
+  it('adapts popular output for different contexts while staying deterministic per context', () => {
+    const onChordSelect = vi.fn();
+
+    const { rerender } = render(
+      <ChordPaletteW5
+        {...baseProps()}
+        currentKey="C"
+        currentScale="major"
+        libraryTab="popular"
+        onLibraryTabChange={vi.fn()}
+        onChordSelect={onChordSelect}
+      />,
+    );
+
+    const cMajorRows = popularRowSignatures().map((row) => `${row.id}::${row.label}`);
+
+    rerender(
+      <ChordPaletteW5
+        {...baseProps()}
+        currentKey="D"
+        currentScale="minor"
+        libraryTab="popular"
+        onLibraryTabChange={vi.fn()}
+        onChordSelect={onChordSelect}
+      />,
+    );
+
+    const dMinorRows = popularRowSignatures().map((row) => `${row.id}::${row.label}`);
+
+    expect(cMajorRows).not.toEqual(dMinorRows);
+    rerender(
+      <ChordPaletteW5
+        {...baseProps()}
+        currentKey="D"
+        currentScale="minor"
+        libraryTab="popular"
+        onLibraryTabChange={vi.fn()}
+        onChordSelect={onChordSelect}
+      />,
+    );
+    const dMinorRowsAgain = popularRowSignatures().map((row) => `${row.id}::${row.label}`);
+
+    expect(dMinorRowsAgain).toEqual(dMinorRows);
+  });
+
+  it('keeps popular row color cues PAT-010-compatible when swatches are rendered', () => {
+    renderPopularPalette('C', 'major');
+    const rows = popularRowSignatures();
+
+    expectPopularRowsHaveActionableText(rows);
+    expectPopularRowsHavePat010Swatches(rows);
   });
 });
 
