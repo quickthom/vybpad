@@ -237,7 +237,7 @@ export function EditorLayout() {
   const [chordPaletteExpanded, setChordPaletteExpanded] = useState(true);
   const [keyScaleDialogOpen, setKeyScaleDialogOpen] = useState(false);
   const keyScaleTriggerRef = useRef<HTMLButtonElement>(null);
-  const mixerToggleRef = useRef<HTMLButtonElement>(null);
+  const mixerTriggerRef = useRef<HTMLButtonElement>(null);
   const chordPaletteResizeDragRef = useRef<{ startX: number; startWidth: number } | null>(null);
 
   const keyScaleTargetMeasure = useMemo(
@@ -1333,8 +1333,8 @@ export function EditorLayout() {
             Chords
           </button>
           <button
-            ref={mixerToggleRef}
             type="button"
+            ref={mixerTriggerRef}
             onClick={() => togglePanel('mixer')}
             aria-expanded={mixerOpen}
             aria-pressed={mixerOpen}
@@ -1424,23 +1424,6 @@ export function EditorLayout() {
             <MidiDragExportControl />
           </>
         }
-      />
-      <KeyScaleChangeDialog
-        open={keyScaleDialogOpen}
-        measureIndex={keyScaleTargetMeasure}
-        onClose={() => {
-          setKeyScaleDialogOpen(false);
-          queueMicrotask(() => keyScaleTriggerRef.current?.focus());
-        }}
-      />
-      <MixerOverlay
-        open={mixerOpen}
-        bandConfig={song.bandConfig}
-        onTrackChange={handleTrackChange}
-        onClose={() => {
-          togglePanel('mixer');
-          mixerToggleRef.current?.focus();
-        }}
       />
       <div className="flex min-h-0 min-w-0 flex-1 flex-row overflow-hidden">
         <aside
@@ -1688,6 +1671,25 @@ export function EditorLayout() {
           ) : null}
         </div>
       </div>
+      <MixerOverlay
+        open={mixerOpen}
+        bandConfig={song.bandConfig}
+        onTrackChange={handleTrackChange}
+        onClose={() => {
+          if (mixerOpen) {
+            togglePanel('mixer');
+          }
+        }}
+        focusReturnTarget={mixerTriggerRef.current}
+      />
+      <KeyScaleChangeDialog
+        open={keyScaleDialogOpen}
+        measureIndex={keyScaleTargetMeasure}
+        onClose={() => {
+          setKeyScaleDialogOpen(false);
+          queueMicrotask(() => keyScaleTriggerRef.current?.focus());
+        }}
+      />
       <TempoMeterAtMeasureDialog
         open={tempoMeterDialogOpen}
         measureIndex={keyScaleTargetMeasure}

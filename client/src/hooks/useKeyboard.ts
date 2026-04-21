@@ -707,7 +707,9 @@ export function handleEditorKeydown(e: KeyboardEvent, ctx: EditorKeyboardContext
   const key = e.key;
 
   const toggleEntryMode = ctx.onToggleEntryMode ?? ctx.onEntryModeToggle;
-  if (key === 'Tab' && toggleEntryMode && !isEditableKeyboardTarget(e.target ?? null)) {
+  const shortcutCtx = ctx.getShortcutContext ? ctx.getShortcutContext() : null;
+  const hasModalOpen = shortcutCtx?.hasModalOpen ?? false;
+  if (key === 'Tab' && toggleEntryMode && !hasModalOpen && !isEditableKeyboardTarget(e.target ?? null)) {
     e.preventDefault();
     toggleEntryMode();
     return;
