@@ -1242,10 +1242,14 @@ export function EditorLayout() {
 
   const transportLeadingControls = (
     <>
-      <span className="hidden min-w-0 max-w-[12rem] overflow-hidden text-xs font-medium text-[var(--color-text-secondary,#4B5563)] xl:inline-block xl:truncate">
+      <span className="pointer-events-none hidden min-w-0 max-w-[12rem] overflow-hidden text-xs font-medium text-[var(--color-text-secondary,#4B5563)] xl:inline-block xl:truncate">
         {headerTitle}
       </span>
-      {user ? <span className="text-sm text-[var(--color-text-secondary,#4B5563)]">{user.displayName}</span> : null}
+      {user ? (
+        <span className="pointer-events-none text-sm text-[var(--color-text-secondary,#4B5563)]">
+          {user.displayName}
+        </span>
+      ) : null}
       {projectId ? (
         <button
           type="button"

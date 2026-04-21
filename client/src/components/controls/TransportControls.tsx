@@ -192,7 +192,7 @@ export function TransportControls({
 
         <div
           data-testid="vybpad-transport-current-beat"
-          className="flex min-h-8 min-w-[120px] items-center text-sm tabular-nums text-[var(--color-text-primary,#111827)]"
+          className="pointer-events-none flex min-h-8 min-w-[120px] items-center text-sm tabular-nums text-[var(--color-text-primary,#111827)]"
           aria-live="polite"
         >
           <span className="sr-only">Current position</span>
@@ -207,7 +207,7 @@ export function TransportControls({
           {showKeyMeterCluster ? (
             <div
               data-testid="vybpad-transport-key-meter-cluster"
-              className="flex min-w-0 items-center gap-1.5 text-xs leading-tight text-[var(--color-text-primary,#111827)]"
+              className="pointer-events-none flex min-w-0 items-center gap-1.5 text-xs leading-tight text-[var(--color-text-primary,#111827)]"
             >
               {keyLabel ? (
                 <span className="font-medium tabular-nums text-[var(--color-text-primary,#111827)]">
@@ -217,7 +217,7 @@ export function TransportControls({
               {meterLabel ? <span className="tabular-nums text-[var(--color-text-secondary,#4B5563)]">{meterLabel}</span> : null}
             </div>
           ) : null}
-          <label className="flex shrink-0 items-center gap-2 text-sm text-[var(--color-text-secondary,#4B5563)]">
+          <label className="pointer-events-auto flex shrink-0 items-center gap-2 text-sm text-[var(--color-text-secondary,#4B5563)]">
             <span id="transport-tempo-label">Tempo</span>
             <input
               id="transport-tempo-input"
@@ -238,7 +238,7 @@ export function TransportControls({
               type="button"
               data-testid="vybpad-tempo-meter-edit"
               onClick={onTempoMeterEdit}
-              className="inline-flex min-h-8 shrink-0 items-center justify-center rounded-md border border-[var(--color-border-strong,#D1D5DB)] bg-transparent px-2 text-xs font-medium text-[var(--color-primary,#4F46E5)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
+              className="pointer-events-auto inline-flex min-h-8 shrink-0 items-center justify-center rounded-md border border-[var(--color-border-strong,#D1D5DB)] bg-transparent px-2 text-xs font-medium text-[var(--color-primary,#4F46E5)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
             >
               Tempo / meter
             </button>
