@@ -5,6 +5,8 @@ export interface Viewport {
   measureCount: number; // how many measures visible
   scrollY: number; // vertical scroll offset (for pitch range)
   zoom: number; // horizontal zoom level (1.0 = default)
+  /** Vertical zoom for melody row scale (1.0 = default). UI-R2-W7.2 / RA-210; omit in persisted snapshots → treat as 1. */
+  zoomY?: number;
 }
 
 export interface Selection {

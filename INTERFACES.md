@@ -456,6 +456,8 @@ interface Viewport {
   measureCount: number;                // how many measures visible
   scrollY: number;                     // vertical scroll offset (for pitch range)
   zoom: number;                        // horizontal zoom level (1.0 = default)
+  /** Vertical zoom for melody row scale (1.0 = default). UI-R2-W7.2 / RA-210; omitted → 1. */
+  zoomY?: number;
 }
 
 interface Selection {
@@ -517,11 +519,16 @@ interface TransportControlsProps {
   /** UI-W8 (RA-14) — metronome / click toggle. */
   metronomeEnabled?: boolean;
   onMetronomeToggle?: () => void;
-  /** UI-W8 (RA-16/21) — zoom readout and ± / reset; `zoomPercent` is 100 at default horizontal zoom. */
+  /** UI-W8 (RA-16/21) — horizontal zoom readout and ± / reset; `zoomPercent` is 100 at default horizontal zoom. */
   zoomPercent?: number;
   onZoomIn?: () => void;
   onZoomOut?: () => void;
   onZoomReset?: () => void;
+  /** UI-R2-W7.2 (RA-210) — vertical zoom readout and ± / reset; `100` at default vertical zoom. Omitted when not wired. */
+  zoomYPercent?: number;
+  onZoomYIn?: () => void;
+  onZoomYOut?: () => void;
+  onZoomYReset?: () => void;
   /** UI-W8 (RA-20) — key + meter + tempo readouts in top band; click opens tempo/meter edit when callback set. */
   keyLabel?: string;
   meterLabel?: string;
