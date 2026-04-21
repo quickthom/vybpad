@@ -5,6 +5,7 @@
  */
 export { type TheoryEngine, theoryEngine } from './theoryEngine';
 export { getBorrowedChords, type BorrowedChordInfo } from './borrowedChords';
+export { getPopularChords, type PopularChordSuggestion } from './popularChords';
 export {
   applyKeyChange,
   applyScaleChange,

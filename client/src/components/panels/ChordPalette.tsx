@@ -2,7 +2,11 @@ import type { ChordEvent, NoteName, ScaleDegree, ScaleType } from '@vybpad/share
 import type { ReactElement } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 
-import { getBorrowedChords, theoryEngine } from '../../engine/theory';
+import {
+  getBorrowedChords,
+  getPopularChords,
+  theoryEngine,
+} from '../../engine/theory';
 import { pat010DiatonicHex } from '../../engine/renderer/colorMaps';
 
 /** INTERFACES.md — ChordPaletteProps (library row UI-W5 / RA-8). */
@@ -248,6 +252,7 @@ export function ChordPalette(props: ChordPaletteProps): ReactElement {
     () => getBorrowedChords(currentScale, borrowedSource),
     [borrowedSource, currentScale],
   );
+  const popularRows = useMemo(() => getPopularChords(currentKey, currentScale), [currentKey, currentScale]);
 
   const modeSubtitle =
     mode === 'diatonic'
@@ -490,14 +495,31 @@ export function ChordPalette(props: ChordPaletteProps): ReactElement {
         return magicTabContent();
       case 'popular':
         return (
-          <button
-            type="button"
-            data-testid="chord-palette-popular-interactive"
-            className="inline-flex min-h-8 w-full items-center justify-center rounded-lg bg-[var(--color-primary,#4F46E5)] px-3 text-sm font-medium text-[var(--color-text-on-primary,#FFFFFF)] outline-none hover:bg-[var(--color-primary-hover,#4338CA)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
-            onClick={() => onChordSelect(diatonicSelectPayload(5, currentScale))}
-          >
-            Popular: V chord
-          </button>
+          <div className="flex flex-col gap-2" role="group" aria-label="Popular chords">
+            {popularRows.map((row, index) => {
+              const fill = pat010DiatonicHex(row.degree);
+              const interactive = index === 0;
+              const kindLabel = row.includeSeventh ? '7th variant' : 'triad';
+              return (
+                <button
+                  key={`${row.degree}-${kindLabel}`}
+                  type="button"
+                  data-testid={interactive ? 'chord-palette-popular-interactive' : 'chord-palette-popular-row'}
+                  className="flex min-h-10 w-full flex-col items-start justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] px-3 py-2 text-left outline-none transition hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
+                  style={{
+                    backgroundImage: `linear-gradient(90deg, ${fill}33 0, ${fill}33 4px, transparent 4px), linear-gradient(var(--color-surface,#FFFFFF), var(--color-surface,#FFFFFF))`,
+                  }}
+                  aria-label={`Add popular chord, degree ${row.degree} ${kindLabel}, ${row.roman}, ${row.chordName}`}
+                  onClick={() => onChordSelect(row.payload)}
+                >
+                  <span className="text-sm font-semibold leading-none text-[var(--color-text-primary,#111827)]">{row.roman}</span>
+                  <span className="mt-1 text-xs leading-none font-normal text-[var(--color-text-secondary,#4B5563)]">
+                    {row.chordName}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         );
       case 'search':
         return (

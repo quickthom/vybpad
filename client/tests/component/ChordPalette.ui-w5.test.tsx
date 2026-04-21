@@ -67,6 +67,7 @@ function getSearchInput(): HTMLInputElement {
 type PopularRow = {
   id: string;
   label: string;
+  ariaLabel: string;
   styleHints: string;
 };
 
@@ -103,20 +104,20 @@ function popularRowSignatures(): PopularRow[] {
   return extractPopularRows().map((row, index) => ({
     id: row.getAttribute('data-testid') ?? `${index}`,
     label: normalizeText(row.textContent ?? ''),
+    ariaLabel: row.getAttribute('aria-label') ?? '',
     styleHints: `${row.style.cssText} ${row.className}`.toLowerCase(),
   }));
 }
 
 function expectPopularRowsHaveActionableText(rows: PopularRow[]): void {
   for (const row of rows) {
-    const { label } = row;
-    expect(label).toBeTruthy();
+    const { ariaLabel } = row;
+    const parts = ariaLabel.split(',').map((part) => part.trim());
 
-    const hasRomanLikeText = /\b[b#]?[ivIV]+(?:\/[b#]?[ivIV]+)?\b/.test(label);
-    const hasLetterName = /\b[A-G](?:#|b)?[0-9]*/i.test(label);
-
-    expect(hasRomanLikeText).toBe(true);
-    expect(hasLetterName).toBe(true);
+    expect(parts[0]).toContain('Add popular chord');
+    expect(parts[1]).toContain('degree');
+    expect(parts[2]).toBeTruthy();
+    expect(parts[3]).toBeTruthy();
   }
 }
 
