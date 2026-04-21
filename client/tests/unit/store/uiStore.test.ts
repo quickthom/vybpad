@@ -216,6 +216,7 @@ describe('UIStore — TASK-2.11 / INTERFACES.md', () => {
   describe('togglePanel', () => {
     beforeEach(() => {
       baselineUIState();
+      useUIStore.setState({ activePanels: new Set<string>() });
     });
 
     it('adds "band" to activePanels on first togglePanel("band") and removes it on the second call', () => {
@@ -225,6 +226,20 @@ describe('UIStore — TASK-2.11 / INTERFACES.md', () => {
 
       useUIStore.getState().togglePanel('band');
       expect(useUIStore.getState().activePanels.has('band')).toBe(false);
+      expect(useUIStore.getState().activePanels.size).toBe(0);
+    });
+
+    it('treats activePanels as a Set<string> contract for panel visibility across repeated toggles', () => {
+      expect(useUIStore.getState().activePanels).toBeInstanceOf(Set);
+
+      useUIStore.getState().togglePanel('chords');
+      expect(useUIStore.getState().activePanels).toBeInstanceOf(Set);
+      expect(useUIStore.getState().activePanels.has('chords')).toBe(true);
+      expect(useUIStore.getState().activePanels.size).toBe(1);
+
+      useUIStore.getState().togglePanel('chords');
+      expect(useUIStore.getState().activePanels).toBeInstanceOf(Set);
+      expect(useUIStore.getState().activePanels.has('chords')).toBe(false);
       expect(useUIStore.getState().activePanels.size).toBe(0);
     });
   });

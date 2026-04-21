@@ -19,7 +19,7 @@
  */
 
 import { EditorLayout } from '@/app/EditorLayout';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -27,6 +27,10 @@ import { useAuthStore } from '@/store/authStore';
 import { resetPlaybackStoreForTests } from '@/store/playbackStore';
 import { buildDefaultSong, useSongStore } from '@/store/songStore';
 import { useUIStore } from '@/store/uiStore';
+
+const CHORD_PALETTE_MIN_WIDTH_PX = 240;
+const CHORD_PALETTE_DEFAULT_WIDTH_PX = 240;
+const CHORD_PALETTE_MAX_WIDTH_PX = 400;
 
 function stubCanvas2d(): void {
   vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation((contextId) => {
@@ -130,17 +134,49 @@ describe('EditorLayout — OB-6 — side rail max-width caps (no legacy 400px to
     let el: HTMLElement | null = propsRoot;
     let found: HTMLElement | null = null;
     while (el) {
-      const c = el.getAttribute('class') ?? '';
-      if (/\bmax-w-\[/.test(c)) {
+      const style = el.getAttribute('style') ?? '';
+      if (/\bwidth:\s*\d+px/i.test(style)) {
         found = el;
         break;
       }
       el = el.parentElement;
     }
-    expect(found, 'expected a max-w-* wrapper around properties-region').toBeTruthy();
-    expect(
-      found?.getAttribute('class') ?? '',
-      'OB-6: right rail should not keep the loose 400px max-width token',
-    ).not.toMatch(/max-w-\[400px\]/);
+    expect(found, 'expected a width-controlled container around properties-region').toBeTruthy();
+    expect(found?.getAttribute('style') ?? '', 'OB-6: right rail width should now be controlled by inline style').toMatch(
+      /\bwidth:\s*\d+px/i,
+    );
+    expect(found?.getAttribute('class') ?? '', 'OB-6: right rail should not keep the loose 400px max-width token').not.toMatch(
+      /max-w-\[400px\]/,
+    );
+  });
+});
+
+describe('EditorLayout — OB-6/RA-213 — chord rail default width and resize bounds', () => {
+  it('uses 240px as the expanded left rail default width (inline style)', () => {
+    renderEditorShell();
+
+    const chordPanel = document.getElementById('vybpad-panel-chords');
+    expect(chordPanel).toBeTruthy();
+    expect(chordPanel?.style.width).toBe(`${CHORD_PALETTE_DEFAULT_WIDTH_PX}px`);
+  });
+
+  it('supports dragging the resize handle and clamps width to the UX min/max bounds', () => {
+    renderEditorShell();
+
+    const chordPanel = document.getElementById('vybpad-panel-chords');
+    expect(chordPanel).toBeTruthy();
+    const handle = screen.getByTestId('vybpad-panel-chords-resize-handle');
+
+    fireEvent.mouseDown(handle, { button: 0, clientX: CHORD_PALETTE_DEFAULT_WIDTH_PX });
+    fireEvent(window, new MouseEvent('mousemove', { bubbles: true, clientX: CHORD_PALETTE_MAX_WIDTH_PX + 250 }));
+    fireEvent(window, new MouseEvent('mouseup', { bubbles: true, clientX: CHORD_PALETTE_MAX_WIDTH_PX + 250 }));
+    expect(chordPanel?.style.width).toBe(`${CHORD_PALETTE_MAX_WIDTH_PX}px`);
+
+    fireEvent.mouseDown(handle, { button: 0, clientX: CHORD_PALETTE_MAX_WIDTH_PX });
+    fireEvent(window, new MouseEvent('mousemove', { bubbles: true, clientX: CHORD_PALETTE_MIN_WIDTH_PX - 250 }));
+    fireEvent(window, new MouseEvent('mouseup', { bubbles: true, clientX: CHORD_PALETTE_MIN_WIDTH_PX - 250 }));
+    const min = Number.parseFloat(chordPanel?.style.width ?? '0');
+    expect(min).toBeGreaterThanOrEqual(CHORD_PALETTE_MIN_WIDTH_PX);
+    expect(chordPanel?.style.width).toBe(`${CHORD_PALETTE_MIN_WIDTH_PX}px`);
   });
 });
