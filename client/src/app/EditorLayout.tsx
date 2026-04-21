@@ -4,6 +4,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import { EditorPropertiesPanel } from '../components/panels/EditorPropertiesPanel';
 import { EditorSettingsPanel } from '../components/panels/EditorSettingsPanel';
+import { MixerOverlay } from '../components/overlays/MixerOverlay';
 import { KeyScaleChangeDialog } from '../components/common/KeyScaleChangeDialog';
 import { Tooltip } from '../components/common/Tooltip';
 import { MidiExportControls } from '../components/controls/MidiExportControls';
@@ -11,7 +12,6 @@ import { TempoMeterAtMeasureDialog } from '../components/controls/TempoMeterAtMe
 import { MidiDragExportControl } from '../components/controls/MidiDragExportControl';
 import { LoopBar } from '../components/controls/LoopBar';
 import { TransportControls } from '../components/controls/TransportControls';
-import { MixerPanel } from '../components/panels/MixerPanel';
 import { PianoKeyboardPanel } from '../components/panels/PianoKeyboardPanel';
 import { MeasureBar } from '../components/MeasureBar';
 import { EditorCanvas } from '../components/editor/EditorCanvas';
@@ -237,6 +237,7 @@ export function EditorLayout() {
   const [chordPaletteExpanded, setChordPaletteExpanded] = useState(true);
   const [keyScaleDialogOpen, setKeyScaleDialogOpen] = useState(false);
   const keyScaleTriggerRef = useRef<HTMLButtonElement>(null);
+  const mixerToggleRef = useRef<HTMLButtonElement>(null);
   const chordPaletteResizeDragRef = useRef<{ startX: number; startWidth: number } | null>(null);
 
   const keyScaleTargetMeasure = useMemo(
@@ -344,12 +345,12 @@ export function EditorLayout() {
 
   const getShortcutContext = useCallback((): ShortcutContext => {
     return {
-      hasModalOpen: keyScaleDialogOpen || tempoMeterDialogOpen,
+      hasModalOpen: keyScaleDialogOpen || tempoMeterDialogOpen || mixerOpen,
       isTextEditing: isEditableKeyboardTarget(document.activeElement),
       hasEditorFocus: isSongEditorCanvasFocused(document.activeElement),
       isPlaying: usePlaybackStore.getState().isPlaying,
     };
-  }, [keyScaleDialogOpen, tempoMeterDialogOpen]);
+  }, [keyScaleDialogOpen, tempoMeterDialogOpen, mixerOpen]);
 
   const getSongAfterMutation = useCallback(() => useSongStore.getState().song, []);
   const getSelectionAfterMutation = useCallback(() => useUIStore.getState().selection, []);
@@ -1332,14 +1333,18 @@ export function EditorLayout() {
             Chords
           </button>
           <button
+            ref={mixerToggleRef}
             type="button"
             onClick={() => togglePanel('mixer')}
             aria-expanded={mixerOpen}
             aria-pressed={mixerOpen}
             aria-controls={mixerOpen ? 'vybpad-panel-mixer' : undefined}
-            className="inline-flex min-h-8 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-3 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
+            className="inline-flex min-h-8 items-center justify-center gap-1.5 rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-3 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
           >
-            Mixer
+            <span aria-hidden="true" className="text-sm leading-none">
+              🎚
+            </span>
+            <span>Mixer</span>
           </button>
           <button
             type="button"
@@ -1426,6 +1431,15 @@ export function EditorLayout() {
         onClose={() => {
           setKeyScaleDialogOpen(false);
           queueMicrotask(() => keyScaleTriggerRef.current?.focus());
+        }}
+      />
+      <MixerOverlay
+        open={mixerOpen}
+        bandConfig={song.bandConfig}
+        onTrackChange={handleTrackChange}
+        onClose={() => {
+          togglePanel('mixer');
+          mixerToggleRef.current?.focus();
         }}
       />
       <div className="flex min-h-0 min-w-0 flex-1 flex-row overflow-hidden">
@@ -1635,20 +1649,6 @@ export function EditorLayout() {
             onSecondaryCycle={handleSecondaryCycle}
             onSecondaryClear={handleSecondaryClear}
           />
-          {mixerOpen ? (
-            <aside
-              id="vybpad-panel-mixer"
-              role="complementary"
-              aria-label="Mixer"
-              className={
-                settingsOpen || pianoOpen
-                  ? 'shrink-0 border-t border-b border-[var(--color-border,#E5E7EB)]'
-                  : 'flex min-h-0 min-w-0 shrink-0 flex-col border-t border-[var(--color-border,#E5E7EB)]'
-              }
-            >
-              <MixerPanel bandConfig={song.bandConfig} onTrackChange={handleTrackChange} />
-            </aside>
-          ) : null}
           {settingsOpen ? (
             <div
               id="vybpad-panel-settings"

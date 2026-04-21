@@ -210,7 +210,7 @@ describe('EditorLayout — mixer + AudioEngine mutators (TASK 4.7)', () => {
       </BrowserRouter>,
     );
 
-    const panel = screen.getByRole('complementary', { name: 'Mixer' });
+    const panel = screen.getByRole('dialog', { name: 'Mixer' });
     const harmonySlider = within(panel).getByRole('slider', { name: /harmony volume/i });
     fireEvent.change(harmonySlider, { target: { value: '33' } });
 
@@ -235,7 +235,7 @@ describe('EditorLayout — mixer + AudioEngine mutators (TASK 4.7)', () => {
       </BrowserRouter>,
     );
 
-    const panel = screen.getByRole('complementary', { name: 'Mixer' });
+    const panel = screen.getByRole('dialog', { name: 'Mixer' });
     fireEvent.click(within(panel).getByRole('button', { name: /^mute melody 1$/i }));
 
     const m1 = useSongStore
@@ -259,7 +259,7 @@ describe('EditorLayout — mixer + AudioEngine mutators (TASK 4.7)', () => {
       </BrowserRouter>,
     );
 
-    const panel = screen.getByRole('complementary', { name: 'Mixer' });
+    const panel = screen.getByRole('dialog', { name: 'Mixer' });
     fireEvent.change(within(panel).getByRole('slider', { name: /bass volume/i }), {
       target: { value: '50' },
     });
