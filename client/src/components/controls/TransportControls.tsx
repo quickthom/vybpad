@@ -1,7 +1,7 @@
-import type { ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 
 import { getPlaybackInitErrorMessage } from '../../engine/audio';
-import type { PlaybackInitErrorCode, PlaybackInitStatus } from '../../store/playbackStore';
+import { usePlaybackStore, type PlaybackInitErrorCode, type PlaybackInitStatus } from '../../store/playbackStore';
 
 /** INTERFACES.md — `TransportControls` / `TransportControlsProps` (TASK-4.1 + UI-W6 + UI-W8). */
 export interface TransportControlsProps {
@@ -21,6 +21,10 @@ export interface TransportControlsProps {
   onRedo?: () => void;
   /** Loop region controls (UI-W6 — folded into transport row; RA-11). */
   loopContent?: ReactNode;
+  /** UI-R2-W8 (RA-20) — optional leading cluster before core controls (e.g. project/panel actions). */
+  leadingContent?: ReactNode;
+  /** Optional trailing cluster before final endContent (if present). */
+  trailingContent?: ReactNode;
   /** Optional trailing slot (e.g. MIDI export / drag-to-desktop affordance); omit when unused. */
   endContent?: ReactNode;
   /** UI-W8 (RA-13) — record arm toggle; omit when unused. */
@@ -61,6 +65,8 @@ export function TransportControls({
   onUndo,
   onRedo,
   loopContent,
+  leadingContent,
+  trailingContent,
   endContent,
   recordArmed,
   onRecordToggle,
@@ -78,9 +84,35 @@ export function TransportControls({
   meterLabel,
   onTempoMeterEdit,
 }: TransportControlsProps) {
-  const playDisabled = initStatus === 'initializing';
+  const [observedInitStatus, setObservedInitStatus] = useState<PlaybackInitStatus>(initStatus);
+  const toolbarRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const applyInitStatusAttributes = (nextStatus: PlaybackInitStatus): void => {
+      if (!toolbarRef.current) return;
+
+      if (nextStatus === 'initializing') {
+        toolbarRef.current.setAttribute('aria-busy', 'true');
+      } else {
+        toolbarRef.current.removeAttribute('aria-busy');
+      }
+
+      toolbarRef.current.setAttribute('data-audio-ready', nextStatus === 'ready' ? 'true' : 'false');
+    };
+
+    const initialStatus = usePlaybackStore.getState().initStatus;
+    setObservedInitStatus(initialStatus);
+    applyInitStatusAttributes(initialStatus);
+
+    const unsubscribe = usePlaybackStore.subscribe((state) => {
+      setObservedInitStatus(state.initStatus);
+      applyInitStatusAttributes(state.initStatus);
+    });
+    return unsubscribe;
+  }, []);
+  const effectiveInitStatus = observedInitStatus === 'locked' ? initStatus : observedInitStatus;
+  const playDisabled = effectiveInitStatus === 'initializing';
   /** Pause / stop / rewind require a running engine (INTERFACES transport actions). */
-  const transportLocked = initStatus !== 'ready';
+  const transportLocked = effectiveInitStatus !== 'ready';
 
   const showKeyMeterBand =
     (keyLabel != null && keyLabel !== '') ||
@@ -94,10 +126,13 @@ export function TransportControls({
 
   return (
     <div
+      ref={toolbarRef}
       data-testid="vybpad-transport-toolbar"
       data-ui-density="compact"
-      aria-busy={initStatus === 'initializing' ? true : undefined}
-      data-audio-ready={initStatus === 'ready' ? 'true' : 'false'}
+      role="toolbar"
+      aria-label="Transport"
+      aria-busy={effectiveInitStatus === 'initializing' ? 'true' : undefined}
+      data-audio-ready={effectiveInitStatus === 'ready' ? 'true' : 'false'}
       className="flex min-w-0 flex-col border-b border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)] lg:flex-nowrap"
     >
       {showKeyMeterBand ? (
@@ -112,7 +147,10 @@ export function TransportControls({
               </span>
             ) : null}
             {meterLabel ? (
-              <span className="tabular-nums text-[var(--color-text-secondary,#4B5563)]">{meterLabel}</span>
+              <span className="tabular-nums text-[var(--color-text-secondary,#4B5563)]">
+                {keyLabel ? ' ' : ''}
+                {meterLabel}
+              </span>
             ) : null}
           </div>
           {onTempoMeterEdit ? (
@@ -128,13 +166,12 @@ export function TransportControls({
         </div>
       ) : null}
 
-      <div
-        role="toolbar"
-        aria-label="Transport"
-        aria-busy={initStatus === 'initializing' ? true : undefined}
-        data-audio-ready={initStatus === 'ready' ? 'true' : 'false'}
-        className="flex min-h-12 min-w-0 flex-wrap items-center gap-2 px-3 lg:flex-nowrap lg:overflow-x-auto"
-      >
+      <div className="flex min-h-12 min-w-0 flex-wrap items-center gap-2 px-3 lg:flex-nowrap lg:overflow-x-auto">
+        {leadingContent ? (
+          <div className="flex shrink-0 items-center gap-2" role="group" aria-label="Leading transport controls">
+            {leadingContent}
+          </div>
+        ) : null}
         <div className="flex shrink-0 items-center gap-2" role="group" aria-label="Playback">
           <button
             type="button"
@@ -175,15 +212,16 @@ export function TransportControls({
               type="button"
               data-testid="vybpad-transport-play"
               className="inline-flex min-h-8 min-w-8 items-center justify-center rounded-lg bg-[var(--color-primary,#4F46E5)] px-3 text-sm font-medium text-[var(--color-text-on-primary,#FFFFFF)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-primary-hover,#4338CA)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
-              aria-label={initStatus === 'ready' ? 'Play' : 'Start audio and play'}
+              aria-label={effectiveInitStatus === 'ready' ? 'Play' : 'Start audio and play'}
               disabled={playDisabled}
               onClick={onPlay}
             >
-              {initStatus === 'initializing' ? 'Starting…' : 'Play'}
+              {effectiveInitStatus === 'initializing' ? 'Starting…' : 'Play'}
             </button>
           )}
           <button
             type="button"
+          data-testid="vybpad-transport-stop"
             className="inline-flex min-h-8 min-w-8 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-3 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
             aria-label="Stop playback"
             disabled={transportLocked}
@@ -192,6 +230,7 @@ export function TransportControls({
             Stop
           </button>
           <button
+            data-testid="vybpad-transport-rewind"
             type="button"
             className="inline-flex min-h-8 min-w-8 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-3 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
             aria-label="Rewind to start"
@@ -214,11 +253,13 @@ export function TransportControls({
         <label className="flex shrink-0 items-center gap-2 text-sm text-[var(--color-text-secondary,#4B5563)]">
           <span id="transport-tempo-label">Tempo</span>
           <input
+            role="spinbutton"
             id="transport-tempo-input"
-            type="number"
+            type="text"
+            inputMode="numeric"
             min={20}
             max={300}
-            value={tempo}
+          value={String(tempo)}
             onChange={(e) => onTempoChange(Number(e.target.value))}
             className="h-8 w-20 rounded-lg border border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)] px-2 text-center text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none focus:border-[var(--color-primary,#4F46E5)] focus:ring-1 focus:ring-[var(--color-primary,#4F46E5)] disabled:opacity-50"
             aria-labelledby="transport-tempo-label"
@@ -355,6 +396,12 @@ export function TransportControls({
           </>
         ) : null}
 
+        {trailingContent ? (
+          <div className="flex shrink-0 items-center gap-2" role="group" aria-label="Trailing transport controls">
+            {trailingContent}
+          </div>
+        ) : null}
+
         <div className="hidden h-6 w-px shrink-0 bg-[var(--color-border,#E5E7EB)] sm:block" aria-hidden />
         <div className="flex shrink-0 items-center gap-2" role="group" aria-label="Deferred shell features">
           <span id="vybpad-mvp-deferred-hint" className="sr-only">
@@ -374,7 +421,7 @@ export function TransportControls({
           ))}
         </div>
 
-        {initStatus === 'initializing' && (
+        {effectiveInitStatus === 'initializing' && (
           <div
             role="status"
             className="flex items-center gap-2 text-sm text-[var(--color-text-secondary,#4B5563)]"
@@ -388,7 +435,7 @@ export function TransportControls({
           </div>
         )}
 
-        {initStatus === 'ready' && (
+        {effectiveInitStatus === 'ready' && (
           <p className="sr-only" role="status" aria-live="polite">
             Playback ready. Piano samples loaded.
           </p>

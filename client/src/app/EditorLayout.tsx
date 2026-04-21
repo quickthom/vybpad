@@ -1237,6 +1237,98 @@ export function EditorLayout() {
 
   const headerTitle = song.metadata.title || 'vYbpad';
   const saveDisabled = !projectId || !isDirty || saveBusy || loadStatus !== 'ready';
+  const toolbarLeadingContent = (
+    <>
+      {projectId ? (
+        <button
+          type="button"
+          disabled={saveDisabled}
+          onClick={() => void handleSave()}
+          className="inline-flex min-h-8 items-center justify-center rounded-lg bg-[var(--color-primary,#4F46E5)] px-3 text-sm font-medium text-[var(--color-text-on-primary,#FFFFFF)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-primary-hover,#4338CA)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+        >
+          {saveBusy ? 'Saving…' : 'Save'}
+        </button>
+      ) : null}
+      <button
+        type="button"
+        onClick={() => {
+          if (projectId) clearEditorPostBootstrap(projectId);
+          navigate('/projects');
+        }}
+        className="inline-flex min-h-8 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-3 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
+      >
+        Projects
+      </button>
+      <EntryModeToggle mode={entryMode} onToggle={toggleEntryMode} />
+      <Tooltip label="Active melody voice (Ctrl+1–4)">
+        <button
+          type="button"
+          className="inline-flex h-8 shrink-0 items-center rounded-md border border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface-muted,#F9FAFB)] px-2 text-[12px] font-medium text-[var(--color-text-secondary,#4B5563)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
+          aria-live="polite"
+        >
+          Voice {activeVoice + 1}
+        </button>
+      </Tooltip>
+      <button
+        type="button"
+        onClick={() => setChordPaletteExpanded((o) => !o)}
+        aria-expanded={chordPaletteExpanded}
+        aria-controls="vybpad-panel-chords"
+        className="inline-flex min-h-8 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-3 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
+      >
+        Chords
+      </button>
+      <button
+        type="button"
+        ref={mixerTriggerRef}
+        onClick={() => togglePanel('mixer')}
+        aria-expanded={mixerOpen}
+        aria-pressed={mixerOpen}
+        aria-controls={mixerOpen ? 'vybpad-panel-mixer' : undefined}
+        className="inline-flex min-h-8 items-center justify-center gap-1.5 rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-3 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
+      >
+        <span aria-hidden="true" className="text-sm leading-none">
+          🎚
+        </span>
+        <span>Mixer</span>
+      </button>
+      <button
+        type="button"
+        onClick={() => togglePanel('settings')}
+        aria-expanded={settingsOpen}
+        aria-pressed={settingsOpen}
+        aria-controls={settingsOpen ? 'vybpad-panel-settings' : undefined}
+        className="inline-flex min-h-8 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-3 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
+      >
+        Settings
+      </button>
+      <button
+        type="button"
+        onClick={() => togglePanel('piano')}
+        aria-expanded={pianoOpen}
+        aria-pressed={pianoOpen}
+        aria-controls={pianoOpen ? 'vybpad-panel-piano' : undefined}
+        className="inline-flex min-h-8 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-3 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
+      >
+        Piano
+      </button>
+      <button
+        ref={keyScaleTriggerRef}
+        type="button"
+        onClick={() => setKeyScaleDialogOpen(true)}
+        className="inline-flex min-h-8 items-center justify-center rounded-md px-3 text-sm font-medium text-[var(--color-primary,#4F46E5)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
+      >
+        Key / scale
+      </button>
+      <button
+        type="button"
+        onClick={() => void handleLogout()}
+        className="inline-flex min-h-8 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-3 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
+      >
+        Log out
+      </button>
+    </>
+  );
 
   const currentBeatDisplay = formatTransportBeat(song, playbackTick ?? 0);
 
@@ -1321,94 +1413,14 @@ export function EditorLayout() {
               {user.displayName}
             </span>
           ) : null}
-          {projectId ? (
-            <button
-              type="button"
-              disabled={saveDisabled}
-              onClick={() => void handleSave()}
-              className="inline-flex min-h-8 items-center justify-center rounded-lg bg-[var(--color-primary,#4F46E5)] px-3 text-sm font-medium text-[var(--color-text-on-primary,#FFFFFF)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-primary-hover,#4338CA)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
-            >
-              {saveBusy ? 'Saving…' : 'Save'}
-            </button>
-          ) : null}
-          <button
-            type="button"
-            onClick={() => {
-              if (projectId) clearEditorPostBootstrap(projectId);
-              navigate('/projects');
-            }}
-            className="inline-flex min-h-8 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-3 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
-          >
-            Projects
-          </button>
-          <EntryModeToggle mode={entryMode} onToggle={toggleEntryMode} />
           <Tooltip label="Active melody voice (Ctrl+1–4)">
             <span
               tabIndex={0}
-              className="inline-flex h-8 shrink-0 cursor-default items-center rounded-md border border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface-muted,#F9FAFB)] px-2 text-[12px] font-medium text-[var(--color-text-secondary,#4B5563)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
-              aria-live="polite"
+              className="inline-flex h-8 shrink-0 cursor-default items-center rounded-md border border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface-muted,#F9FAFB)] px-2 text-[12px] font-medium text-[var(--color-text-secondary,#4B5563)]"
             >
               Voice {activeVoice + 1}
             </span>
           </Tooltip>
-          <button
-            type="button"
-            onClick={() => setChordPaletteExpanded((o) => !o)}
-            aria-expanded={chordPaletteExpanded}
-            aria-controls="vybpad-panel-chords"
-            className="inline-flex min-h-8 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-3 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
-          >
-            Chords
-          </button>
-          <button
-            type="button"
-            ref={mixerTriggerRef}
-            onClick={() => togglePanel('mixer')}
-            aria-expanded={mixerOpen}
-            aria-pressed={mixerOpen}
-            aria-controls={mixerOpen ? 'vybpad-panel-mixer' : undefined}
-            className="inline-flex min-h-8 items-center justify-center gap-1.5 rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-3 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
-          >
-            <span aria-hidden="true" className="text-sm leading-none">
-              🎚
-            </span>
-            <span>Mixer</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => togglePanel('settings')}
-            aria-expanded={settingsOpen}
-            aria-pressed={settingsOpen}
-            aria-controls={settingsOpen ? 'vybpad-panel-settings' : undefined}
-            className="inline-flex min-h-8 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-3 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
-          >
-            Settings
-          </button>
-          <button
-            type="button"
-            onClick={() => togglePanel('piano')}
-            aria-expanded={pianoOpen}
-            aria-pressed={pianoOpen}
-            aria-controls={pianoOpen ? 'vybpad-panel-piano' : undefined}
-            className="inline-flex min-h-8 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-3 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
-          >
-            Piano
-          </button>
-          <button
-            ref={keyScaleTriggerRef}
-            type="button"
-            onClick={() => setKeyScaleDialogOpen(true)}
-            className="inline-flex min-h-8 items-center justify-center rounded-md px-3 text-sm font-medium text-[var(--color-primary,#4F46E5)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
-          >
-            Key / scale
-          </button>
-          <button
-            type="button"
-            onClick={() => void handleLogout()}
-            className="inline-flex min-h-8 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-3 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2"
-          >
-            Log out
-          </button>
         </div>
       </header>
       <TransportControls
@@ -1425,6 +1437,7 @@ export function EditorLayout() {
         canRedo={canRedo}
         onUndo={undo}
         onRedo={redo}
+        leadingContent={toolbarLeadingContent}
         onTempoChange={(bpm) => {
           const n = Math.round(bpm);
           if (!Number.isFinite(n) || n < 20 || n > 300) return;
