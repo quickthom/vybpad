@@ -1441,11 +1441,15 @@ export function EditorLayout() {
         keyLabel={transportKeyMeterLabels.keyLabel}
         meterLabel={transportKeyMeterLabels.meterLabel}
         onTempoMeterEdit={() => setTempoMeterDialogOpen(true)}
-        leadingContent={toolbarLeadingContent}
-        trailingContent={toolbarTrailingContent}
-        loopContent={<LoopBar />}
-        endContent={
+        leadingContent={
           <>
+            {toolbarLeadingContent}
+            <LoopBar />
+          </>
+        }
+        trailingContent={
+          <>
+            {toolbarTrailingContent}
             <MidiExportControls song={song} activeVoice={activeVoice} projectName={projectName} />
             <MidiDragExportControl />
           </>
