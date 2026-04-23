@@ -104,7 +104,7 @@ export function TransportControls({
       data-ui-density="compact"
       role="toolbar"
       aria-label="Transport toolbar"
-      aria-busy={initStatus === 'initializing' ? true : undefined}
+      aria-busy={initStatus === 'initializing' ? 'true' : undefined}
       data-audio-ready={initStatus === 'ready' ? 'true' : 'false'}
       className="flex min-w-0 flex-col border-b border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)] lg:flex-nowrap"
     >
@@ -118,6 +118,9 @@ export function TransportControls({
               <span className="font-medium tabular-nums text-[var(--color-text-primary,#111827)]">
                 {keyLabel}
               </span>
+            ) : null}
+            {keyLabel && meterLabel ? (
+              <span className="text-[var(--color-text-secondary,#4B5563)]"> / </span>
             ) : null}
             {meterLabel ? (
               <span className="tabular-nums text-[var(--color-text-secondary,#4B5563)]">{meterLabel}</span>
@@ -193,6 +196,7 @@ export function TransportControls({
           )}
           <button
             type="button"
+            data-testid="vybpad-transport-stop"
             className="inline-flex min-h-8 min-w-8 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-3 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
             aria-label="Stop playback"
             disabled={transportLocked}
@@ -202,6 +206,7 @@ export function TransportControls({
           </button>
           <button
             type="button"
+            data-testid="vybpad-transport-rewind"
             className="inline-flex min-h-8 min-w-8 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-3 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
             aria-label="Rewind to start"
             disabled={transportLocked}
@@ -227,7 +232,7 @@ export function TransportControls({
             type="number"
             min={20}
             max={300}
-            value={tempo}
+            value={String(tempo)}
             onChange={(e) => onTempoChange(Number(e.target.value))}
             className="h-8 w-20 rounded-lg border border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)] px-2 text-center text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none focus:border-[var(--color-primary,#4F46E5)] focus:ring-1 focus:ring-[var(--color-primary,#4F46E5)] disabled:opacity-50"
             aria-labelledby="transport-tempo-label"

@@ -28,7 +28,7 @@
  */
 
 import type { ProjectResponse, SongData } from '@vybpad/shared';
-import { cleanup, render, screen, within } from '@testing-library/react';
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -179,7 +179,7 @@ describe('UI-R2-W7.5a — toolbar shell consolidation baseline', () => {
     expect(keyMeter?.textContent ?? '').toMatch(/\b(major|minor)\b/i);
 
     const tempoInput = screen.getByLabelText('Tempo') as HTMLInputElement;
-    expect(tempoInput).toHaveValue('120');
+    expect(tempoInput).toHaveValue(120);
     expect(toolbar).toContainElement(tempoInput);
 
     const zoomReadout = toolbar.querySelector('[data-testid="vybpad-zoom-readout"]');
@@ -225,17 +225,21 @@ describe('UI-R2-W7.5a — toolbar shell consolidation baseline', () => {
     expect(voiceControl).toHaveFocus();
   });
 
-  it('CR5 — transport toolbar keeps audio-ready contract during init status transitions', () => {
+  it('CR5 — transport toolbar keeps audio-ready contract during init status transitions', async () => {
     renderEditorAtEditorRoute();
     const toolbar = transportToolbar();
 
     usePlaybackStore.setState({ initStatus: 'initializing', initErrorCode: null });
-    expect(toolbar).toHaveAttribute('aria-busy', 'true');
-    expect(toolbar).toHaveAttribute('data-audio-ready', 'false');
+    await waitFor(() => {
+      expect(toolbar).toHaveAttribute('aria-busy', 'true');
+      expect(toolbar).toHaveAttribute('data-audio-ready', 'false');
+    });
 
     usePlaybackStore.setState({ initStatus: 'ready', initErrorCode: null });
-    expect(toolbar).toHaveAttribute('data-audio-ready', 'true');
-    expect(toolbar).not.toHaveAttribute('aria-busy', 'true');
+    await waitFor(() => {
+      expect(toolbar).toHaveAttribute('data-audio-ready', 'true');
+      expect(toolbar).not.toHaveAttribute('aria-busy', 'true');
+    });
   });
 
   it('CR6 — loop and export stay inside shared toolbar; no standalone loop row remains', () => {
