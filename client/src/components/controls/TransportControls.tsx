@@ -19,9 +19,13 @@ export interface TransportControlsProps {
   canRedo?: boolean;
   onUndo?: () => void;
   onRedo?: () => void;
-  /** Loop region controls (UI-W6 — folded into transport row; RA-11). */
+  /** UI-W6 (RA-11) — optional leading shell slot (legacy alias: `loopContent`). */
+  leadingContent?: ReactNode;
+  /** Backward-compatible alias for existing callers; prefer `leadingContent`. */
   loopContent?: ReactNode;
-  /** Optional trailing slot (e.g. MIDI export / drag-to-desktop affordance); omit when unused. */
+  /** Optional trailing shell slot (e.g. MIDI export / drag-to-desktop affordance; legacy alias: `endContent`). */
+  trailingContent?: ReactNode;
+  /** Backward-compatible alias for existing callers; prefer `trailingContent`. */
   endContent?: ReactNode;
   /** UI-W8 (RA-13) — record arm toggle; omit when unused. */
   recordArmed?: boolean;
@@ -60,8 +64,10 @@ export function TransportControls({
   canRedo,
   onUndo,
   onRedo,
+  leadingContent,
   loopContent,
   endContent,
+  trailingContent,
   recordArmed,
   onRecordToggle,
   metronomeEnabled,
@@ -87,14 +93,21 @@ export function TransportControls({
     (meterLabel != null && meterLabel !== '') ||
     onTempoMeterEdit != null;
 
+  const leadingShellContent = leadingContent ?? loopContent;
+  const trailingShellContent = trailingContent ?? endContent;
+  const showLeadingContent = leadingShellContent != null;
+  const showTrailingContent = trailingShellContent != null;
+
   const showZoomCluster =
     zoomPercent != null || onZoomIn != null || onZoomOut != null || onZoomReset != null;
   const showZoomYCluster =
     zoomYPercent != null || onZoomYIn != null || onZoomYOut != null || onZoomYReset != null;
 
   return (
-    <div
+    <header
       data-testid="vybpad-transport-toolbar"
+      role="toolbar"
+      aria-label="Transport"
       data-ui-density="compact"
       aria-busy={initStatus === 'initializing' ? true : undefined}
       data-audio-ready={initStatus === 'ready' ? 'true' : 'false'}
@@ -111,6 +124,7 @@ export function TransportControls({
                 {keyLabel}
               </span>
             ) : null}
+            {keyLabel != null && meterLabel != null ? <span className="text-[var(--color-text-secondary,#4B5563)]"> </span> : null}
             {meterLabel ? (
               <span className="tabular-nums text-[var(--color-text-secondary,#4B5563)]">{meterLabel}</span>
             ) : null}
@@ -128,14 +142,13 @@ export function TransportControls({
         </div>
       ) : null}
 
-      <div
-        role="toolbar"
-        aria-label="Transport"
-        aria-busy={initStatus === 'initializing' ? true : undefined}
-        data-audio-ready={initStatus === 'ready' ? 'true' : 'false'}
-        className="flex min-h-12 min-w-0 flex-wrap items-center gap-2 px-3 lg:flex-nowrap lg:overflow-x-auto"
-      >
-        <div className="flex shrink-0 items-center gap-2" role="group" aria-label="Playback">
+      <div className="flex min-h-12 min-w-0 flex-wrap items-center gap-2 px-3 lg:flex-nowrap lg:overflow-x-auto">
+        <section role="group" aria-label="Playback" className="flex shrink-0 items-center gap-2">
+        <section
+          className="flex shrink-0 items-center gap-2"
+          role="group"
+          aria-label="Transport left controls"
+        >
           <button
             type="button"
             data-testid="vybpad-transport-undo"
@@ -185,6 +198,7 @@ export function TransportControls({
           <button
             type="button"
             className="inline-flex min-h-8 min-w-8 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-3 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+            data-testid="vybpad-transport-stop"
             aria-label="Stop playback"
             disabled={transportLocked}
             onClick={onStop}
@@ -194,24 +208,26 @@ export function TransportControls({
           <button
             type="button"
             className="inline-flex min-h-8 min-w-8 items-center justify-center rounded-lg border border-[var(--color-border-strong,#D1D5DB)] bg-[var(--color-surface,#FFFFFF)] px-3 text-sm font-medium text-[var(--color-text-primary,#111827)] outline-none transition-colors duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--color-surface-muted,#F9FAFB)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,#4F46E5)] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+            data-testid="vybpad-transport-rewind"
             aria-label="Rewind to start"
             disabled={transportLocked}
             onClick={onRewind}
           >
             Rewind
           </button>
-        </div>
+        </section>
 
-        <div
-          data-testid="vybpad-transport-current-beat"
-          className="flex min-h-8 min-w-[120px] shrink-0 items-center text-sm tabular-nums text-[var(--color-text-primary,#111827)]"
-          aria-live="polite"
-        >
-          <span className="sr-only">Current position</span>
-          <span aria-hidden="true">{currentBeat}</span>
-        </div>
+        <section role="group" aria-label="Transport middle controls" className="flex shrink-0 items-center gap-2">
+          <div
+            data-testid="vybpad-transport-current-beat"
+            className="flex min-h-8 min-w-[120px] shrink-0 items-center text-sm tabular-nums text-[var(--color-text-primary,#111827)]"
+            aria-live="polite"
+          >
+            <span className="sr-only">Current position</span>
+            <span aria-hidden="true">{currentBeat}</span>
+          </div>
 
-        <label className="flex shrink-0 items-center gap-2 text-sm text-[var(--color-text-secondary,#4B5563)]">
+          <label className="flex shrink-0 items-center gap-2 text-sm text-[var(--color-text-secondary,#4B5563)]">
           <span id="transport-tempo-label">Tempo</span>
           <input
             id="transport-tempo-input"
@@ -226,8 +242,10 @@ export function TransportControls({
           <span className="text-[var(--color-text-muted,#9CA3AF)]" aria-hidden="true">
             BPM
           </span>
-        </label>
+          </label>
+        </section>
 
+        <section role="group" aria-label="Transport right controls" className="flex shrink-0 items-center gap-2">
         {onRecordToggle ? (
           <button
             type="button"
@@ -345,18 +363,22 @@ export function TransportControls({
           </div>
         ) : null}
 
-        {loopContent ? (
-          <>
+        {showLeadingContent ? (
+          <section
+            role="group"
+            aria-label="Transport leading shell controls"
+            className="flex shrink-0 items-center gap-2"
+          >
             <div
               className="hidden h-6 w-px shrink-0 bg-[var(--color-border,#E5E7EB)] sm:block"
               aria-hidden
             />
-            {loopContent}
-          </>
+            {leadingShellContent}
+          </section>
         ) : null}
 
         <div className="hidden h-6 w-px shrink-0 bg-[var(--color-border,#E5E7EB)] sm:block" aria-hidden />
-        <div className="flex shrink-0 items-center gap-2" role="group" aria-label="Deferred shell features">
+        <section className="flex shrink-0 items-center gap-2" role="group" aria-label="Deferred shell features">
           <span id="vybpad-mvp-deferred-hint" className="sr-only">
             Not in MVP; deferred per ARCHITECTURE roadmap.
           </span>
@@ -372,7 +394,9 @@ export function TransportControls({
               {label}
             </button>
           ))}
-        </div>
+        </section>
+      </section>
+    </section>
 
         {initStatus === 'initializing' && (
           <div
@@ -403,17 +427,17 @@ export function TransportControls({
           </p>
         ) : null}
 
-        {endContent ? (
-          <div
-            data-testid="vybpad-midi-export-cluster"
-            className="ml-auto flex min-w-0 shrink-0 flex-nowrap items-center gap-2 overflow-x-auto"
+        {showTrailingContent ? (
+          <section
             role="group"
             aria-label="MIDI export"
+            data-testid="vybpad-midi-export-cluster"
+            className="ml-auto flex min-w-0 shrink-0 flex-nowrap items-center gap-2 overflow-x-auto"
           >
-            {endContent}
-          </div>
+            {trailingShellContent}
+          </section>
         ) : null}
       </div>
-    </div>
+    </header>
   );
 }
