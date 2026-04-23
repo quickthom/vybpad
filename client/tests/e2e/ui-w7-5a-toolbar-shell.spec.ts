@@ -1,8 +1,8 @@
 /*
  * QA COVERAGE PLAN — UI-R2-W7.5a (RA-209 baseline toolbar shell consolidation)
  *
- * Criterion 1: Shell has one header row + one transport toolbar and no standalone loop strip.
- *   happy: full-width chrome rows counted at shell root are exactly 2.
+ * Criterion 1: Shell has one consolidated toolbar row and no standalone loop strip.
+ *   happy: full-width chrome rows counted at shell root are exactly 1.
  *   error: legacy separate loop row remains.
  *
  * Criterion 2: Shared transport shell has stable ID contract and toolbar role.
@@ -38,7 +38,6 @@ function getEditorShellRoot(page: Page): Locator {
 
 async function countFullWidthChromeRows(editorRoot: Locator, page: Page): Promise<number> {
   let total = 0;
-  total += await editorRoot.locator(':scope > header').count();
   total += await editorRoot.locator(':scope > [data-testid="vybpad-transport-toolbar"]').count();
   total += await editorRoot
     .locator(':scope > [role="group"]')
@@ -65,14 +64,14 @@ async function openFreshEditor(page: Page): Promise<void> {
 test.describe('UI-R2-W7.5a — toolbar shell consolidation baseline (RA-209)', () => {
   test.describe.configure({ mode: 'serial', timeout: 180_000 });
 
-  test('CR1 — shell has one header row and one shared transport toolbar row', async ({ page }) => {
+  test('CR1 — shell has one consolidated top-level transport toolbar row', async ({ page }) => {
     await openFreshEditor(page);
 
     const root = getEditorShellRoot(page);
     await expect(root).toBeVisible();
 
     const rows = await countFullWidthChromeRows(root, page);
-    expect(rows).toBe(2);
+    expect(rows).toBe(1);
   });
 
   test('CR2 — transport toolbar exposes stable control IDs and role', async ({ page }) => {

@@ -23,6 +23,10 @@ export interface TransportControlsProps {
   loopContent?: ReactNode;
   /** Optional trailing slot (e.g. MIDI export / drag-to-desktop affordance); omit when unused. */
   endContent?: ReactNode;
+  /** Left/center/right toolbar slot support for shared shell composition. */
+  leadingContent?: ReactNode;
+  /** Right-side shell actions for consolidated toolbar layouts. */
+  trailingContent?: ReactNode;
   /** UI-W8 (RA-13) — record arm toggle; omit when unused. */
   recordArmed?: boolean;
   onRecordToggle?: () => void;
@@ -62,6 +66,8 @@ export function TransportControls({
   onRedo,
   loopContent,
   endContent,
+  leadingContent,
+  trailingContent,
   recordArmed,
   onRecordToggle,
   metronomeEnabled,
@@ -96,6 +102,8 @@ export function TransportControls({
     <div
       data-testid="vybpad-transport-toolbar"
       data-ui-density="compact"
+      role="toolbar"
+      aria-label="Transport toolbar"
       aria-busy={initStatus === 'initializing' ? true : undefined}
       data-audio-ready={initStatus === 'ready' ? 'true' : 'false'}
       className="flex min-w-0 flex-col border-b border-[var(--color-border,#E5E7EB)] bg-[var(--color-surface,#FFFFFF)] lg:flex-nowrap"
@@ -128,14 +136,15 @@ export function TransportControls({
         </div>
       ) : null}
 
-      <div
-        role="toolbar"
-        aria-label="Transport"
-        aria-busy={initStatus === 'initializing' ? true : undefined}
-        data-audio-ready={initStatus === 'ready' ? 'true' : 'false'}
-        className="flex min-h-12 min-w-0 flex-wrap items-center gap-2 px-3 lg:flex-nowrap lg:overflow-x-auto"
-      >
-        <div className="flex shrink-0 items-center gap-2" role="group" aria-label="Playback">
+      <div className="flex min-h-12 min-w-0 items-center gap-2 px-3 py-0.5 lg:flex-nowrap lg:overflow-x-auto">
+        {leadingContent ? (
+          <div className="flex shrink-0 items-center gap-2 lg:flex-nowrap" role="group" aria-label="Toolbar leading">
+            {leadingContent}
+          </div>
+        ) : null}
+
+        <div className="flex min-w-0 flex-1 items-center gap-2 flex-wrap lg:flex-nowrap lg:overflow-x-auto">
+          <div className="flex shrink-0 items-center gap-2" role="group" aria-label="Playback">
           <button
             type="button"
             data-testid="vybpad-transport-undo"
@@ -345,18 +354,18 @@ export function TransportControls({
           </div>
         ) : null}
 
-        {loopContent ? (
-          <>
-            <div
-              className="hidden h-6 w-px shrink-0 bg-[var(--color-border,#E5E7EB)] sm:block"
-              aria-hidden
-            />
-            {loopContent}
-          </>
-        ) : null}
+          {loopContent ? (
+            <>
+              <div
+                className="hidden h-6 w-px shrink-0 bg-[var(--color-border,#E5E7EB)] sm:block"
+                aria-hidden
+              />
+              {loopContent}
+            </>
+          ) : null}
 
-        <div className="hidden h-6 w-px shrink-0 bg-[var(--color-border,#E5E7EB)] sm:block" aria-hidden />
-        <div className="flex shrink-0 items-center gap-2" role="group" aria-label="Deferred shell features">
+          <div className="hidden h-6 w-px shrink-0 bg-[var(--color-border,#E5E7EB)] sm:block" aria-hidden />
+          <div className="flex shrink-0 items-center gap-2" role="group" aria-label="Deferred shell features">
           <span id="vybpad-mvp-deferred-hint" className="sr-only">
             Not in MVP; deferred per ARCHITECTURE roadmap.
           </span>
@@ -403,14 +412,20 @@ export function TransportControls({
           </p>
         ) : null}
 
-        {endContent ? (
-          <div
-            data-testid="vybpad-midi-export-cluster"
-            className="ml-auto flex min-w-0 shrink-0 flex-nowrap items-center gap-2 overflow-x-auto"
-            role="group"
-            aria-label="MIDI export"
-          >
-            {endContent}
+        </div>
+        {(trailingContent || endContent) ? (
+          <div className="flex shrink-0 flex-wrap items-center gap-2 lg:flex-nowrap" role="group" aria-label="Toolbar trailing">
+            {trailingContent}
+            {endContent ? (
+              <div
+                data-testid="vybpad-midi-export-cluster"
+                className="flex min-w-0 shrink-0 flex-nowrap items-center gap-2 overflow-x-auto"
+                role="group"
+                aria-label="MIDI export"
+              >
+                {endContent}
+              </div>
+            ) : null}
           </div>
         ) : null}
       </div>

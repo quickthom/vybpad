@@ -2,8 +2,8 @@
 /*
  * QA COVERAGE PLAN — UI-R2-W7.5a (RA-209 toolbar-shell consolidation)
  *
- * Criterion 1: Editor shell has one header row + one transport toolbar row after consolidation.
- *   happy: top-level shell row count is exactly 2 (`<header>` + `vybpad-transport-toolbar`).
+ * Criterion 1: Editor shell has one consolidated top-level toolbar row after consolidation.
+ *   happy: top-level shell row count is exactly 1 (`vybpad-transport-toolbar`).
  *   error: extra full-width transport-like rows exist (e.g. legacy standalone loop strip).
  *   edges: render `/editor` and `/editor/:projectId` with bootstrap project state.
  *
@@ -125,7 +125,7 @@ afterEach(() => {
 });
 
 describe('UI-R2-W7.5a — toolbar shell consolidation baseline', () => {
-  it('CR1 — editor shell keeps one top-level header row and one shared transport toolbar row', () => {
+  it('CR1 — editor shell keeps one top-level consolidated toolbar row', () => {
     renderEditorAtEditorRoute();
     const transport = transportToolbar();
     expect(transport).toHaveAttribute('role', 'toolbar');
@@ -135,10 +135,10 @@ describe('UI-R2-W7.5a — toolbar shell consolidation baseline', () => {
 
     const shellRows = Array.from(shell?.children ?? []).filter((node) => {
       const element = node as HTMLElement;
-      return element.tagName.toLowerCase() === 'header' || element.getAttribute('data-testid') === 'vybpad-transport-toolbar';
+      return element.getAttribute('data-testid') === 'vybpad-transport-toolbar';
     });
 
-    expect(shellRows).toHaveLength(2);
+    expect(shellRows).toHaveLength(1);
   });
 
   it('CR2 — shared transport IDs and status contract stay on `vybpad-transport-toolbar`', () => {
